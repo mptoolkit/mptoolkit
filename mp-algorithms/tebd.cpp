@@ -112,6 +112,18 @@ LeapfrogDecompositionOdd(int Order, std::string Description, std::vector<double>
    return SymmetricDecomposition(Order, Description, a, b);
 }
 
+// A selection of decompositions.
+// firstorder is teh standard first order decomposition
+// leapfrog2 is the standard second order decomposition, error prefactor is (3/2)^2 / 8 = 0.28125
+// optimized2-5 is a 5-step second order decomposition from
+// Barthel and Zhang [https://doi.org/10.1016/j.aop.2020.168165  https://arxiv.org/abs/1901.04974]
+// error prefactor 0.069778
+// optimized4-11 from Barthel ansd Zhang Eqn (30a), error prefactor 0.10509.  Note that there is
+// another 4-order decomposition with a smaller error prefactor Eqn (32) from Barthel and Zhang,
+// but it isn't much improvement and at the cost of 13 terms versus 11.
+// symmetric6-19 is Eqn (35) from Barthel and Zhang, with error prefactor 0.17255, negligably higher
+// than their best 6th-order decomposition but 19 terms versus 23.
+//
 std::map<std::string, LTSDecomposition>
 Decompositions = {
    {"firstorder",     LTSDecomposition(1, "First order decomposition", {1.0}, {1.0})},
@@ -227,4 +239,3 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
    return Info;
 }
 #endif
-

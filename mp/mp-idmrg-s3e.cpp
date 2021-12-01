@@ -67,6 +67,7 @@
 #include "common/prog_options.h"
 #include <iostream>
 #include "common/environment.h"
+#include "common/unique.h"
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"

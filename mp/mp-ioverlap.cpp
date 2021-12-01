@@ -34,9 +34,11 @@ namespace prog_opt = boost::program_options;
 struct TransEigenInfo
 {
    TransEigenInfo() {}
-   TransEigenInfo(QuantumNumber const& q_, std::complex<double> const& x_) : q(q_), x(x_) {}
+   TransEigenInfo(QuantumNumber const& q_, std::complex<double> const& x_) : q(q_), n(1), x(x_) {}
+   TransEigenInfo(QuantumNumber const& q_, int n_, std::complex<double> const& x_) : q(q_), n(n_), x(x_) {}
 
    QuantumNumber q;
+   int n;
    std::complex<double> x;
 };
 
@@ -46,13 +48,17 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
-                 bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
+void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen, bool ShowRealPart, bool ShowImagPart,
+                 bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
-   std::string SectorStr = boost::lexical_cast<std::string>(x.q);
-   std::complex<double> Value = std::pow(x.x, ScaleFactor);
+   std::string SectorStr = boost::lexical_cast<std::string>(q);
+   std::complex<double> Value = std::pow(x, ScaleFactor);
    std::cout << std::setw(11) << SectorStr << ' ';
+   if (NumEigen > 1)
+   {
+      std::cout << std::setw(6) << n << ' ';
+   }
    if (ShowRealPart)
    {
       std::cout << std::setw(20) << Value.real() << "    ";
@@ -64,6 +70,11 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    if (ShowCorrLength)
    {
       std::cout << std::setw(20) << (-1.0/std::log(LinearAlgebra::norm_frob(Value)))
+                << "    ";
+   }
+   if (ShowRate)
+   {
+      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob_sq(Value)))
                 << "    ";
    }
    if (ShowMagnitude)
@@ -80,7 +91,6 @@ void PrintFormat(TransEigenInfo const& x, bool ShowRealPart, bool ShowImagPart,
    std::cout << std::endl;
 }
 
-
 int main(int argc, char** argv)
 {
    try
@@ -89,7 +99,7 @@ int main(int argc, char** argv)
       bool UseTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
-      bool ShowRadians = false, ShowCorrLength = false;
+      bool ShowRadians = false, ShowCorrLength = false, ShowRate = false;
       int Rotate = 0;
       int UnitCellSize = 0;
       std::string LhsStr, RhsStr;
@@ -103,6 +113,7 @@ int main(int argc, char** argv)
       bool Print = false;
       int CoarseGrain1 = 1;
       int CoarseGrain2 = 1;
+      int NumEigen = 1; // number of eigenvalues to calculate
       std::string String;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -124,6 +135,8 @@ int main(int argc, char** argv)
           "display the argument in radians instead of degrees")
          ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
           "display the equivalent correlation length")
+         ("rate", prog_opt::bool_switch(&ShowRate),
+          "display the rate function -2*log(real_part)")
          ("unitcell,u", prog_opt::value(&UnitCellSize),
           "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
@@ -143,6 +156,7 @@ int main(int argc, char** argv)
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
+         ("numeigen,n", prog_opt::value(&NumEigen), "Calculate this many eigenvalues in each sector [default 1]")
          ("sort,s", prog_opt::bool_switch(&Sort),
           "sort the eigenvalues by magnitude")
          ("tol", prog_opt::value(&Tol),
@@ -191,11 +205,12 @@ int main(int argc, char** argv)
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
           && !ShowCartesian && !ShowPolar && !ShowArgument
-          && !ShowRadians && !ShowCorrLength)
+          && !ShowRadians && !ShowCorrLength && !ShowRate)
       {
          ShowCartesian = true;
          ShowPolar = true;
          ShowCorrLength = true;
+         ShowRate = true;
       }
 
       if (ShowCartesian)
@@ -337,7 +352,6 @@ int main(int argc, char** argv)
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
          UnitCellSize = Size;
-      double ScaleFactor = double(UnitCellSize) / double(Psi1.size());
 
       // get the list of quantum number sectors
       std::set<QuantumNumber> Sectors;
@@ -378,19 +392,23 @@ int main(int argc, char** argv)
 
       if (!Quiet)
       {
-         std::cout << "\n#quantities are calculated per unit cell size of " << UnitCellSize
+         std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
                    << (UnitCellSize == 1 ? " site\n" : " sites\n");
          if (Size != UnitCellSize)
          {
             std::cout << "#actual size of wavefunction is " << Size << '\n';
          }
          std::cout << "#sector     ";
+         if (NumEigen > 1)
+            std::cout << "#n     ";
          if (ShowRealPart)
             std::cout << "#real                   ";
          if (ShowImagPart)
             std::cout << "#imag                   ";
          if (ShowCorrLength)
             std::cout << "#corr_length            ";
+         if (ShowRate)
+            std::cout << "#rate                   ";
          if (ShowMagnitude)
             std::cout << "#magnitude              ";
          if (ShowArgument)
@@ -399,25 +417,44 @@ int main(int argc, char** argv)
       }
       std::cout << std::left;
 
+      double ScaleFactor = 0;  // sentinel value - we set this once we get the acual length from overlap_arpack
+
       // Calculate the actual overlaps
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
          //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
-         TransEigenInfo Info(*I, std::get<0>(overlap_arpack(Psi1, StringOp, Psi2, *I, Iter, Tol, Verbose)));
+         std::vector<std::complex<double>> Eigen;
+         int Length;
+         std::tie(Eigen, Length) = overlap_arpack(Psi1, StringOp, Psi2, NumEigen, *I, Iter, Tol, Verbose);
+         ScaleFactor = double(UnitCellSize) / double(Length);
+
          if (Sort)
-            EigenList.push_back(Info);
+         {
+            int n = 0;
+            for (auto const& e : Eigen)
+            {
+               EigenList.emplace_back(*I, n++, e);
+            }
+         }
          else
-            PrintFormat(Info, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
-                        ShowArgument, ShowRadians, ScaleFactor);
+         {
+            int n = 0;
+            for (auto const& e : Eigen)
+            {
+               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude,
+                           ShowArgument, ShowRadians, ScaleFactor);
+            }
+
+         }
       }
 
       if (Sort)
       {
          std::sort(EigenList.begin(), EigenList.end());
-         for (unsigned i = 0; i < EigenList.size(); ++i)
+         for (auto const& e : EigenList)
          {
-            PrintFormat(EigenList[i], ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude, ShowArgument,
+            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument,
                         ShowRadians, ScaleFactor);
          }
       }

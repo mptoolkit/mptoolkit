@@ -23,9 +23,9 @@
 #include "common/statistics.h"
 #include "wavefunction/operator_actions.h"
 
-std::tuple<std::complex<double>, int>
+std::tuple<std::vector<std::complex<double>>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-	       InfiniteWavefunctionLeft const& y,
+	       InfiniteWavefunctionLeft const& y, int NumEigen,
 	       QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
 {
 
@@ -45,10 +45,8 @@ overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 							  Str.Basis1(), x.Basis1(), y.Basis1());
    int n = Func.pack_size();
 
-   int NumEigen = 1;
-
    LinearAlgebra::Vector<std::complex<double>> RightEigen =
       LinearAlgebra::DiagonalizeARPACK(Func, n, NumEigen, Tol, nullptr, ncv, true, Verbose);
 
-   return std::make_tuple(RightEigen[0], Length);
+   return std::make_tuple(std::vector<std::complex<double>>(RightEigen.begin(), RightEigen.end()), Length);
 }

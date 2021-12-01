@@ -280,7 +280,7 @@ T* PHeapObject::Lock()
 
    TRACE_PHEAP("PHeapObject::Lock()")(*this);
 
-   pthread::mutex::sentry Lock(ObjectMutex);
+   std::lock_guard<std::mutex> Lock(ObjectMutex);
 
    // we cannot simply increment the lock count here,
    // we need to make sure that the object is in memory first.
@@ -369,7 +369,7 @@ bool PHeapObject::SubLock()
 template <typename T>
 PHeapObject* PHeapObject::CopyOnWrite(T*& Value)
 {
-   pthread::mutex::sentry Lock(ObjectMutex);
+   std::lock_guard<std::mutex> Lock(ObjectMutex);
    DEBUG_CHECK(Object != NULL && Object->template GetPointer<T>() == Value);
 
    if (--LockCount == 0)

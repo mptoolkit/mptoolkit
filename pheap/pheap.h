@@ -29,8 +29,6 @@
 #include "common/trace.h"
 #include "common/atomicrefcount.h"
 #include "common/poolallocator.h"
-#include "common/mutex.h"
-#include "common/hash_map.h"
 #include "common/niftycounter.h"
 #include "pstream/pstream.h"
 #include "pheaperror.h"
@@ -212,7 +210,7 @@ class PHeapObject
 
       // ObjectMutex protects access to Object and Heap.  Object is readable without
       // the mutex as long as the lock count is guaranteed to be > 0 for the duration of the access.
-      pthread::mutex ObjectMutex;
+      std::mutex ObjectMutex;
       Private::PointerToObject* Object;   // non-NULL if the object is in memory
       PHeapFileSystem::Descriptor* MyDescriptor; // non-NULL if this object is stored on the heap, protected by ObjectMutex
 };

@@ -42,20 +42,6 @@ int threads_to_use(int Request)
    return 1;
 }
 
-template <typename T>
-T
-parallel_sum(std::vector<T>&& x)
-{
-   CHECK(x.size() > 0);
-
-   T Result = x[0];
-   for (unsigned n = 1; n < x.size(); ++n)
-   {
-      Result += x[n];
-   }
-   return Result;
-}
-
 } // namespace omp
 
 #endif

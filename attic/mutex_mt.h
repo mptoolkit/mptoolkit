@@ -27,10 +27,6 @@
 #if !defined(MUTEX_MT_H_JH34UIY78934YR78Y89FU43P89H0)
 #define MUTEX_MT_H_JH34UIY78934YR78Y89FU43P89H0
 
-#include "common/threads.h"
-#if defined(__DECCXX)
-#define SEM_NAME_MAX 255
-#endif
 #include <semaphore.h>
 #include "common/trace.h"
 

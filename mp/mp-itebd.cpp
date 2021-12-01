@@ -37,6 +37,7 @@
 #include "common/formatting.h"
 #include <cctype>
 #include "interface/inittemp.h"
+#include "common/openmp.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -52,6 +53,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    // A (Lambda) B C (Lambda) D E (Lambda) ...
    unsigned Sz = Psi.size();
    int MaxStates = 0;
+   #pragma omp parallel for shared(Psi, Lambda, UEven, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
       TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven[i/2], SInfo);
@@ -63,7 +65,8 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
                    << " Trunc=" << Info.TruncationError()
                    << '\n';
       }
-      MaxStates = std::max(MaxStates, Info.KeptStates());
+      #pragma omp critical
+         MaxStates = std::max(MaxStates, Info.KeptStates());
    }
    std::cout << "Even slice finished, max states=" << MaxStates << '\n';
    std::cout << std::flush;
@@ -85,7 +88,8 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    unsigned Sz = Psi.size();
    Psi.push_front(delta_shift(Psi.back(), QShift));
    Psi.pop_back();
-  int MaxStates = 0;
+   int MaxStates = 0;
+   #pragma omp parallel for shared(Psi, Lambda, UOdd, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
       TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd[i/2], SInfo);
@@ -97,7 +101,8 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
                    << " Trunc=" << Info.TruncationError()
                    << '\n';
       }
-      MaxStates = std::max(MaxStates, Info.KeptStates());
+      #pragma omp critical
+         MaxStates = std::max(MaxStates, Info.KeptStates());
    }
    std::cout << "Odd slice finished, max states=" << MaxStates << '\n';
    std::cout << std::flush;
@@ -175,6 +180,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      omp::initialize(Verbose);
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 

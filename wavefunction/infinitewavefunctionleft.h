@@ -186,6 +186,7 @@ overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
 // common multiple of x.size(), y.size(), StringOp.size()
+// The length is returned as the second component of the tuple
 std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
         InfiniteWavefunctionLeft const& y,
@@ -196,6 +197,22 @@ std::tuple<std::complex<double>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y,
 	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+// This version calculates n eigenvalues
+std::tuple<std::vector<std::complex<double>>, int>
+overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+	       InfiniteWavefunctionLeft const& y, int n,
+	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+inline
+std::tuple<std::complex<double>, int>
+overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+	       InfiniteWavefunctionLeft const& y,
+	       QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+	auto r = overlap_arpack(x, StringOp, y, 1, Sector, Iter, Tol, Verbose);
+   return std::make_tuple(std::get<0>(r)[0], std::get<1>(r));  // Could be improved with C++17
+}
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);
