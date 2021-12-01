@@ -19,17 +19,16 @@
 // ENDHEADER
 
 #include "ibc-tdvp.h"
-//#include "lanczos-exponential.h"
 #include "triangular_mpo_solver.h"
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
-#include "linearalgebra/exponential.h"
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
-                   std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-                   double GMRESTol_, StatesInfo SInfo_, int NExpand_, int Verbose_)
-   : TDVP(Ham_, Timestep_, MaxIter_, ErrTol_, SInfo_, Verbose_),
+                   std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+                   double ErrTol_, double GMRESTol_, StatesInfo SInfo_,
+                   int NExpand_, int Verbose_)
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
    GMRESTol(GMRESTol_), NExpand(NExpand_)
 {
    PsiLeft = Psi_.Left;
@@ -276,7 +275,6 @@ IBC_TDVP::CalculateFidelityLossRight()
    return (1.0 - trace(D));
 }
 
-
 void
 IBC_TDVP::Evolve()
 {
@@ -284,8 +282,18 @@ IBC_TDVP::Evolve()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   while (Site > LeftStop)
-      this->IterateLeft();
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
+   --GammaEnd;
+
+   //TRACE(this->CalculateFidelityLossLeft());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+
+   this->SweepLeft((*Gamma)*Timestep);
+   ++Gamma;
 
    //TRACE(this->CalculateFidelityLossRight());
 
@@ -293,16 +301,16 @@ IBC_TDVP::Evolve()
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   this->EvolveLeftmostSite();
+   while(Gamma != GammaEnd)
+   {
+      this->SweepRight((*Gamma)*Timestep);
+      ++Gamma;
 
-   while (Site < RightStop)
-      this->IterateRight();
+      this->SweepLeft((*Gamma)*Timestep);
+      ++Gamma;
+   }
 
-   //TRACE(this->CalculateFidelityLossLeft());
-
-   if (NExpand != 0)
-      if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
+   this->SweepRightFinal((*Gamma)*Timestep);
 }
 
 void
@@ -312,12 +320,18 @@ IBC_TDVP::EvolveExpand()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   while (Site > LeftStop)
-   {
-      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
-         this->ExpandLeftBond();
-      this->IterateLeft();
-   }
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
+   --GammaEnd;
+
+   //TRACE(this->CalculateFidelityLossLeft());
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+
+   this->SweepLeftExpand((*Gamma)*Timestep);
+   ++Gamma;
 
    //TRACE(this->CalculateFidelityLossRight());
 
@@ -325,16 +339,16 @@ IBC_TDVP::EvolveExpand()
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   this->EvolveLeftmostSite();
+   while(Gamma != GammaEnd)
+   {
+      this->SweepRight((*Gamma)*Timestep);
+      ++Gamma;
 
-   while (Site < RightStop)
-      this->IterateRight();
+      this->SweepLeftExpand((*Gamma)*Timestep);
+      ++Gamma;
+   }
 
-   //TRACE(this->CalculateFidelityLossLeft());
-
-   if (NExpand != 0)
-      if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
+   this->SweepRightFinal((*Gamma)*Timestep);
 }
 
 void
@@ -343,21 +357,30 @@ IBC_TDVP::Evolve2()
    ++TStep;
    TruncErrSum = 0.0;
 
-   while (Site > LeftStop + 1)
-      this->IterateLeft2();
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+
+   if (NExpand != 0)
+      if (TStep % NExpand == 0)
+         this->ExpandWindowLeft();
+
+   this->SweepLeft2((*Gamma)*Timestep);
+   ++Gamma;
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   this->EvolveLeftmostSite2();
+   this->SweepRight2((*Gamma)*Timestep);
+   ++Gamma;
 
-   while (Site < RightStop)
-      this->IterateRight2();
+   while(Gamma != Comp.Gamma.cend())
+   {
+      this->SweepLeft2((*Gamma)*Timestep);
+      ++Gamma;
 
-   if (NExpand != 0)
-      if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
+      this->SweepRight2((*Gamma)*Timestep);
+      ++Gamma;
+   }
 
    this->CalculateEps();
 }

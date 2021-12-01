@@ -30,8 +30,9 @@ class IBC_TDVP : public TDVP
       IBC_TDVP() {}
 
       IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
-               std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-               double GMRESTol_, StatesInfo SInfo_, int NExpand_, int Verbose_);
+               std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+               double ErrTol_, double GMRESTol_, StatesInfo SInfo_,
+               int NExpand_, int Verbose_);
 
       IBCWavefunction Wavefunction() const;
 

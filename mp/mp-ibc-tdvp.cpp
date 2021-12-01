@@ -63,6 +63,7 @@ int main(int argc, char** argv)
       int NExpand = 0;
       int Verbose = 0;
       int OutputDigits = 0;
+      std::string CompositionStr = "secondorder";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("n-expand", prog_opt::value(&NExpand), "Expand the window by two unit cells every n timesteps.")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -107,6 +109,9 @@ int main(int argc, char** argv)
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
+         std::cerr << "Available compositions:" << std::endl;
+         for (auto const& c : Compositions)
+            std::cerr << c.first << " : " << c.second.Description << std::endl;
          return 1;
       }
 
@@ -116,6 +121,20 @@ int main(int argc, char** argv)
       std::cout << "Starting IBC TDVP..." << std::endl;
       std::cout << "Hamiltonian: " << HamStr << std::endl;
       std::cout << "Wavefunction: " << InputFile << std::endl;
+      std::cout << "Composition: " << CompositionStr << std::endl;
+
+      // Load the composition scheme.
+      Composition Comp;
+      for (auto const& c : Compositions)
+      {
+         if (c.first == CompositionStr)
+            Comp = c.second;
+      }
+      if (Comp.Order == 0)
+      {
+         std::cerr << "fatal: invalid composition" << std::endl;
+         return 1;
+      }
 
       // Open the wavefunction.
       mp_pheap::InitializeTempPHeap();
@@ -194,8 +213,8 @@ int main(int argc, char** argv)
 
       std::cout << SInfo << std::endl;
 
-      IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol,
-                        GMRESTol, SInfo, NExpand, Verbose);
+      IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp,
+                    MaxIter, ErrTol, GMRESTol, SInfo, NExpand, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
