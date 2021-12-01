@@ -58,7 +58,8 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
 // TODO:
 // Move this function to the correct place.
 // Add the ability to calculate expectation values outside of the window.
-// Handle the case where the window is offset.
+// Handle the case where the window is offset by a number of sites not
+// divisible by the unit cell size.
 std::complex<double>
 expectation(IBCWavefunction const& Psi,
             BasicFiniteMPO const& M)
@@ -229,6 +230,7 @@ int main(int argc, char** argv)
 
          IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
 
+         Op.translate(Psi.window_offset());
          Op.ExtendToCoverUnitCell(Psi.window_size());
 
          x = expectation(Psi, Op.MPO());

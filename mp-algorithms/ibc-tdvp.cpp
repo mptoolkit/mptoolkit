@@ -82,9 +82,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    }
 
    // Construct window Hamiltonian environment.
-   Site = 0;
-   LeftStop = 0;
-   RightStop = Psi_.window_size() - 1;
+   LeftStop = -Psi_.window_offset();
+   RightStop = Psi_.window_size() - 1 - Psi_.window_offset();
+   Site = LeftStop;
 
    HamL.push_back(BlockHamL);
    HamR.push_front(BlockHamR);
