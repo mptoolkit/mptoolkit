@@ -88,7 +88,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
 
    HamL.push_back(BlockHamL);
    HamR.push_front(BlockHamR);
-   
+
    // Check whether there are any sites in the window, and if not, add two unit cells.
    if (Psi_.window_size() == 0)
    {
@@ -179,8 +179,6 @@ IBC_TDVP::ExpandWindowLeft()
    RealDiagonalOperator Lambda;
    std::tie(PsiCell, Lambda) = get_left_canonical(PsiLeft);
 
-   //PsiCell.set_back(prod(PsiCell.get_back(), Lambda));
-
    Psi.push_front(PsiCell);
 
    // Add the unit cell to the Hamiltonian.
@@ -210,8 +208,6 @@ IBC_TDVP::ExpandWindowRight()
    LinearWavefunction PsiCell;
    RealDiagonalOperator Lambda;
    std::tie(Lambda, PsiCell) = get_right_canonical(PsiRight);
-
-   //PsiCell.set_front(prod(Lambda, PsiCell.get_front()));
 
    Psi.push_back(PsiCell);
 
@@ -275,6 +271,44 @@ IBC_TDVP::CalculateFidelityLossRight()
    return (1.0 - trace(D));
 }
 
+double
+IBC_TDVP::CalculateLambdaDiffLeft()
+{
+   // Right-orthogonalize current site to find LambdaL.
+   StateComponent CCopy = *C;
+   MatrixOperator M = ExpandBasis1(CCopy);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaL are the same.
+   MatrixOperator LambdaL = (U*D)*herm(U);
+
+   MatrixOperator LambdaLBoundary = PsiLeft.lambda_r();
+
+   return norm_frob(LambdaL - LambdaLBoundary);
+}
+
+double
+IBC_TDVP::CalculateLambdaDiffRight()
+{
+   // Left-orthogonalize current site to find LambdaR.
+   StateComponent CCopy = *C;
+   MatrixOperator M = ExpandBasis2(CCopy);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+
+   SingularValueDecomposition(M, U, D, Vh);
+
+   // Ensure that the left and right bases of LambdaR are the same.
+   MatrixOperator LambdaR = herm(Vh)*(D*Vh);
+
+   MatrixOperator LambdaRBoundary = PsiRight.lambda_l();
+
+   return norm_frob(LambdaR - LambdaRBoundary);
+}
+
 void
 IBC_TDVP::Evolve()
 {
@@ -286,7 +320,7 @@ IBC_TDVP::Evolve()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
-   //TRACE(this->CalculateFidelityLossLeft());
+   //TRACE(this->CalculateLambdaDiffRight());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
@@ -295,7 +329,7 @@ IBC_TDVP::Evolve()
    this->SweepLeft((*Gamma)*Timestep);
    ++Gamma;
 
-   //TRACE(this->CalculateFidelityLossRight());
+   //TRACE(this->CalculateLambdaDiffLeft());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
@@ -324,7 +358,7 @@ IBC_TDVP::EvolveExpand()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
-   //TRACE(this->CalculateFidelityLossLeft());
+   //TRACE(this->CalculateLambdaDiffRight());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
@@ -333,7 +367,7 @@ IBC_TDVP::EvolveExpand()
    this->SweepLeftExpand((*Gamma)*Timestep);
    ++Gamma;
 
-   //TRACE(this->CalculateFidelityLossRight());
+   //TRACE(this->CalculateLambdaDiffLeft());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)

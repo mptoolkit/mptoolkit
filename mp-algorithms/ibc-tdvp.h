@@ -51,6 +51,11 @@ class IBC_TDVP : public TDVP
       double CalculateFidelityLossLeft();
       double CalculateFidelityLossRight();
 
+      // Calculate the Frobenius norm of the difference of the left/right
+      // Lambda matrices of the window against the semi-infinite boundaries.
+      double CalculateLambdaDiffLeft();
+      double CalculateLambdaDiffRight();
+
       // Evolve the window for one time step.
       void Evolve();
 
