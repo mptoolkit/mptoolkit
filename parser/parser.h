@@ -29,6 +29,8 @@
 #include "parser/visitor_actions.h"
 #include "lattice/function.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>

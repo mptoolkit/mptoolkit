@@ -40,6 +40,7 @@
 #include <cstdio>     // for remove
 #include <set>
 #include <iterator>
+#include <mutex>
 
 /*
   the version 1 format of the per-file metadata is:
@@ -138,7 +139,7 @@ class PageFileImpl
 
       int MetaVersion;            // the version
 
-      pthread::mutex FreeListMutex;
+      std::mutex FreeListMutex;
       std::set<size_t> FreeList;
 
       // Additional pages used to store the free list; we can deallocate these
@@ -442,7 +443,7 @@ size_t PageFileImpl::write(unsigned char const* Buffer)
 void PageFileImpl::deallocate(size_t Page)
 {
    CHECK(Page != 0);  // page 0 is reserved, should never happen
-   pthread::mutex::sentry Lock(FreeListMutex);
+   std::lock_guard<std::mutex> Lock(FreeListMutex);
    DEBUG_PRECONDITION(!IsOnFreeList(Page));
    //   std::cout << "deallcating page " << Page << std::endl;
    FreeList.insert(Page);
@@ -458,7 +459,7 @@ size_t PageFileImpl::try_defragment(size_t Page)
 {
    size_t FreeListSize;
    {
-      pthread::mutex::sentry Lock(FreeListMutex);
+      std::lock_guard<std::mutex> Lock(FreeListMutex);
       DEBUG_PRECONDITION(!IsOnFreeList(Page));
       FreeListSize = FreeList.size();
    }
@@ -475,7 +476,7 @@ size_t PageFileImpl::try_defragment(size_t Page)
 
 size_t PageFileImpl::AllocatePage()
 {
-   pthread::mutex::sentry Lock(FreeListMutex);
+   std::lock_guard<std::mutex> Lock(FreeListMutex);
    if (FreeList.empty())
    {
       if (PageCheckpointLimit > 0 && NumAllocatedPages >= PageCheckpointLimit)

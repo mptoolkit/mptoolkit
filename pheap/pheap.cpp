@@ -19,12 +19,13 @@
 
 #include "config.h"
 #include "pheap.h"
-#include "common/hash.h"
 #include "common/atomicrefcount.h"
+#include "common/unique.h"
 #include "pagestream.h"
 #include <iomanip>
 #include <set>
 #include <atomic>
+#include <unordered_map>
 
 namespace pheap
 {
@@ -36,7 +37,7 @@ MessageLogger::Logger PHeapLog("PHEAPFS", std::cout);
 namespace Private
 {
 
-typedef ext::hash_map<id_type, PHeapObject*> GlobalHeapType;
+typedef std::unordered_map<id_type, PHeapObject*> GlobalHeapType;
 
 // we cannot control order of calling static constructors, so all of the important
 // data for the persistent heap is instead stored on the heap and initialized
@@ -49,11 +50,11 @@ typedef ext::hash_map<id_type, PHeapObject*> GlobalHeapType;
 struct GlobalHeapDataType
 {
    GlobalHeapType GlobalHeap;
-   pthread::mutex HeapMutex;
+   std::mutex HeapMutex;
    BlockFileSystem* FileSystem;
    std::atomic<id_type> SequenceNumber;
    id_type InitialSequenceNumber;
-   pthread::mutex PendingFlushMutex;
+   std::mutex PendingFlushMutex;
    std::set<PHeapObject*> PendingFlushList;
    size_t MyDefaultPageSize;
    int DefaultFormat;
@@ -71,10 +72,10 @@ GlobalHeapDataType* GlobalHeapDataType::Data = NULL;
 //
 id_type GetInitialSequenceNumber()
 {
-   inttype::uint32 Unique = ext::get_unique_no_mutex();
+   inttype::uint32 Unique = ext::get_unique();
    id_type isn = Unique;
    isn <<= 32;
-   isn += ext::get_unique_no_mutex() & 0xFFF00000;
+   isn += ext::get_unique() & 0xFFF00000;
    // lower 20 bits are zero - does this reduce probability of collision?
    return isn;
 }
@@ -108,7 +109,7 @@ GlobalHeapType& GlobalHeap()
    return GlobalHeapDataType::Data->GlobalHeap;
 }
 
-pthread::mutex& GlobalHeapMutex()
+std::mutex& GlobalHeapMutex()
 {
    return GlobalHeapDataType::Data->HeapMutex;
 }
@@ -131,20 +132,20 @@ GlobalMetadataPages()
 
 PHeapObject* PendingFlushListTop()
 {
-   pthread::mutex::sentry(GlobalHeapDataType::Data->PendingFlushMutex);
+   std::lock_guard<std::mutex> Lock(GlobalHeapDataType::Data->PendingFlushMutex);
    return GlobalHeapDataType::Data->PendingFlushList.empty() ? NULL :
     *GlobalHeapDataType::Data->PendingFlushList.begin() ;
 }
 
 void SetPendingFlush(PHeapObject* Obj)
 {
-   pthread::mutex::sentry(GlobalHeapDataType::Data->PendingFlushMutex);
+   std::lock_guard<std::mutex> Lock(GlobalHeapDataType::Data->PendingFlushMutex);
    GlobalHeapDataType::Data->PendingFlushList.insert(Obj);
 }
 
 void ClearPendingFlush(PHeapObject* Obj)
 {
-   pthread::mutex::sentry(GlobalHeapDataType::Data->PendingFlushMutex);
+   std::lock_guard<std::mutex> Lock(GlobalHeapDataType::Data->PendingFlushMutex);
    GlobalHeapDataType::Data->PendingFlushList.erase(Obj);
 }
 
@@ -197,7 +198,7 @@ void ReadHeapRecord(BlockFileSystem* FS_, PStream::ipstream& in, HeapRecord& Rec
    Rec.Desc = Descriptor(FS_, in);
 }
 
-typedef ext::hash_map<id_type, HeapRecord> HeapType;  // the metadata container
+typedef std::unordered_map<id_type, HeapRecord> HeapType;  // the metadata container
 
 void WriteHeap(BlockFileSystem* FS_, PStream::opstream& out, HeapType const& Heap)
 {
@@ -260,7 +261,7 @@ void AddNestedReferences(Descriptor* Desc)
 {
    PRECONDITION(Desc != NULL);
    // we can do everything with the GlobalHeapMutex
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    for (Descriptor::id_iterator I = Desc->id_begin(); I != Desc->id_end(); ++I)
    {
       if (*I != 0)
@@ -285,7 +286,7 @@ void SubNestedReferences(Descriptor* Desc)
       if (*I != 0)
       {
          {
-            pthread::mutex::sentry Lock(GlobalHeapMutex());
+            std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
             Obj = GlobalHeap()[*I];
          }
          CHECK(Obj != NULL);
@@ -304,7 +305,7 @@ PHeapObject::~PHeapObject()
       TRACE_PHEAP(MyDescriptor)(*MyDescriptor);
       delete MyDescriptor;
    }
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    GlobalHeap().erase(ObjectID);
 }
 
@@ -323,14 +324,14 @@ PHeapObject::PHeapObject(Descriptor* Desc, id_type ID, int InitialReferenceCount
 
 PHeapObject* PHeapObject::Create(Private::PointerToObject* Obj, id_type ID)
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    CHECK(GlobalHeap().count(ID) == 0);
    return GlobalHeap()[ID] = new PHeapObject(Obj, ID);
 }
 
 PHeapObject* PHeapObject::Create(Descriptor const& Desc, id_type ID, int InitialReferenceCount)
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    PHeapObject*& Obj = GlobalHeap()[ID];
    CHECK(Obj == NULL);
    Obj = new PHeapObject(new Descriptor(Desc), ID, InitialReferenceCount);
@@ -424,7 +425,7 @@ PHeapObject* PHeapObject::CopyOnWriteLockCountZero()
    if (--ReferenceCount == 0)
    {
       // yes, we can re-use this PHeapObject.  We still need to change the ID though.
-      pthread::mutex::sentry Lock(GlobalHeapMutex());
+      std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
       GlobalHeap().erase(ObjectID);
       //      std::cout << " old ID " << ObjectID;
       ObjectID = Private::AllocateID();
@@ -472,7 +473,7 @@ PHeapObject* PHeapObject::CopyOnWriteLockCountZero()
 
 void PHeapObject::Write(PHeapFileSystem::opheapstream& Out)
 {
-   pthread::mutex::sentry Lock(ObjectMutex);
+   std::lock_guard<std::mutex> Lock(ObjectMutex);
 
    if (Object)
    {
@@ -512,7 +513,7 @@ Descriptor PHeapObject::Persist()
 {
    Descriptor Desc;
    {
-      pthread::mutex::sentry Lock(ObjectMutex);
+      std::lock_guard<std::mutex> Lock(ObjectMutex);
       if (!MyDescriptor)
       {
          CHECK(Object != NULL);
@@ -552,7 +553,7 @@ void PHeapObject::DebugPrint(std::ostream& out) const
 
 void PHeapObject::SetDirty()
 {
-   pthread::mutex::sentry Lock(ObjectMutex);
+   std::lock_guard<std::mutex> Lock(ObjectMutex);
    DEBUG_PRECONDITION(Object != NULL);
    if (MyDescriptor)
    {
@@ -564,7 +565,7 @@ void PHeapObject::SetDirty()
 
 void PHeapObject::EmergencyDelete()
 {
-   pthread::mutex::sentry Lock(ObjectMutex);
+   std::lock_guard<std::mutex> Lock(ObjectMutex);
    //   std::cerr << "WARNING: Object " << ObjectID
    //        << " has memory references but no persistent references; the memory references are now invalid.\n";
    if (MyDescriptor)
@@ -582,7 +583,7 @@ void PHeapObject::EmergencyDelete()
 PHeapObject* AddReference(id_type ID)
 {
    {
-      pthread::mutex::sentry Lock(GlobalHeapMutex());
+      std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
       if (GlobalHeap().count(ID) != 0)
       {
          PHeapObject* Obj = GlobalHeap()[ID];
@@ -596,7 +597,7 @@ PHeapObject* AddReference(id_type ID)
 void Initialize(std::string const& FileName, int NumFiles, size_t PageSize,
                 size_t PageCacheByteSize, bool Unlink, bool AllowOverwrite)
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
 
    PRECONDITION(FileSystem() == NULL);
    notify_log(30, PHeapLog) << "Initializing persistent storage.\n";
@@ -634,14 +635,14 @@ PHeapObject* OpenPersistent(std::string const& FileName, size_t PageCacheByteSiz
       PHeapObject::Create(I->second.Desc, I->first, I->second.RefCount);
    }
 
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    return GlobalHeap()[MainObjectID];  // no need to increment the ref count, this is already done
 }
 
 void ShutdownPersistent(PHeapObject* MainObject)
 {
    PRECONDITION(MainObject != NULL);
-   //   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   // auto Lock = std::lock_guard(GlobalHeapMutex());
    PRECONDITION(GetFileSystem() != NULL);
 
    // we can delete the old metadata
@@ -700,7 +701,7 @@ void ShutdownPersistent(PHeapObject* MainObject)
 
 void Shutdown()
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    PRECONDITION(GetFileSystem() != NULL);
    for (GlobalHeapType::const_iterator I = GlobalHeap().begin(); I != GlobalHeap().end(); ++I)
    {
@@ -714,7 +715,7 @@ void Shutdown()
 
 void Cleanup()
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    if (GetFileSystem() == NULL)
       return;
 
@@ -832,7 +833,7 @@ PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
 
    HeapRecords.clear();  // this deletes the Descriptors so we can delete FS_ properly.
 
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    return GlobalHeap()[MainObjectID]; // no need to add a reference, this is done implicitly already
 }
 
@@ -862,7 +863,7 @@ PHeapObject* Inject(id_type ID, Loader* L)
 
    PHeapObject* Obj;
    {
-      pthread::mutex::sentry Lock(GlobalHeapMutex());
+      std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
       Obj = GlobalHeap()[ID];
       if (Obj)
       {
@@ -889,7 +890,7 @@ void DebugHeap()
    for (GlobalHeapType::const_iterator I = GlobalHeap().begin(); I != GlobalHeap().end(); ++I)
    {
      std::cerr << " identifier: " << std::setw(20) << I->first << "  hashkey: "
-         << std::setw(5) << GlobalHeap().hash_funct()(I->first)
+         << std::setw(5) << GlobalHeap().hash_function()(I->first)
          << "  pointer: " << (void*) I->second;
       I->second->DebugPrint(std::cerr);
       std::cerr << '\n';
@@ -900,7 +901,7 @@ void DebugHeap()
 
 size_t PHeapSize()
 {
-   pthread::mutex::sentry Lock(GlobalHeapMutex());
+   std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
    return GlobalHeap().size();
 }
 

@@ -25,17 +25,36 @@
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
 
+class Composition
+{
+   public:
+      Composition() : Order(0) {}
+      Composition(int Order_, std::string Description_, std::vector<double> Gamma_)
+         : Order(Order_), Description(Description_), Gamma(Gamma_)
+      {
+         CHECK(Gamma.size() % 2 == 0);
+         CHECK_CLOSE(std::accumulate(Gamma.begin(), Gamma.end(), 0.0), 1.0);
+      }
+
+      int Order;
+      std::string Description;
+      std::vector<double> Gamma;
+};
+
+extern std::map<std::string, Composition> Compositions;
+
 class TDVP
 {
    public:
       TDVP() {}
 
       TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
-           int MaxIter_, double ErrTol_, StatesInfo SInfo_, int Verbose_);
+           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+           int Verbose_);
 
       TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-           std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-           StatesInfo SInfo_, int Verbose_);
+           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+           double ErrTol_, StatesInfo SInfo_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;
@@ -43,16 +62,27 @@ class TDVP
       // Calculate the energy.
       std::complex<double> Energy() const;
 
-      // Evolve the current site and move left.
-      void IterateLeft();
+      // Evolve the current site.
+      void EvolveCurrentSite(std::complex<double> Tau);
 
-      // Evolve the leftmost site in the chain.
-      void EvolveLeftmostSite();
+      // Evolve the current site and move left.
+      void IterateLeft(std::complex<double> Tau);
 
       // Move right and evolve the next site.
-      void IterateRight();
+      void IterateRight(std::complex<double> Tau);
 
-      // Evolve the chain by one time step using single-site TDVP.
+      // Sweep left/right through the chain for timestep Tau.
+      void SweepLeft(std::complex<double> Tau);
+      void SweepRight(std::complex<double> Tau);
+
+      // Calculate the contribution to epsilon_1/2 for the current site.
+      void CalculateEps1();
+      void CalculateEps12();
+
+      // The final sweep right, in which we also calculate epsilon_1/2.
+      void SweepRightFinal(std::complex<double> Tau);
+
+      // Evolve the chain by one timestep using single-site TDVP.
       void Evolve();
 
       // Expand the dimension of the left bond of the current site using the
@@ -60,18 +90,25 @@ class TDVP
       // variations.
       void ExpandLeftBond();
 
+      // Sweep left through the chain for timestep Tau, expanding the bond dimensions.
+      void SweepLeftExpand(std::complex<double> Tau);
+
       // Evolve the chain by one time step using 1TDVP, expanding the bond
-      // dimensions on the right-to-left sweep.
+      // dimensions on the first sweep.
       void EvolveExpand();
 
       // Evolve the current site and move left using 2TDVP.
-      void IterateLeft2();
+      void IterateLeft2(std::complex<double> Tau);
 
       // Evolve the leftmost two-site block in the chain using 2TDVP.
-      void EvolveLeftmostSite2();
+      void EvolveLeftmostSite2(std::complex<double> Tau);
 
       // Move right and evolve the next site using 2TDVP.
-      void IterateRight2();
+      void IterateRight2(std::complex<double> Tau);
+
+      // Sweep left/right through the chain for timestep Tau using 2TDVP.
+      void SweepLeft2(std::complex<double> Tau);
+      void SweepRight2(std::complex<double> Tau);
 
       // Evolve the chain by one time step using 2TDVP.
       void Evolve2();
@@ -90,6 +127,7 @@ class TDVP
       int RightStop;
 
       std::complex<double> Timestep;     // The complex timestep in the form -i*dt.
+      Composition Comp;                  // The symmetric composition scheme used to perform a timestep.
       int MaxIter;
       double ErrTol;
       StatesInfo SInfo;

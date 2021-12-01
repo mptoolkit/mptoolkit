@@ -61,6 +61,7 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       int Verbose = 0;
       int OutputDigits = 0;
+      std::string CompositionStr = "secondorder";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -86,6 +87,7 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -100,8 +102,11 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
-         std::cerr << desc << '\n';
+         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << desc << std::endl;
+         std::cerr << "Available compositions:" << std::endl;
+         for (auto const& c : Compositions)
+            std::cerr << c.first << " : " << c.second.Description << std::endl;
          return 1;
       }
 
@@ -111,6 +116,20 @@ int main(int argc, char** argv)
       std::cout << "Starting TDVP..." << std::endl;
       std::cout << "Hamiltonian: " << HamStr << std::endl;
       std::cout << "Wavefunction: " << InputFile << std::endl;
+      std::cout << "Composition: " << CompositionStr << std::endl;
+
+      // Load the composition scheme.
+      Composition Comp;
+      for (auto const& c : Compositions)
+      {
+         if (c.first == CompositionStr)
+            Comp = c.second;
+      }
+      if (Comp.Order == 0)
+      {
+         std::cerr << "fatal: invalid composition" << std::endl;
+         return 1;
+      }
 
       // Open the wavefunction.
       mp_pheap::InitializeTempPHeap();
@@ -191,7 +210,7 @@ int main(int argc, char** argv)
 
       std::cout << SInfo << std::endl;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, MaxIter, ErrTol, SInfo, Verbose);
+      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter, ErrTol, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
@@ -274,25 +293,25 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
       pheap::Cleanup();
       return 1;
    }
    catch (pheap::PHeapCannotCreateFile& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       if (e.Why == "File exists")
-         std::cerr << "Note: use --force (-f) option to overwrite.\n";
+         std::cerr << "Note: use --force (-f) option to overwrite." << std::endl;
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!\n";
+      std::cerr << "Unknown exception!" << std::endl;
       pheap::Cleanup();
       return 1;
    }

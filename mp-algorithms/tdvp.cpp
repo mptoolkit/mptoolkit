@@ -19,77 +19,10 @@
 // ENDHEADER
 
 #include "tdvp.h"
-//#include "lanczos-exponential.h"
+#include "lanczos-exponential-new.h"
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
-#include "linearalgebra/exponential.h"
-
-template <typename VectorType, typename MultiplyFunctor>
-VectorType LanczosExponential(VectorType const& x,
-                              MultiplyFunctor MatVecMultiply, int& Iterations,
-                              std::complex<double> const& Theta, double& ErrTol)
-{
-   typedef std::complex<double> complex;
-
-   std::vector<VectorType> v(Iterations+1);
-   std::vector<double> Alpha(Iterations+1);
-   std::vector<double> Beta(Iterations);
-   LinearAlgebra::Matrix<double> T(Iterations+1, Iterations+1, 0.0);
-   LinearAlgebra::Vector<complex> C(1, 1.0);
-   double Err = 1.0;
-   double const BetaTol = 1e-14;
-
-   v[0] = x * (1.0/norm_frob(x));
-
-   VectorType w = MatVecMultiply(v[0]);
-   Alpha[0] = real(inner_prod(w, v[0]));
-   w = w - Alpha[0] * v[0];
-
-   T(0, 0) = Alpha[0];
-
-   int i;
-   for (i = 1; i <= Iterations && Err > ErrTol; ++i)
-   {
-      Beta[i-1] = norm_frob(w);
-
-      if (Beta[i-1] < BetaTol)
-         break;
-
-      v[i] = w * (1.0/Beta[i-1]);
-
-      w = MatVecMultiply(v[i]);
-      Alpha[i] = real(inner_prod(w, v[i]));
-      w = w - Alpha[i] * v[i] - Beta[i-1] * v[i-1];
-
-      T(i, i) = Alpha[i];
-      T(i-1, i) = T(i, i-1) = Beta[i-1];
-
-      LinearAlgebra::Matrix<complex> P = Theta * T(LinearAlgebra::range(0, i+1),
-                                                   LinearAlgebra::range(0, i+1));
-      LinearAlgebra::Matrix<complex> X = LinearAlgebra::Exponentiate(1.0, P);
-      LinearAlgebra::Vector<complex> CNew = X(LinearAlgebra::all, 0);
-
-      Err = norm_2(direct_sum(C, complex(0.0)) - CNew);
-
-      C = CNew;
-   }
-
-   Iterations = i-1;
-   ErrTol = Err;
-
-   // Calculate the time-evolved vector.
-   VectorType Out = v[0] * C[0];
-   for (int j = 1; j <= Iterations; ++j)
-   {
-      Out += v[j] * C[j];
-   }
-
-   // Normalize Out.
-   Out *= 1.0/norm_frob(Out);
-
-   return Out;
-}
 
 struct HEff1
 {
@@ -126,17 +59,57 @@ struct HEff2
    StateComponent const& F;
 };
 
+std::map<std::string, Composition>
+Compositions = {
+   {"secondorder", Composition(2, "Standard second-order symmetric composition", {0.5, 0.5})},
+   {"triplejump4", Composition(4, "Fourth-order triple jump composition",
+         {0.6756035959798289, 0.6756035959798289,
+         -0.8512071919596577, -0.8512071919596577,
+         0.6756035959798289, 0.6756035959798289})},
+   {"suzukifractal4", Composition(4, "Fourth-order Suzuki fractal composition",
+         {0.20724538589718786, 0.20724538589718786,
+         0.20724538589718786, 0.20724538589718786,
+         -0.3289815435887514, -0.3289815435887514,
+         0.20724538589718786, 0.20724538589718786,
+         0.20724538589718786, 0.20724538589718786})},
+   {"mclachlan4-10", Composition(4, "Fourth-order 10-term McLachlan composition",
+         {0.08926945422647525, 0.31073054577352477,
+         -0.40806658841042026, 0.3080665884104203,
+         0.2, 0.2,
+         0.3080665884104203, -0.40806658841042026,
+         0.31073054577352477, 0.08926945422647525})},
+   {"symmetric4-10", Composition(4, "Symmetric fourth-order 10-term Barthel-Zhang composition",
+         {0.12843317950293848, 0.12843317950293848,
+         0.3388120161527937, 0.3388120161527937,
+         -0.4344903913114644, -0.4344903913114644,
+         0.3388120161527937, 0.3388120161527937,
+         0.12843317950293848, 0.12843317950293848})},
+   {"optimized4-10", Composition(4, "Optimized fourth-order 10-term Barthel-Zhang composition",
+         {0.09584850274120368, 0.3306761585746725,
+         -0.40878731749631037, 0.2883920480412131,
+         0.19387060813922113, 0.19387060813922113,
+         0.2883920480412131, -0.40878731749631037,
+         0.3306761585746725, 0.09584850274120368})},
+   {"lazy-10", Composition(4, "Lazy 10-term composition",
+         {0.1, 0.1,
+         0.1, 0.1,
+         0.1, 0.1,
+         0.1, 0.1,
+         0.1, 0.1})}
+};
+
 TDVP::TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
-           int MaxIter_, double ErrTol_, StatesInfo SInfo_, int Verbose_)
-   : Hamiltonian(Ham_), Timestep(Timestep_), MaxIter(MaxIter_), ErrTol(ErrTol_),
-     SInfo(SInfo_), Verbose(Verbose_)
+           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+           int Verbose_)
+   : Hamiltonian(Ham_), Timestep(Timestep_), Comp(Comp_), MaxIter(MaxIter_),
+     ErrTol(ErrTol_), SInfo(SInfo_), Verbose(Verbose_)
 {
 }
 
 TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-           std::complex<double> Timestep_, int MaxIter_, double ErrTol_,
-           StatesInfo SInfo_, int Verbose_)
-   : TDVP(Ham_, Timestep_, MaxIter_, ErrTol_, SInfo_, Verbose_)
+           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+           double ErrTol_, StatesInfo SInfo_, int Verbose_)
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_)
 {
    // Initialize Psi and Ham.
    if (Verbose > 0)
@@ -179,13 +152,13 @@ TDVP::Energy() const
 }
 
 void
-TDVP::IterateLeft()
+TDVP::EvolveCurrentSite(std::complex<double> Tau)
 {
    // Evolve current site.
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, Tau, Err);
 
    if (Verbose > 1)
    {
@@ -195,6 +168,12 @@ TDVP::IterateLeft()
                 << " Err=" << Err
                 << std::endl;
    }
+}
+
+void
+TDVP::IterateLeft(std::complex<double> Tau)
+{
+   this->EvolveCurrentSite(Tau);
 
    // Perform SVD to right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
@@ -209,11 +188,11 @@ TDVP::IterateLeft()
    HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
 
    // Evolve the UD term backwards in time.
-   Iter = MaxIter;
-   Err = ErrTol;
+   int Iter = MaxIter;
+   double Err = ErrTol;
    MatrixOperator UD = U*D;
 
-   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
+   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -235,32 +214,7 @@ TDVP::IterateLeft()
 }
 
 void
-TDVP::EvolveLeftmostSite()
-{
-   // Evolve current site.
-   int Iter = MaxIter;
-   double Err = ErrTol;
-
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, Timestep, Err);
-
-   // Calculate error measure epsilon_1 and add to sum.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C));
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
-   Eps1SqSum += Eps1Sq;
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " C Iter=" << Iter
-                << " Err=" << Err
-                << " Eps1Sq=" << Eps1Sq
-                << std::endl;
-   }
-}
-
-void
-TDVP::IterateRight()
+TDVP::IterateRight(std::complex<double> Tau)
 {
    // Perform SVD to left-orthogonalize current site.
    MatrixOperator M = ExpandBasis2(*C);
@@ -271,9 +225,6 @@ TDVP::IterateRight()
 
    *C = prod(*C, U);
 
-   // Calculate the left half of epsilon_2 (see below).
-   StateComponent X = contract_from_left(*H, herm(NullSpace2(*C)), HamL.back(), *C);
-
    // Update the effective Hamiltonian.
    HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
 
@@ -282,7 +233,7 @@ TDVP::IterateRight()
    double Err = ErrTol;
    MatrixOperator DVh = D*Vh;
 
-   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, -0.5*Timestep, Err);
+   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -302,14 +253,64 @@ TDVP::IterateRight()
 
    HamR.pop_front();
 
-   // Evolve current site.
-   Iter = MaxIter;
-   Err = ErrTol;
+   this->EvolveCurrentSite(Tau);
+}
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, 0.5*Timestep, Err);
+void
+TDVP::SweepLeft(std::complex<double> Tau)
+{
+   while (Site > LeftStop)
+      this->IterateLeft(Tau);
+
+   this->EvolveCurrentSite(Tau);
+}
+
+void
+TDVP::SweepRight(std::complex<double> Tau)
+{
+   this->EvolveCurrentSite(Tau);
+
+   while (Site < RightStop)
+      this->IterateRight(Tau);
+}
+
+void
+TDVP::CalculateEps1()
+{
+   // Calculate error measure epsilon_1 and add to sum.
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
+   Eps1SqSum += Eps1Sq;
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " Eps1Sq=" << Eps1Sq
+                << std::endl;
+   }
+}
+
+void
+TDVP::CalculateEps12()
+{
+   // Calculate the left half of epsilon_2.
+   StateComponent HamLBack = HamL.back();
+   HamL.pop_back();
+
+   LinearWavefunction::const_iterator CPrev = C;
+   --CPrev;
+   BasicTriangularMPO::const_iterator HPrev = H;
+   --HPrev;
+
+   StateComponent X = contract_from_left(*HPrev, herm(NullSpace2(*CPrev)), HamL.back(), *CPrev);
+
+   HamL.push_back(HamLBack);
 
    // Perform SVD to right-orthogonalize current site for NullSpace1.
-   M = ExpandBasis1(*C);
+   MatrixOperator M = ExpandBasis1(*C);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
 
    SingularValueDecomposition(M, U, D, Vh);
 
@@ -327,11 +328,22 @@ TDVP::IterateRight()
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
-                << " C Iter=" << Iter
-                << " Err=" << Err
                 << " Eps1Sq=" << Eps1Sq
                 << " Eps2Sq=" << Eps2Sq
                 << std::endl;
+   }
+}
+
+void
+TDVP::SweepRightFinal(std::complex<double> Tau)
+{
+   this->EvolveCurrentSite(Tau);
+   this->CalculateEps1();
+
+   while (Site < RightStop)
+   {
+      this->IterateRight(Tau);
+      this->CalculateEps12();
    }
 }
 
@@ -342,13 +354,23 @@ TDVP::Evolve()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   while (Site > LeftStop)
-      this->IterateLeft();
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
+   --GammaEnd;
 
-   this->EvolveLeftmostSite();
+   this->SweepLeft((*Gamma)*Timestep);
+   ++Gamma;
 
-   while (Site < RightStop)
-      this->IterateRight();
+   while(Gamma != GammaEnd)
+   {
+      this->SweepRight((*Gamma)*Timestep);
+      ++Gamma;
+
+      this->SweepLeft((*Gamma)*Timestep);
+      ++Gamma;
+   }
+
+   this->SweepRightFinal((*Gamma)*Timestep);
 }
 
 void
@@ -419,27 +441,46 @@ TDVP::ExpandLeftBond()
 }
 
 void
+TDVP::SweepLeftExpand(std::complex<double> Tau)
+{
+   while (Site > LeftStop)
+   {
+      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeftBond();
+      this->IterateLeft(Tau);
+   }
+
+   this->EvolveCurrentSite(Tau);
+}
+
+void
 TDVP::EvolveExpand()
 {
    ++TStep;
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   while (Site > LeftStop)
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
+   --GammaEnd;
+
+   this->SweepLeftExpand((*Gamma)*Timestep);
+   ++Gamma;
+
+   while(Gamma != GammaEnd)
    {
-      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
-         this->ExpandLeftBond();
-      this->IterateLeft();
+      this->SweepRight((*Gamma)*Timestep);
+      ++Gamma;
+
+      this->SweepLeftExpand((*Gamma)*Timestep);
+      ++Gamma;
    }
 
-   this->EvolveLeftmostSite();
-
-   while (Site < RightStop)
-      this->IterateRight();
+   this->SweepRightFinal((*Gamma)*Timestep);
 }
 
 void
-TDVP::IterateLeft2()
+TDVP::IterateLeft2(std::complex<double> Tau)
 {
    // Form two-site centre block.
    --Site;
@@ -458,7 +499,7 @@ TDVP::IterateLeft2()
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, 0.5*Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*C).LocalBasis(), (*CPrev).LocalBasis()));
@@ -488,7 +529,7 @@ TDVP::IterateLeft2()
    Iter = MaxIter;
    Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -501,7 +542,7 @@ TDVP::IterateLeft2()
 }
 
 void
-TDVP::EvolveLeftmostSite2()
+TDVP::EvolveLeftmostSite2(std::complex<double> Tau)
 {
    // Form two-site centre block.
    LinearWavefunction::iterator CPrev = C;
@@ -518,7 +559,7 @@ TDVP::EvolveLeftmostSite2()
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -547,13 +588,13 @@ TDVP::EvolveLeftmostSite2()
 }
 
 void
-TDVP::IterateRight2()
+TDVP::IterateRight2(std::complex<double> Tau)
 {
    // Evolve the current site backwards in time.
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -0.5*Timestep, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -Tau, Err);
 
    if (Verbose > 1)
    {
@@ -581,7 +622,7 @@ TDVP::IterateRight2()
    Iter = MaxIter;
    Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, 0.5*Timestep, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -610,18 +651,39 @@ TDVP::IterateRight2()
 }
 
 void
+TDVP::SweepLeft2(std::complex<double> Tau)
+{
+   while (Site > LeftStop + 1)
+      this->IterateLeft2(Tau);
+
+   this->EvolveLeftmostSite2(Tau);
+}
+
+void
+TDVP::SweepRight2(std::complex<double> Tau)
+{
+   this->EvolveLeftmostSite2(Tau);
+
+   while (Site < RightStop)
+      this->IterateRight2(Tau);
+}
+
+void
 TDVP::Evolve2()
 {
    ++TStep;
    TruncErrSum = 0.0;
 
-   while (Site > LeftStop + 1)
-      this->IterateLeft2();
+   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
 
-   this->EvolveLeftmostSite2();
+   while(Gamma != Comp.Gamma.cend())
+   {
+      this->SweepLeft2((*Gamma)*Timestep);
+      ++Gamma;
 
-   while (Site < RightStop)
-      this->IterateRight2();
+      this->SweepRight2((*Gamma)*Timestep);
+      ++Gamma;
+   }
 
    this->CalculateEps();
 }

@@ -50,6 +50,12 @@
 #define VERSION VERSION_
 #endif
 
+#if defined(HAVE_OPENMP)
+#define OPENMP_INFO "Using OpenMP with compiler flags " CONFIG_OPENMP_CXXFLAGS "\n"
+#else
+#define OPENMP_INFO
+#endif
+
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
@@ -58,6 +64,7 @@ void print_copyright(std::ostream& out)
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
       "Compiler flags: " CONFIG_CXXFLAGS "\n"
+      OPENMP_INFO
       "Using Boost version " << (BOOST_VERSION / 100000)
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"

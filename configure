@@ -645,6 +645,7 @@ HAVE_MPI
 MPILIBS
 MPICXX
 OPENMP_CXXFLAGS
+HAVE_OPENMP
 SED
 HAVE_CXX11
 FLIBS
@@ -710,6 +711,7 @@ ac_user_opts='
 enable_option_checking
 enable_debug
 enable_largefile
+with_openmp
 with_mpi
 with_pstream
 with_pbs
@@ -1370,6 +1372,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-openmp           enable OpenMP parallelization [default=no]
   --with-mpi              enable MPI [default=check]
   --without-pstream       disables persistent streams support
   --with-pbs[=ARG]        PBS queue integration for checkpointing, libpbs from
@@ -2618,7 +2621,6 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 ac_config_headers="$ac_config_headers config.h"
-
 
 
 
@@ -5644,6 +5646,109 @@ rm -rf conftest*
 fi
 
 
+
+# Check whether --with-openmp was given.
+if test "${with_openmp+set}" = set; then :
+  withval=$with_openmp;
+else
+  with_openmp=no
+fi
+
+  if test "x$with_openmp" != xno; then
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenMP flag of C++ compiler" >&5
+$as_echo_n "checking for OpenMP flag of C++ compiler... " >&6; }
+if ${ax_cv_cxx_openmp+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  saveCXXFLAGS=$CXXFLAGS
+ax_cv_cxx_openmp=unknown
+# Flags to try:  -fopenmp (gcc), -openmp (icc), -mp (SGI & PGI),
+#                -xopenmp (Sun), -omp (Tru64), -qsmp=omp (AIX), none
+ax_openmp_flags="-fopenmp -openmp -mp -xopenmp -omp -qsmp=omp none"
+if test "x$OPENMP_CXXFLAGS" != x; then
+  ax_openmp_flags="$OPENMP_CXXFLAGS $ax_openmp_flags"
+fi
+for ax_openmp_flag in $ax_openmp_flags; do
+  case $ax_openmp_flag in
+    none) CXXFLAGS=$saveCXX ;;
+    *) CXXFLAGS="$saveCXXFLAGS $ax_openmp_flag" ;;
+  esac
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <omp.h>
+
+static void
+parallel_fill(int * data, int n)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < n; ++i)
+    data[i] = i;
+}
+
+int
+main()
+{
+  int arr[100000];
+  omp_set_num_threads(2);
+  parallel_fill(arr, 100000);
+  return 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ax_cv_cxx_openmp=$ax_openmp_flag; break
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+done
+CXXFLAGS=$saveCXXFLAGS
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_cxx_openmp" >&5
+$as_echo "$ax_cv_cxx_openmp" >&6; }
+if test "x$ax_cv_cxx_openmp" = "xunknown"; then
+
+         if test "x$with_openmp" = yes; then
+            { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--with-openmp was given, but the test for OpenMP failed!
+See \`config.log' for more details" "$LINENO" 5; }
+         fi
+
+else
+  if test "x$ax_cv_cxx_openmp" != "xnone"; then
+    OPENMP_CXXFLAGS=$ax_cv_cxx_openmp
+  fi
+
+
+        HAVE_OPENMP=1
+
+
+$as_echo "#define HAVE_OPENMP /**/" >>confdefs.h
+
+
+$as_echo "#define MULTITHREAD /**/" >>confdefs.h
+
+
+fi
+
+   ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  fi
 
 
 
@@ -11269,7 +11374,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     CXXFLAGS_save="$CXXFLAGS"
     LIBS_save="$LIBS"
     LIBS="$BLAS_LIBS $FLIBS"
-    CXXFLAGS="-I. -I$srcdir $CXXFLAGS"
+    CXXFLAGS="-I. -I$srcdir $CXXFLAGS $BOOST_CPPFLAGS"
     if test "$cross_compiling" = yes; then :
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -12118,6 +12223,14 @@ esccxxflags="${CXXFLAGS//\"/\\\"}"
 cat >>confdefs.h <<_ACEOF
 #define CONFIG_CXXFLAGS "${CXXFLAGS//\"/\\\"}"
 _ACEOF
+
+
+escopenmpcxxflags="${OPENMP_CXXFLAGS//\"/\\\"}"
+
+cat >>confdefs.h <<_ACEOF
+#define CONFIG_OPENMP_CXXFLAGS "${OPENMP_CXXFLAGS//\"/\\\"}"
+_ACEOF
+
 
 
 ac_config_files="$ac_config_files Makefile"

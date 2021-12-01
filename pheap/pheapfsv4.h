@@ -56,12 +56,12 @@
 #define PHEAPFSV4_H_VEUIOH8RTY89YG78Y7834R8934Y89EYRE
 
 #include "common/atomicrefcount.h"
-#include "common/mutex.h"
 #include "common/inttype.h"
 #include "pagefile.h"
 #include "pstream/pstreamfwd.h"
 #include <vector>
 #include <list>
+#include <mutex>
 
 namespace pheap
 {
@@ -136,7 +136,7 @@ class PageInfoType
       bool InPageCache;              // true if *BackFS has this page in cache, false otherwise.
       PageListIterType PageCacheLoc; // if InPageCache is true, this is a backpointer to the cache location
 
-      pthread::mutex PageMutex;      // This mutex protects all the data (except the atomic counters)
+      std::mutex PageMutex;          // This mutex protects all the data (except the atomic counters)
 
    friend class PHeapFileSystem::FileSystem;
    friend class PHeapFileSystem::PageId;
@@ -344,7 +344,7 @@ class FileSystem
       int ReadPageFileMetadata(std::string const& Path, std::string const& FileName);
       void WritePageFileMetadata(int FileNumber, inttype::uint32_t MetaHook);
 
-      mutable pthread::mutex PageCacheMutex;
+      mutable std::mutex PageCacheMutex;
 
       size_t MaxPageCacheSize; // TODO: This is not set anywhere
 

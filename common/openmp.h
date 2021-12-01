@@ -23,9 +23,16 @@
 #include "config.h"
 
 #if defined(HAVE_OPENMP)
-#include "openmp_thread.h"
+   #if !defined(MULTITHREAD)
+      #error "Build configuration error: OpenMP support requires MULTITHREAD."
+   #endif
+   #include "openmp_thread.h"
 #else
-#include "openmp_dummy.h"
+   #if defined(_OPENMP)
+      #error "Build configuration error: _OPENMP is defined, but the build is configured without OpenMP!  Rerun the configure --with-openmp, or disable OpenMP compiler."
+   #else
+      #include "openmp_dummy.h"
+   #endif
 #endif
 
 #endif

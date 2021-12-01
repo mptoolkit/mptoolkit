@@ -146,7 +146,7 @@ OuterIndex::Evaluate(StateComponent const& A, GMatrixRefList const& G) const
 {
    DEBUG_CHECK(!Components.empty());
 
-#if defined(HAVE_OPENMP)
+#if defined(USE_OPENMP_OPTIM)
    int Sz = Components.size();
    std::vector<MatrixType> Result(Sz);
 #pragma omp parallel for schedule(dynamic) num_threads(omp::threads_to_use(Sz))

@@ -132,8 +132,8 @@ parserobj = parser.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
-commonobj = copyright.o niftycounter.o poolallocator.o hash.o proccontrol.o \
-	    halfint.o conflist.o terminal.o randutil.o
+commonobj = copyright.o niftycounter.o poolallocator.o proccontrol.o \
+	    halfint.o conflist.o terminal.o randutil.o unique.o
 
 debugobj = backtrace.o debughandler.o
 
@@ -533,7 +533,7 @@ mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 
-mp-itdvp : itdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
+mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
 mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o

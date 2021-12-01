@@ -28,6 +28,7 @@
 #include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
+#include "common/unique.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
