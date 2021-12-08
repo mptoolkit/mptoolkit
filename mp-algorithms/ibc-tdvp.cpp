@@ -103,13 +103,16 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
 
       this->ExpandWindowLeft();
 
-      Psi.set_back(prod(Psi.get_back(), Lambda));
-
       this->ExpandWindowRight();
 
       // Move the iterators to the left of the unit cell added on the right.
       for (int i = 0; i < PsiLeft.size(); ++i)
          ++C, ++H, ++Site;
+
+      // Incorporate the Lambda matrix into the wavefunction.
+      *C = prod(Lambda, *C);
+
+      HamR.pop_front();
 
       // Left-orthogonalize the window.
       while (Site < RightStop)
@@ -131,7 +134,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
          ++H;
          ++C;
 
-         *C = prod(*C, U*D);
+         *C = prod(D*Vh, *C);
 
          HamR.pop_front();
       }
@@ -183,11 +186,12 @@ IBC_TDVP::ExpandWindowLeft()
 
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamNew;
-   HamNew.insert(HamNew.begin(), HamiltonianLeft.data().begin(), HamiltonianLeft.data().end());
    HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+   HamNew.insert(HamNew.begin(), HamiltonianLeft.data().begin(), HamiltonianLeft.data().end());
    Hamiltonian = BasicTriangularMPO(HamNew);
 
    // Add the unit cell to the Hamiltonian environment.
+   HamL.pop_front();
    HamL.insert(HamL.begin(), HamLeftL.begin(), HamLeftL.end());
 
    // Change the leftmost index.
@@ -213,11 +217,12 @@ IBC_TDVP::ExpandWindowRight()
 
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamNew;
-   HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
    HamNew.insert(HamNew.begin(), HamiltonianRight.data().begin(), HamiltonianRight.data().end());
+   HamNew.insert(HamNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
    Hamiltonian = BasicTriangularMPO(HamNew);
 
    // Add the unit cell to the Hamiltonian environment.
+   HamR.pop_back();
    HamR.insert(HamR.end(), HamRightR.begin(), HamRightR.end());
 
    // Change the rightmost index.
