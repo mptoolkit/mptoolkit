@@ -521,14 +521,15 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o 
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
-mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o
+mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
-mp-ies : infinitewavefunctionleft.o packunpack.o
+mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
+mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 
@@ -555,6 +556,7 @@ LIBS_mp-aux-matrix = $(LIBARPACK)
 LIBS_mp-fluctuation = $(LIBARPACK)
 LIBS_mp-ies = $(LIBARPACK)
 LIBS_mp-aux-project = $(LIBARPACK)
+LIBS_mp-iexpectation-cross = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

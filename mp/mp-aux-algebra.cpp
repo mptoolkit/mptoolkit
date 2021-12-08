@@ -18,10 +18,9 @@
 // ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
-#include "mps/packunpack.h"
+#include "mp-algorithms/transfer.h"
 #include "interface/inittemp.h"
 #include "lattice/latticesite.h"
-#include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -33,62 +32,12 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
-#include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
 #include <tuple>
 #include "parser/matrix-parser.h"
 
 namespace prog_opt = boost::program_options;
-
-template <typename Func>
-struct PackApplyFunc
-{
-   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      StateComponent x = Pack.unpack(In);
-      x = f(x);
-      Pack.pack(x, Out);
-   }
-   PackStateComponent const& Pack;
-   Func f;
-};
-
-template <typename Func>
-PackApplyFunc<Func>
-MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
-{
-   return PackApplyFunc<Func>(Pack_, f_);
-}
-
-std::tuple<std::complex<double>, int, StateComponent>
-get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
-                     ProductMPO const& StringOp,
-                     double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift1,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-2)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
-}
 
 int main(int argc, char** argv)
 {
@@ -278,8 +227,8 @@ int main(int argc, char** argv)
          std::complex<double> e;
          StateComponent v;
          int n;
-         std::tie(e, n, v) = get_left_eigenvector(*Psi2, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator,
-                                                  Tol, Verbose);
+         std::tie(e, n, v) = get_left_transfer_eigenvector(*Psi2, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator,
+                                                            Tol, Verbose);
 
 
          // Normalization
