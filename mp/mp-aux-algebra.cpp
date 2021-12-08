@@ -4,7 +4,7 @@
 //
 // mp/mp-aux-algebra.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -224,10 +224,11 @@ int main(int argc, char** argv)
             StringOperator = StringOperator * ProductMPO::make_identity(StringOperator.LocalBasis2List(), q);
          }
 
+         int n = Psi1.size(); // unit cell size
+
          std::complex<double> e;
          StateComponent v;
-         int n;
-         std::tie(e, n, v) = get_left_transfer_eigenvector(*Psi2, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator,
+         std::tie(e, v) = get_left_transfer_eigenvector(*Psi2, Psi1, InfPsi.qshift(), StringOperator,
                                                             Tol, Verbose);
 
 

@@ -4,7 +4,7 @@
 //
 // mp/mp-ies.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -220,9 +220,8 @@ int main(int argc, char** argv)
 
          // Get the matrix
          std::complex<double> e;
-         int n;
          StateComponent v;
-         std::tie(e, n, v) = get_right_transfer_eigenvector(Psi1, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
+         std::tie(e, v) = get_right_transfer_eigenvector(Psi1, Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
 
          // Now we want the eigenvalues of v
          // These will be of the form a * exp(i*theta) where a is the density matrix eigenvalue and

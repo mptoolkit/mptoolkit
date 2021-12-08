@@ -4,7 +4,7 @@
 //
 // mp-algorithms/transfer.h
 //
-// Copyright (C) 2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,14 +46,14 @@ MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
    return PackApplyFunc<Func>(Pack_, f_);
 }
 
-std::tuple<std::complex<double>, int, StateComponent>
-get_right_transfer_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                      LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
+std::tuple<std::complex<double>, StateComponent>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                       ProductMPO const& StringOp,
                       double tol, int Verbose)
 {
    int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
@@ -63,24 +63,24 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, QuantumNumber con
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            RightMultiplyOperator(Psi1, QShift1,
+                                                            RightMultiplyOperator(Psi1, QShift,
                                                                                  StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-1)),
+                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
                                           n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
+   return std::make_tuple(LeftEigen[0], LeftVector);
 }
 
-std::tuple<std::complex<double>, int, StateComponent>
-get_left_transfer_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
+std::tuple<std::complex<double>, StateComponent>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                      ProductMPO const& StringOp,
                      double tol, int Verbose)
 {
    int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
@@ -90,12 +90,12 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, QuantumNumber cons
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift1,
+                                                            LeftMultiplyOperator(Psi1, QShift,
                                                                                  StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-1)),
+                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
                                           n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
+   return std::make_tuple(LeftEigen[0], LeftVector);
 }
