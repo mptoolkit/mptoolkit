@@ -44,12 +44,9 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("force,f", prog_opt::bool_switch(&Force),
-          "allow overwriting the output file, if it already exists")
-	 ("coarsegrain", prog_opt::value(&Coarsegrain),
-	  FormatDefault("coarse-grain N-to-1", Coarsegrain).c_str())
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "extra debug output [can be used multiple times]")
+         ("force,f", prog_opt::bool_switch(&Force), "allow overwriting the output file, if it already exists")
+         ("coarsegrain", prog_opt::value(&Coarsegrain), FormatDefault("coarse-grain N-to-1", Coarsegrain).c_str())
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "extra debug output [can be used multiple times]")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -94,16 +91,15 @@ int main(int argc, char** argv)
 
       if (Psi.size() % Coarsegrain != 0)
       {
-	 std::cerr << "Wavefunction size is not a multiple of the coarsegran size, expending...\n";
-	 Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
+         std::cerr << "Wavefunction size is not a multiple of the coarsegran size, expending...\n";
+         Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
       }
 
       LinearWavefunction PsiL;
       RealDiagonalOperator Lambda;
       std::tie(PsiL, Lambda) = get_left_canonical(Psi);
 
-      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, Coarsegrain),
-							      Lambda, Psi.qshift());
+      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, Coarsegrain), Lambda, Psi.qshift());
 
       PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

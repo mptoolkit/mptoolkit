@@ -145,10 +145,10 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2 (gives parity eigenvalue)")
-	      ("coarsegrain1", prog_opt::value(&CoarseGrain1),
-	  "coarse-grain wavefunction 1 by this amount")
-	 ("coarsegrain2", prog_opt::value(&CoarseGrain2),
-	  "coarse-grain wavefunction 2 by this amount")
+         ("coarsegrain1", prog_opt::value(&CoarseGrain1),
+          "coarse-grain wavefunction 1 by this amount")
+         ("coarsegrain2", prog_opt::value(&CoarseGrain2),
+          "coarse-grain wavefunction 2 by this amount")
          ("string", prog_opt::value(&String),
           "use this product operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
@@ -246,18 +246,17 @@ int main(int argc, char** argv)
 
       if (CoarseGrain1 != 1)
       {
-	      if (Psi1.size() % CoarseGrain1 != 0)
-	      {
-	         std::cerr << "Wavefunction 1 size is not a multiple of the coarsegran size, expanding...\n";
-	         Psi1 = repeat(Psi1, statistics::lcm(Psi1.size(), CoarseGrain1) / Psi1.size());
-	      }
+         if (Psi1.size() % CoarseGrain1 != 0)
+         {
+            std::cerr << "Wavefunction 1 size is not a multiple of the coarsegran size, expanding...\n";
+            Psi1 = repeat(Psi1, statistics::lcm(Psi1.size(), CoarseGrain1) / Psi1.size());
+         }
 
-	 LinearWavefunction PsiL;
-	 RealDiagonalOperator Lambda;
-	 std::tie(PsiL, Lambda) = get_left_canonical(Psi1);
+         LinearWavefunction PsiL;
+         RealDiagonalOperator Lambda;
+         std::tie(PsiL, Lambda) = get_left_canonical(Psi1);
 
-	 Psi1 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain1),
-								 Lambda, Psi1.qshift());
+         Psi1 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain1), Lambda, Psi1.qshift());
       }
 
       int Size = Psi1.size();
@@ -270,21 +269,20 @@ int main(int argc, char** argv)
          pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
          Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
 
-	 if (CoarseGrain2 != 1)
-	 {
-	    if (Psi2.size() % CoarseGrain1 != 0)
-	    {
-	       std::cerr << "Wavefunction 2 size is not a multiple of the coarsegran size, expanding...\n";
-	       Psi2 = repeat(Psi1, statistics::lcm(Psi2.size(), CoarseGrain2) / Psi2.size());
-	    }
+         if (CoarseGrain2 != 1)
+         {
+            if (Psi2.size() % CoarseGrain1 != 0)
+            {
+               std::cerr << "Wavefunction 2 size is not a multiple of the coarsegran size, expanding...\n";
+               Psi2 = repeat(Psi1, statistics::lcm(Psi2.size(), CoarseGrain2) / Psi2.size());
+            }
 
-	    LinearWavefunction PsiL;
-	    RealDiagonalOperator Lambda;
-	    std::tie(PsiL, Lambda) = get_left_canonical(Psi2);
+            LinearWavefunction PsiL;
+            RealDiagonalOperator Lambda;
+            std::tie(PsiL, Lambda) = get_left_canonical(Psi2);
 
-	    Psi2 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain2),
-								     Lambda, Psi2.qshift());
-	 }
+            Psi2 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain2), Lambda, Psi2.qshift());
+         }
       }
 
       if (Verbose)

@@ -4,7 +4,7 @@
 //
 // mp/mp-ies.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,9 +18,8 @@
 // ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
-#include "mps/packunpack.h"
+#include "mp-algorithms/transfer.h"
 #include "lattice/latticesite.h"
-#include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -29,10 +28,8 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
-#include "mp-algorithms/arnoldi.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
-#include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <fstream>
 #include "common/formatting.h"
@@ -50,83 +47,6 @@ bool FileExists(std::string const& Name)
 {
    struct stat buf;
    return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
-}
-
-template <typename Func>
-struct PackApplyFunc
-{
-   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      StateComponent x = Pack.unpack(In);
-      x = f(x);
-      Pack.pack(x, Out);
-   }
-   PackStateComponent const& Pack;
-   Func f;
-};
-
-template <typename Func>
-PackApplyFunc<Func>
-MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
-{
-   return PackApplyFunc<Func>(Pack_, f_);
-}
-
-std::tuple<std::complex<double>, int, StateComponent>
-get_right_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                      LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
-                      ProductMPO const& StringOp,
-                      double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            RightMultiplyOperator(Psi1, QShift1,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-1)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
-}
-
-
-std::tuple<std::complex<double>, int, StateComponent>
-get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
-                     ProductMPO const& StringOp,
-                     double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift1,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-1)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
 }
 
 // The eigenvalues of the operator, quantum number sector, magnitude and
@@ -300,9 +220,8 @@ int main(int argc, char** argv)
 
          // Get the matrix
          std::complex<double> e;
-         int n;
-         StateComponent v;
-         std::tie(e, n, v) = get_right_eigenvector(Psi1, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
+         MatrixOperator v;
+         std::tie(e, v) = get_right_transfer_eigenvector(Psi1, Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
 
          // Now we want the eigenvalues of v
          // These will be of the form a * exp(i*theta) where a is the density matrix eigenvalue and
@@ -312,10 +231,10 @@ int main(int argc, char** argv)
 
          for (std::size_t i = 0; i < v.Basis1().size(); ++i)
          {
-            if (iterate_at(v[0].data(), i, i))
+            if (iterate_at(v.data(), i, i))
             {
                LinearAlgebra::Vector<std::complex<double>> Eig =
-                  LinearAlgebra::EigenvaluesComplex(v[0](i,i));
+                  LinearAlgebra::EigenvaluesComplex(v(i,i));
 
                for (unsigned j = 0; j < size(Eig); ++j)
                {

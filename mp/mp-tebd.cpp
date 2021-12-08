@@ -139,12 +139,12 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
-	 ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
-	 ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
-	 ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
+         ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
+         ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
+         ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
          ("decomposition,c", prog_opt::value(&DecompositionStr), FormatDefault("choice of decomposition", DecompositionStr).c_str())
-	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
-	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
+         ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
+         ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
          ("min-states", prog_opt::value<int>(&MinStates),
           FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("states,m", prog_opt::value(&States),
@@ -261,7 +261,7 @@ int main(int argc, char** argv)
 
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
       if (HamMPO.size() < Psi.size())
-	 HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
+      HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
 
       // Assemble the Hamiltonian into the bond terms
       std::vector<SimpleOperator> BondH(HamMPO.size()-1);

@@ -61,7 +61,7 @@ int main(int argc, char** argv)
          ("infinite,i", prog_opt::bool_switch(&Infinite), "Construct an infinite wavefunction")
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
-	 ("quiet", prog_opt::bool_switch(&Quiet), "Don't print informational messages")
+	      ("quiet", prog_opt::bool_switch(&Quiet), "Don't print informational messages")
          ;
 
       prog_opt::variables_map vm;
@@ -92,19 +92,19 @@ int main(int argc, char** argv)
       std::vector<BasisList> BL = ExtractLocalBasis1(Lattice->GetUnitCell());
       std::vector<BasisList> FullBL = BL;
       while (int(FullBL.size()) < Size)
-	 std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
+	     std::copy(BL.begin(), BL.end(), std::back_inserter(FullBL));
       if (Size != int(FullBL.size()))
       {
-	 std::cout << "mp-idmrg: fatal: the wavefunction size must be a multiple of the unit cell size\n";
-	 return 1;
+         std::cout << "mp-idmrg: fatal: the wavefunction size must be a multiple of the unit cell size\n";
+         return 1;
       }
 
       if (!Quiet)
-	 std::cout << "Working..." << std::flush;
+         std::cout << "Working..." << std::flush;
       LinearWavefunction Psi = CreateRandomWavefunction(FullBL, Q, Beta, Ident, Count, Verbose + 1 - Quiet);
 
       if (!Quiet)
-	 std::cout << "Done" << std::endl;
+         std::cout << "Done" << std::endl;
 
       // construct the final wavefunction
       MPWavefunction Wavefunction;

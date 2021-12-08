@@ -4,7 +4,7 @@
 //
 // mp/mp-expectation.cpp
 //
-// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,9 +29,36 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell-parser.h"
 #include "wavefunction/operator_actions.h"
+#include "mp-algorithms/transfer.h"
 
 namespace prog_opt = boost::program_options;
 using formatting::format_complex;
+
+// Lambda si the transfer matrix eigenvalue (per wavefunction unit cell size),
+// e is the expectation value
+struct expectation_result
+{
+   std::complex<double> Lambda;
+   std::complex<double> e;
+};
+
+expectation_result
+expectation_cross(InfiniteWavefunctionLeft const& Psi1, BasicFiniteMPO const& Op, InfiniteWavefunctionLeft const& Psi2,
+                  QuantumNumber const& q)
+{
+   std::complex<double> e;
+   MatrixOperator Left, Right;
+   std::tie(e, Left, Right) = get_transfer_eigenpair(Psi1, Psi2, q);
+
+   MatrixOperator X = Left;
+   X = inject_left(X, Psi1, Op, Psi2);
+
+   auto c = inner_prod(delta_shift(Right, Psi1.qshift()), X);
+
+   CHECK_EQUAL(Op.size() % Psi1.size(), 0);
+   c *= std::pow(e, -Op.size() / Psi1.size());
+   return {e, c};
+}
 
 void DisplayHeading(bool ShowReal, bool ShowImag)
 {
@@ -61,29 +88,29 @@ int main(int argc, char** argv)
    {
       bool ShowReal = false, ShowImag = false;
       bool ShowDefault = true;
-      std::string PsiStr;
+      std::string Psi1Str;
       std::string OpStr;
       std::string Psi2Str;
+      std::string CacheDirectory;
+      std::string Sector;
+      bool NoCache = false;
+      bool Quiet = false;
       int Verbose = 0;
-      bool Print = false;
-      int Coarsegrain = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("real,r", prog_opt::bool_switch(&ShowReal),
-          "display only the real part of the result")
-         ("imag,i", prog_opt::bool_switch(&ShowImag),
-          "display only the imaginary part of the result")
-         ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
-    ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
-         ("verbose,v", prog_opt_ext::accum_value(&Verbose),
-          "Verbose output (use multiple times for more output)")
+         ("real,r", prog_opt::bool_switch(&ShowReal), "display only the real part of the result")
+         ("imag,i", prog_opt::bool_switch(&ShowImag), "display only the imaginary part of the result")
+         ("q,quantumnumber", prog_opt::value(&Sector), "quantum number sector of the transfer matrix")
+         ("nocache", prog_opt::bool_switch(&NoCache), "don't cache the transfer matrix eigenvectors")
+         ("cachedir", prog_opt::value(&CacheDirectory), "use this cache directory")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Verbose output (use multiple times for more output)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("psi", prog_opt::value(&PsiStr), "psi")
+         ("psi", prog_opt::value(&Psi1Str), "psi")
          ("op", prog_opt::value(&OpStr), "op")
          ("psi2", prog_opt::value(&Psi2Str), "psi2")
          ;
@@ -101,10 +128,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("op") == 0)
+      if (vm.count("help") > 0 || vm.count("psi2") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator> [psi2]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator> <psi2>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -116,18 +143,11 @@ int main(int argc, char** argv)
       if (ShowReal || ShowImag)
          ShowDefault = false;
 
-      pvalue_ptr<MPWavefunction> PsiPtr;
-      // if we are calculating a mixed expectation value, then we need two wavefunctions so
-      // allocate a temporary heap.  Otherwise we can use one heap in read-only mode
-      if (vm.count("psi2"))
-      {
-         mp_pheap::InitializeTempPHeap();
-         PsiPtr = pheap::ImportHeap(PsiStr);
-      }
-      else
-      {
-         PsiPtr = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
-      }
+      pvalue_ptr<MPWavefunction> Psi1Ptr;
+      pvalue_ptr<MPWavefunction> Psi2Ptr;
+      mp_pheap::InitializeTempPHeap();
+      Psi1Ptr = pheap::ImportHeap(Psi1Str);
+      Psi2Ptr = pheap::ImportHeap(Psi2Str);
 
       UnitCellMPO Op;
       InfiniteLattice Lattice;
@@ -135,75 +155,45 @@ int main(int argc, char** argv)
 
       CHECK(Op.GetSiteList() == Lattice.GetUnitCell().GetSiteList());
 
-      if (Print)
-      {
-         print_structure(Op.MPO(), std::cout);
-         if (Verbose > 0)
-         {
-            std::cout << Op.MPO() << '\n';
-         }
-         if (Verbose > 1)
-         {
-            SimpleRedOperator x = coarse_grain(Op.MPO());
-            std::cout << x << "\n";
-         }
-         //      std::cout << Op << '\n';
-         //std::cout << "\nTransfer matrix:" << construct_transfer_matrix(herm(GenericMPO(Op.MPO())),
-         //                                                     GenericMPO(Op.MPO())) << '\n';
-      };
-
       // Check that Op is bosonic, otherwise it is not defined
       CHECK(Op.Commute() == LatticeCommute::Bosonic)("Cannot evaluate non-bosonic operator")(Op.Commute());
 
-      std::complex<double> x; // the expectation value
-
-      if (PsiPtr->is<InfiniteWavefunctionLeft>())
+      if (!Psi1Ptr->is<InfiniteWavefunctionLeft>())
       {
-         if (vm.count("psi2"))
-         {
-            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infinite MPS.\n"
-            "Use mp-iexpectation-cross instead.";
-            return 1;
-         }
-         InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-
-         // extend Op1 to a multiple of the wavefunction size
-         Op.ExtendToCoverUnitCell(Psi.size() * Coarsegrain);
-
-         x = expectation(Psi, coarse_grain(Op.MPO(), Coarsegrain));
+         std::cerr << basename(argv[0]) << ": fatal: expected an infinite wavefunction for psi1.\n";
+         return 1;
       }
-      else if (PsiPtr->is<FiniteWavefunctionLeft>())
+      if (!Psi2Ptr->is<InfiniteWavefunctionLeft>())
       {
-         FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
-         FiniteWavefunctionLeft Psi2;
-         if (vm.count("psi2"))
-         {
-            pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);
-            if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
-            {
-               std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
-               return 1;
-            }
-            Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
-         }
-         else
-            Psi2 = Psi;
+         std::cerr << basename(argv[0]) << ": fatal: expected an infinite wavefunction for psi2.\n";
+         return 1;
+      }
 
-         Op.ExtendToCoverUnitCell(Psi.size());
+      InfiniteWavefunctionLeft Psi1 = Psi1Ptr->get<InfiniteWavefunctionLeft>();
+      InfiniteWavefunctionLeft Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
 
-         x = expectation(Psi, Op.MPO(), Psi2);
+      // extend Op1 to a multiple of the wavefunction size
+      Op.ExtendToCoverUnitCell(Psi1.size());
+
+      auto q = QuantumNumber(Psi1.GetSymmetryList(), Sector);
+
+      expectation_result R = expectation_cross(Psi1, Op.MPO(), Psi2, q);
+
+      if (Verbose > 0)
+      {
+         std::cerr << "Transfer matrix eigenvalue is " << format_complex(R.Lambda) << " per unit cell size " << Psi1.size() << '\n';
       }
 
       if (ShowDefault)
       {
-         std::cout << format_complex(x) << '\n';
+         std::cout << format_complex(R.e) << '\n';
       }
       else
       {
          if (ShowReal)
-            std::cout << x.real() << "   ";
+            std::cout << R.e.real() << "   ";
          if (ShowImag)
-            std::cout << x.imag();
+            std::cout << R.e.imag();
          std::cout << '\n';
       }
 
