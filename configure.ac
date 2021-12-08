@@ -46,12 +46,12 @@ if test "x$enable_debug" != "xyes" ; then
    fi
 fi
 
-dnl C++11 support
-AX_CXX_COMPILE_STDCXX_11(noext,mandatory)
+dnl C++17 support
+AX_CXX_COMPILE_STDCXX_14(noext,mandatory)
 
-dnl we have C++11 as mandatory, but set it in config.h too
-AC_DEFINE(HAVE_CXX11,1, [define if the compiler supports basic C++11 syntax])
-AC_SUBST(HAVE_CXX11)
+dnl we have C++14 as mandatory, but set it in config.h too
+dnl AC_DEFINE(HAVE_CXX14,1, [define if the compiler supports C++17 syntax])
+AC_SUBST(HAVE_CXX14)
 
 AX_CXX_VAR_PRETTYFUNC
 

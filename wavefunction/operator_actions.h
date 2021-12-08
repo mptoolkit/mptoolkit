@@ -53,7 +53,7 @@ inject_left(MatrixOperator const& m,
 
 MatrixOperator
 inject_left(MatrixOperator const& m,
-            LinearWavefunction const& Psi,
+            LinearWavefunction const& Psi1,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 

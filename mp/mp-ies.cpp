@@ -220,7 +220,7 @@ int main(int argc, char** argv)
 
          // Get the matrix
          std::complex<double> e;
-         StateComponent v;
+         MatrixOperator v;
          std::tie(e, v) = get_right_transfer_eigenvector(Psi1, Psi1, InfPsi.qshift(), StringOperator, Tol, Verbose);
 
          // Now we want the eigenvalues of v
@@ -231,10 +231,10 @@ int main(int argc, char** argv)
 
          for (std::size_t i = 0; i < v.Basis1().size(); ++i)
          {
-            if (iterate_at(v[0].data(), i, i))
+            if (iterate_at(v.data(), i, i))
             {
                LinearAlgebra::Vector<std::complex<double>> Eig =
-                  LinearAlgebra::EigenvaluesComplex(v[0](i,i));
+                  LinearAlgebra::EigenvaluesComplex(v(i,i));
 
                for (unsigned j = 0; j < size(Eig); ++j)
                {

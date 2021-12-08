@@ -46,7 +46,7 @@ MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
    return PackApplyFunc<Func>(Pack_, f_);
 }
 
-std::tuple<std::complex<double>, StateComponent>
+std::tuple<std::complex<double>, MatrixOperator>
 get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                       ProductMPO const& StringOp,
                       double tol, int Verbose)
@@ -70,10 +70,10 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
-   return std::make_tuple(LeftEigen[0], LeftVector);
+   return std::make_tuple(LeftEigen[0], LeftVector[0]);
 }
 
-std::tuple<std::complex<double>, StateComponent>
+std::tuple<std::complex<double>, MatrixOperator>
 get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                      ProductMPO const& StringOp,
                      double tol, int Verbose)
@@ -89,13 +89,33 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
 
    std::vector<std::complex<double> > OutVec;
       LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
+            Psi1.size(), Verbose-1)), n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
-   return std::make_tuple(LeftEigen[0], LeftVector);
+   return std::make_tuple(LeftEigen[0], LeftVector[0]);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                       ProductMPO const& StringOp, double tol, int Verbose)
+{
+   std::complex<double> eLeft, eRight;
+   MatrixOperator Left, Right;
+   std::tie(eLeft, Left) = get_left_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
+   std::tie(eRight, Right) = get_right_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
+   TRACE(eLeft)(eRight);
+   CHECK(norm_frob(eLeft-eRight) < 1E-10)(eLeft)(eRight);
+   // normalize
+   Right *= 1.0 / norm_frob(Right);
+   Left *= 1.0 / inner_prod(delta_shift(Right, QShift), Left);
+   return std::make_tuple(eLeft, Left, Right);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
+                       QuantumNumber const& q, double tol, int Verbose)
+{
+   return get_transfer_eigenpair(get_left_canonical(Psi1).first, get_left_canonical(Psi2).first, Psi1.qshift(), ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, Verbose);
 }

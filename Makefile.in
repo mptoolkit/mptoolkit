@@ -222,7 +222,8 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old mp-allcorrelation \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
-        mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize
+        mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize \
+				mp-iexpectation-cross
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 

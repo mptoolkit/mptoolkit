@@ -157,7 +157,7 @@ int main(int argc, char** argv)
       LinearWavefunction PsiR, PsiC, PsiRC;
 
       // The list of U matrices, for each operator
-      std::vector<StateComponent> U;
+      std::vector<MatrixOperator> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
@@ -227,14 +227,16 @@ int main(int argc, char** argv)
          int n = Psi1.size(); // unit cell size
 
          std::complex<double> e;
-         StateComponent v;
+         MatrixOperator v;
          std::tie(e, v) = get_left_transfer_eigenvector(*Psi2, Psi1, InfPsi.qshift(), StringOperator,
                                                             Tol, Verbose);
 
 
          // Normalization
          // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
-         std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
+         MatrixOperator v2 = scalar_prod(herm(v), v);
+         v2 = scalar_prod(herm(v2), v2);
+         std::complex<double> x = inner_prod(v2, Rho);
 
          v *= std::sqrt(std::sqrt(1.0 / x));
          // randomize phase
@@ -269,10 +271,10 @@ int main(int argc, char** argv)
             std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
             //std::cout << "#<U> = " << inner_prod(Rho, v) << "\n";
 
-            if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
+            if (is_scalar(v.TransformsAs()) && v.Basis2() == v.Basis1())
             {
-               std::cout << "#UU* = " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
-               std::complex<double> U2 =  inner_prod(Rho, v[0]*v[0]);
+               std::cout << "#UU* = " << inner_prod(Rho, v*conj(v)) << '\n';
+               std::complex<double> U2 =  inner_prod(Rho, v*v);
                std::cout << "#U^2 = " << U2 << '\n';
                std::cout << "#U^2 magnitude = " << std::abs(U2) << '\n';
             }
@@ -305,7 +307,8 @@ int main(int argc, char** argv)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
          {
-            MatrixOperator X = scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
+            MatrixOperator X = herm(U[j]) * (herm(U[i]) * U[j] * U[i]);
+//            scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
             //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
             std::complex<double> x = inner_prod(X, Rho);
             // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
@@ -336,7 +339,7 @@ int main(int argc, char** argv)
          std::map<std::string, MatrixOperator> Matrices;
          for (unsigned n = 0; n < U.size(); ++n)
          {
-            Matrices[std::string(1, char('A'+n))] = U[n][0];
+            Matrices[std::string(1, char('A'+n))] = U[n];
          }
 
          Function::ArgumentList Args;
