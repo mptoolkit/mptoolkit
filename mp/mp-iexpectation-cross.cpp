@@ -51,7 +51,7 @@ expectation_cross(InfiniteWavefunctionLeft const& Psi1, BasicFiniteMPO const& Op
    std::tie(e, Left, Right) = get_transfer_eigenpair(Psi1, Psi2, q);
 
    MatrixOperator X = Left;
-   X = inject_left(X, get_left_canonical(Psi1).first, Op, get_left_canonical(Psi2).first);
+   X = inject_left(X, Psi1, Op, Psi2);
 
    auto c = inner_prod(delta_shift(Right, Psi1.qshift()), X);
 
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi2") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator> [psi2]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <operator> <psi2>\n";
          std::cerr << desc << '\n';
          return 1;
       }

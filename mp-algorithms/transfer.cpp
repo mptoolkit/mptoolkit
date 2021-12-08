@@ -105,8 +105,7 @@ get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const&
    MatrixOperator Left, Right;
    std::tie(eLeft, Left) = get_left_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
    std::tie(eRight, Right) = get_right_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
-   TRACE(eLeft)(eRight);
-   CHECK(norm_frob(eLeft-eRight) < 1E-10)(eLeft)(eRight);
+   CHECK(norm_frob(eLeft-conj(eRight)) < 1E-10)(eLeft)(eRight);
    // normalize
    Right *= 1.0 / norm_frob(Right);
    Left *= 1.0 / inner_prod(delta_shift(Right, QShift), Left);
