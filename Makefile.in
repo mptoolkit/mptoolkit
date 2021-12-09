@@ -223,7 +223,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old mp-allcorrelation \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize \
-	mp-tdvp mp-itdvp mp-ibc-tdvp
+	mp-tdvp mp-itdvp mp-ibc-tdvp mp-iexpectation-cross
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -524,14 +524,15 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o 
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
-mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o
+mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
-mp-ies : infinitewavefunctionleft.o packunpack.o
+mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
+mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
 
 mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
 mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o
@@ -561,6 +562,7 @@ LIBS_mp-aux-matrix = $(LIBARPACK)
 LIBS_mp-fluctuation = $(LIBARPACK)
 LIBS_mp-ies = $(LIBARPACK)
 LIBS_mp-aux-project = $(LIBARPACK)
+LIBS_mp-iexpectation-cross = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

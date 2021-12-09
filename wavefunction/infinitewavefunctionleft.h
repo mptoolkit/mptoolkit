@@ -214,6 +214,13 @@ overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
    return std::make_tuple(std::get<0>(r)[0], std::get<1>(r));  // Could be improved with C++17
 }
 
+// inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
+MatrixOperator
+inject_left(MatrixOperator const& m,
+            InfiniteWavefunctionLeft const& Psi1,
+            BasicFiniteMPO const& Op,
+            InfiniteWavefunctionLeft const& Psi2);
+
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);
 

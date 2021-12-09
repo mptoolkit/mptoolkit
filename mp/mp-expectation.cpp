@@ -189,7 +189,8 @@ int main(int argc, char** argv)
       {
          if (vm.count("psi2"))
          {
-            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infinite MPS.\n";
+            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of infinite MPS.\n"
+            "Use mp-iexpectation-cross instead.";
             return 1;
          }
          InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();

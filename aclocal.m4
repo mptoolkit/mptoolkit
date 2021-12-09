@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.15 -*- Autoconf -*-
+# generated automatically by aclocal 1.16.4 -*- Autoconf -*-
 
-# Copyright (C) 1996-2014 Free Software Foundation, Inc.
+# Copyright (C) 1996-2021 Free Software Foundation, Inc.
 
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -19,7 +19,8 @@ m4_include([m4/ax_check_compile_flag.m4])
 m4_include([m4/ax_check_enable_debug.m4])
 m4_include([m4/ax_compiler_vendor.m4])
 m4_include([m4/ax_compiler_version.m4])
-m4_include([m4/ax_cxx_compile_stdcxx_11.m4])
+m4_include([m4/ax_cxx_compile_stdcxx.m4])
+m4_include([m4/ax_cxx_compile_stdcxx_14.m4])
 m4_include([m4/ax_cxx_var_prettyfunc.m4])
 m4_include([m4/ax_lapack.m4])
 m4_include([m4/ax_mpi.m4])

@@ -4,7 +4,7 @@
 //
 // mp/mp-aux-algebra.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2021 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,10 +18,9 @@
 // ENDHEADER
 
 #include "wavefunction/mpwavefunction.h"
-#include "mps/packunpack.h"
+#include "mp-algorithms/transfer.h"
 #include "interface/inittemp.h"
 #include "lattice/latticesite.h"
-#include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
@@ -33,62 +32,12 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
-#include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
 #include <tuple>
 #include "parser/matrix-parser.h"
 
 namespace prog_opt = boost::program_options;
-
-template <typename Func>
-struct PackApplyFunc
-{
-   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      StateComponent x = Pack.unpack(In);
-      x = f(x);
-      Pack.pack(x, Out);
-   }
-   PackStateComponent const& Pack;
-   Func f;
-};
-
-template <typename Func>
-PackApplyFunc<Func>
-MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
-{
-   return PackApplyFunc<Func>(Pack_, f_);
-}
-
-std::tuple<std::complex<double>, int, StateComponent>
-get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
-                     ProductMPO const& StringOp,
-                     double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift1,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-2)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
-}
 
 int main(int argc, char** argv)
 {
@@ -208,7 +157,7 @@ int main(int argc, char** argv)
       LinearWavefunction PsiR, PsiC, PsiRC;
 
       // The list of U matrices, for each operator
-      std::vector<StateComponent> U;
+      std::vector<MatrixOperator> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
@@ -275,16 +224,19 @@ int main(int argc, char** argv)
             StringOperator = StringOperator * ProductMPO::make_identity(StringOperator.LocalBasis2List(), q);
          }
 
+         int n = Psi1.size(); // unit cell size
+
          std::complex<double> e;
-         StateComponent v;
-         int n;
-         std::tie(e, n, v) = get_left_eigenvector(*Psi2, InfPsi.qshift(), Psi1, InfPsi.qshift(), StringOperator,
-                                                  Tol, Verbose);
+         MatrixOperator v;
+         std::tie(e, v) = get_left_transfer_eigenvector(*Psi2, Psi1, InfPsi.qshift(), StringOperator,
+                                                            Tol, Verbose);
 
 
          // Normalization
          // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
-         std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
+         MatrixOperator v2 = scalar_prod(herm(v), v);
+         v2 = scalar_prod(herm(v2), v2);
+         std::complex<double> x = inner_prod(v2, Rho);
 
          v *= std::sqrt(std::sqrt(1.0 / x));
          // randomize phase
@@ -319,10 +271,10 @@ int main(int argc, char** argv)
             std::cout << "#UU\u2020 = " << inner_prod(Rho, scalar_prod(v,herm(v))) << "\n";
             //std::cout << "#<U> = " << inner_prod(Rho, v) << "\n";
 
-            if (v.size() == 1 && is_scalar(v.LocalBasis()[0]) && v.Basis2() == v.Basis1())
+            if (is_scalar(v.TransformsAs()) && v.Basis2() == v.Basis1())
             {
-               std::cout << "#UU* = " << inner_prod(Rho, v[0]*conj(v[0])) << '\n';
-               std::complex<double> U2 =  inner_prod(Rho, v[0]*v[0]);
+               std::cout << "#UU* = " << inner_prod(Rho, v*conj(v)) << '\n';
+               std::complex<double> U2 =  inner_prod(Rho, v*v);
                std::cout << "#U^2 = " << U2 << '\n';
                std::cout << "#U^2 magnitude = " << std::abs(U2) << '\n';
             }
@@ -355,7 +307,8 @@ int main(int argc, char** argv)
       {
          for (unsigned j = i+1; j < U.size(); ++j)
          {
-            MatrixOperator X = scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
+            MatrixOperator X = herm(U[j]) * (herm(U[i]) * U[j] * U[i]);
+//            scalar_prod(herm(U[j]), operator_prod(herm(U[i]), U[j], U[i]));
             //            std::complex<double> x = inner_prod(U[i]*U[j], U[j]*U[i]) / Dim;
             std::complex<double> x = inner_prod(X, Rho);
             // scalar_prod(herm(U[i]*U[j]), U[j]*U[i]), Rho);
@@ -386,7 +339,7 @@ int main(int argc, char** argv)
          std::map<std::string, MatrixOperator> Matrices;
          for (unsigned n = 0; n < U.size(); ++n)
          {
-            Matrices[std::string(1, char('A'+n))] = U[n][0];
+            Matrices[std::string(1, char('A'+n))] = U[n];
          }
 
          Function::ArgumentList Args;
