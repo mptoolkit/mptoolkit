@@ -20,6 +20,15 @@
 #include "momentum_operations.h"
 #include "operator_actions.h"
 
+void
+ScalePoly(KMatrixPolyType& K, std::complex<double> x)
+{
+   for (auto& k : K)
+   {
+      k.second *= x;
+   }
+}
+
 MatrixPolyType
 delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift)
 {

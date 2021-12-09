@@ -76,6 +76,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
               double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
+// Solve the cross expectation value <psi1|Op|psi2> / <psi1|psi2>.
+// LeftIdentity and RightIdentity are a left/right eigenpair of the mixed transfer matrix,
+// in the Basis1() basis of psi1/psi2.  lambda is the transfer matrix eigenvalue.
+void
+SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
+                    LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                    BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+                    MatrixOperator const& RightIdentity,
+                    std::complex<double> lambda,
+                    bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
+                    double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+
 //
 // 'Simple' solvers, for first order operators (eg Hamiltonians).  Return value is
 // the eigenvalue per wavefunction unit cell.  The wavefunction must be in the appropriate

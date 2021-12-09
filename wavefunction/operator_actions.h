@@ -88,18 +88,30 @@ struct InjectLeft
 struct InjectLeftQShift
 {
    InjectLeftQShift(GenericMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
-      : Op_(Op), Psi_(Psi), QShift_(QShift)
+      : Psi1_(Psi), QShift_(QShift), Op_(Op), Psi2_(Psi), Scale_(1.0)
+   {
+   }
+
+   InjectLeftQShift(LinearWavefunction const& Psi1, QuantumNumber const& QShift, GenericMPO const& Op, LinearWavefunction const& Psi2)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2), Scale_(1.0)
+   {
+   }
+
+   InjectLeftQShift(LinearWavefunction const& Psi1, QuantumNumber const& QShift, GenericMPO const& Op, LinearWavefunction const& Psi2, std::complex<double> Scale)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2), Scale_(Scale)
    {
    }
 
    MatrixOperator operator()(MatrixOperator const& m) const
    {
-      return delta_shift(inject_left(m, Op_, Psi_), QShift_);
+      return delta_shift(inject_left(m, Psi1_, Op_, Psi2_), QShift_) * Scale_;
    }
 
-   GenericMPO const& Op_;
-   LinearWavefunction const& Psi_;
+   LinearWavefunction const& Psi1_;
    QuantumNumber const& QShift_;
+   GenericMPO const& Op_;
+   LinearWavefunction const& Psi2_;
+   std::complex<double> Scale_;
 };
 
 // Generalization of the operator contraction
@@ -171,18 +183,30 @@ struct InjectRight
 struct InjectRightQShift
 {
    InjectRightQShift(GenericMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift)
-      : Op_(Op), Psi_(Psi), QShift_(QShift)
+      : Psi1_(Psi), QShift_(QShift), Op_(Op), Psi2_(Psi), Scale_(1.0)
+   {
+   }
+
+   InjectRightQShift(LinearWavefunction const& Psi1, QuantumNumber const& QShift, GenericMPO const& Op, LinearWavefunction const& Psi2)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2), Scale_(1.0)
+   {
+   }
+
+   InjectRightQShift(LinearWavefunction const& Psi1, QuantumNumber const& QShift, GenericMPO const& Op, LinearWavefunction const& Psi2, std::complex<double> Scale)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2), Scale_(Scale)
    {
    }
 
    MatrixOperator operator()(MatrixOperator const& m) const
    {
-      return inject_right(delta_shift(m, adjoint(QShift_)), Op_, Psi_);
+      return inject_right(delta_shift(m, adjoint(QShift_)), Psi1_, Op_, Psi2_);
    }
 
-   GenericMPO const& Op_;
-   LinearWavefunction const& Psi_;
+   LinearWavefunction const& Psi1_;
    QuantumNumber const& QShift_;
+   GenericMPO const& Op_;
+   LinearWavefunction const& Psi2_;
+   std::complex<double> Scale_;
 };
 
 
@@ -472,16 +496,25 @@ struct OneMinusTransferLeft
 //      -Psi--
 struct OneMinusTransferLeft_Ortho
 {
-   OneMinusTransferLeft_Ortho(BasicFiniteMPO const& Op, LinearWavefunction const& Psi, QuantumNumber const& QShift,
+   OneMinusTransferLeft_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
+                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
                               MatrixOperator const& LeftUnit,
                               MatrixOperator const& RightUnit, bool Orthogonalize)
-      : Op_(Op), Psi_(Psi),
-        QShift_(QShift), LeftUnit_(LeftUnit),
-        RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
+      : Psi1_(Psi1_), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+        LeftUnit_(LeftUnit),
+        RightUnit_(RightUnit), Scale_(1.0), Orthogonalize_(Orthogonalize) { }
+
+   OneMinusTransferLeft_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
+                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
+                              MatrixOperator const& LeftUnit,
+                              MatrixOperator const& RightUnit, std::complex<double> Scale, bool Orthogonalize)
+      : Psi1_(Psi1_), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+        LeftUnit_(LeftUnit),
+        RightUnit_(RightUnit), Scale_(Scale), Orthogonalize_(Orthogonalize) { }
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      MatrixOperator r = x-delta_shift(inject_left(x, Op_, Psi_), QShift_);
+      MatrixOperator r = x-delta_shift(inject_left(x, Psi1_, Op_, Psi2_), QShift_)*Scale_;
       if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
          {
             DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
@@ -492,11 +525,13 @@ struct OneMinusTransferLeft_Ortho
       return r;
    }
 
-   BasicFiniteMPO const& Op_;
-   LinearWavefunction const& Psi_;
+   LinearWavefunction const& Psi1_;
    QuantumNumber const& QShift_;
+   BasicFiniteMPO const& Op_;
+   LinearWavefunction const& Psi2_;
    MatrixOperator const& LeftUnit_;
    MatrixOperator const& RightUnit_;
+   std::complex<double> Scale_;
    bool Orthogonalize_;
 };
 
@@ -521,6 +556,5 @@ struct OneMinusTransferRight
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
 };
-
 
 #endif

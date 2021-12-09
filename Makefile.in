@@ -223,7 +223,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-idivide mp-ies mp-irepeat mp-norm mp-itebd-old mp-allcorrelation \
         mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tri-expectation mp-tebd mp-apply mp-normalize \
-				mp-iexpectation-cross
+				mp-iexpectation-cross mp-imoments-cross
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
 
@@ -515,7 +515,8 @@ mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o rando
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-expectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o finitewavefunctionleft.o
-mp-imoments : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o
+mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o
+mp-imoments-cross : transfer.o packunpack.o
 mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
@@ -558,6 +559,7 @@ LIBS_mp-fluctuation = $(LIBARPACK)
 LIBS_mp-ies = $(LIBARPACK)
 LIBS_mp-aux-project = $(LIBARPACK)
 LIBS_mp-iexpectation-cross = $(LIBARPACK)
+LIBS_mp-imoments-cross = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
