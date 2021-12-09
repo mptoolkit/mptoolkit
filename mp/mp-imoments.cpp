@@ -376,22 +376,6 @@ int main(int argc, char** argv)
          }
       }
 
-      // The default UnitCellSize for output is the wavefunction size
-      if (UnitCellSize == 0)
-         UnitCellSize = WavefuncUnitCellSize;
-      double ScaleFactor = double(UnitCellSize) / double(WavefuncUnitCellSize);
-
-      if (!Quiet)
-      {
-         print_preamble(std::cout, argc, argv);
-         if (!vm.count("operator"))
-         {
-            std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
-         }
-         std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
-                   << (UnitCellSize == 1 ? " site\n" : " sites\n");
-      }
-
       BasicTriangularMPO Op;
 
       InfiniteLattice Lattice;
@@ -403,6 +387,22 @@ int main(int argc, char** argv)
       // a multiple unit-cell operator.
       Psi = repeat(Psi, Size / Psi.size());
       Op = repeat(Op, Size / Op.size());
+
+      // The default UnitCellSize for output is the wavefunction size
+      if (UnitCellSize == 0)
+         UnitCellSize = Psi.size();
+      double ScaleFactor = double(UnitCellSize) / double(Size);
+
+      if (!Quiet)
+      {
+         print_preamble(std::cout, argc, argv);
+         if (!vm.count("operator"))
+         {
+            std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
+         }
+         std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
+                   << (UnitCellSize == 1 ? " site\n" : " sites\n");
+      }
 
       // Make a LinearWavefunction in the symmetric orthogonality constraint
       // TODO: actually this is left-orthogonal.  Which might be OK?
