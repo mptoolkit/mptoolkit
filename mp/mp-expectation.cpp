@@ -231,7 +231,7 @@ int main(int argc, char** argv)
 
          IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
 
-         Op.translate(Psi.window_offset());
+         Op.translate(-Psi.window_offset());
          Op.ExtendToCoverUnitCell(Psi.window_size());
 
          x = expectation(Psi, Op.MPO());

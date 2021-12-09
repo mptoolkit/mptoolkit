@@ -61,6 +61,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    while (CLeft != PsiLeft.end())
    {
       HamLeftL.push_back(contract_from_left(*HLeft, herm(*CLeft), HamLeftL.back(), *CLeft));
+      MaxStates = std::max(MaxStates, (*CLeft).Basis2().total_dimension());
       ++HLeft, ++CLeft;
    }
 
@@ -79,11 +80,12 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    {
       --HRight, --CRight;
       HamRightR.push_front(contract_from_right(herm(*HRight), *CRight, HamRightR.front(), herm(*CRight)));
+      MaxStates = std::max(MaxStates, (*CRight).Basis1().total_dimension());
    }
 
    // Construct window Hamiltonian environment.
-   LeftStop = -Psi_.window_offset();
-   RightStop = Psi_.window_size() - 1 - Psi_.window_offset();
+   LeftStop = Psi_.window_offset();
+   RightStop = Psi_.window_size() - 1 + Psi_.window_offset();
    Site = LeftStop;
 
    HamL.push_back(BlockHamL);
@@ -171,7 +173,7 @@ IBC_TDVP::Wavefunction() const
    MatrixOperator I = MatrixOperator::make_identity(Psi.Basis2());
    WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), I, Verbose-1);
 
-   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, -LeftStop);
+   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, LeftStop);
 }
 
 void
