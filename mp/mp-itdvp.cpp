@@ -60,7 +60,7 @@ int main(int argc, char** argv)
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
-      double LambdaTol = 1e-10;
+      double LambdaTol = 1e-16;
       int MaxSweeps = 10;
       int NEps = 2;
       int Verbose = 0;
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
          ("lambdatol,l", prog_opt::value(&LambdaTol),
-          FormatDefault("Tolerance for the Frobenius norm of the difference of LambdaR for succesive sweeps", LambdaTol).c_str())
+          FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&MaxSweeps),
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())

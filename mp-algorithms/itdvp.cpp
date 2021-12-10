@@ -239,7 +239,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
          FidelityLoss = 1.0 - trace(D);
 
-         LambdaRDiff = norm_frob(LambdaR - LambdaRPrev);
+         LambdaRDiff = norm_frob_sq(LambdaR - LambdaRPrev);
 
          if (Verbose > 0)
          {
@@ -314,7 +314,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
          FidelityLoss = 1.0 - trace(D);
 
-         LambdaRDiff = norm_frob(LambdaR - LambdaRPrev);
+         LambdaRDiff = norm_frob_sq(LambdaR - LambdaRPrev);
 
          if (Verbose > 0)
          {

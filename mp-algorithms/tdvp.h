@@ -65,10 +65,9 @@ class TDVP
       // Evolve the current site.
       void EvolveCurrentSite(std::complex<double> Tau);
 
-      // Evolve the current site and move left.
+      // Move the orthogonality center left/right, evolving the lambda matrix
+      // backwards in time.
       void IterateLeft(std::complex<double> Tau);
-
-      // Move right and evolve the next site.
       void IterateRight(std::complex<double> Tau);
 
       // Sweep left/right through the chain for timestep Tau.

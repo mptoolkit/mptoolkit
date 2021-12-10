@@ -173,8 +173,6 @@ TDVP::EvolveCurrentSite(std::complex<double> Tau)
 void
 TDVP::IterateLeft(std::complex<double> Tau)
 {
-   this->EvolveCurrentSite(Tau);
-
    // Perform SVD to right-orthogonalize current site.
    MatrixOperator M = ExpandBasis1(*C);
    MatrixOperator U, Vh;
@@ -252,15 +250,16 @@ TDVP::IterateRight(std::complex<double> Tau)
    *C = prod(DVh, *C);
 
    HamR.pop_front();
-
-   this->EvolveCurrentSite(Tau);
 }
 
 void
 TDVP::SweepLeft(std::complex<double> Tau)
 {
    while (Site > LeftStop)
+   {
+      this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
+   }
 
    this->EvolveCurrentSite(Tau);
 }
@@ -271,7 +270,10 @@ TDVP::SweepRight(std::complex<double> Tau)
    this->EvolveCurrentSite(Tau);
 
    while (Site < RightStop)
+   {
       this->IterateRight(Tau);
+      this->EvolveCurrentSite(Tau);
+   }
 }
 
 void
@@ -343,6 +345,7 @@ TDVP::SweepRightFinal(std::complex<double> Tau)
    while (Site < RightStop)
    {
       this->IterateRight(Tau);
+      this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
    }
 }
@@ -447,6 +450,7 @@ TDVP::SweepLeftExpand(std::complex<double> Tau)
    {
       if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
          this->ExpandLeftBond();
+      this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
    }
 
