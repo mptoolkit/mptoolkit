@@ -31,23 +31,17 @@ class IBC_TDVP : public TDVP
 
       IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-               double ErrTol_, double GMRESTol_, double LambdaTol_, int NExpand_,
+               double ErrTol_, double GMRESTol_, double FidTol_, int NExpand_,
                StatesInfo SInfo_, int Verbose_);
 
       IBCWavefunction Wavefunction() const;
 
       // Expand the IBC window by adding one unit cell to the left/right.
-      // NB: These functions assume that the window is left/right orthogonal
-      // respectively, and that the window does not end in the middle of a unit
-      // cell.
       void ExpandWindowLeft();
       void ExpandWindowRight();
 
       // Calculate the fidelity loss of the left/right edge of the window
       // compared to the semi-infinite boundaries.
-      // NB: These functions assume that the window is left/right orthogonal
-      // respectively, and that the window does not end in the middle of a unit
-      // cell.
       double CalculateFidelityLossLeft();
       double CalculateFidelityLossRight();
 
@@ -56,7 +50,7 @@ class IBC_TDVP : public TDVP
       double CalculateLambdaDiffLeft();
       double CalculateLambdaDiffRight();
 
-      // Sweep left/right, expanding the window if LambdaDiff exceeds LambdaTol.
+      // Sweep left/right, expanding the window if LambdaDiff exceeds FidTol.
       void SweepLeftEW(std::complex<double> Tau);
       void SweepRightEW(std::complex<double> Tau);
       void SweepRightFinalEW(std::complex<double> Tau);
@@ -72,7 +66,7 @@ class IBC_TDVP : public TDVP
       void Evolve2();
 
       double GMRESTol;
-      double LambdaTol;
+      double FidTol;
       int NExpand;
 
       InfiniteWavefunctionLeft PsiLeft;

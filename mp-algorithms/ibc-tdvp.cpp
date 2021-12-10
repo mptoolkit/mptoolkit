@@ -26,10 +26,10 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-                   double ErrTol_, double GMRESTol_, double LambdaTol_, int NExpand_,
+                   double ErrTol_, double GMRESTol_, double FidTol_, int NExpand_,
                    StatesInfo SInfo_, int Verbose_)
    : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
-   GMRESTol(GMRESTol_), LambdaTol(LambdaTol_), NExpand(NExpand_)
+   GMRESTol(GMRESTol_), FidTol(FidTol_), NExpand(NExpand_)
 {
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
@@ -235,43 +235,15 @@ IBC_TDVP::ExpandWindowRight()
 double
 IBC_TDVP::CalculateFidelityLossLeft()
 {
-   MatrixOperator Rho = PsiLeft.lambda_l();
-   Rho = scalar_prod(herm(Rho), Rho);
-
-   InfiniteWavefunctionLeft::const_mps_iterator CLeft = PsiLeft.begin();
-   LinearWavefunction::const_iterator CWindow = Psi.begin();
-   while (CLeft != PsiLeft.end())
-   {
-      Rho = operator_prod(herm(*CWindow), Rho, *CLeft);
-      ++CWindow, ++CLeft;
-   }
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SingularValueDecomposition(Rho, U, D, Vh);
-
-   return (1.0 - trace(D));
+   StateComponent CL = PsiLeft[0];
+   return 1.0 - norm_frob_sq(scalar_prod(herm(CL), *C));
 }
 
 double
 IBC_TDVP::CalculateFidelityLossRight()
 {
-   MatrixOperator Rho = PsiRight.lambda_r();
-   Rho = scalar_prod(Rho, herm(Rho));
-
-   InfiniteWavefunctionLeft::const_mps_iterator CRight = PsiRight.end();
-   LinearWavefunction::const_iterator CWindow = Psi.end();
-   while (CRight != PsiRight.begin())
-   {
-      --CWindow, --CRight;
-      Rho = operator_prod(*CWindow, Rho, herm(*CRight));
-   }
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SingularValueDecomposition(Rho, U, D, Vh);
-
-   return (1.0 - trace(D));
+   StateComponent CR = PsiRight.get_back();
+   return 1.0 - norm_frob_sq(scalar_prod(*C, herm(CR)));
 }
 
 double
@@ -318,10 +290,12 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau)
    this->SweepLeft(Tau);
 
    double LambdaDiff;
-   while ((LambdaDiff = this->CalculateLambdaDiffLeft()) > LambdaTol)
+   while ((LambdaDiff = this->CalculateFidelityLossLeft()) > FidTol)
    {
       if (Verbose > 0)
-         std::cout << "LambdaDiffLeft=" << LambdaDiff << ", expanding window..." << std::endl;
+         std::cout << "FidelityLossLeft=" << LambdaDiff
+                   << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft()
+                   << ", expanding window..." << std::endl;
 
       this->ExpandWindowLeft();
 
@@ -330,7 +304,8 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau)
    }
 
    if (Verbose > 0)
-      std::cout << "LambdaDiffLeft=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossLeft=" << LambdaDiff
+                << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft() << std::endl;
 }
 
 void
@@ -339,10 +314,12 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau)
    this->SweepRight(Tau);
 
    double LambdaDiff;
-   while ((LambdaDiff = this->CalculateLambdaDiffRight()) > LambdaTol)
+   while ((LambdaDiff = this->CalculateFidelityLossRight()) > FidTol)
    {
       if (Verbose > 0)
-         std::cout << "LambdaDiffRight=" << LambdaDiff << ", expanding window..." << std::endl;
+         std::cout << "FidelityLossRight=" << LambdaDiff
+                   << " LambdaDiffRight=" << this->CalculateLambdaDiffRight()
+                   << ", expanding window..." << std::endl;
 
       this->ExpandWindowRight();
 
@@ -351,7 +328,8 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau)
    }
 
    if (Verbose > 0)
-      std::cout << "LambdaDiffRight=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossRight=" << LambdaDiff
+                << " LambdaDiffRight=" << this->CalculateLambdaDiffRight() << std::endl;
 }
 
 void
@@ -360,10 +338,12 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
    this->SweepRightFinal(Tau);
 
    double LambdaDiff;
-   while ((LambdaDiff = this->CalculateLambdaDiffRight()) > LambdaTol)
+   while ((LambdaDiff = this->CalculateFidelityLossRight()) > FidTol)
    {
       if (Verbose > 0)
-         std::cout << "LambdaDiffRight=" << LambdaDiff << ", expanding window..." << std::endl;
+         std::cout << "FidelityLossRight=" << LambdaDiff
+                   << " LambdaDiffRight=" << this->CalculateLambdaDiffRight()
+                   << ", expanding window..." << std::endl;
 
       this->ExpandWindowRight();
 
@@ -376,7 +356,8 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
    }
 
    if (Verbose > 0)
-      std::cout << "LambdaDiffRight=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossRight=" << LambdaDiff
+                << " LambdaDiffRight=" << this->CalculateLambdaDiffRight() << std::endl;
 }
 
 void
@@ -385,10 +366,12 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
    this->SweepLeftExpand(Tau);
 
    double LambdaDiff;
-   while ((LambdaDiff = this->CalculateLambdaDiffLeft()) > LambdaTol)
+   while ((LambdaDiff = this->CalculateFidelityLossLeft()) > FidTol)
    {
       if (Verbose > 0)
-         std::cout << "LambdaDiffLeft=" << LambdaDiff << ", expanding window..." << std::endl;
+         std::cout << "FidelityLossLeft=" << LambdaDiff
+                   << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft()
+                   << ", expanding window..." << std::endl;
 
       this->ExpandWindowLeft();
 
@@ -400,7 +383,8 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
    }
 
    if (Verbose > 0)
-      std::cout << "LambdaDiffLeft=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossLeft=" << LambdaDiff
+                << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft() << std::endl;
 }
 
 void
