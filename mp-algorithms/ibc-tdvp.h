@@ -31,8 +31,8 @@ class IBC_TDVP : public TDVP
 
       IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-               double ErrTol_, double GMRESTol_, StatesInfo SInfo_,
-               int NExpand_, int Verbose_);
+               double ErrTol_, double GMRESTol_, double LambdaTol_, int NExpand_,
+               StatesInfo SInfo_, int Verbose_);
 
       IBCWavefunction Wavefunction() const;
 
@@ -56,6 +56,12 @@ class IBC_TDVP : public TDVP
       double CalculateLambdaDiffLeft();
       double CalculateLambdaDiffRight();
 
+      // Sweep left/right, expanding the window if LambdaDiff exceeds LambdaTol.
+      void SweepLeftEW(std::complex<double> Tau);
+      void SweepRightEW(std::complex<double> Tau);
+      void SweepRightFinalEW(std::complex<double> Tau);
+      void SweepLeftExpandEW(std::complex<double> Tau);
+
       // Evolve the window for one time step.
       void Evolve();
 
@@ -66,6 +72,7 @@ class IBC_TDVP : public TDVP
       void Evolve2();
 
       double GMRESTol;
+      double LambdaTol;
       int NExpand;
 
       InfiniteWavefunctionLeft PsiLeft;

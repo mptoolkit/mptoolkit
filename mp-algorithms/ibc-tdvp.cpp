@@ -26,10 +26,10 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-                   double ErrTol_, double GMRESTol_, StatesInfo SInfo_,
-                   int NExpand_, int Verbose_)
+                   double ErrTol_, double GMRESTol_, double LambdaTol_, int NExpand_,
+                   StatesInfo SInfo_, int Verbose_)
    : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
-   GMRESTol(GMRESTol_), NExpand(NExpand_)
+   GMRESTol(GMRESTol_), LambdaTol(LambdaTol_), NExpand(NExpand_)
 {
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
@@ -106,10 +106,6 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       this->ExpandWindowLeft();
 
       this->ExpandWindowRight();
-
-      // Move the iterators to the left of the unit cell added on the right.
-      for (int i = 0; i < PsiLeft.size(); ++i)
-         ++C, ++H, ++Site;
 
       // Incorporate the Lambda matrix into the wavefunction.
       *C = prod(Lambda, *C);
@@ -199,12 +195,11 @@ IBC_TDVP::ExpandWindowLeft()
    // Change the leftmost index.
    LeftStop -= PsiLeft.size();
 
-   // Reset iterators.
-   C = Psi.end();
-   --C;
-   H = Hamiltonian.end();
-   --H;
-   Site = RightStop;
+   // Reset iterators to previous location.
+   C = Psi.begin();
+   H = Hamiltonian.begin();
+   for (int i = LeftStop; i < Site; ++i)
+      ++C, ++H;
 }
 
 void
@@ -230,10 +225,11 @@ IBC_TDVP::ExpandWindowRight()
    // Change the rightmost index.
    RightStop += PsiRight.size();
 
-   // Reset iterators.
+   // Reset iterators to previous location.
    C = Psi.begin();
    H = Hamiltonian.begin();
-   Site = LeftStop;
+   for (int i = LeftStop; i < Site; ++i)
+      ++C, ++H;
 }
 
 double
@@ -294,7 +290,7 @@ IBC_TDVP::CalculateLambdaDiffLeft()
 
    MatrixOperator LambdaLBoundary = PsiLeft.lambda_r();
 
-   return norm_frob(LambdaL - LambdaLBoundary);
+   return norm_frob_sq(LambdaL - LambdaLBoundary);
 }
 
 double
@@ -313,7 +309,98 @@ IBC_TDVP::CalculateLambdaDiffRight()
 
    MatrixOperator LambdaRBoundary = PsiRight.lambda_l();
 
-   return norm_frob(LambdaR - LambdaRBoundary);
+   return norm_frob_sq(LambdaR - LambdaRBoundary);
+}
+
+void
+IBC_TDVP::SweepLeftEW(std::complex<double> Tau)
+{
+   this->SweepLeft(Tau);
+
+   double LambdaDiff;
+   while ((LambdaDiff = this->CalculateLambdaDiffLeft()) > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "LambdaDiffLeft=" << LambdaDiff << ", expanding window..." << std::endl;
+
+      this->ExpandWindowLeft();
+
+      this->IterateLeft(Tau);
+      this->SweepLeft(Tau);
+   }
+
+   if (Verbose > 0)
+      std::cout << "LambdaDiffLeft=" << LambdaDiff << std::endl;
+}
+
+void
+IBC_TDVP::SweepRightEW(std::complex<double> Tau)
+{
+   this->SweepRight(Tau);
+
+   double LambdaDiff;
+   while ((LambdaDiff = this->CalculateLambdaDiffRight()) > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "LambdaDiffRight=" << LambdaDiff << ", expanding window..." << std::endl;
+
+      this->ExpandWindowRight();
+
+      this->IterateRight(Tau);
+      this->SweepRight(Tau);
+   }
+
+   if (Verbose > 0)
+      std::cout << "LambdaDiffRight=" << LambdaDiff << std::endl;
+}
+
+void
+IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
+{
+   this->SweepRightFinal(Tau);
+
+   double LambdaDiff;
+   while ((LambdaDiff = this->CalculateLambdaDiffRight()) > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "LambdaDiffRight=" << LambdaDiff << ", expanding window..." << std::endl;
+
+      this->ExpandWindowRight();
+
+      while (Site < RightStop)
+      {
+         this->IterateRight(Tau);
+         this->EvolveCurrentSite(Tau);
+         this->CalculateEps12();
+      }
+   }
+
+   if (Verbose > 0)
+      std::cout << "LambdaDiffRight=" << LambdaDiff << std::endl;
+}
+
+void
+IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
+{
+   this->SweepLeftExpand(Tau);
+
+   double LambdaDiff;
+   while ((LambdaDiff = this->CalculateLambdaDiffLeft()) > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "LambdaDiffLeft=" << LambdaDiff << ", expanding window..." << std::endl;
+
+      this->ExpandWindowLeft();
+
+      // TODO: Implement better handling of the expansion of bonds between the window and boundary.
+      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeftBond();
+      this->IterateLeft(Tau);
+      this->SweepLeft(Tau);
+   }
+
+   if (Verbose > 0)
+      std::cout << "LambdaDiffLeft=" << LambdaDiff << std::endl;
 }
 
 void
@@ -327,16 +414,12 @@ IBC_TDVP::Evolve()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
-   //TRACE(this->CalculateLambdaDiffRight());
-
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
-   this->SweepLeft((*Gamma)*Timestep);
+   this->SweepLeftEW((*Gamma)*Timestep);
    ++Gamma;
-
-   //TRACE(this->CalculateLambdaDiffLeft());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
@@ -344,14 +427,14 @@ IBC_TDVP::Evolve()
 
    while(Gamma != GammaEnd)
    {
-      this->SweepRight((*Gamma)*Timestep);
+      this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
 
-      this->SweepLeft((*Gamma)*Timestep);
+      this->SweepLeftEW((*Gamma)*Timestep);
       ++Gamma;
    }
 
-   this->SweepRightFinal((*Gamma)*Timestep);
+   this->SweepRightFinalEW((*Gamma)*Timestep);
 }
 
 void
@@ -365,16 +448,12 @@ IBC_TDVP::EvolveExpand()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
-   //TRACE(this->CalculateLambdaDiffRight());
-
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
-   this->SweepLeftExpand((*Gamma)*Timestep);
+   this->SweepLeftExpandEW((*Gamma)*Timestep);
    ++Gamma;
-
-   //TRACE(this->CalculateLambdaDiffLeft());
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
@@ -382,14 +461,14 @@ IBC_TDVP::EvolveExpand()
 
    while(Gamma != GammaEnd)
    {
-      this->SweepRight((*Gamma)*Timestep);
+      this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
 
-      this->SweepLeftExpand((*Gamma)*Timestep);
+      this->SweepLeftExpandEW((*Gamma)*Timestep);
       ++Gamma;
    }
 
-   this->SweepRightFinal((*Gamma)*Timestep);
+   this->SweepRightFinalEW((*Gamma)*Timestep);
 }
 
 void

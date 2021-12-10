@@ -54,6 +54,7 @@ int main(int argc, char** argv)
       int MaxIter = 20;
       double ErrTol = 1e-16;
       double GMRESTol = 1e-13;
+      double LambdaTol = 1e-12;
       int MinStates = 1;
       int MaxStates = 100000;
       double TruncCutoff = 0;
@@ -81,6 +82,8 @@ int main(int argc, char** argv)
           FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
+         ("lambdatol,l", prog_opt::value(&LambdaTol),
+          FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", LambdaTol).c_str())
          ("min-states", prog_opt::value(&MinStates),
           FormatDefault("Minimum number of states to keep", MinStates).c_str())
          ("states,m", prog_opt::value(&MaxStates),
@@ -214,7 +217,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp,
-                    MaxIter, ErrTol, GMRESTol, SInfo, NExpand, Verbose);
+                    MaxIter, ErrTol, GMRESTol, LambdaTol, NExpand, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
