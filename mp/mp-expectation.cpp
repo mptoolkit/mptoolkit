@@ -57,16 +57,68 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
 
 // TODO:
 // Move this function to the correct place.
-// Add the ability to calculate expectation values outside of the window.
 // Handle the case where the window is offset by a number of sites not
 // divisible by the unit cell size.
 std::complex<double>
 expectation(IBCWavefunction const& Psi,
-            BasicFiniteMPO const& M)
+            UnitCellMPO Op)
 {
    LinearWavefunction PsiLinear;
    MatrixOperator Lambda;
-   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
+
+   // For an empty window, we cannot use get_left_canonical.
+   if (Psi.window_size() > 0)
+   {
+      std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
+      PsiLinear.set_back(prod(PsiLinear.get_back(), Lambda));
+   }
+   else
+   {
+      PsiLinear = LinearWavefunction();
+      Lambda = Psi.Window.lambda_r();
+   }
+
+   // Add extra sites to the left, if needed.
+   LinearWavefunction PsiLeft;
+   RealDiagonalOperator LambdaLeft;
+   std::tie(PsiLeft, LambdaLeft) = get_left_canonical(Psi.Left);
+
+   int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
+
+   LinearWavefunction::const_iterator CLeft = PsiLeft.end();
+   for (int i = 0; i < SitesLeft; ++i)
+   {
+      --CLeft;
+      PsiLinear.push_front(*CLeft);
+      if (CLeft == PsiLeft.begin())
+         CLeft = PsiLeft.end();
+   }
+
+   if (Psi.window_size() == 0 && SitesLeft > 0)
+      PsiLinear.set_back(prod(PsiLinear.get_back(), Lambda));
+
+   // Add extra sites to the right, if needed.
+   LinearWavefunction PsiRight;
+   RealDiagonalOperator LambdaRight;
+   std::tie(LambdaRight, PsiRight) = get_right_canonical(Psi.Right);
+
+   int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
+
+   LinearWavefunction::const_iterator CRight = PsiRight.begin();
+   for (int i = 0; i < SitesRight; ++i)
+   {
+      PsiLinear.push_back(*CRight);
+      ++CRight;
+      if (CRight == PsiRight.end())
+         CRight = PsiRight.begin();
+   }
+
+   if (Psi.window_size() == 0 && SitesLeft == 0)
+      PsiLinear.set_front(prod(Lambda, PsiLinear.get_front()));
+
+   Op.ExtendToCover(PsiLinear.size(), Psi.window_offset()-SitesLeft);
+
+   BasicFiniteMPO M = Op.MPO();
 
    MatrixOperator I = MatrixOperator::make_identity(PsiLinear.Basis1());
    StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
@@ -80,7 +132,7 @@ expectation(IBCWavefunction const& Psi,
       ++C, ++W;
    }
 
-   return inner_prod(Lambda*herm(Lambda), E[0]);
+   return trace(E[0]);
 }
 
 int main(int argc, char** argv)
@@ -231,10 +283,7 @@ int main(int argc, char** argv)
 
          IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
 
-         Op.translate(-Psi.window_offset());
-         Op.ExtendToCoverUnitCell(Psi.window_size());
-
-         x = expectation(Psi, Op.MPO());
+         x = expectation(Psi, Op);
       }
       else
       {
