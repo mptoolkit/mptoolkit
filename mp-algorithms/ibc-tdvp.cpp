@@ -26,10 +26,10 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-                   double ErrTol_, double GMRESTol_, double FidTol_, int NExpand_,
-                   StatesInfo SInfo_, int Verbose_)
+                   double ErrTol_, double GMRESTol_, double FidTol_, double LambdaTol_,
+                   int NExpand_, StatesInfo SInfo_, int Verbose_)
    : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
-   GMRESTol(GMRESTol_), FidTol(FidTol_), NExpand(NExpand_)
+   GMRESTol(GMRESTol_), FidTol(FidTol_), LambdaTol(LambdaTol_), NExpand(NExpand_)
 {
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
@@ -289,23 +289,27 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau)
 {
    this->SweepLeft(Tau);
 
-   double LambdaDiff;
-   while ((LambdaDiff = this->CalculateFidelityLossLeft()) > FidTol)
+   double FidLoss = this->CalculateFidelityLossLeft();
+   double LambdaDiff = this->CalculateLambdaDiffLeft();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
    {
       if (Verbose > 0)
-         std::cout << "FidelityLossLeft=" << LambdaDiff
-                   << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft()
+         std::cout << "FidelityLossLeft=" << FidLoss
+                   << " LambdaDiffLeft=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
       this->ExpandWindowLeft();
 
       this->IterateLeft(Tau);
       this->SweepLeft(Tau);
+
+      FidLoss = this->CalculateFidelityLossLeft();
+      LambdaDiff = this->CalculateLambdaDiffLeft();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossLeft=" << LambdaDiff
-                << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft() << std::endl;
+      std::cout << "FidelityLossLeft=" << FidLoss
+                << " LambdaDiffLeft=" << LambdaDiff << std::endl;
 }
 
 void
@@ -313,23 +317,27 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau)
 {
    this->SweepRight(Tau);
 
-   double LambdaDiff;
-   while ((LambdaDiff = this->CalculateFidelityLossRight()) > FidTol)
+   double FidLoss = this->CalculateFidelityLossRight();
+   double LambdaDiff = this->CalculateLambdaDiffRight();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
    {
       if (Verbose > 0)
-         std::cout << "FidelityLossRight=" << LambdaDiff
-                   << " LambdaDiffRight=" << this->CalculateLambdaDiffRight()
+         std::cout << "FidelityLossRight=" << FidLoss
+                   << " LambdaDiffRight=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
       this->ExpandWindowRight();
 
       this->IterateRight(Tau);
       this->SweepRight(Tau);
+
+      FidLoss = this->CalculateFidelityLossRight();
+      LambdaDiff = this->CalculateLambdaDiffRight();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << LambdaDiff
-                << " LambdaDiffRight=" << this->CalculateLambdaDiffRight() << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss
+                << " LambdaDiffRight=" << LambdaDiff << std::endl;
 }
 
 void
@@ -337,12 +345,13 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
 {
    this->SweepRightFinal(Tau);
 
-   double LambdaDiff;
-   while ((LambdaDiff = this->CalculateFidelityLossRight()) > FidTol)
+   double FidLoss = this->CalculateFidelityLossRight();
+   double LambdaDiff = this->CalculateLambdaDiffRight();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
    {
       if (Verbose > 0)
-         std::cout << "FidelityLossRight=" << LambdaDiff
-                   << " LambdaDiffRight=" << this->CalculateLambdaDiffRight()
+         std::cout << "FidelityLossRight=" << FidLoss
+                   << " LambdaDiffRight=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
       this->ExpandWindowRight();
@@ -353,11 +362,13 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
          this->EvolveCurrentSite(Tau);
          this->CalculateEps12();
       }
+      FidLoss = this->CalculateFidelityLossRight();
+      LambdaDiff = this->CalculateLambdaDiffRight();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << LambdaDiff
-                << " LambdaDiffRight=" << this->CalculateLambdaDiffRight() << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss
+                << " LambdaDiffRight=" << LambdaDiff << std::endl;
 }
 
 void
@@ -365,12 +376,13 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
 {
    this->SweepLeftExpand(Tau);
 
-   double LambdaDiff;
-   while ((LambdaDiff = this->CalculateFidelityLossLeft()) > FidTol)
+   double FidLoss = this->CalculateFidelityLossLeft();
+   double LambdaDiff = this->CalculateLambdaDiffLeft();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
    {
       if (Verbose > 0)
-         std::cout << "FidelityLossLeft=" << LambdaDiff
-                   << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft()
+         std::cout << "FidelityLossLeft=" << FidLoss
+                   << " LambdaDiffLeft=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
       this->ExpandWindowLeft();
@@ -380,11 +392,14 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
          this->ExpandLeftBond();
       this->IterateLeft(Tau);
       this->SweepLeft(Tau);
+
+      FidLoss = this->CalculateFidelityLossLeft();
+      LambdaDiff = this->CalculateLambdaDiffLeft();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossLeft=" << LambdaDiff
-                << " LambdaDiffLeft=" << this->CalculateLambdaDiffLeft() << std::endl;
+      std::cout << "FidelityLossLeft=" << FidLoss
+                << " LambdaDiffLeft=" << LambdaDiff << std::endl;
 }
 
 void

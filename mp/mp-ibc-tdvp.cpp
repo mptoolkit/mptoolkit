@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       double ErrTol = 1e-16;
       double GMRESTol = 1e-13;
       double FidTol = 1e-12;
+      double LambdaTol = 1e-12;
       int MinStates = 1;
       int MaxStates = 100000;
       double TruncCutoff = 0;
@@ -95,6 +96,8 @@ int main(int argc, char** argv)
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("fidtol,f", prog_opt::value(&FidTol),
           FormatDefault("Tolerance in the boundary fidelity for expanding the window", FidTol).c_str())
+         ("lambdatol,l", prog_opt::value(&LambdaTol),
+          FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", LambdaTol).c_str())
          ("n-expand", prog_opt::value(&NExpand), "Expand the window by two unit cells every n timesteps.")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -217,7 +220,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << std::endl;
 
       IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp,
-                    MaxIter, ErrTol, GMRESTol, FidTol, NExpand, SInfo, Verbose);
+                    MaxIter, ErrTol, GMRESTol, FidTol, LambdaTol, NExpand, SInfo, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
