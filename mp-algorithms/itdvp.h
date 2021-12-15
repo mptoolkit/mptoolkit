@@ -31,8 +31,8 @@ class iTDVP : public TDVP
 
       iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
             std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-            double ErrTol_, double GMRESTol_, int MaxSweeps_, double
-            LambdaTol_, StatesInfo SInfo_, int NEps_, int Verbose_);
+            double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
+            double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
@@ -56,6 +56,8 @@ class iTDVP : public TDVP
       void Evolve();
 
       // Calculate the error measures epsilon_1 and epsilon_2.
+      // (If Epsilon == false, this just calculates the X/Y arrays for
+      // ExpandBonds.)
       void CalculateEps();
 
       // Calculate the error measures epsilon_3 to epsilon_NEps.
@@ -84,6 +86,10 @@ class iTDVP : public TDVP
       // dimension of the unit cell.
       std::deque<StateComponent> X;
       std::deque<StateComponent> Y;
+
+      // Flag to determine whether X and Y have been calculated for the current
+      // timestep.
+      bool XYCalculated = false;
 
       // Error measures epsilon_3^2 to epsilon_NEps^2.
       std::vector<double> EpsNSqSum;

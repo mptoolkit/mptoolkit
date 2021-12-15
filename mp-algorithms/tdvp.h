@@ -50,11 +50,11 @@ class TDVP
 
       TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           int Verbose_);
+           bool Epsilon_, int Verbose_);
 
       TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, int Verbose_);
+           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;
@@ -130,6 +130,7 @@ class TDVP
       int MaxIter;
       double ErrTol;
       StatesInfo SInfo;
+      bool Epsilon;
       int Verbose;
 
       int TStep = 0;
