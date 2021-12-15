@@ -26,9 +26,9 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-                   double ErrTol_, double GMRESTol_, double FidTol_, double LambdaTol_,
-                   int NExpand_, StatesInfo SInfo_, int Verbose_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
+                   double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
+                   double GMRESTol_, double FidTol_, double LambdaTol_, int NExpand_)
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
    GMRESTol(GMRESTol_), FidTol(FidTol_), LambdaTol(LambdaTol_), NExpand(NExpand_)
 {
    PsiLeft = Psi_.Left;
@@ -433,7 +433,10 @@ IBC_TDVP::Evolve()
       ++Gamma;
    }
 
-   this->SweepRightFinalEW((*Gamma)*Timestep);
+   if (Epsilon)
+      this->SweepRightFinalEW((*Gamma)*Timestep);
+   else
+      this->SweepRightEW((*Gamma)*Timestep);
 }
 
 void
@@ -467,7 +470,10 @@ IBC_TDVP::EvolveExpand()
       ++Gamma;
    }
 
-   this->SweepRightFinalEW((*Gamma)*Timestep);
+   if (Epsilon)
+      this->SweepRightFinalEW((*Gamma)*Timestep);
+   else
+      this->SweepRightEW((*Gamma)*Timestep);
 }
 
 void
@@ -501,5 +507,6 @@ IBC_TDVP::Evolve2()
       ++Gamma;
    }
 
-   this->CalculateEps();
+   if (Epsilon)
+      this->CalculateEps();
 }
