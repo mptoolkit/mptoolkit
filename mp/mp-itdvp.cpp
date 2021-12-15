@@ -59,9 +59,11 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
+      bool Expand = false;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       double LambdaTol = 1e-16;
       int MaxSweeps = 10;
+      bool Epsilon = false;
       int NEps = 2;
       int Verbose = 0;
       int OutputDigits = 0;
@@ -91,13 +93,15 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
          ("lambdatol,l", prog_opt::value(&LambdaTol),
           FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&MaxSweeps),
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
+         ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("neps,N", prog_opt::value(&NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
-         ("neps,N", prog_opt::value(&NEps), FormatDefault("Calculate EpsNSqSum up to N = NEps", NEps).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -230,26 +234,38 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
-      std::cout << SInfo << std::endl;
+      if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity())
+         std::cout << SInfo << std::endl;
+
+      // Make sure calculation of Eps2Sq is turned on if we are using it to
+      // determine whether to expand the bonds, or if we are calculating EpsNSq
+      // for N > 2.
+      if (Eps2SqTol != std::numeric_limits<double>::infinity() || NEps > 2)
+         Epsilon = true;
 
       iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter,
-                  ErrTol, GMRESTol, MaxSweeps, LambdaTol, SInfo, NEps, Verbose);
+                  ErrTol, SInfo, Epsilon, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       // Calculate initial values of epsilon.
-      itdvp.CalculateEps();
+      if (Epsilon)
+         itdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " MaxStates=" << itdvp.MaxStates
-                << " E=" << std::real(itdvp.InitialE)
-                << " Eps1SqSum=" << itdvp.Eps1SqSum
-                << " Eps2SqSum=" << itdvp.Eps2SqSum;
+                << " E=" << std::real(itdvp.InitialE);
 
-      for (int i = 0; i < NEps-2; ++i)
-         std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+      if (Epsilon)
+      {
+         std::cout << " Eps1SqSum=" << itdvp.Eps1SqSum
+                   << " Eps2SqSum=" << itdvp.Eps2SqSum;
+
+         for (int i = 0; i < NEps-2; ++i)
+            std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+      }
 
       std::cout << std::endl;
 
@@ -261,26 +277,30 @@ int main(int argc, char** argv)
                std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
             itdvp.ExpandBonds();
          }
+         else if (Expand)
+            itdvp.ExpandBonds();
 
          itdvp.Evolve();
 
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << " MaxStates=" << itdvp.MaxStates
-                   << " E=" << std::real(itdvp.E)
-                   << " Eps1SqSum=" << itdvp.Eps1SqSum
-                   << " Eps2SqSum=" << itdvp.Eps2SqSum;
+                   << " E=" << std::real(itdvp.E);
 
-         for (int i = 0; i < NEps-2; ++i)
-            std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+         if (Epsilon)
+         {
+            std::cout << " Eps1SqSum=" << itdvp.Eps1SqSum
+                      << " Eps2SqSum=" << itdvp.Eps2SqSum;
+
+            for (int i = 0; i < NEps-2; ++i)
+               std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
+         }
 
          std::cout << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
-            if (Verbose > 0)
-               std::cout << "Saving wavefunction" << std::endl;
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
@@ -303,6 +323,9 @@ int main(int argc, char** argv)
             }
             *PsiPtr.mutate() = std::move(Wavefunction);
             pheap::ExportHeap(FName, PsiPtr);
+
+            if (Verbose > 0)
+               std::cout << "Wavefunction saved" << std::endl;
          }
       }
    }
@@ -315,8 +338,6 @@ int main(int argc, char** argv)
    catch (pheap::PHeapCannotCreateFile& e)
    {
       std::cerr << "Exception: " << e.what() << '\n';
-      if (e.Why == "File exists")
-         std::cerr << "Note: use --force (-f) option to overwrite.\n";
    }
    catch (std::exception& e)
    {

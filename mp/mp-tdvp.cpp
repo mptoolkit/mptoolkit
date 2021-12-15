@@ -57,8 +57,10 @@ int main(int argc, char** argv)
       int MaxStates = 100000;
       double TruncCutoff = 0;
       double EigenCutoff = 1e-16;
-      bool TwoSite = false;
+      bool Expand = false;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
+      bool TwoSite = false;
+      bool Epsilon = false;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -85,8 +87,10 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -208,38 +212,38 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
-      std::cout << SInfo << std::endl;
+      if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity() || TwoSite)
+         std::cout << SInfo << std::endl;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter, ErrTol, SInfo, Verbose);
+      // Make sure calculation of Eps2Sq is turned on if we are using it to
+      // determine whether to expand the bonds.
+      if (Eps2SqTol != std::numeric_limits<double>::infinity())
+         Epsilon = true;
+
+      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       // Calculate initial values of epsilon_1 and epsilon_2.
-      tdvp.CalculateEps();
+      if (Epsilon)
+         tdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " MaxStates=" << tdvp.MaxStates
-                << " E=" << std::real(tdvp.Energy())
-                << " Eps1SqSum=" << tdvp.Eps1SqSum
-                << " Eps2SqSum=" << tdvp.Eps2SqSum
-                << std::endl;
+                << " E=" << std::real(tdvp.Energy());
+
+      if (Epsilon)
+         std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
+                   << " Eps2SqSum=" << tdvp.Eps2SqSum;
+
+      std::cout << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
          if (TwoSite)
-         {
             tdvp.Evolve2();
-
-            std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
-                      << " MaxStates=" << tdvp.MaxStates
-                      << " E=" << std::real(tdvp.Energy())
-                      << " TruncErrSum=" << tdvp.TruncErrSum
-                      << " Eps1SqSum=" << tdvp.Eps1SqSum
-                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
-         }
          else
          {
             if (tdvp.Eps2SqSum > Eps2SqTol)
@@ -248,24 +252,29 @@ int main(int argc, char** argv)
                   std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
                tdvp.EvolveExpand();
             }
+            else if (Expand)
+               tdvp.EvolveExpand();
             else
-            {
                tdvp.Evolve();
-            }
-
-            std::cout << "Timestep=" << tstep
-                      << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
-                      << " MaxStates=" << tdvp.MaxStates
-                      << " E=" << std::real(tdvp.Energy())
-                      << " Eps1SqSum=" << tdvp.Eps1SqSum
-                      << " Eps2SqSum=" << tdvp.Eps2SqSum << std::endl;
          }
+
+         std::cout << "Timestep=" << tstep
+                   << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
+                   << " MaxStates=" << tdvp.MaxStates
+                   << " E=" << std::real(tdvp.Energy());
+
+         if (TwoSite)
+            std::cout << " TruncErrSum=" << tdvp.TruncErrSum;
+
+         if (Epsilon)
+            std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
+                      << " Eps2SqSum=" << tdvp.Eps2SqSum;
+
+         std::cout << std::endl;
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
-            if (Verbose > 0)
-               std::cout << "Saving wavefunction" << std::endl;
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
@@ -288,6 +297,9 @@ int main(int argc, char** argv)
             }
             *PsiPtr.mutate() = std::move(Wavefunction);
             pheap::ExportHeap(FName, PsiPtr);
+
+            if (Verbose > 0)
+               std::cout << "Wavefunction saved" << std::endl;
          }
       }
    }
@@ -300,8 +312,6 @@ int main(int argc, char** argv)
    catch (pheap::PHeapCannotCreateFile& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;
-      if (e.Why == "File exists")
-         std::cerr << "Note: use --force (-f) option to overwrite." << std::endl;
    }
    catch (std::exception& e)
    {

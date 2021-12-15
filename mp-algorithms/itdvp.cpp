@@ -44,9 +44,10 @@ struct HEff2
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
              std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-             double ErrTol_, double GMRESTol_, int MaxSweeps_, double
-             LambdaTol_, StatesInfo SInfo_, int NEps_, int Verbose_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_),
+             double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
+             double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_)
+             
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
      GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_) 
 {
    QShift = Psi_.qshift();
@@ -347,6 +348,7 @@ void
 iTDVP::Evolve()
 {
    ++TStep;
+   XYCalculated = false;
 
    std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
 
@@ -358,8 +360,9 @@ iTDVP::Evolve()
       this->EvolveRight((*Gamma)*Timestep);
       ++Gamma;
    }
-
-   this->CalculateEps();
+   
+   if (Epsilon)
+      this->CalculateEps();
 }
 
 void
@@ -443,19 +446,22 @@ iTDVP::CalculateEps()
       // Calculate the right half of epsilon_2.
       Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
 
-      // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-      double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y.back())));
-      double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
-      Eps1SqSum += Eps1Sq;
-      Eps2SqSum += Eps2Sq;
-
-      if (Verbose > 1)
+      if (Epsilon)
       {
-         std::cout << "Timestep=" << TStep
-                   << " Site=" << Site
-                   << " Eps1Sq=" << Eps1Sq
-                   << " Eps2Sq=" << Eps2Sq
-                   << std::endl;
+         // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+         double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y.back())));
+         double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
+         Eps1SqSum += Eps1Sq;
+         Eps2SqSum += Eps2Sq;
+
+         if (Verbose > 1)
+         {
+            std::cout << "Timestep=" << TStep
+                      << " Site=" << Site
+                      << " Eps1Sq=" << Eps1Sq
+                      << " Eps2Sq=" << Eps2Sq
+                      << std::endl;
+         }
       }
    }
 
@@ -483,23 +489,28 @@ iTDVP::CalculateEps()
    Y.push_back(delta_shift(Y.front(), adjoint(QShift)));
    Y.pop_front();
 
-   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   double Eps1Sq = norm_frob_sq(scalar_prod(BlockHamL, herm(Y.back())));
-   double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
-   Eps1SqSum += Eps1Sq;
-   Eps2SqSum += Eps2Sq;
-
-   if (Verbose > 1)
+   if (Epsilon)
    {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << LeftStop
-                << " Eps1Sq=" << Eps1Sq
-                << " Eps2Sq=" << Eps2Sq
-                << std::endl;
+      // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+      double Eps1Sq = norm_frob_sq(scalar_prod(BlockHamL, herm(Y.back())));
+      double Eps2Sq = norm_frob_sq(scalar_prod(X.back(), herm(Y.back())));
+      Eps1SqSum += Eps1Sq;
+      Eps2SqSum += Eps2Sq;
+
+      if (Verbose > 1)
+      {
+         std::cout << "Timestep=" << TStep
+                   << " Site=" << LeftStop
+                   << " Eps1Sq=" << Eps1Sq
+                   << " Eps2Sq=" << Eps2Sq
+                   << std::endl;
+      }
+
+      if (NEps > 2)
+         this->CalculateEpsN();
    }
 
-   if (NEps > 2)
-      this->CalculateEpsN();
+   XYCalculated = true;
 }
 
 void
@@ -648,6 +659,9 @@ iTDVP::ExpandRightBond()
 void
 iTDVP::ExpandBonds()
 {
+   if (!XYCalculated)
+      this->CalculateEps();
+
    C = Psi.begin();
    H = Hamiltonian.begin();
    Site = LeftStop;
@@ -667,4 +681,6 @@ iTDVP::ExpandBonds()
    H = Hamiltonian.end();
    --H;
    Site = RightStop;
+
+   XYCalculated = false;
 }

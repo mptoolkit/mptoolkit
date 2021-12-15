@@ -100,16 +100,16 @@ Compositions = {
 
 TDVP::TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           int Verbose_)
+           bool Epsilon_, int Verbose_)
    : Hamiltonian(Ham_), Timestep(Timestep_), Comp(Comp_), MaxIter(MaxIter_),
-     ErrTol(ErrTol_), SInfo(SInfo_), Verbose(Verbose_)
+     ErrTol(ErrTol_), SInfo(SInfo_), Epsilon(Epsilon_), Verbose(Verbose_)
 {
 }
 
 TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, int Verbose_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Verbose_)
+           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_)
+   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_)
 {
    // Initialize Psi and Ham.
    if (Verbose > 0)
@@ -373,7 +373,10 @@ TDVP::Evolve()
       ++Gamma;
    }
 
-   this->SweepRightFinal((*Gamma)*Timestep);
+   if (Epsilon)
+      this->SweepRightFinal((*Gamma)*Timestep);
+   else
+      this->SweepRight((*Gamma)*Timestep);
 }
 
 void
@@ -479,8 +482,11 @@ TDVP::EvolveExpand()
       this->SweepLeftExpand((*Gamma)*Timestep);
       ++Gamma;
    }
-
-   this->SweepRightFinal((*Gamma)*Timestep);
+   
+   if (Epsilon)
+      this->SweepRightFinal((*Gamma)*Timestep);
+   else
+      this->SweepRight((*Gamma)*Timestep);
 }
 
 void
@@ -688,8 +694,9 @@ TDVP::Evolve2()
       this->SweepRight2((*Gamma)*Timestep);
       ++Gamma;
    }
-
-   this->CalculateEps();
+   
+   if (Epsilon)
+      this->CalculateEps();
 }
 
 void
