@@ -254,6 +254,9 @@ int main(int argc, char** argv)
    int Verbose = 0;
    int UnitCellSize = 0;
    int Degree = 0;
+   int Rotate = 0;
+   bool Reflect = false;
+   bool Conj = false;
    bool ShowRealPart = false;
    bool ShowImagPart = false;
    bool ShowMagnitude = false;
@@ -300,6 +303,12 @@ int main(int argc, char** argv)
          ("degree,d", prog_opt::value(&Degree),
           "force setting the degree of the MPO")
          ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("rotate", prog_opt::value(&Rotate),
+          "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
+         ("reflect", prog_opt::bool_switch(&Reflect),
+          "reflect psi1 (gives parity eigenvalue)")
+         ("conj", prog_opt::bool_switch(&Conj),
+          "complex conjugate psi1")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Linear solver convergence tolerance", Tol).c_str())
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
@@ -372,6 +381,26 @@ int main(int argc, char** argv)
       InfiniteWavefunctionLeft Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
       InfiniteWavefunctionLeft Psi1 = Psi1Ptr->get<InfiniteWavefunctionLeft>();
       auto q = QuantumNumber(Psi1.GetSymmetryList(), Sector);
+
+
+      // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
+      if (Verbose)
+      {
+         std::cout << "Rotating Psi1 right by" << Rotate << " sites\n";
+      }
+      Psi1.rotate_right(Rotate);
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi1..." << std::endl;
+         inplace_reflect(Psi1);
+      }
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi1..." << std::endl;
+         inplace_conj(Psi1);
+      }
 
       // We require that the wafefunctions have the same quantum number per unit cell.  If this isn't the case,
       // the transfer matrix eigenmatrices have a weird form that would require changing 'q' (sector) of the operator.

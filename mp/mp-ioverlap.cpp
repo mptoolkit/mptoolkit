@@ -142,9 +142,9 @@ int main(int argc, char** argv)
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
-          "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
+          "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
-          "reflect psi2 (gives parity eigenvalue)")
+          "reflect psi1 (gives parity eigenvalue)")
          ("coarsegrain1", prog_opt::value(&CoarseGrain1),
           "coarse-grain wavefunction 1 by this amount")
          ("coarsegrain2", prog_opt::value(&CoarseGrain2),
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
          ("string", prog_opt::value(&String),
           "use this product operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
-          "complex conjugate psi2")
+          "complex conjugate psi1")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
@@ -294,17 +294,12 @@ int main(int argc, char** argv)
          std::cout << "Rotating Psi1 right by" << Rotate << " sites\n";
       }
       Psi1.rotate_right(Rotate);
-
-      UnitCell Cell;
-      LatticeSite Site;
-
       if (Reflect)
       {
          if (Verbose)
             std::cout << "Reflecting psi1..." << std::endl;
          inplace_reflect(Psi1);
       }
-
       if (Conj)
       {
          if (Verbose)
@@ -312,6 +307,8 @@ int main(int argc, char** argv)
          inplace_conj(Psi1);
       }
 
+      UnitCell Cell;
+      LatticeSite Site;
       ProductMPO StringOp;
       if (vm.count("string"))
       {
