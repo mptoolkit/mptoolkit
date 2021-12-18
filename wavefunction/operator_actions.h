@@ -500,7 +500,7 @@ struct OneMinusTransferLeft_Ortho
                               BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
                               MatrixOperator const& LeftUnit,
                               MatrixOperator const& RightUnit, bool Orthogonalize)
-      : Psi1_(Psi1_), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
         LeftUnit_(LeftUnit),
         RightUnit_(RightUnit), Scale_(1.0), Orthogonalize_(Orthogonalize) { }
 
@@ -508,7 +508,7 @@ struct OneMinusTransferLeft_Ortho
                               BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
                               MatrixOperator const& LeftUnit,
                               MatrixOperator const& RightUnit, std::complex<double> Scale, bool Orthogonalize)
-      : Psi1_(Psi1_), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
         LeftUnit_(LeftUnit),
         RightUnit_(RightUnit), Scale_(Scale), Orthogonalize_(Orthogonalize) { }
 

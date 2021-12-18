@@ -467,7 +467,7 @@ int main(int argc, char** argv)
       Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
       if (ShouldShowAllComponents)
       {
-	 ShowAllComponents(E, TRight);
+         ShowAllComponents(E, TRight);
       }
       // If we're not calculating the cumulants, then we can print the moments as we calculate them.
       // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get

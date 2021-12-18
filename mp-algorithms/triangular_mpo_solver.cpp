@@ -168,7 +168,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
          //if (!is_scalar(I->second.TransformsAs()))
          //continue;
 
-	 DEBUG_TRACE(I->second)(UnitMatrixRight);
+         DEBUG_TRACE(I->second)(UnitMatrixRight);
          std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
          DEBUG_TRACE(Overlap)(I->first);
          I->second -= std::conj(Overlap)*UnitMatrixLeft;
@@ -179,17 +179,16 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
          // This is the important one
          //      if (norm_frob(Overlap) > 1E-16)
 
-	 // Only keep parts if they are degree one less (or more) than the maximum degree.
-	 if ((Degree == 0 || I->first < Degree))
-	 {
+         // Only keep parts if they are degree one less (or more) than the maximum degree.
+         if ((Degree == 0 || I->first < Degree))
+         {
             CParallel[I->first] = Overlap;
-	    DEBUG_TRACE("Adding component")(I->first)(Overlap);
-	 }
-	 else if (norm_frob(Overlap) > 1E-10)
-	 {
-	    std::cerr << "Warning: ignoring component at degree " << I->first << " magnitude "
-		      << norm_frob(Overlap) << '\n';
-	 }
+            DEBUG_TRACE("Adding component")(I->first)(Overlap);
+         }
+         else if (norm_frob(Overlap) > 1E-10)
+         {
+            std::cerr << "Warning: ignoring component at degree " << I->first << " magnitude " << norm_frob(Overlap) << '\n';
+         }
       }
 
       // Is this the same momentum as our unit operator?
@@ -197,26 +196,25 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
       {
          DEBUG_TRACE("Component at equal momenta")(K);
          // same momenta, these components diverge
-	 DEBUG_TRACE(CParallel);
+         DEBUG_TRACE(CParallel);
          for (int m = CParallel.degree(); m >= 0; --m)
          {
             if (CParallel.has_term(m))
             {
                EParallel[Factor][m+1] = std::conj(Factor) * CParallel[m]; // include momentum
-	    }
+            }
 
-	    for (int k = m+2; k <= CParallel.degree()+1; ++k)
-	    {
-	       if (EParallel[Factor].has_term(k))
-	       {
-		  EParallel[Factor][m+1] -= double(Binomial(k,m))
-		     * EParallel[Factor][k];
-	       }
-	    }
-	    if (EParallel[Factor].has_term(m+1))
-	    {
-	       EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
-	       DEBUG_TRACE("Component at ")(m+1)(EParallel[Factor][m+1]);
+            for (int k = m+2; k <= CParallel.degree()+1; ++k)
+            {
+               if (EParallel[Factor].has_term(k))
+               {
+                  EParallel[Factor][m+1] -= double(Binomial(k,m)) * EParallel[Factor][k];
+               }
+            }
+            if (EParallel[Factor].has_term(m+1))
+            {
+               EParallel[Factor][m+1] *= 1.0 / (1.0 + m);
+               DEBUG_TRACE("Component at ")(m+1)(EParallel[Factor][m+1]);
             }
          }
       }
@@ -302,7 +300,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
             if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
             {
                E[K][m] -= std::conj(inner_prod(E[K][m], UnitMatrixRight)) * UnitMatrixLeft;
-	       DEBUG_TRACE("should be zero")(inner_prod(E[K][m], UnitMatrixRight));
+               DEBUG_TRACE("should be zero")(inner_prod(E[K][m], UnitMatrixRight));
             }
 
             LinearSolve(E[K][m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
@@ -310,7 +308,7 @@ DecomposePerpendicularParts(KMatrixPolyType& C,
                         Rhs, Tol, Verbose);
 
 
-	    DEBUG_TRACE(K)(m)(norm_frob(E[K][m]))(inner_prod(E[K][m], UnitMatrixRight));
+            DEBUG_TRACE(K)(m)(norm_frob(E[K][m]))(inner_prod(E[K][m], UnitMatrixRight));
 
             // do another orthogonalization -- this should be unncessary but for the paranoid...
             if (HasEigenvalue1 && E[K][m].TransformsAs() == UnitMatrixRight.TransformsAs())
