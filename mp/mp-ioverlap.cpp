@@ -74,7 +74,7 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumE
    }
    if (ShowRate)
    {
-      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob_sq(Value)))
+      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob(Value)))
                 << "    ";
    }
    if (ShowMagnitude)
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
          ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
           "display the equivalent correlation length")
          ("rate", prog_opt::bool_switch(&ShowRate),
-          "display the rate function -2*log(real_part)")
+          "display the rate function -*log(real_part)")
          ("unitcell,u", prog_opt::value(&UnitCellSize),
           "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
