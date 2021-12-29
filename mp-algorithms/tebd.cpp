@@ -214,6 +214,7 @@ InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
 
 TruncationInfo
 DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
+       std::complex<double>& Amplitude,
        SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
@@ -227,7 +228,9 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
                                                                SInfo, Info);
    SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
    // normalize
-   Lambda *= 1.0 / norm_frob(Lambda);
+   double a = norm_frob(Lambda);
+   Amplitude *= a;
+   Lambda *= 1.0 / a;
 
    StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
 
