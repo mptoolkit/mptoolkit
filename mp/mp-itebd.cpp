@@ -320,17 +320,20 @@ int main(int argc, char** argv)
             InitialTime.imag(-std::stod(B));
       }
 
-      // Allow both timestep and betastep.
+      // Allow both timestep and betastep.  the timestep is stored as the 'real' time.  The time evolution
+      // operator is -1.0i * Timestep * H
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
       if (!BetastepStr.empty())
-         Timestep += std::complex<double>(0.0,-1.0)* ParseNumber(BetastepStr);
+         Timestep += std::complex<double>(0.0,-1.0) * ParseNumber(BetastepStr);
 
-      if (Timestep.real() == 0.0)
+      if (Timestep.imag() == 0.0)
          Normalize = true;
       if (NoNormalize)
          Normalize = false;
+
+      TRACE(Timestep)(Normalize);
 
       if (OutputDigits == 0)
       {
