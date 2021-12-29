@@ -46,7 +46,7 @@ void ShowBasicInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
    out << "Symmetry list = " << Psi.GetSymmetryList() << '\n';
    out << "Unit cell size = " << Psi.size() << '\n';
    out << "Quantum number per unit cell = " << Psi.qshift() << '\n';
-   out << "Amplitue per unit cell = " << formatting::format_complex(Psi.amplitude()) << '\n';
+   out << "Amplitude per unit cell = " << formatting::format_complex(Psi.amplitude()) << '\n';
    out << "Number of states = " << Psi.Basis1().total_dimension() << '\n';
    out << std::endl;
 }
