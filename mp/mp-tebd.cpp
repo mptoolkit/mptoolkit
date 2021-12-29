@@ -51,7 +51,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    // A (Lambda) B C (Lambda) D E (Lambda) ...
    // If the number of sites is even, we replicate the last Lambda matrix, so that
    // we always have a final Lambda matrix at the end
-   std::complex<double> Amplitude = 1.0;  // this isn't used yet ...
+   double Amplitude = 1.0;  // this isn't used yet ...
    unsigned Sz = Psi.size();
    if (Sz%2 == 0)
    {
@@ -88,7 +88,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    // The first (Lambda) matrix is unused; we remove it from the container.
    // If the number of sites is odd, we copy the last Lambda matrix so that we always have a
    // 1x1 identity lambda at the end
-   std::complex<double> Amplitude = 1.0;  // this isn't used yet ...
+   double Amplitude = 1.0;  // this isn't used yet ...
    unsigned Sz = Psi.size();
    if (Sz%2 == 1)
    {

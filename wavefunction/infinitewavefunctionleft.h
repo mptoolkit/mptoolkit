@@ -46,14 +46,14 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
                                                        MatrixOperator const& Lambda,
                                                        QuantumNumbers::QuantumNumber const& QShift_,
-                                                       std::complex<double> Amplitude = 1.0,
+                                                       double Amplitude = 1.0,
                                                        int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction
       static
       InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
                                          QuantumNumbers::QuantumNumber const& QShift,
-                                         std::complex<double> Amplitude = 1.0,
+                                         double Amplitude = 1.0,
                                          int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction, with an approximation
@@ -62,7 +62,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
                                          MatrixOperator const& GuessRho,
                                          QuantumNumbers::QuantumNumber const& QShift,
-                                         std::complex<double> Amplitude = 1.0,
+                                         double Amplitude = 1.0,
                                          int Verbose = 0);
 
       InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi)
@@ -73,7 +73,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       QuantumNumber qshift() const { return QShift; }
 
-      std::complex<double> amplitude() const { return Amplitude; }
+      double amplitude() const { return Amplitude; }
 
       // Rotates the wavefunction to the left, by taking the left-most site
       // and moving it to the right
@@ -101,7 +101,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_, std::complex<double> Amplitude_);
+      explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_, double Amplitude_);
 
       void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
 
@@ -109,7 +109,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       QuantumNumber QShift;
 
       // The wavefunction amplitude per unit cell
-      std::complex<double> Amplitude;
+      double Amplitude;
 
       // All functions that can modify the internal representation but preserve the canonical form
       // are friend functions.  This is so that we have a central list of such functions,

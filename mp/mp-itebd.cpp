@@ -44,7 +44,7 @@ namespace prog_opt = boost::program_options;
 
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
-                 std::complex<double>& Amplitude,
+                 double& Amplitude,
                  std::vector<SimpleOperator> const& UEven,
                  StatesInfo const& SInfo,
                  int Verbose)
@@ -76,7 +76,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
 
 void DoOddSlice(std::deque<StateComponent>& Psi,
                 std::deque<RealDiagonalOperator>& Lambda,
-                std::complex<double>& Amplitude,
+                double& Amplitude,
                 QuantumNumber const& QShift,
                 std::vector<SimpleOperator> const& UOdd,
                 StatesInfo const& SInfo,
@@ -421,7 +421,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       QuantumNumber QShift = Psi.qshift();
-      std::complex<double> Amplitude = Psi.amplitude();
+      double Amplitude = Psi.amplitude();
 
       std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
       std::deque<RealDiagonalOperator> Lambda;
@@ -504,7 +504,12 @@ int main(int argc, char** argv)
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
             LinearWavefunction Psi;
+<<<<<<< HEAD
             if (Gates.EvenU.size() > Gates.OddU.size())
+=======
+            double ThisAmplitude = Amplitude;
+            if (EvenU.size() > OddU.size())
+>>>>>>> 2256d477 (Changed the iMPS amplitude to be real-valued.)
             {
                CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
                std::cout << "Doing final slice before saving wavefunction.\n";
@@ -512,7 +517,11 @@ int main(int argc, char** argv)
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
+<<<<<<< HEAD
                DoEvenSlice(PsiVecSave, LambdaSave, Amplitude, Gates.EvenU.back(), SInfo, Verbose);
+=======
+               DoEvenSlice(PsiVecSave, LambdaSave, ThisAmplitude, EvenU.back(), SInfo, Verbose);
+>>>>>>> 2256d477 (Changed the iMPS amplitude to be real-valued.)
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
@@ -525,7 +534,7 @@ int main(int argc, char** argv)
                Amplitude = 1.0;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, Amplitude);
+            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, ThisAmplitude);
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();

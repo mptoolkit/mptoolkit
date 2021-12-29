@@ -214,7 +214,7 @@ InvertDiagonal(RealDiagonalOperator const& D, double Tol = 1E-15)
 
 TruncationInfo
 DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
-       std::complex<double>& Amplitude,
+       double& Amplitude,
        SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
