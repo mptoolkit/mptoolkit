@@ -48,7 +48,8 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen, bool ShowRealPart, bool ShowImagPart,
+void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen,
+                 bool ShowRealPart, bool ShowImagPart,
                  bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
@@ -439,8 +440,8 @@ int main(int argc, char** argv)
             int n = 0;
             for (auto const& e : Eigen)
             {
-               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude,
-                           ShowArgument, ShowRadians, ScaleFactor);
+               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart,
+                  ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
             }
 
          }
@@ -451,8 +452,8 @@ int main(int argc, char** argv)
          std::sort(EigenList.begin(), EigenList.end());
          for (auto const& e : EigenList)
          {
-            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument,
-                        ShowRadians, ScaleFactor);
+            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart,
+               ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
          }
       }
 

@@ -45,9 +45,12 @@
 // Version 2:
 //      CanonicalWavefunctionBase (base class)
 //      QuantumNumber              QShift
+//
+// Version 3:
+//      std::complex<double>       Amplitude
 
 PStream::VersionTag
-InfiniteWavefunctionLeft::VersionT(2);
+InfiniteWavefunctionLeft::VersionT(3);
 
 extern double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
@@ -119,17 +122,18 @@ struct RightMultiply
 
 } // namespace
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_)
-   : QShift(QShift_)
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_, std::complex<double> Amplitude_)
+   : QShift(QShift_), Amplitude(Amplitude_)
 {
 }
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
                                                   QuantumNumbers::QuantumNumber const& QShift_,
+                                                  std::complex<double> Amplitude,
                                                   int Verbose)
 {
-   InfiniteWavefunctionLeft Result(QShift_);
+   InfiniteWavefunctionLeft Result(QShift_, Amplitude);
    Result.Initialize(Psi, Lambda, Verbose-1);
    return Result;
 }
@@ -137,14 +141,16 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
                                     QuantumNumbers::QuantumNumber const& QShift_,
+                                    std::complex<double> Amplitude,
                                     int Verbose)
 {
-   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Verbose);
+   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Amplitude, Verbose);
 }
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
                                     QuantumNumbers::QuantumNumber const& QShift,
+                                    std::complex<double> Amplitude,
                                     int Verbose)
 {
    LinearWavefunction PsiL = Psi;
@@ -326,7 +332,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    PsiL.set_back(prod(PsiL.get_back(), I));
 #endif
 
-   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Verbose-1);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Amplitude, Verbose-1);
 }
 
 void
@@ -394,16 +400,28 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
 
       Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, C_right, QShift);
    }
-   else if (Version == 2)
+   else
    {
       int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
       in >> Psi.QShift;
       if (BaseVersion < 3)
          Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
-   }
-   else
-   {
-      PANIC("This program is too old to read this wavefunction, expected Version <= 2")(Version);
+
+      if (Version >= 3)
+      {
+         // new in version 3
+         in >> Psi.Amplitude;
+      }
+      else
+      {
+         // prior to version 3, the amplitude is assumed to be always 1
+         Psi.Amplitude = 1.0;
+      }
+
+      if (Version > 3)
+      {
+         PANIC("This program is too old to read this wavefunction, expected Version <= 2")(Version);
+      }
    }
 
    Psi.debug_check_structure();
@@ -442,6 +460,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
    Psi.CanonicalWavefunctionBase::WriteStream(out);
 
    out << Psi.QShift;
+   out << Psi.Amplitude;
 
    return out;
 }
@@ -705,6 +724,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 
    Result.setBasis2(Psi.Basis2());
    Result.QShift = FinalQShift;
+   Result.Amplitude = std::pow(Psi.amplitude(), Count);
 
    return Result;
 }
@@ -755,7 +775,10 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   return std::make_tuple(Eta, Length, Init);
+   std::complex<double> Amplitude = std::conj(std::pow(x.amplitude(), Length/x.size())) *
+         std::pow(y.amplitude(), Length/y.size());
+
+   return std::make_tuple(Eta * Amplitude, Length, Init);
 }
 
 #if 0
@@ -975,6 +998,3 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
 
 )
 #endif
-
-
-
