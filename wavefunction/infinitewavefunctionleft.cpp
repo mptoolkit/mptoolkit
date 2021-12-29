@@ -47,7 +47,7 @@
 //      QuantumNumber              QShift
 //
 // Version 3:
-//      std::complex<double>       Amplitude
+//      double                     Amplitude
 
 PStream::VersionTag
 InfiniteWavefunctionLeft::VersionT(3);
@@ -122,7 +122,7 @@ struct RightMultiply
 
 } // namespace
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_, std::complex<double> Amplitude_)
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_, double Amplitude_)
    : QShift(QShift_), Amplitude(Amplitude_)
 {
 }
@@ -130,7 +130,7 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
                                                   QuantumNumbers::QuantumNumber const& QShift_,
-                                                  std::complex<double> Amplitude,
+                                                  double Amplitude,
                                                   int Verbose)
 {
    InfiniteWavefunctionLeft Result(QShift_, Amplitude);
@@ -141,7 +141,7 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
                                     QuantumNumbers::QuantumNumber const& QShift_,
-                                    std::complex<double> Amplitude,
+                                    double Amplitude,
                                     int Verbose)
 {
    return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Amplitude, Verbose);
@@ -150,7 +150,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
                                     QuantumNumbers::QuantumNumber const& QShift,
-                                    std::complex<double> Amplitude,
+                                    double Amplitude,
                                     int Verbose)
 {
    LinearWavefunction PsiL = Psi;
