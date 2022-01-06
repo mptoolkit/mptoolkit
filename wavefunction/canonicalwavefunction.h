@@ -124,6 +124,8 @@ class CanonicalWavefunctionBase
    protected:
       // don't allow construction except via derived classes
       CanonicalWavefunctionBase() {}
+      CanonicalWavefunctionBase(VectorBasis const& B1, VectorBasis const& B2)
+         : Basis1_(B1), Basis2_(B2) {}
       CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi);
 
       CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi);

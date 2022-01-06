@@ -46,6 +46,14 @@ WavefunctionSectionLeft::WavefunctionSectionLeft(InfiniteWavefunctionLeft const&
    this->check_structure();
 }
 
+WavefunctionSectionLeft::WavefunctionSectionLeft(MatrixOperator const& C)
+   : CanonicalWavefunctionBase(C.Basis1(), C.Basis2())
+{
+   RealDiagonalOperator Lambda;
+   SingularValueDecompositionFull(C, LeftU_, Lambda, RightU_);
+   this->push_back_lambda(Lambda);
+}
+
 PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi)
 {
    out << WavefunctionSectionLeft::VersionT.default_version();

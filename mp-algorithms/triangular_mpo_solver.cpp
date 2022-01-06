@@ -962,5 +962,5 @@ SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
    RealDiagonalOperator Lambda;
    std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
    MatrixOperator Rho = Lambda*Lambda;
-   return SolveSimpleMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+   return SolveSimpleMPO_Right(F, PsiLinear, Psi.qshift(), Op, delta_shift(Rho, adjoint(Psi.qshift())), Tol, Verbose);
 }
