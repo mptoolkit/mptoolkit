@@ -391,6 +391,25 @@ void inplace_conj(InfiniteWavefunctionRight& Psi)
    }
 }
 
+void inplace_qshift(InfiniteWavefunctionRight& Psi, QuantumNumbers::QuantumNumber const& Shift)
+{
+   Psi.setBasis1(delta_shift(Psi.Basis1(), Shift));
+   Psi.setBasis2(delta_shift(Psi.Basis2(), Shift));
+
+   for (InfiniteWavefunctionRight::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   for (InfiniteWavefunctionRight::lambda_iterator I = Psi.lambda_begin_(); I != Psi.lambda_end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   Psi.check_structure();
+}
+
+
 InfiniteWavefunctionRight
 reflect(InfiniteWavefunctionLeft const& Psi)
 {

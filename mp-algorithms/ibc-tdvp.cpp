@@ -48,7 +48,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       HamiltonianRight = repeat(HamiltonianRight, PsiRight.size() / HamiltonianRight.size());
 
    // Construct left Hamiltonian environment.
-   StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis2());
+   StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis1());
    std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
                                                          GMRESTol, Verbose-1);
    if (Verbose > 0)
@@ -66,7 +66,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    }
 
    // Construct right Hamiltonian environment.
-   StateComponent BlockHamR = Initial_F(HamiltonianRight, PsiRight.Basis1());
+   StateComponent BlockHamR = Initial_F(HamiltonianRight, PsiRight.Basis2());
    std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
                                                            GMRESTol, Verbose-1);
    if (Verbose > 0)
@@ -88,8 +88,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    RightStop = Psi_.window_size() - 1 + Psi_.window_offset();
    Site = LeftStop;
 
-   HamL.push_back(BlockHamL);
-   HamR.push_front(BlockHamR);
+   HamL.push_back(delta_shift(BlockHamL, adjoint(PsiLeft.qshift())));
+   HamR.push_front(delta_shift(BlockHamR, PsiRight.qshift()));
 
    // Check whether there are any sites in the window, and if not, add two unit cells.
    if (Psi_.window_size() == 0)
@@ -200,6 +200,12 @@ IBC_TDVP::ExpandWindowLeft()
    H = Hamiltonian.begin();
    for (int i = LeftStop; i < Site; ++i)
       ++C, ++H;
+
+   // Shift the quantum number of the boundary unit cell.
+   inplace_qshift(PsiLeft, PsiLeft.qshift());
+
+   for (StateComponent& I : HamLeftL)
+      I = delta_shift(I, PsiLeft.qshift());
 }
 
 void
@@ -230,19 +236,25 @@ IBC_TDVP::ExpandWindowRight()
    H = Hamiltonian.begin();
    for (int i = LeftStop; i < Site; ++i)
       ++C, ++H;
+
+   // Shift the quantum number of the boundary unit cell.
+   inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+
+   for (StateComponent& I : HamRightR)
+      I = delta_shift(I, adjoint(PsiRight.qshift()));
 }
 
 double
 IBC_TDVP::CalculateFidelityLossLeft()
 {
-   StateComponent CL = PsiLeft[0];
+   StateComponent CL = delta_shift(PsiLeft[0], adjoint(PsiLeft.qshift()));
    return 1.0 - norm_frob_sq(scalar_prod(herm(CL), *C));
 }
 
 double
 IBC_TDVP::CalculateFidelityLossRight()
 {
-   StateComponent CR = PsiRight.get_back();
+   StateComponent CR = delta_shift(PsiRight.get_back(), PsiRight.qshift());
    return 1.0 - norm_frob_sq(scalar_prod(*C, herm(CR)));
 }
 

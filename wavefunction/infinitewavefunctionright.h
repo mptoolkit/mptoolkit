@@ -89,6 +89,7 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // so can update them if the class changes.
       friend void inplace_reflect(InfiniteWavefunctionRight& Psi);
       friend void inplace_conj(InfiniteWavefunctionRight& Psi);
+      friend void inplace_qshift(InfiniteWavefunctionRight& Psi, QuantumNumbers::QuantumNumber const& Shift);
       friend InfiniteWavefunctionRight wigner_project(InfiniteWavefunctionRight const& Psi,
                                                       SymmetryList const& FinalSL);
       friend InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi,
