@@ -57,8 +57,8 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
 
 // TODO:
 // Move this function to the correct place.
-// Handle the case where the window is offset by a number of sites not
-// divisible by the unit cell size.
+// Handle the case where the window incorporates part of the boundary unit
+// cells.
 std::complex<double>
 expectation(IBCWavefunction const& Psi,
             UnitCellMPO Op)
@@ -70,69 +70,87 @@ expectation(IBCWavefunction const& Psi,
    if (Psi.window_size() > 0)
    {
       std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
-      PsiLinear.set_back(prod(PsiLinear.get_back(), Lambda));
    }
    else
    {
       PsiLinear = LinearWavefunction();
-      Lambda = Psi.Window.lambda_r();
+      Lambda = Psi.Window.LeftU() * Psi.Window.lambda_r() * Psi.Window.RightU();
    }
 
-   // Add extra sites to the left, if needed.
-   LinearWavefunction PsiLeft;
-   RealDiagonalOperator LambdaLeft;
-   std::tie(PsiLeft, LambdaLeft) = get_left_canonical(Psi.Left);
-
+   // Calculate the number of sites that we need from the left and right
+   // semi-infinite boundaries.
    int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
-
-   LinearWavefunction::const_iterator CLeft = PsiLeft.end();
-   for (int i = 0; i < SitesLeft; ++i)
-   {
-      --CLeft;
-      PsiLinear.push_front(*CLeft);
-      if (CLeft == PsiLeft.begin())
-         CLeft = PsiLeft.end();
-   }
-
-   if (Psi.window_size() == 0 && SitesLeft > 0)
-      PsiLinear.set_back(prod(PsiLinear.get_back(), Lambda));
-
-   // Add extra sites to the right, if needed.
-   LinearWavefunction PsiRight;
-   RealDiagonalOperator LambdaRight;
-   std::tie(LambdaRight, PsiRight) = get_right_canonical(Psi.Right);
-
    int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
 
-   LinearWavefunction::const_iterator CRight = PsiRight.begin();
-   for (int i = 0; i < SitesRight; ++i)
-   {
-      PsiLinear.push_back(*CRight);
-      ++CRight;
-      if (CRight == PsiRight.end())
-         CRight = PsiRight.begin();
-   }
-
-   if (Psi.window_size() == 0 && SitesLeft == 0)
-      PsiLinear.set_front(prod(Lambda, PsiLinear.get_front()));
-
-   Op.ExtendToCover(PsiLinear.size(), Psi.window_offset()-SitesLeft);
+   Op.ExtendToCover(Psi.window_size()+SitesLeft+SitesRight, Psi.window_offset()-SitesLeft);
 
    BasicFiniteMPO M = Op.MPO();
 
-   MatrixOperator I = MatrixOperator::make_identity(PsiLinear.Basis1());
-   StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
-   E[0] = I;
+   // Calculate the contribution to E from the left infinite boundary.
+   InfiniteWavefunctionLeft PsiLeft = Psi.Left;
 
-   LinearWavefunction::const_iterator C = PsiLinear.begin();
-   BasicFiniteMPO::const_iterator W = M.begin();
-   while (C != PsiLinear.end())
+   // Move the iterator to the starting position.
+   auto CLeft = PsiLeft.end();
+   for (int i = 0; i < SitesLeft % PsiLeft.size(); ++i)
+      --CLeft;
+
+   MatrixOperator ILeft;
+   if (CLeft == PsiLeft.end())
+      ILeft = MatrixOperator::make_identity(PsiLeft.Basis2());
+   else
+      ILeft = MatrixOperator::make_identity((*CLeft).Basis1());
+
+   StateComponent E(M.Basis1(), ILeft.Basis1(), ILeft.Basis2());
+   E.front() = ILeft;
+   auto WLeft = M.begin();
+
+   for (int i = 0; i < SitesLeft; ++i)
    {
-      E = contract_from_left(*W, herm(*C), E, *C);
-      ++C, ++W;
+      if (CLeft == PsiLeft.end())
+      {
+         delta_shift(E, adjoint(PsiLeft.qshift()));
+         CLeft = PsiLeft.begin();
+      }
+      E = contract_from_left(*WLeft, herm(*CLeft), E, *CLeft);
+      ++CLeft, ++WLeft;
    }
 
-   return trace(E[0]);
+   // Calculate the contribution to F from the right infinite boundary.
+   InfiniteWavefunctionRight PsiRight = Psi.Right;
+
+   // Move the iterator to the starting position.
+   auto CRight = PsiRight.begin();
+   for (int i = 0; i < SitesRight % PsiRight.size(); ++i)
+      ++CRight;
+
+   MatrixOperator IRight = MatrixOperator::make_identity((*CRight).Basis1());
+   StateComponent F(M.Basis1(), IRight.Basis1(), IRight.Basis2());
+   F.back() = IRight;
+
+   auto WRight = M.end();
+
+   for (int i = 0; i < SitesRight; ++i)
+   {
+      if (CRight == PsiRight.begin())
+      {
+         delta_shift(F, PsiRight.qshift());
+         CRight = PsiRight.end();
+      }
+      --CRight, --WRight;
+      F = contract_from_right(herm(*WRight), *CRight, F, herm(*CRight));
+   }
+
+   // Calculate the contribution to E from the window.
+   auto C = PsiLinear.begin();
+   while (C != PsiLinear.end())
+   {
+      E = contract_from_left(*WLeft, herm(*C), E, *C);
+      ++C, ++WLeft;
+   }
+
+   E = triple_prod(herm(Lambda), E, Lambda);
+
+   return inner_prod(E, F);
 }
 
 int main(int argc, char** argv)
