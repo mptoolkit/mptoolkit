@@ -107,8 +107,12 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
 
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
-      //InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
 
+      // There are some situations where the first method does not work
+      // properly, so temporarily use the second method as a workaround.
+#if 0
+      InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
+#else
       InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
 
       MatrixOperator U;
@@ -117,8 +121,13 @@ int main(int argc, char** argv)
       std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
 
       InfiniteWavefunctionRight PsiRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+#endif
 
-      //inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+      // If the bases of the two boundary unit cells have only one quantum
+      // number sector, manually ensure that they match.
+      // FIXME: This workaround probably will not work for non-Abelian symmetries.
+      if (PsiLeft.Basis2().size() == 1 && PsiRight.Basis1().size() == 1)
+         inplace_qshift(PsiRight, delta_shift(PsiLeft.Basis2()[0], adjoint(PsiRight.Basis1()[0])));
 
       WavefunctionSectionLeft Window;
 
