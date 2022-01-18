@@ -55,10 +55,7 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
    std::cout << '\n';
 }
 
-// TODO:
-// Move this function to the correct place.
-// Handle the case where the window incorporates part of the boundary unit
-// cells.
+// TODO: Move this function to the correct place.
 std::complex<double>
 expectation(IBCWavefunction const& Psi,
             UnitCellMPO Op)
@@ -91,7 +88,7 @@ expectation(IBCWavefunction const& Psi,
 
    // Move the iterator to the starting position.
    auto CLeft = PsiLeft.end();
-   for (int i = 0; i < SitesLeft % PsiLeft.size(); ++i)
+   for (int i = 0; i < (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(); ++i)
       --CLeft;
 
    MatrixOperator ILeft;
@@ -120,7 +117,7 @@ expectation(IBCWavefunction const& Psi,
 
    // Move the iterator to the starting position.
    auto CRight = PsiRight.begin();
-   for (int i = 0; i < SitesRight % PsiRight.size(); ++i)
+   for (int i = 0; i < (Psi.WindowRightSites + SitesRight) % PsiRight.size(); ++i)
       ++CRight;
 
    MatrixOperator IRight = MatrixOperator::make_identity((*CRight).Basis1());

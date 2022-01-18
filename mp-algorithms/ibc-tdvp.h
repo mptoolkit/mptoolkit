@@ -32,11 +32,22 @@ class IBC_TDVP : public TDVP
       IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
                double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-               double GMRESTol_, double FidTol_, double LambdaTol_, int NExpand_);
+               double GMRESTol_, double FidTol_, double LambdaTol_,
+               bool UCExpand_, int NExpand_);
 
       IBCWavefunction Wavefunction() const;
 
       // Expand the IBC window by adding one unit cell to the left/right.
+      // (Only works if WindowLeft/RightSites == 0.)
+      void ExpandWindowLeftUC();
+      void ExpandWindowRightUC();
+
+      // Expand the IBC window by adding a site to the left/right.
+      void ExpandWindowLeftSite();
+      void ExpandWindowRightSite();
+
+      // Expand the IBC window left/right, adding either a site or a unit cell
+      // depending on UCExpand.
       void ExpandWindowLeft();
       void ExpandWindowRight();
 
@@ -68,14 +79,24 @@ class IBC_TDVP : public TDVP
       double GMRESTol;
       double FidTol;
       double LambdaTol;
+      bool UCExpand;
       int NExpand;
 
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
       BasicTriangularMPO HamiltonianLeft;
       BasicTriangularMPO HamiltonianRight;
-      std::deque<StateComponent> HamLeftL;
-      std::deque<StateComponent> HamRightR;
+      std::deque<StateComponent> HamLeftUC;
+      std::deque<StateComponent> HamRightUC;
+      int WindowLeftSites;
+      int WindowRightSites;
+
+      BasicTriangularMPO::const_iterator HLeft;
+      BasicTriangularMPO::const_iterator HRight;
+      InfiniteWavefunctionLeft::const_mps_iterator CLeft;
+      InfiniteWavefunctionLeft::const_mps_iterator CRight;
+      std::deque<StateComponent>::const_iterator HamLeft;
+      std::deque<StateComponent>::const_iterator HamRight;
 };
 
 #endif

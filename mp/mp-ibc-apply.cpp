@@ -135,6 +135,10 @@ int main(int argc, char** argv)
                    << " sites from the left boundary..." << std::endl;
 
       auto CLeft = PsiLeft.end();
+
+      for (int i = 0; i < Psi.WindowLeftSites; ++i)
+         --CLeft;
+
       for (int i = 0; i < SitesLeft; ++i)
       {
          if (CLeft == PsiLeft.begin())
@@ -146,7 +150,7 @@ int main(int argc, char** argv)
          PsiWindow.push_front(*CLeft);
       }
 
-      // If the initial window has no sites and we just added sites from the
+      // If the initial window had no sites and we just added sites from the
       // left, incorporate the lambda matrix now; otherwise, we incorporate it
       // below after adding from the right.
       if (SitesLeft > 0 && Psi.window_size() == 0)
@@ -158,6 +162,10 @@ int main(int argc, char** argv)
                    << " sites from the right boundary..." << std::endl;
 
       auto CRight = PsiRight.begin();
+
+      for (int i = 0; i < Psi.WindowRightSites; ++i)
+         ++CRight;
+
       for (int i = 0; i < SitesRight; ++i)
       {
          if (CRight == PsiRight.end())
@@ -191,7 +199,8 @@ int main(int argc, char** argv)
 
       IBCWavefunction PsiNew;
       PsiNew = IBCWavefunction(PsiLeft, PsiWindowCanonical, PsiRight, NewOffset,
-                               SitesLeft % PsiLeft.size(), SitesRight % PsiRight.size());
+                               (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(),
+                               (Psi.WindowRightSites + SitesRight) % PsiRight.size());
 
       PsiPtr.mutate()->Wavefunction() = PsiNew;
 

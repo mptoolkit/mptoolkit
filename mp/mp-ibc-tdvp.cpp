@@ -64,6 +64,7 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       bool TwoSite = false;
       bool Epsilon = false;
+      bool UCExpand = false;
       int NExpand = 0;
       int Verbose = 0;
       int OutputDigits = 0;
@@ -100,7 +101,8 @@ int main(int argc, char** argv)
           FormatDefault("Tolerance in the boundary fidelity for expanding the window", FidTol).c_str())
          ("lambdatol,l", prog_opt::value(&LambdaTol),
           FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", LambdaTol).c_str())
-         ("n-expand", prog_opt::value(&NExpand), "Expand the window by two unit cells every n timesteps.")
+         ("uc-expand", prog_opt::bool_switch(&UCExpand), "Expand the window by whole unit cells rather than single sites")
+         ("n-expand", prog_opt::value(&NExpand), "Expand the window manually every n timesteps.")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -231,7 +233,7 @@ int main(int argc, char** argv)
 
       IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep,
                     Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose, GMRESTol,
-                    FidTol, LambdaTol, NExpand);
+                    FidTol, LambdaTol, UCExpand, NExpand);
 
       if (SaveEvery == 0)
          SaveEvery = N;
