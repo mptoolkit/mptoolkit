@@ -103,12 +103,76 @@ int main(int argc, char** argv)
       UnitCellMPO Op;
       std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
-      Op.ExtendToCover(Psi.window_size(), Psi.window_offset());
-
       LinearWavefunction PsiWindow;
       MatrixOperator Lambda;
-      std::tie(PsiWindow, Lambda) = get_left_canonical(Psi.Window);
-      PsiWindow.set_back(prod(PsiWindow.get_back(), Lambda));
+
+      // For an empty window, we cannot use get_left_canonical.
+      if (Psi.window_size() > 0)
+      {
+         std::tie(PsiWindow, Lambda) = get_left_canonical(Psi.Window);
+         PsiWindow.set_back(prod(PsiWindow.get_back(), Lambda));
+      }
+      else
+      {
+         PsiWindow = LinearWavefunction();
+         Lambda = Psi.Window.LeftU() * Psi.Window.lambda_r() * Psi.Window.RightU();
+      }
+
+      InfiniteWavefunctionLeft PsiLeft = Psi.Left;
+      InfiniteWavefunctionRight PsiRight = Psi.Right;
+
+      // Calculate the number of sites that we need to incorporate to the
+      // window from the left and right semi-infinite boundaries.
+      int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
+      int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
+
+      // The new window offset.
+      int NewOffset = Psi.window_offset() - SitesLeft;
+
+      // Incorporate extra sites from the left boundary.
+      if (Verbose > 0)
+         std::cout << "Incorporating " << SitesLeft
+                   << " sites from the left boundary..." << std::endl;
+
+      auto CLeft = PsiLeft.end();
+      for (int i = 0; i < SitesLeft; ++i)
+      {
+         if (CLeft == PsiLeft.begin())
+         {
+            inplace_qshift(PsiLeft, PsiLeft.qshift());
+            CLeft = PsiLeft.end();
+         }
+         --CLeft;
+         PsiWindow.push_front(*CLeft);
+      }
+
+      // If the initial window has no sites and we just added sites from the
+      // left, incorporate the lambda matrix now; otherwise, we incorporate it
+      // below after adding from the right.
+      if (SitesLeft > 0 && Psi.window_size() == 0)
+         PsiWindow.set_back(prod(PsiWindow.get_back(), Lambda));
+
+      // Incorporate extra sites from the right boundary.
+      if (Verbose > 0)
+         std::cout << "Incorporating " << SitesRight
+                   << " sites from the right boundary..." << std::endl;
+
+      auto CRight = PsiRight.begin();
+      for (int i = 0; i < SitesRight; ++i)
+      {
+         if (CRight == PsiRight.end())
+         {
+            inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+            CRight = PsiRight.end();
+         }
+         PsiWindow.push_back(*CRight);
+         ++CRight;
+      }
+
+      if (SitesLeft == 0 && Psi.window_size() == 0)
+         PsiWindow.set_front(prod(Lambda, PsiWindow.get_front()));
+
+      Op.ExtendToCover(PsiWindow.size(), NewOffset);
 
       if (Verbose > 0)
          std::cout << "Applying operator..." << std::endl;
@@ -119,11 +183,17 @@ int main(int argc, char** argv)
          (*I) = aux_tensor_prod(*MI, *I);
 
       MatrixOperator Identity = MatrixOperator::make_identity(PsiWindow.Basis2());
-      Psi.Window = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Identity, Verbose);
+      WavefunctionSectionLeft PsiWindowCanonical = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Identity, Verbose);
 
-      inplace_qshift(Psi.Left, Op.qn1());
+      // Handle the case where the MPO has a nontrivial quantum number shift.
+      // (This only works when Op.Basis1.size() > 1).
+      inplace_qshift(PsiLeft, Op.qn1());
 
-      PsiPtr.mutate()->Wavefunction() = Psi;
+      IBCWavefunction PsiNew;
+      PsiNew = IBCWavefunction(PsiLeft, PsiWindowCanonical, PsiRight, NewOffset,
+                               SitesLeft % PsiLeft.size(), SitesRight % PsiRight.size());
+
+      PsiPtr.mutate()->Wavefunction() = PsiNew;
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();

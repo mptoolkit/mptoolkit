@@ -177,8 +177,7 @@ IBC_TDVP::ExpandWindowLeft()
 {
    // Add the unit cell to the window.
    LinearWavefunction PsiCell;
-   RealDiagonalOperator Lambda;
-   std::tie(PsiCell, Lambda) = get_left_canonical(PsiLeft);
+   std::tie(PsiCell, std::ignore) = get_left_canonical(PsiLeft);
 
    Psi.push_front(PsiCell);
 
@@ -213,8 +212,7 @@ IBC_TDVP::ExpandWindowRight()
 {
    // Add the unit cell to the window.
    LinearWavefunction PsiCell;
-   RealDiagonalOperator Lambda;
-   std::tie(Lambda, PsiCell) = get_right_canonical(PsiRight);
+   std::tie(std::ignore, PsiCell) = get_right_canonical(PsiRight);
 
    Psi.push_back(PsiCell);
 
