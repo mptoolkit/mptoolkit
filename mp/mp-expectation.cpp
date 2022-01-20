@@ -55,99 +55,145 @@ Display(std::complex<double> x, int s1, int s2, bool ShowReal, bool ShowImag)
    std::cout << '\n';
 }
 
+class ConstIBCIterator
+{
+   public:
+      ConstIBCIterator(IBCWavefunction const& Psi_, int Index_)
+         : Psi(Psi_), Index(Index_)
+      {
+         PsiLeft = Psi.Left;
+         PsiRight = Psi.Right;
+
+         WindowLeftIndex = Psi.window_offset();
+         WindowRightIndex = Psi.window_size() + Psi.window_offset() - 1;
+
+         if (Index < WindowLeftIndex)
+         {
+            int IndexDiff = WindowLeftIndex - Index;
+
+            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) / PsiLeft.size(); ++i)
+               inplace_qshift(PsiLeft, PsiLeft.qshift());
+
+            C = PsiLeft.end();
+            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) % PsiLeft.size(); ++i)
+               --C;
+            
+            if (C == PsiLeft.end())
+            {
+               inplace_qshift(PsiLeft, adjoint(PsiLeft.qshift()));
+               C = PsiLeft.begin();
+            }
+         }
+         else if (Index > WindowRightIndex)
+         {
+            int IndexDiff = Index - WindowRightIndex - 1;
+
+            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) / PsiRight.size(); ++i)
+               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+
+            C = PsiRight.begin();
+            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) % PsiRight.size(); ++i)
+               ++C;
+         }
+         else
+         {
+            int IndexDiff = Index - WindowLeftIndex;
+
+            C = Psi.Window.begin();
+            for (int i = 0; i < IndexDiff; ++i)
+               ++C;
+         }
+      }
+
+      StateComponent operator*() const
+      {
+         StateComponent Result = *C;
+
+         if (Index == WindowRightIndex + 1)
+            Result = Psi.Window.lambda_r() * Psi.Window.RightU() * Result;
+
+         if (Index == WindowLeftIndex)
+            Result = Psi.Window.LeftU() * Result;
+
+         return Result;
+      }
+
+      ConstIBCIterator& operator++()
+      {
+         ++Index;
+         if (Index < WindowLeftIndex)
+         {
+            ++C;
+            if (C == PsiLeft.end())
+            {
+               inplace_qshift(PsiLeft, adjoint(PsiLeft.qshift()));
+               C = PsiLeft.begin();
+            }
+         }
+         else if (Index == WindowRightIndex + 1)
+         {
+            C = PsiRight.begin();
+            for (int i = 0; i < Psi.WindowRightSites; ++i)
+               ++C;
+         }
+         else if (Index == WindowLeftIndex)
+            C = Psi.Window.begin();
+         else if (Index <= WindowRightIndex)
+            ++C;
+         else if (Index > WindowRightIndex + 1)
+         {
+            ++C;
+            if (C == PsiRight.end())
+            {
+               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+               C = PsiRight.begin();
+            }
+         }
+
+         return *this;
+      }
+
+   private:
+      IBCWavefunction Psi;
+      InfiniteWavefunctionLeft PsiLeft;
+      InfiniteWavefunctionRight PsiRight;
+      CanonicalWavefunctionBase::const_mps_iterator C;
+      int Index;
+      int WindowLeftIndex;
+      int WindowRightIndex;
+};
+
 // TODO: Move this function to the correct place.
 std::complex<double>
 expectation(IBCWavefunction const& Psi,
             UnitCellMPO Op)
 {
-   LinearWavefunction PsiLinear;
-   MatrixOperator Lambda;
-
-   // For an empty window, we cannot use get_left_canonical.
-   if (Psi.window_size() > 0)
-   {
-      std::tie(PsiLinear, Lambda) = get_left_canonical(Psi.Window);
-   }
-   else
-   {
-      PsiLinear = LinearWavefunction();
-      Lambda = Psi.Window.LeftU() * Psi.Window.lambda_r() * Psi.Window.RightU();
-   }
-
-   // Calculate the number of sites that we need from the left and right
-   // semi-infinite boundaries.
-   int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
-   int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
-
-   Op.ExtendToCover(Psi.window_size()+SitesLeft+SitesRight, Psi.window_offset()-SitesLeft);
+   // We choose IndexLeft/IndexRight such that it is the first/last site in the
+   // boundary unit cell, in order for Op.ExtendToCover to work correctly.
+   int IndexLeft = std::min(Psi.window_offset() - ((Psi.Left.size() - Psi.WindowLeftSites) % Psi.Left.size()),
+                            Op.offset());
+   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.Right.size() - Psi.WindowRightSites - 1) % Psi.Right.size()),
+                             Op.size() + Op.offset() - 1);
+                             
+   Op.ExtendToCover(IndexRight - IndexLeft + 1, IndexLeft);
 
    BasicFiniteMPO M = Op.MPO();
 
-   // Calculate the contribution to E from the left infinite boundary.
-   InfiniteWavefunctionLeft PsiLeft = Psi.Left;
+   ConstIBCIterator C = ConstIBCIterator(Psi, IndexLeft);
 
-   // Move the iterator to the starting position.
-   auto CLeft = PsiLeft.end();
-   for (int i = 0; i < (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(); ++i)
-      --CLeft;
+   MatrixOperator I = MatrixOperator::make_identity((*C).Basis1());
+   StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
+   E.front() = I;
 
-   MatrixOperator ILeft;
-   if (CLeft == PsiLeft.end())
-      ILeft = MatrixOperator::make_identity(PsiLeft.Basis2());
-   else
-      ILeft = MatrixOperator::make_identity((*CLeft).Basis1());
+   auto W = M.begin();
 
-   StateComponent E(M.Basis1(), ILeft.Basis1(), ILeft.Basis2());
-   E.front() = ILeft;
-   auto WLeft = M.begin();
-
-   for (int i = 0; i < SitesLeft; ++i)
+   for (int i = IndexLeft; i <= IndexRight; ++i)
    {
-      if (CLeft == PsiLeft.end())
-      {
-         delta_shift(E, adjoint(PsiLeft.qshift()));
-         CLeft = PsiLeft.begin();
-      }
-      E = contract_from_left(*WLeft, herm(*CLeft), E, *CLeft);
-      ++CLeft, ++WLeft;
+      E = contract_from_left(*W, herm(*C), E, *C);
+      ++C, ++W;
    }
 
-   // Calculate the contribution to F from the right infinite boundary.
-   InfiniteWavefunctionRight PsiRight = Psi.Right;
-
-   // Move the iterator to the starting position.
-   auto CRight = PsiRight.begin();
-   for (int i = 0; i < (Psi.WindowRightSites + SitesRight) % PsiRight.size(); ++i)
-      ++CRight;
-
-   MatrixOperator IRight = MatrixOperator::make_identity((*CRight).Basis1());
-   StateComponent F(M.Basis1(), IRight.Basis1(), IRight.Basis2());
-   F.back() = IRight;
-
-   auto WRight = M.end();
-
-   for (int i = 0; i < SitesRight; ++i)
-   {
-      if (CRight == PsiRight.begin())
-      {
-         delta_shift(F, PsiRight.qshift());
-         CRight = PsiRight.end();
-      }
-      --CRight, --WRight;
-      F = contract_from_right(herm(*WRight), *CRight, F, herm(*CRight));
-   }
-
-   // Calculate the contribution to E from the window.
-   auto C = PsiLinear.begin();
-   while (C != PsiLinear.end())
-   {
-      E = contract_from_left(*WLeft, herm(*C), E, *C);
-      ++C, ++WLeft;
-   }
-
-   E = triple_prod(herm(Lambda), E, Lambda);
-
-   return inner_prod(E, F);
+   return trace(E[0]);
 }
 
 int main(int argc, char** argv)
