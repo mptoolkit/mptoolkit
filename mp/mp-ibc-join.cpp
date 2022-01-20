@@ -143,18 +143,26 @@ int main(int argc, char** argv)
       else if (!HamStr.empty())
       {
          InfiniteLattice Lattice;
-         BasicTriangularMPO HamMPO;
+         BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
          std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
+         HamMPOLeft = HamMPO;
+         if (HamMPOLeft.size() < PsiLeft.size())
+            HamMPOLeft = repeat(HamMPOLeft, PsiLeft.size() / HamMPOLeft.size());
+
          std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
-         StateComponent BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-         std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO,
+         StateComponent BlockHamL = Initial_E(HamMPOLeft, PsiLeft.Basis1());
+         std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPOLeft,
                                                                GMRESTol, Verbose);
          std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
          BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
-         StateComponent BlockHamR = Initial_F(HamMPO, PsiRight.Basis2());
-         std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamMPO,
+         HamMPORight = HamMPO;
+         if (HamMPORight.size() < PsiRight.size())
+            HamMPORight = repeat(HamMPORight, PsiRight.size() / HamMPORight.size());
+
+         StateComponent BlockHamR = Initial_F(HamMPORight, PsiRight.Basis2());
+         std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamMPORight,
                                                                  GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
