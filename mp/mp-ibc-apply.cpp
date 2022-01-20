@@ -126,6 +126,10 @@ int main(int argc, char** argv)
       int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
       int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
 
+      // Ensure that the window starts and ends at the operator unit cell boundaries.
+      SitesLeft += (Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size();
+      SitesRight += (Psi.Right.size() - Psi.WindowRightSites) % Op.unit_cell_size();
+
       // The new window offset.
       int NewOffset = Psi.window_offset() - SitesLeft;
 
@@ -171,7 +175,7 @@ int main(int argc, char** argv)
          if (CRight == PsiRight.end())
          {
             inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
-            CRight = PsiRight.end();
+            CRight = PsiRight.begin();
          }
          PsiWindow.push_back(*CRight);
          ++CRight;

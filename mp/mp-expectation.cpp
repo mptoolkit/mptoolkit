@@ -169,10 +169,10 @@ expectation(IBCWavefunction const& Psi,
             UnitCellMPO Op)
 {
    // We choose IndexLeft/IndexRight such that it is the first/last site in the
-   // boundary unit cell, in order for Op.ExtendToCover to work correctly.
-   int IndexLeft = std::min(Psi.window_offset() - ((Psi.Left.size() - Psi.WindowLeftSites) % Psi.Left.size()),
+   // operator unit cell, in order for Op.ExtendToCover to work correctly.
+   int IndexLeft = std::min(Psi.window_offset() - ((Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size()),
                             Op.offset());
-   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.Right.size() - Psi.WindowRightSites - 1) % Psi.Right.size()),
+   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.Right.size() - Psi.WindowRightSites - 1) % Op.unit_cell_size()),
                              Op.size() + Op.offset() - 1);
                              
    Op.ExtendToCover(IndexRight - IndexLeft + 1, IndexLeft);
