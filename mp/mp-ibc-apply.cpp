@@ -44,12 +44,15 @@ int main(int argc, char** argv)
       std::string InputFile;
       std::string OutputFile;
       bool Force = false;
+      bool Normalize = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("force,f", prog_opt::bool_switch(&Force),
           "allow overwriting the output file, if it already exists")
+         ("normalize", prog_opt::bool_switch(&Normalize),
+          "normalize the output wavefunction")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -196,6 +199,16 @@ int main(int argc, char** argv)
 
       MatrixOperator Identity = MatrixOperator::make_identity(PsiWindow.Basis2());
       WavefunctionSectionLeft PsiWindowCanonical = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Identity, Verbose);
+
+      if (Normalize)
+      {
+         if (Verbose > 0)
+            std::cout << "Normalizing wavefunction..." << std::endl;
+
+         std::tie(PsiWindow, Lambda) = get_left_canonical(PsiWindowCanonical);
+         Lambda *= 1.0 / norm_frob(Lambda);
+         PsiWindowCanonical = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Lambda, Verbose);
+      }
 
       // Handle the case where the MPO has a nontrivial quantum number shift.
       // (This only works when Op.Basis1.size() > 1).
