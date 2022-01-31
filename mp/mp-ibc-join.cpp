@@ -61,6 +61,9 @@ int main(int argc, char** argv)
       bool Random = false;
       bool Force = false;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
+      int Iter = 50;
+      int MinIter = 4;
+      double Tol = 1E-16;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -74,6 +77,14 @@ int main(int argc, char** argv)
          ("random", prog_opt::bool_switch(&Random), "Don't minimize the Hamiltonian, make a random state instead")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "model Hamiltonian, of the form lattice:operator")
+         ("maxiter", prog_opt::value<int>(&Iter),
+          FormatDefault("Maximum number of Lanczos iterations", Iter).c_str())
+         ("miniter", prog_opt::value<int>(&MinIter),
+          FormatDefault("Minimum number of Lanczos iterations", MinIter).c_str())
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Error tolerance for the Lanczos eigensolver", Tol).c_str())
+         ("gmrestol", prog_opt::value(&GMRESTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -167,11 +178,8 @@ int main(int argc, char** argv)
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
-         int Iter = 20;
-         int MinIter = 4;
-         double Tol = 1E-16;
-	 double Energy = Lanczos(C, CMultiply(BlockHamL, BlockHamR),
-                                 Iter, Tol, MinIter, Verbose-1);
+         double Energy = Lanczos(C, CMultiply(BlockHamL, BlockHamR),
+                                 Iter, Tol, MinIter, Verbose);
 
          std::cout << "Energy is " << Energy << '\n';
       }
