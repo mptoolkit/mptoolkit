@@ -49,6 +49,8 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       // 2014-04-01: n-2 because we require NCV-NEV >= 2, and NCV <= N.
       // There is a (harmless?) bug here in that if we only want n-1 eigenvalues
       // then we'll actually get all n of them.
+      // 2022-02-17: this bug isn't actually harmless - it means that the caller can get
+      // more elements in the array than expected.  Truncate the eigenvalue array if we get more than expected.
       if (Verbose >= 1)
       {
          std::cerr << "Constructing matrix for direct diagonalization\n";
@@ -72,94 +74,96 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
             LinearAlgebra::make_vec(&(*OutputVectors)[n*k], n) = RV(k, LinearAlgebra::all);
          }
       }
+      // If we are using LAPACK for the diaginalization then we might have more eigenvalues than we need.  In order to ensure
+      // that we get the right eigenvalues, we must sort them, even if the caller doesn't require it.
+      Sort = true;
    }
    else
    {
+      // arpack parameters
+      int ido = 0;  // first call
+      char bmat = 'I'; // standard eigenvalue problem
+      char which[3] = "LM";                      // largest magnitude
+      int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
+      std::vector<std::complex<double> > resid(n);  // residual
+      ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
+      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
+      int const ldv = n;
+      ARPACK::iparam_t iparam;
+      iparam.ishift = 1;      // exact shifts
+      iparam.mxiter = 10000;  // maximum number of arnoldi iterations (restarts?)
+      iparam.mode = 1;  // ordinary eigenvalue problem
+      ARPACK::zn_ipntr_t ipntr;
+      std::vector<std::complex<double> > workd(3*n);
+      int const lworkl = 3*ncv*ncv + 5*ncv;
+      std::vector<std::complex<double> > workl(lworkl);
+      std::vector<double> rwork(ncv);
+      int info = 0;  // no initial residual
 
-   // arpack parameters
-   int ido = 0;  // first call
-   char bmat = 'I'; // standard eigenvalue problem
-   char which[3] = "LM";                      // largest magnitude
-   int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-   std::vector<std::complex<double> > resid(n);  // residual
-   ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-   std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
-   int const ldv = n;
-   ARPACK::iparam_t iparam;
-   iparam.ishift = 1;      // exact shifts
-   iparam.mxiter = 10000;  // maximum number of arnoldi iterations (restarts?)
-   iparam.mode = 1;  // ordinary eigenvalue problem
-   ARPACK::zn_ipntr_t ipntr;
-   std::vector<std::complex<double> > workd(3*n);
-   int const lworkl = 3*ncv*ncv + 5*ncv;
-   std::vector<std::complex<double> > workl(lworkl);
-   std::vector<double> rwork(ncv);
-   int info = 0;  // no initial residual
-
-   if (Verbose >= 1)
-   {
-      std::cerr << "Starting ARPACK";
-   }
-
-   int NumMultiplies = 0;
-
-   ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
-                  &v[0], ldv, &iparam, &ipntr, &workd[0],
-                  &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info)(n)(nev)(ncv);
-
-   while (ido != 99)
-   {
-      if (ido == -1 || ido == 1)
+      if (Verbose >= 1)
       {
-         if (Verbose >= 2)
-            std::cerr << '.';
-         Mult(&workd[ipntr.x], &workd[ipntr.y]);
-         ++NumMultiplies;
+         std::cerr << "Starting ARPACK";
       }
-      else
-      {
-         PANIC("unexpected reverse communication operation.")(ido);
-      }
+
+      int NumMultiplies = 0;
 
       ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
-      CHECK(info >= 0)(info);
-   }
+      CHECK(info >= 0)(info)(n)(nev)(ncv);
 
-   if (Verbose >= 1)
-   {
-      std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
-   }
+      while (ido != 99)
+      {
+         if (ido == -1 || ido == 1)
+         {
+            if (Verbose >= 2)
+               std::cerr << '.';
+            Mult(&workd[ipntr.x], &workd[ipntr.y]);
+            ++NumMultiplies;
+         }
+         else
+         {
+            PANIC("unexpected reverse communication operation.")(ido);
+         }
 
-   // get the eigenvalues
-   bool rvec = OutputVectors != NULL; // should we calculate eigenvectors?
-   char howmny = 'A';
-   std::vector<int> select(ncv);
-   std::vector<std::complex<double> > d(nev+1);
-   std::vector<std::complex<double> > z(OutputVectors ? n*(nev+1) : 1); // output array
-   int ldz = n;
-   std::complex<double> sigma;   // not referenced
-   std::vector<std::complex<double> > workev(2*ncv);
-   ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
-                  &iparam, &ipntr, &workd[0],
-                  &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
+         ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
+                        &v[0], ldv, &iparam, &ipntr, &workd[0],
+                        &workl[0], lworkl, &rwork[0], &info);
+         CHECK(info >= 0)(info);
+      }
 
-   Result = LinearAlgebra::Vector<std::complex<double> >(nev);
-   for (int i = 0; i < nev; ++i)
-   {
-      Result[i] = d[i];
-   }
+      if (Verbose >= 1)
+      {
+         std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
+      }
 
-   // eigenvectors
-   if (OutputVectors)
-   {
-      OutputVectors->empty();
-      std::swap(z, *OutputVectors);
-   }
+      // get the eigenvalues
+      bool rvec = OutputVectors != NULL; // should we calculate eigenvectors?
+      char howmny = 'A';
+      std::vector<int> select(ncv);
+      std::vector<std::complex<double> > d(nev+1);
+      std::vector<std::complex<double> > z(OutputVectors ? n*(nev+1) : 1); // output array
+      int ldz = n;
+      std::complex<double> sigma;   // not referenced
+      std::vector<std::complex<double> > workev(2*ncv);
+      ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
+                     bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
+                     &iparam, &ipntr, &workd[0],
+                     &workl[0], lworkl, &rwork[0], &info);
+      CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
+
+      Result = LinearAlgebra::Vector<std::complex<double> >(nev);
+      for (int i = 0; i < nev; ++i)
+      {
+         Result[i] = d[i];
+      }
+
+      // eigenvectors
+      if (OutputVectors)
+      {
+         OutputVectors->empty();
+         std::swap(z, *OutputVectors);
+      }
 
    }
 
@@ -185,6 +189,15 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
             }
          }
       }
+   }
+
+   // If we ended up with more eigenvalues than we wanted, resize the arrays.
+   if (Result.size() > NumEigen)
+   {
+      LinearAlgebra::Vector<std::complex<double>> R2 = Result[LinearAlgebra::range(0,NumEigen)];
+      std::swap(Result, R2);
+      if (OutputVectors)
+         OutputVectors->resize(n*NumEigen);
    }
 
    // restore the ARPACK debug log level before returning
