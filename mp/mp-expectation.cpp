@@ -174,7 +174,7 @@ expectation(IBCWavefunction const& Psi,
                             Op.offset());
    int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.Right.size() - Psi.WindowRightSites - 1) % Op.unit_cell_size()),
                              Op.size() + Op.offset() - 1);
-                             
+
    Op.ExtendToCover(IndexRight - IndexLeft + 1, IndexLeft);
 
    BasicFiniteMPO M = Op.MPO();

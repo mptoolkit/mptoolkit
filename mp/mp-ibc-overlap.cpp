@@ -192,6 +192,42 @@ overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
    return trace(E);
 }
 
+std::complex<double>
+overlap_conj(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
+{
+   IBCWavefunction Psi2Conj = Psi2;
+   inplace_conj(Psi2Conj);
+
+   int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
+   int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
+                             Psi2.window_size() + Psi2.window_offset());
+
+   ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
+   ConstIBCIterator C2 = ConstIBCIterator(Psi2Conj, IndexLeft);
+
+   CHECK((*C1).Basis1() == (*C2).Basis1());
+
+   StateComponent ESC, FSC;
+   std::complex<double> OverlapL, OverlapR;
+
+   // Get the identity quantum number.
+   QuantumNumbers::QuantumNumber QI(Psi1.GetSymmetryList());
+
+   std::tie(OverlapL, ESC) = overlap(Psi1.Left, Psi2Conj.Left, QI);
+   std::tie(OverlapR, FSC) = overlap(Psi1.Right, Psi2Conj.Right, QI);
+
+   MatrixOperator E = ESC.front();
+   MatrixOperator F = FSC.front();
+
+   for (int i = IndexLeft; i <= IndexRight; ++i)
+   {
+      E = operator_prod(herm(*C1), E, *C2);
+      ++C1, ++C2;
+   }
+
+   return inner_prod(E, F);
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -202,6 +238,7 @@ int main(int argc, char** argv)
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
       bool ShowRadians = false, ShowCorrLength = false;
       std::string LhsStr, RhsStr;
+      int Rotate = 0;
       bool Quiet = false;
       bool Reflect = false;
       bool Conj = false;
@@ -223,6 +260,8 @@ int main(int argc, char** argv)
           "display the argument (angle) of the result")
          ("radians", prog_opt::bool_switch(&ShowRadians),
           "display the argument in radians instead of degrees")
+         ("rotate", prog_opt::value(&Rotate),
+          "rotate psi2 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2")
          ("conj", prog_opt::bool_switch(&Conj),
@@ -312,6 +351,10 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Calculating overlap...\n";
 
+      if (Verbose)
+         std::cout << "Rotating Psi2 left by " << Rotate << " sites..." << std::endl;
+      Psi2.WindowOffset -= Rotate;
+
       if (Reflect)
       {
          if (Verbose)
@@ -319,12 +362,14 @@ int main(int argc, char** argv)
          inplace_reflect(Psi2);
       }
 
+#if 0
       if (Conj)
       {
          if (Verbose)
             std::cout << "Conjugating psi2..." << std::endl;
          inplace_conj(Psi2);
       }
+#endif
 
       int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
       int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
@@ -346,7 +391,12 @@ int main(int argc, char** argv)
          std::cout << std::left;
       }
 
-      std::complex<double> x = overlap(Psi1, Psi2);
+      std::complex<double> x;
+
+      if (Conj)
+         x = overlap_conj(Psi1, Psi2);
+      else
+         x = overlap(Psi1, Psi2);
 
       PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 

@@ -89,6 +89,9 @@ inplace_conj(WavefunctionSectionLeft& Psi)
    {
       *I = conj(*I);
    }
+
+   Psi.LeftU_ = conj(Psi.LeftU_);
+   Psi.RightU_ = conj(Psi.RightU_);
 }
 
 WavefunctionSectionLeft
