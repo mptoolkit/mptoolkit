@@ -428,7 +428,7 @@ overlap(InfiniteWavefunctionRight const& x, ProductMPO const& StringOp,
 
    ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
 
-   StateComponent Init = MakeRandomStateComponent(Str.Basis1(), x.Basis1(), y.Basis1());
+   StateComponent Init = MakeRandomStateComponent(Str.Basis2(), x.Basis2(), y.Basis2());
 
    int Iterations = Iter;
    int TotalIterations = 0;

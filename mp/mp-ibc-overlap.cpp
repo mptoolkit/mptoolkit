@@ -27,6 +27,13 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 
+// The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
+double const OverlapTol = 1e-12;
+
+// The tolerance of the trace of the left/right boundary eigenvectors for
+// fixing the phase when calculating the overlap of two general IBCs.
+double const TraceTol = 1e-8;
+
 namespace prog_opt = boost::program_options;
 
 void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPart,
@@ -165,11 +172,10 @@ class ConstIBCIterator
 // NOTE: This function assumes that the left/right boundaries of Psi1 and Psi2
 // are identical.
 // TODO:
-// Move this function to the correct place.
-// Handle the more general case where Psi1 and Psi2 have different boundaries.
+// Move these functions to the correct place.
 // Figure out how to properly handle phase.
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
+overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
 {
    int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
    int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
@@ -192,32 +198,114 @@ overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
    return trace(E);
 }
 
+// A more general function to calculate the overlap, which attempts to handle
+// the case where the left/right boundaries of Psi1 and Psi2 may be different
+// (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
 std::complex<double>
-overlap_conj(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
 {
-   IBCWavefunction Psi2Conj = Psi2;
-   inplace_conj(Psi2Conj);
+   CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
+   CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
 
-   int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
-   int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
-                             Psi2.window_size() + Psi2.window_offset());
+   int IndexLeft1 = Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size());
+   int IndexLeft2 = Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size());
+   int IndexLeft = std::min(IndexLeft1, IndexLeft2);
 
-   ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
-   ConstIBCIterator C2 = ConstIBCIterator(Psi2Conj, IndexLeft);
+   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size());
+   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size());
+   int IndexRight = std::max(IndexRight1, IndexRight2);
 
-   CHECK((*C1).Basis1() == (*C2).Basis1());
-
-   StateComponent ESC, FSC;
-   std::complex<double> OverlapL, OverlapR;
+   // Before calculating the overlap, we must find the left/right eigenvectors
+   // of the left/right boundary transfer matrices.
 
    // Get the identity quantum number.
-   QuantumNumbers::QuantumNumber QI(Psi1.GetSymmetryList());
+   QuantumNumber QI(Psi1.GetSymmetryList());
 
-   std::tie(OverlapL, ESC) = overlap(Psi1.Left, Psi2Conj.Left, QI);
-   std::tie(OverlapR, FSC) = overlap(Psi1.Right, Psi2Conj.Right, QI);
+   // Ensure that the semi-infinite boundaries have the same quantum numbers.
+   QuantumNumber QShiftLeft1 = QI;
+   for (int i = 0; i < (IndexLeft1 - IndexLeft) / Psi1.Left.size(); ++i)
+      QShiftLeft1 = delta_shift(QShiftLeft1, Psi1.Left.qshift());
 
-   MatrixOperator E = ESC.front();
+   QuantumNumber QShiftLeft2 = QI;
+   for (int i = 0; i < (IndexLeft2 - IndexLeft) / Psi2.Left.size(); ++i)
+      QShiftLeft2 = delta_shift(QShiftLeft2, Psi2.Left.qshift());
+
+   InfiniteWavefunctionLeft Psi1Left = Psi1.Left;
+   inplace_qshift(Psi1Left, QShiftLeft1);
+
+   InfiniteWavefunctionLeft Psi2Left = Psi2.Left;
+   inplace_qshift(Psi2Left, QShiftLeft2);
+
+   // Calculate the left eigenvector of the left semi-infinite boundary.
+   std::complex<double> OverlapL;
+   StateComponent ESC;
+   std::tie(OverlapL, ESC) = overlap(Psi1Left, Psi2Left, QI);
+
+   // Check that the eigenvalue has magnitude 1.
+   //TRACE(OverlapL);
+   if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
+      WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
+
+   MatrixOperator E = delta_shift(ESC.front(), adjoint(Psi1.Left.qshift()));
+
+   QuantumNumber QShiftRight1 = QI;
+   for (int i = 0; i < (IndexRight - IndexRight1) / Psi1.Right.size(); ++i)
+      QShiftRight1 = delta_shift(QShiftRight1, adjoint(Psi1.Right.qshift()));
+
+   QuantumNumber QShiftRight2 = QI;
+   for (int i = 0; i < (IndexRight - IndexRight2) / Psi2.Right.size(); ++i)
+      QShiftRight2 = delta_shift(QShiftRight2, adjoint(Psi2.Right.qshift()));
+
+   InfiniteWavefunctionRight Psi1Right = Psi1.Right;
+   inplace_qshift(Psi1Right, QShiftRight1);
+
+   InfiniteWavefunctionRight Psi2Right = Psi2.Right;
+   inplace_qshift(Psi2Right, QShiftRight2);
+
+   // Calculate the right eigenvector of the right semi-infinite boundary.
+   std::complex<double> OverlapR;
+   StateComponent FSC;
+   std::tie(OverlapR, FSC) = overlap(Psi1Right, Psi2Right, QI);
+
+   // Check that the eigenvalue has magnitude 1.
+   //TRACE(OverlapR);
+   if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
+      WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
+
    MatrixOperator F = FSC.front();
+
+   // Rescale E and F by the bond dimension.
+   E *= std::sqrt(std::min(E.Basis1().total_degree(), E.Basis2().total_degree()));
+   F *= std::sqrt(std::min(F.Basis1().total_degree(), F.Basis2().total_degree()));
+
+   if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2())
+   {
+      //E *= std::sqrt(E.Basis1().total_degree());
+      //F *= std::sqrt(F.Basis1().total_degree());
+
+      // Remove spurious phase from E and F by setting the phase of the trace
+      // to be zero (but only if the trace is nonzero).
+
+      std::complex<double> ETrace = trace(E);
+
+      if (std::abs(ETrace) > TraceTol)
+         E *= std::conj(ETrace) / std::abs(ETrace);
+      else
+         WARNING("The trace of E is below threshold, so the overlap will have a spurious phase contribution.")(ETrace);
+
+      std::complex<double> FTrace = trace(F);
+
+      if (std::abs(FTrace) > TraceTol)
+         F *= std::conj(FTrace) / std::abs(FTrace);
+      else
+         WARNING("The trace of F is below threshold, so the overlap will have a spurious phase contribution.")(FTrace);
+   }
+   else
+      WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
+
+   // Calculate the overlap.
+   ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
+   ConstIBCIterator C2 = ConstIBCIterator(Psi2, IndexLeft);
 
    for (int i = IndexLeft; i <= IndexRight; ++i)
    {
@@ -225,7 +313,7 @@ overlap_conj(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
       ++C1, ++C2;
    }
 
-   return inner_prod(E, F);
+   return inner_prod(F, E);
 }
 
 int main(int argc, char** argv)
@@ -242,6 +330,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Reflect = false;
       bool Conj = false;
+      bool Simple = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -266,6 +355,8 @@ int main(int argc, char** argv)
           "reflect psi2")
          ("conj", prog_opt::bool_switch(&Conj),
           "complex conjugate psi2")
+         ("simple", prog_opt::bool_switch(&Simple),
+          "assume that psi1 and psi2 have the same semi-infinite boundaries")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -362,21 +453,31 @@ int main(int argc, char** argv)
          inplace_reflect(Psi2);
       }
 
-#if 0
       if (Conj)
       {
          if (Verbose)
             std::cout << "Conjugating psi2..." << std::endl;
          inplace_conj(Psi2);
       }
-#endif
 
-      int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
-      int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
-                                Psi2.window_size() + Psi2.window_offset());
 
       if (!Quiet)
       {
+         int IndexLeft, IndexRight;
+         if (Simple)
+         {
+            IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
+            IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
+                                  Psi2.window_size() + Psi2.window_offset());
+         }
+         else
+         {
+            IndexLeft = std::min(Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size()),
+                                 Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size()));
+            IndexRight = std::max(Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size()),
+                                  Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size()));
+         }
+
          std::cout << "#overlap calculated over sites " << IndexLeft << " to " << IndexRight
                    << " (" << IndexRight - IndexLeft + 1 << " sites total)\n";
          if (ShowRealPart)
@@ -393,8 +494,8 @@ int main(int argc, char** argv)
 
       std::complex<double> x;
 
-      if (Conj)
-         x = overlap_conj(Psi1, Psi2);
+      if (Simple)
+         x = overlap_simple(Psi1, Psi2);
       else
          x = overlap(Psi1, Psi2);
 
