@@ -460,7 +460,6 @@ int main(int argc, char** argv)
          inplace_conj(Psi2);
       }
 
-
       if (!Quiet)
       {
          int IndexLeft, IndexRight;

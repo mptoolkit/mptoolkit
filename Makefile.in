@@ -226,7 +226,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
 	mp-tdvp mp-itdvp mp-iexpectation-cross
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-ibc-join \
-                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap
+                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation
 
 
 benchmarks = benchtripleprod
@@ -509,6 +509,7 @@ mp-tebd : tebd.o number-parser.o
 mp-itebd : tebd.o number-parser.o
 
 mp-ibc-join : random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
+mp-ibc-correlation: number-parser.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
