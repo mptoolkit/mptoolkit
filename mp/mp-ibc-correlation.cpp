@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-ibc-overlap.cpp
+// mp/mp-ibc-correlation.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
 // Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
@@ -28,10 +28,10 @@
 #include "common/prog_options.h"
 #include "parser/number-parser.h"
 
-#if 0
 // The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
 double const OverlapTol = 1e-12;
 
+#if 0
 // The tolerance of the trace of the left/right boundary eigenvectors for
 // fixing the phase when calculating the overlap of two general IBCs.
 double const TraceTol = 1e-8;
