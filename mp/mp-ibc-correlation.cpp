@@ -31,12 +31,6 @@
 // The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
 double const OverlapTol = 1e-12;
 
-#if 0
-// The tolerance of the trace of the left/right boundary eigenvectors for
-// fixing the phase when calculating the overlap of two general IBCs.
-double const TraceTol = 1e-8;
-#endif
-
 namespace prog_opt = boost::program_options;
 
 void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPart,
@@ -62,171 +56,6 @@ void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPar
       std::cout << std::setw(20) << Arg << "    ";
    }
    std::cout << std::endl;
-}
-
-class ConstIBCIterator
-{
-   public:
-      ConstIBCIterator(IBCWavefunction const& Psi_, int Index_)
-         : Psi(Psi_), Index(Index_)
-      {
-         PsiLeft = Psi.Left;
-         PsiRight = Psi.Right;
-
-         WindowLeftIndex = Psi.window_offset();
-         WindowRightIndex = Psi.window_size() + Psi.window_offset() - 1;
-
-         if (Index < WindowLeftIndex)
-         {
-            int IndexDiff = WindowLeftIndex - Index;
-
-            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) / PsiLeft.size(); ++i)
-               inplace_qshift(PsiLeft, PsiLeft.qshift());
-
-            C = PsiLeft.end();
-            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) % PsiLeft.size(); ++i)
-               --C;
-            
-            if (C == PsiLeft.end())
-            {
-               inplace_qshift(PsiLeft, adjoint(PsiLeft.qshift()));
-               C = PsiLeft.begin();
-            }
-         }
-         else if (Index > WindowRightIndex)
-         {
-            int IndexDiff = Index - WindowRightIndex - 1;
-
-            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) / PsiRight.size(); ++i)
-               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
-
-            C = PsiRight.begin();
-            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) % PsiRight.size(); ++i)
-               ++C;
-         }
-         else
-         {
-            int IndexDiff = Index - WindowLeftIndex;
-
-            C = Psi.Window.begin();
-            for (int i = 0; i < IndexDiff; ++i)
-               ++C;
-         }
-      }
-
-      StateComponent operator*() const
-      {
-         StateComponent Result = *C;
-
-         if (Index == WindowRightIndex + 1)
-            Result = Psi.Window.lambda_r() * Psi.Window.RightU() * Result;
-
-         if (Index == WindowLeftIndex)
-            Result = Psi.Window.LeftU() * Result;
-
-         return Result;
-      }
-
-      ConstIBCIterator& operator++()
-      {
-         ++Index;
-         if (Index < WindowLeftIndex)
-         {
-            ++C;
-            if (C == PsiLeft.end())
-            {
-               inplace_qshift(PsiLeft, adjoint(PsiLeft.qshift()));
-               C = PsiLeft.begin();
-            }
-         }
-         else if (Index == WindowRightIndex + 1)
-         {
-            C = PsiRight.begin();
-            for (int i = 0; i < Psi.WindowRightSites; ++i)
-               ++C;
-         }
-         else if (Index == WindowLeftIndex)
-            C = Psi.Window.begin();
-         else if (Index <= WindowRightIndex)
-            ++C;
-         else if (Index > WindowRightIndex + 1)
-         {
-            ++C;
-            if (C == PsiRight.end())
-            {
-               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
-               C = PsiRight.begin();
-            }
-         }
-
-         return *this;
-      }
-
-   private:
-      IBCWavefunction Psi;
-      InfiniteWavefunctionLeft PsiLeft;
-      InfiniteWavefunctionRight PsiRight;
-      CanonicalWavefunctionBase::const_mps_iterator C;
-      int Index;
-      int WindowLeftIndex;
-      int WindowRightIndex;
-};
-
-// NOTE: This function assumes that the left/right boundaries of Psi1 and Psi2
-// are identical.
-std::complex<double>
-overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2)
-{
-   int IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
-   int IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
-                             Psi2.window_size() + Psi2.window_offset());
-
-   ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
-   ConstIBCIterator C2 = ConstIBCIterator(Psi2, IndexLeft);
-
-   CHECK((*C1).Basis1() == (*C2).Basis1());
-
-   MatrixOperator I = MatrixOperator::make_identity((*C1).Basis1());
-   MatrixOperator E = scalar_prod(herm(I), I);
-
-   for (int i = IndexLeft; i <= IndexRight; ++i)
-   {
-      E = operator_prod(herm(*C1), E, *C2);
-      ++C1, ++C2;
-   }
-
-   return trace(E);
-}
-
-std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
-        MatrixOperator const& E_, MatrixOperator const& F_)
-{
-   CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
-   CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
-
-   int IndexLeft1 = Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size());
-   int IndexLeft2 = Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size());
-   int IndexLeft = std::min(IndexLeft1, IndexLeft2);
-
-   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size());
-   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size());
-   int IndexRight = std::max(IndexRight1, IndexRight2);
-
-   MatrixOperator E = E_;
-   MatrixOperator F = F_;
-
-   // Calculate the overlap.
-   ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
-   ConstIBCIterator C2 = ConstIBCIterator(Psi2, IndexLeft);
-
-   for (int i = IndexLeft; i <= IndexRight; ++i)
-   {
-      E = operator_prod(herm(*C1), E, *C2);
-      ++C1, ++C2;
-   }
-
-   return inner_prod(F, E);
 }
 
 int main(int argc, char** argv)
@@ -257,35 +86,35 @@ int main(int argc, char** argv)
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
-         ("help", "show this help message")
+         ("help", "Show this help message")
          ("cart,c", prog_opt::bool_switch(&ShowCartesian),
-          "show the result in cartesian coordinates [equivalent to --real --imag]")
+          "Show the result in cartesian coordinates [equivalent to --real --imag]")
          ("polar,p", prog_opt::bool_switch(&ShowPolar),
-          "show the result in polar coodinates [equivalent to --mag --arg]")
+          "Show the result in polar coodinates [equivalent to --mag --arg]")
          ("real,r", prog_opt::bool_switch(&ShowRealPart),
-          "display the real part of the result")
+          "Display the real part of the result")
          ("imag,i", prog_opt::bool_switch(&ShowImagPart),
-          "display the imaginary part of the result")
+          "Display the imaginary part of the result")
          ("mag,m", prog_opt::bool_switch(&ShowMagnitude),
-          "display the magnitude of the result")
+          "Display the magnitude of the result")
          ("arg,a", prog_opt::bool_switch(&ShowArgument),
-          "display the argument (angle) of the result")
+          "Display the argument (angle) of the result")
          ("radians", prog_opt::bool_switch(&ShowRadians),
-          "display the argument in radians instead of degrees")
+          "Display the argument in radians instead of degrees")
          ("conj", prog_opt::bool_switch(&Conj),
-          "complex conjugate psi2")
+          "Complex conjugate psi2")
          //("simple", prog_opt::bool_switch(&Simple),
-         // "assume that psi1 and psi2 have the same semi-infinite boundaries")
+         // "Assume that psi1 and psi2 have the same semi-infinite boundaries")
 	 ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input wavefunctions")
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep")
+	 ("precision", prog_opt::value(&Digits), "Decimal precision in time value of the filenames")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps", N).c_str())
 	 ("xmin", prog_opt::value(&XMin), FormatDefault("Minimum value of x", XMin).c_str())
 	 ("xmax,x", prog_opt::value(&XMax), FormatDefault("Maximum value of x", XMax).c_str())
-	 ("precision", prog_opt::value(&Digits), "Decimal precision in time value of the filenames")
          ("quiet", prog_opt::bool_switch(&Quiet),
-          "don't show the column headings")
+          "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "extra debug output [can be used multiple times]")
+          "Extra debug output [can be used multiple times]")
          ;
 
       prog_opt::options_description opt;
@@ -341,7 +170,7 @@ int main(int argc, char** argv)
       Digits = std::max(Digits, formatting::digits(Timestep));
 
       if (Verbose)
-         std::cout << "Loading RHS wavefunction...\n";
+         std::cout << "Loading RHS wavefunction..." << std::endl;
 
       std::string InitialFilename = InputPrefix;
 
@@ -455,14 +284,14 @@ int main(int argc, char** argv)
             std::cout << "#magnitude              ";
          if (ShowArgument)
             std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
-         std::cout << '\n';
+         std::cout << std::endl;
          std::cout << std::left;
       }
 
       for (int tstep = 0; tstep <= N; ++tstep)
       {
          if (Verbose)
-            std::cout << "Loading LHS wavefunction...\n";
+            std::cout << "Loading LHS wavefunction..." << std::endl;
 
          std::string Filename = InputPrefix;
          std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), Digits);
@@ -482,36 +311,15 @@ int main(int argc, char** argv)
          for (int x = XMin; x <= XMax; ++x)
          {
             if (Verbose)
-               std::cout << "Rotating Psi2 right by " << x << " sites..." << std::endl;
+               std::cout << "Translating Psi2 right by " << x << " sites..." << std::endl;
             ++Psi2.WindowOffset;
-
-            if (Verbose)
-            {
-               int IndexLeft, IndexRight;
-               if (!Conj)
-               {
-                  IndexLeft = std::min(Psi1.window_offset(), Psi2.window_offset());
-                  IndexRight = std::max(Psi1.window_size() + Psi1.window_offset(),
-                                        Psi2.window_size() + Psi2.window_offset());
-               }
-               else
-               {
-                  IndexLeft = std::min(Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size()),
-                                       Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size()));
-                  IndexRight = std::max(Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size()),
-                                        Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size()));
-               }
-
-               std::cout << "Overlap calculated over sites " << IndexLeft << " to " << IndexRight
-                         << " (" << IndexRight - IndexLeft + 1 << " sites total)\n";
-            }
 
             std::complex<double> Overlap;
 
             if (!Conj)
-               Overlap = overlap_simple(Psi2, Psi1);
+               Overlap = overlap_simple(Psi2, Psi1, Verbose);
             else
-               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F);
+               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F, Verbose);
 
             if (std::real(Timestep) != 0.0)
                std::cout << std::setw(10) << TimeStr << "    ";
@@ -532,7 +340,7 @@ int main(int argc, char** argv)
          for (int tstep = 1; tstep <= N; ++tstep)
          {
             if (Verbose)
-               std::cout << "Loading RHS wavefunction...\n";
+               std::cout << "Loading RHS wavefunction..." << std::endl;
 
             std::string Filename = InputPrefix;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), Digits);
@@ -557,24 +365,12 @@ int main(int argc, char** argv)
             {
 
                if (Verbose)
-                  std::cout << "Rotating Psi2 right by " << x << " sites..." << std::endl;
+                  std::cout << "Translating Psi2 right by " << x << " sites..." << std::endl;
                ++Psi2.WindowOffset;
-
-               if (Verbose)
-               {
-                  int IndexLeft, IndexRight;
-                  IndexLeft = std::min(Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size()),
-                                       Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size()));
-                  IndexRight = std::max(Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size()),
-                                        Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size()));
-
-                  std::cout << "Overlap calculated over sites " << IndexLeft << " to " << IndexRight
-                            << " (" << IndexRight - IndexLeft + 1 << " sites total)\n";
-               }
 
                std::complex<double> Overlap;
 
-               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F);
+               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F, Verbose);
 
                if (std::real(Timestep) != 0.0)
                   std::cout << std::setw(10) << TimeStr << "    ";
@@ -595,12 +391,12 @@ int main(int argc, char** argv)
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!\n";
+      std::cerr << "Unknown exception!" << std::endl;
       return 1;
    }
 }

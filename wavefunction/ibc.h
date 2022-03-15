@@ -45,6 +45,7 @@
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"
 #include "canonicalwavefunction.h"
+#include "lattice/unitcell_mpo.h"
 
 // Note that Basis1(), Basis2() refer to the basis of the edge lambda matrices, NOT the LeftU.Basis1()
 // and RightU.Basis2() !
@@ -187,5 +188,24 @@ WavefunctionSectionLeft::debug_check_structure() const
    this->check_structure();
 #endif
 }
+
+// TODO: Add a function to handle mixed expectation values.
+std::complex<double>
+expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose = 0);
+
+// Calculates the overlap of two IBC wavefunctions assuming that they have the
+// same semi-infinite boundaries.
+std::complex<double>
+overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
+
+// A more general function to calculate the overlap, which attempts to handle
+// the case where the left/right boundaries of Psi1 and Psi2 may be different
+// (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
+        MatrixOperator const& E_, MatrixOperator const& F_, int Verbose = 0);
 
 #endif
