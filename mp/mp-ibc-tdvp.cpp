@@ -19,7 +19,6 @@
 // ENDHEADER
 
 #include "common/environment.h"
-#include "common/environment.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
 #include "common/terminal.h"
@@ -46,9 +45,6 @@ int main(int argc, char** argv)
       std::string InputFile;
       std::string OutputPrefix;
       std::string TimestepStr;
-      std::string BetastepStr;
-      std::string InitialTimeStr;
-      std::string InitialBetaStr;
       int N = 1;
       int SaveEvery = 1;
       int MaxIter = 20;
@@ -119,8 +115,8 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
-         std::cerr << desc << '\n';
+         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << desc << std::endl;
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
             std::cerr << c.first << " : " << c.second.Description << std::endl;
@@ -164,30 +160,20 @@ int main(int argc, char** argv)
 
       // Get the initial time & beta from the wavefunction attributes.
       std::complex<double> InitialTime = 0.0;
-      if (InitialTimeStr.empty())
-      {
-         std::string T = PsiPtr->Attributes()["Time"].as<std::string>();
-         if (!T.empty())
-            InitialTime.real(std::stod(T));
-      }
-      if (InitialBetaStr.empty())
-      {
-         std::string B = PsiPtr->Attributes()["Beta"].as<std::string>();
-         if (!B.empty())
-            InitialTime.imag(-std::stod(B));
-      }
+
+      std::string T = PsiPtr->Attributes()["Time"].as<std::string>();
+      if (!T.empty())
+         InitialTime.real(std::stod(T));
+      std::string B = PsiPtr->Attributes()["Beta"].as<std::string>();
+      if (!B.empty())
+         InitialTime.imag(-std::stod(B));
 
       // Allow both timestep and betastep.
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
-      if (!BetastepStr.empty())
-         Timestep += std::complex<double>(0.0, -1.0) * ParseNumber(BetastepStr);
 
-      if (OutputDigits == 0)
-      {
-         OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
-      }
+      OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
       // Hamiltonian.
       InfiniteLattice Lattice;
@@ -320,23 +306,23 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
       pheap::Cleanup();
       return 1;
    }
    catch (pheap::PHeapCannotCreateFile& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!\n";
+      std::cerr << "Unknown exception!" << std::endl;
       pheap::Cleanup();
       return 1;
    }
