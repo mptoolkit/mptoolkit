@@ -344,8 +344,8 @@ struct RightMultiplyOperator
 
    result_type operator()(argument_type const& x) const
    {
-      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
-      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis2());
+      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis2());
       StateComponent R = x;
       LinearWavefunction::const_iterator I1 = Psi1.end();
       LinearWavefunction::const_iterator I2 = Psi2.end();
@@ -381,7 +381,7 @@ struct RightMultiplyOperator
 
          if (Verbose > 1)
          {
-            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
+            std::cerr << "Site " << n << ", F-matrix dimension " << R.size()
                       << "x" << R.Basis1().total_dimension()
                       << "x" << R.Basis2().total_dimension()
                       << '\n';

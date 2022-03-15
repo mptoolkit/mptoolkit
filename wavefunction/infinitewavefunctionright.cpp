@@ -426,7 +426,7 @@ overlap(InfiniteWavefunctionRight const& x, ProductMPO const& StringOp,
    LinearWavefunction xPsi = get_right_canonical(x).second;
    LinearWavefunction yPsi = get_right_canonical(y).second;
 
-   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
+   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis1List(), Sector);
 
    StateComponent Init = MakeRandomStateComponent(Str.Basis2(), x.Basis2(), y.Basis2());
 
