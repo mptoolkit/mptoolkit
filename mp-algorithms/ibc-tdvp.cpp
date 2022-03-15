@@ -556,10 +556,26 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
                 << " LambdaDiffRight=" << LambdaDiff << std::endl;
 }
 
+// TODO: At the moment, the handling of expanding the bond at the edge of the
+// window is inefficient: we first evolve the leftmost site and then check if
+// we want to expand the window, and if we do, we unevolve the site, expand the
+// bond, then evolve again.
+// It would be better to try to expand the bond before evolving the leftmost
+// site, and if we do need to expand the bond, we can just expand the window as
+// well.
 void
 IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
 {
-   this->SweepLeftExpand(Tau);
+   while (Site > LeftStop)
+   {
+      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeftBond();
+      this->EvolveCurrentSite(Tau);
+      this->IterateLeft(Tau);
+   }
+
+   StateComponent Tmp = *C;
+   this->EvolveCurrentSite(Tau);
 
    double FidLoss = this->CalculateFidelityLossLeft();
    double LambdaDiff = this->CalculateLambdaDiffLeft();
@@ -572,11 +588,24 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
 
       this->ExpandWindowLeft();
 
-      // TODO: Implement better handling of the expansion of bonds between the window and boundary.
       if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+      {
+         *C = Tmp;
          this->ExpandLeftBond();
+         this->EvolveCurrentSite(Tau);
+      }
       this->IterateLeft(Tau);
-      this->SweepLeft(Tau);
+
+      while (Site > LeftStop)
+      {
+         if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+            this->ExpandLeftBond();
+         this->EvolveCurrentSite(Tau);
+         this->IterateLeft(Tau);
+      }
+
+      Tmp = *C;
+      this->EvolveCurrentSite(Tau);
 
       FidLoss = this->CalculateFidelityLossLeft();
       LambdaDiff = this->CalculateLambdaDiffLeft();
