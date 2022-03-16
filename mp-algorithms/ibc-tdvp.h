@@ -33,7 +33,7 @@ class IBC_TDVP : public TDVP
                std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
                double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
                double GMRESTol_, double FidTol_, double LambdaTol_,
-               bool UCExpand_, int NExpand_);
+               bool UCExpand_ = false, int NExpand_ = 0, int Comoving_ = 0);
 
       IBCWavefunction Wavefunction() const;
 
@@ -81,6 +81,7 @@ class IBC_TDVP : public TDVP
       double LambdaTol;
       bool UCExpand;
       int NExpand;
+      int Comoving;
 
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
@@ -90,6 +91,7 @@ class IBC_TDVP : public TDVP
       std::deque<StateComponent> HamRightUC;
       int WindowLeftSites;
       int WindowRightSites;
+      int Offset;
 
       BasicTriangularMPO::const_iterator HLeft;
       BasicTriangularMPO::const_iterator HRight;

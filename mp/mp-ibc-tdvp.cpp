@@ -62,6 +62,7 @@ int main(int argc, char** argv)
       bool Epsilon = false;
       bool UCExpand = false;
       int NExpand = 0;
+      int Comoving = 0;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -98,7 +99,8 @@ int main(int argc, char** argv)
          ("lambdatol,l", prog_opt::value(&LambdaTol),
           FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", LambdaTol).c_str())
          ("uc-expand", prog_opt::bool_switch(&UCExpand), "Expand the window by whole unit cells rather than single sites")
-         ("n-expand", prog_opt::value(&NExpand), "Expand the window manually every n timesteps.")
+         ("n-expand", prog_opt::value(&NExpand), "Expand the window manually every n timesteps")
+         ("comoving", prog_opt::value(&Comoving), "Use a comoving window of fixed width of the specified number of sites")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -219,7 +221,7 @@ int main(int argc, char** argv)
 
       IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep,
                     Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose, GMRESTol,
-                    FidTol, LambdaTol, UCExpand, NExpand);
+                    FidTol, LambdaTol, UCExpand, NExpand, Comoving);
 
       if (SaveEvery == 0)
          SaveEvery = N;

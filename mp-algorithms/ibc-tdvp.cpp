@@ -28,10 +28,10 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
                    std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
                    double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
                    double GMRESTol_, double FidTol_, double LambdaTol_,
-                   bool UCExpand_, int NExpand_)
+                   bool UCExpand_, int NExpand_, int Comoving_)
    : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
    GMRESTol(GMRESTol_), FidTol(FidTol_), LambdaTol(LambdaTol_),
-   UCExpand(UCExpand_), NExpand(NExpand_)
+   UCExpand(UCExpand_), NExpand(NExpand_), Comoving(Comoving_)
 {
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
@@ -88,9 +88,13 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    }
 
    // Construct window Hamiltonian environment.
-   LeftStop = Psi_.window_offset();
+   Offset = Psi_.window_offset();
    RightStop = Psi_.window_size() - 1 + Psi_.window_offset();
-   Site = LeftStop;
+   if (Comoving == 0)
+      LeftStop = Offset;
+   else
+      LeftStop = RightStop - Comoving + 1;
+   Site = Offset;
 
    HamLeft = HamLeftUC.cend();
    --HamLeft;
@@ -194,6 +198,12 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       }
    }
 
+   // For a comoving window, ensure that the initial window has the correct
+   // number of sites.
+   if (Comoving != 0)
+      while (LeftStop < Offset)
+         this->ExpandWindowLeft();
+
    // Left-orthogonalize the window (should only be necessary if
    // UCExpand == true and we added extra sites on the right).
    while (Site < RightStop)
@@ -227,7 +237,7 @@ IBC_TDVP::Wavefunction() const
    MatrixOperator I = MatrixOperator::make_identity(Psi.Basis2());
    WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), I, Verbose-1);
 
-   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, LeftStop, WindowLeftSites, WindowRightSites);
+   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, Offset, WindowLeftSites, WindowRightSites);
 }
 
 void
@@ -240,7 +250,9 @@ IBC_TDVP::ExpandWindowLeftUC()
    Psi.push_front(PsiCell);
 
    // Change the leftmost index.
-   LeftStop -= PsiLeft.size();
+   Offset -= PsiLeft.size();
+   if (Comoving == 0)
+      LeftStop -= PsiLeft.size();
 
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
@@ -255,7 +267,7 @@ IBC_TDVP::ExpandWindowLeftUC()
    // Reset iterators to previous location.
    C = Psi.begin();
    H = Hamiltonian.begin();
-   for (int i = LeftStop; i < Site; ++i)
+   for (int i = Offset; i < Site; ++i)
       ++C, ++H;
 
    // Shift the quantum number of the boundary unit cell.
@@ -276,6 +288,8 @@ IBC_TDVP::ExpandWindowRightUC()
 
    // Change the rightmost index.
    RightStop += PsiRight.size();
+   if (Comoving != 0)
+      LeftStop += PsiRight.size();
 
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
@@ -308,7 +322,9 @@ IBC_TDVP::ExpandWindowLeftSite()
    // Add the site to the window.
    Psi.push_front(*CLeft);
 
-   --LeftStop;
+   --Offset;
+   if (Comoving == 0)
+      --LeftStop;
    ++WindowLeftSites;
 
    // Add the site's operator to the Hamiltonian.
@@ -323,7 +339,7 @@ IBC_TDVP::ExpandWindowLeftSite()
    // Reset iterators to previous location.
    C = Psi.begin();
    H = Hamiltonian.begin();
-   for (int i = LeftStop; i < Site; ++i)
+   for (int i = Offset; i < Site; ++i)
       ++C, ++H;
 
    if (CLeft == PsiLeft.begin())
@@ -350,6 +366,8 @@ IBC_TDVP::ExpandWindowRightSite()
    Psi.push_back(*CRight);
 
    ++RightStop;
+   if (Comoving != 0)
+      ++LeftStop;
    ++WindowRightSites;
 
    // Add the site's operator to the Hamiltonian.
@@ -627,11 +645,14 @@ IBC_TDVP::Evolve()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
-   if (NExpand != 0)
+   if (NExpand != 0 && Comoving == 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
-   this->SweepLeftEW((*Gamma)*Timestep);
+   if (Comoving == 0)
+      this->SweepLeftEW((*Gamma)*Timestep);
+   else
+      this->SweepLeft((*Gamma)*Timestep);
    ++Gamma;
 
    if (NExpand != 0)
@@ -643,7 +664,10 @@ IBC_TDVP::Evolve()
       this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
 
-      this->SweepLeftEW((*Gamma)*Timestep);
+      if (Comoving == 0)
+         this->SweepLeftEW((*Gamma)*Timestep);
+      else
+         this->SweepLeft((*Gamma)*Timestep);
       ++Gamma;
    }
 
@@ -668,7 +692,10 @@ IBC_TDVP::EvolveExpand()
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
-   this->SweepLeftExpandEW((*Gamma)*Timestep);
+   if (Comoving == 0)
+      this->SweepLeftExpandEW((*Gamma)*Timestep);
+   else
+      this->SweepLeftExpand((*Gamma)*Timestep);
    ++Gamma;
 
    if (NExpand != 0)
@@ -680,7 +707,10 @@ IBC_TDVP::EvolveExpand()
       this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
 
-      this->SweepLeftExpandEW((*Gamma)*Timestep);
+      if (Comoving == 0)
+         this->SweepLeftExpandEW((*Gamma)*Timestep);
+      else
+         this->SweepLeftExpand((*Gamma)*Timestep);
       ++Gamma;
    }
 
