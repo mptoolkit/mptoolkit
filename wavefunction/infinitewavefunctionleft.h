@@ -48,6 +48,15 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
                                                        QuantumNumbers::QuantumNumber const& QShift_,
                                                        int Verbose = 0);
 
+      // version of the above which returns the matrix (Vh) transforming Basis1
+      // of the old wavefunction to the new one
+      static
+      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
+                                                       MatrixOperator const& Lambda,
+                                                       QuantumNumbers::QuantumNumber const& QShift_,
+                                                       MatrixOperator& Vh,
+                                                       int Verbose = 0);
+
       // construct and orthogonalize from a LinearWavefunction
       static
       InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
@@ -98,7 +107,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
    private:
       explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_);
 
-      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
+      MatrixOperator Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
 
       QuantumNumber QShift;
 

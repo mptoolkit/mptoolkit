@@ -135,6 +135,17 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 }
 
 InfiniteWavefunctionLeft
+InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
+                                                  QuantumNumbers::QuantumNumber const& QShift_,
+                                                  MatrixOperator& Vh,
+                                                  int Verbose)
+{
+   InfiniteWavefunctionLeft Result(QShift_);
+   Vh = Result.Initialize(Psi, Lambda, Verbose-1);
+   return Result;
+}
+
+InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
                                     QuantumNumbers::QuantumNumber const& QShift_,
                                     int Verbose)
@@ -329,7 +340,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Verbose-1);
 }
 
-void
+MatrixOperator
 InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator const& Lambda, int Verbose)
 {
    if (Verbose > 0)
@@ -372,6 +383,8 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
 
    if (Verbose > 0)
       std::cout << "Finished constructing canonical wavefunction." << std::endl;
+
+   return Vh;
 }
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version)

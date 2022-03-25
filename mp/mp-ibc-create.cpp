@@ -89,8 +89,41 @@ int main(int argc, char** argv)
          PANIC("FIXME: currently the window size must be a multiple of the wavefunction unit cell.");
       }
 
-      WavefunctionSectionLeft Window(repeat(Psi, WindowSize / Psi.size()));
+      WavefunctionSectionLeft Window;
+      if (WindowSize == 0)
+         Window = WavefunctionSectionLeft(Psi.lambda_r());
+      else
+         Window = WavefunctionSectionLeft(repeat(Psi, WindowSize / Psi.size()));
+#if 0
       InfiniteWavefunctionRight Right(Psi);
+#else
+      // This version works around the change in basis at the unit cell edge
+      // when transforming to right canonical form.
+      MatrixOperator U;
+      RealDiagonalOperator D;
+      LinearWavefunction RightLinear;
+      std::tie(U, D, RightLinear) = get_right_canonical(Psi);
+
+      MatrixOperator UEdge;
+      InfiniteWavefunctionRight Right(U*D, RightLinear, Psi.qshift(), UEdge);
+      UEdge = delta_shift(UEdge, Psi.qshift());
+
+      // Incorporate UEdge into the window.
+      if (Window.size() > 0)
+      {
+         LinearWavefunction WindowLinear;
+         MatrixOperator Lambda;
+         std::tie(WindowLinear, Lambda) = get_left_canonical(Window);
+         Lambda = Lambda * UEdge;
+         Window = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(WindowLinear, Lambda);
+      }
+      else
+      {
+         MatrixOperator Lambda = Window.LeftU() * Window.lambda_r() * Window.RightU() * UEdge;
+         Window = WavefunctionSectionLeft(Lambda);
+      }
+#endif
+
       IBCWavefunction ResultPsi(Psi, Window, Right, Offset);
       ResultPsi.check_structure();
 

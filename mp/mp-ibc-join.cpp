@@ -181,6 +181,8 @@ int main(int argc, char** argv)
          double Energy = Lanczos(C, CMultiply(BlockHamL, BlockHamR),
                                  Iter, Tol, MinIter, Verbose);
 
+         C *= 1.0 / norm_frob(C);
+
          std::cout << "Energy is " << Energy << '\n';
       }
       else

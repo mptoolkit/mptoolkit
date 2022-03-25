@@ -43,6 +43,11 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
                                 QuantumNumbers::QuantumNumber const& QShift_);
 
+      // version of the above which returns the matrix (U) transforming Basis2
+      // of the old wavefunction to the new one
+      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
+                                QuantumNumbers::QuantumNumber const& QShift_, MatrixOperator& U);
+
       // constructs and canonicalizes the wavefunction
       InfiniteWavefunctionRight(LinearWavefunction const& Psi,
                                 QuantumNumbers::QuantumNumber const& QShift_);
@@ -80,7 +85,7 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
+      MatrixOperator Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
 
       QuantumNumber QShift;
 

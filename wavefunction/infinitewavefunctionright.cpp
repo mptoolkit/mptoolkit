@@ -102,7 +102,16 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambd
    this->Initialize(Lambda, Psi);
 }
 
-void
+InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambda,
+                                                     LinearWavefunction const& Psi,
+                                                     QuantumNumbers::QuantumNumber const& QShift_,
+                                                     MatrixOperator& U)
+   : QShift(QShift_)
+{
+   U = this->Initialize(Lambda, Psi);
+}
+
+MatrixOperator
 InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
                                       LinearWavefunction const& Psi_)
 {
@@ -158,6 +167,8 @@ InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
 #endif
 
    this->debug_check_structure();
+
+   return U;
 }
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi,

@@ -29,6 +29,7 @@
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/infinitelattice.h"
+#include "lattice/infinite-parser.h"
 #include "lattice/unitcell-parser.h"
 #include "common/statistics.h"
 
@@ -40,7 +41,8 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      std::string OpStr;
+      std::string OpStrLeft;
+      std::string OpStrWindow;
       std::string InputFile;
       std::string OutputFile;
       bool Force = false;
@@ -49,6 +51,10 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("left,l", prog_opt::value(&OpStrLeft),
+          "operator for the left boundary")
+         ("window,w", prog_opt::value(&OpStrWindow),
+          "operator for the window")
          ("force,f", prog_opt::bool_switch(&Force),
           "allow overwriting the output file, if it already exists")
          ("normalize", prog_opt::bool_switch(&Normalize),
@@ -59,13 +65,11 @@ int main(int argc, char** argv)
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("op", prog_opt::value(&OpStr), "op")
          ("psi1", prog_opt::value(&InputFile), "psi1")
          ("psi2", prog_opt::value(&OutputFile), "psi2")
          ;
 
       prog_opt::positional_options_description p;
-      p.add("op", 1);
       p.add("psi1", 1);
       p.add("psi2", 1);
 
@@ -77,10 +81,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("psi2") < 1)
+      if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") < 1 && vm.count("window") < 1))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -101,121 +105,197 @@ int main(int argc, char** argv)
       }
 
       IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
+      InfiniteWavefunctionLeft PsiLeft = Psi.Left;
+      InfiniteWavefunctionRight PsiRight = Psi.Right;
+      MatrixOperator Vh = MatrixOperator::make_identity(Psi.Left.Basis1());
 
-      InfiniteLattice Lattice;
-      UnitCellMPO Op;
-      std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
+      if (vm.count("left") > 0) {
+         if (Verbose > 0)
+            std::cout << "Applying operator to left semi-infinite boundary..." << std::endl;
 
-      LinearWavefunction PsiWindow;
+         InfiniteLattice Lattice;
+         ProductMPO StringOp;
+         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStrLeft);
+
+         if (PsiLeft.size() != StringOp.size())
+         {
+            int Size = statistics::lcm(PsiLeft.size(), StringOp.size());
+            if (PsiLeft.size() < Size)
+            {
+               std::cerr << "Warning: extending left wavefunction size to lowest common multiple, which is "
+                         << Size << " sites." << std::endl;
+            }
+            PsiLeft = repeat(PsiLeft, Size / PsiLeft.size());
+            StringOp = repeat(StringOp, Size / StringOp.size());
+         }
+
+         LinearWavefunction PsiLeftLinear = get_left_canonical(PsiLeft).first;
+
+         if (Verbose > 0)
+            std::cout << "Applying operator..." << std::endl;
+
+         // apply the string operator
+         ProductMPO::const_iterator MI = StringOp.begin();
+         for (LinearWavefunction::iterator I = PsiLeftLinear.begin(); I != PsiLeftLinear.end(); ++I, ++MI)
+         {
+            (*I) = aux_tensor_prod(*MI, *I);
+         }
+
+         // TODO: At the moment, the function which orthgonalizes the state
+         // causes issues, so we assume that the operator does not effect the
+         // orthogonality of the unit cell and use ConstructFromOrthogonal.
+#if 0
+         PsiLeft = InfiniteWavefunctionLeft::Construct(PsiLeftLinear, PsiLeft.qshift(), Verbose);
+#else
+         PsiLeft = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLeftLinear, PsiLeft.lambda_r(), PsiLeft.qshift(), Vh, Verbose);
+#endif
+         Vh = delta_shift(Vh, adjoint(PsiLeft.qshift()));
+
+         if (Verbose > 0)
+            std::cout << "Finished applying operator to left semi-infinite boundary..." << std::endl;
+      }
+
+      // The number of sites to incorporate from the left/right boundaries, if necessary.
+      int SitesLeft = 0;
+      int SitesRight = 0;
+
+      int NewOffset = Psi.window_offset();
+
+      WavefunctionSectionLeft PsiWindow = Psi.Window;
+
+      LinearWavefunction PsiWindowLinear;
       MatrixOperator Lambda;
 
       // For an empty window, we cannot use get_left_canonical.
       if (Psi.window_size() > 0)
       {
-         std::tie(PsiWindow, Lambda) = get_left_canonical(Psi.Window);
-         PsiWindow.set_back(prod(PsiWindow.get_back(), Lambda));
+         std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
+         PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), Lambda));
+         PsiWindowLinear.set_front(prod(Vh, PsiWindowLinear.get_front()));
       }
       else
       {
-         PsiWindow = LinearWavefunction();
-         Lambda = Psi.Window.LeftU() * Psi.Window.lambda_r() * Psi.Window.RightU();
+         PsiWindowLinear = LinearWavefunction();
+         Lambda = Vh * PsiWindow.LeftU() * PsiWindow.lambda_r() * PsiWindow.RightU();
       }
 
-      InfiniteWavefunctionLeft PsiLeft = Psi.Left;
-      InfiniteWavefunctionRight PsiRight = Psi.Right;
-
-      // Calculate the number of sites that we need to incorporate to the
-      // window from the left and right semi-infinite boundaries.
-      int SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
-      int SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
-
-      // Ensure that the window starts and ends at the operator unit cell boundaries.
-      SitesLeft += (Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size();
-      SitesRight += (Psi.Right.size() - Psi.WindowRightSites) % Op.unit_cell_size();
-
-      // The new window offset.
-      int NewOffset = Psi.window_offset() - SitesLeft;
-
-      // Incorporate extra sites from the left boundary.
-      if (Verbose > 0)
-         std::cout << "Incorporating " << SitesLeft
-                   << " sites from the left boundary..." << std::endl;
-
-      auto CLeft = PsiLeft.end();
-
-      for (int i = 0; i < Psi.WindowLeftSites; ++i)
-         --CLeft;
-
-      for (int i = 0; i < SitesLeft; ++i)
-      {
-         if (CLeft == PsiLeft.begin())
-         {
-            inplace_qshift(PsiLeft, PsiLeft.qshift());
-            CLeft = PsiLeft.end();
-         }
-         --CLeft;
-         PsiWindow.push_front(*CLeft);
-      }
-
-      // If the initial window had no sites and we just added sites from the
-      // left, incorporate the lambda matrix now; otherwise, we incorporate it
-      // below after adding from the right.
-      if (SitesLeft > 0 && Psi.window_size() == 0)
-         PsiWindow.set_back(prod(PsiWindow.get_back(), Lambda));
-
-      // Incorporate extra sites from the right boundary.
-      if (Verbose > 0)
-         std::cout << "Incorporating " << SitesRight
-                   << " sites from the right boundary..." << std::endl;
-
-      auto CRight = PsiRight.begin();
-
-      for (int i = 0; i < Psi.WindowRightSites; ++i)
-         ++CRight;
-
-      for (int i = 0; i < SitesRight; ++i)
-      {
-         if (CRight == PsiRight.end())
-         {
-            inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
-            CRight = PsiRight.begin();
-         }
-         PsiWindow.push_back(*CRight);
-         ++CRight;
-      }
-
-      if (SitesLeft == 0 && Psi.window_size() == 0)
-         PsiWindow.set_front(prod(Lambda, PsiWindow.get_front()));
-
-      Op.ExtendToCover(PsiWindow.size(), NewOffset);
-
-      if (Verbose > 0)
-         std::cout << "Applying operator..." << std::endl;
-
-      BasicFiniteMPO::const_iterator MI = Op.MPO().begin();
-
-      for (auto I = PsiWindow.begin(); I != PsiWindow.end(); ++I, ++MI)
-         (*I) = aux_tensor_prod(*MI, *I);
-
-      MatrixOperator Identity = MatrixOperator::make_identity(PsiWindow.Basis2());
-      WavefunctionSectionLeft PsiWindowCanonical = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Identity, Verbose);
-
-      if (Normalize)
-      {
+      if (vm.count("window") > 0) {
          if (Verbose > 0)
-            std::cout << "Normalizing wavefunction..." << std::endl;
+            std::cout << "Applying operator to window..." << std::endl;
 
-         std::tie(PsiWindow, Lambda) = get_left_canonical(PsiWindowCanonical);
-         Lambda *= 1.0 / norm_frob(Lambda);
-         PsiWindowCanonical = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindow), Lambda, Verbose);
+         InfiniteLattice Lattice;
+         UnitCellMPO Op;
+         std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStrWindow);
+
+         // Calculate the number of sites that we need to incorporate to the
+         // window from the left and right semi-infinite boundaries.
+         SitesLeft = std::max(Psi.window_offset() - Op.offset(), 0);
+         SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
+
+         // Ensure that the window starts and ends at the operator unit cell boundaries.
+         SitesLeft += (Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size();
+         SitesRight += (Psi.Right.size() - Psi.WindowRightSites) % Op.unit_cell_size();
+
+         // The new window offset.
+         NewOffset = Psi.window_offset() - SitesLeft;
+
+         // Incorporate extra sites from the left boundary.
+         if (Verbose > 0)
+            std::cout << "Incorporating " << SitesLeft
+                      << " sites from the left boundary..." << std::endl;
+
+         auto CLeft = PsiLeft.end();
+
+         for (int i = 0; i < Psi.WindowLeftSites; ++i)
+            --CLeft;
+
+         for (int i = 0; i < SitesLeft; ++i)
+         {
+            if (CLeft == PsiLeft.begin())
+            {
+               inplace_qshift(PsiLeft, PsiLeft.qshift());
+               CLeft = PsiLeft.end();
+            }
+            --CLeft;
+            PsiWindowLinear.push_front(*CLeft);
+         }
+
+         // If the initial window had no sites and we just added sites from the
+         // left, incorporate the lambda matrix now; otherwise, we incorporate it
+         // below after adding from the right.
+         if (SitesLeft > 0 && Psi.window_size() == 0)
+            PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), Lambda));
+
+         // Incorporate extra sites from the right boundary.
+         if (Verbose > 0)
+            std::cout << "Incorporating " << SitesRight
+                      << " sites from the right boundary..." << std::endl;
+
+         auto CRight = PsiRight.begin();
+
+         for (int i = 0; i < Psi.WindowRightSites; ++i)
+            ++CRight;
+
+         for (int i = 0; i < SitesRight; ++i)
+         {
+            if (CRight == PsiRight.end())
+            {
+               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+               CRight = PsiRight.begin();
+            }
+            PsiWindowLinear.push_back(*CRight);
+            ++CRight;
+         }
+
+         if (SitesLeft == 0 && Psi.window_size() == 0)
+            PsiWindowLinear.set_front(prod(Lambda, PsiWindowLinear.get_front()));
+
+         Op.ExtendToCover(PsiWindowLinear.size(), NewOffset);
+
+         if (Verbose > 0)
+            std::cout << "Applying operator..." << std::endl;
+
+         BasicFiniteMPO::const_iterator MI = Op.MPO().begin();
+
+         for (auto I = PsiWindowLinear.begin(); I != PsiWindowLinear.end(); ++I, ++MI)
+            (*I) = aux_tensor_prod(*MI, *I);
+
+         // Handle the case where the MPO has a nontrivial quantum number shift.
+         // (This only works when Op.Basis1.size() == 1).
+         inplace_qshift(PsiLeft, Op.qn1());
+
+         if (Verbose > 0)
+            std::cout << "Finished applying operator to window..." << std::endl;
       }
 
-      // Handle the case where the MPO has a nontrivial quantum number shift.
-      // (This only works when Op.Basis1.size() > 1).
-      inplace_qshift(PsiLeft, Op.qn1());
+      if (Psi.window_size() + SitesLeft + SitesRight > 0)
+      {
+         MatrixOperator Identity = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
+         PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Identity, Verbose);
+
+         if (Normalize)
+         {
+            if (Verbose > 0)
+               std::cout << "Normalizing wavefunction..." << std::endl;
+
+            std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
+            Lambda *= 1.0 / norm_frob(Lambda);
+            PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Lambda, Verbose);
+         }
+      }
+      else
+      {
+         if (Normalize)
+         {
+            if (Verbose > 0)
+               std::cout << "Normalizing wavefunction..." << std::endl;
+            Lambda *= 1.0 / norm_frob(Lambda);
+         }
+         PsiWindow = WavefunctionSectionLeft(Lambda);
+      }
 
       IBCWavefunction PsiNew;
-      PsiNew = IBCWavefunction(PsiLeft, PsiWindowCanonical, PsiRight, NewOffset,
+      PsiNew = IBCWavefunction(PsiLeft, PsiWindow, PsiRight, NewOffset,
                                (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(),
                                (Psi.WindowRightSites + SitesRight) % PsiRight.size());
 
