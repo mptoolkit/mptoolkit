@@ -202,10 +202,17 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 // the case where the left/right boundaries of Psi1 and Psi2 may be different
 // (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
 std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOP, IBCWavefunction const& Psi2, int Verbose = 0);
+
+std::complex<double>
 overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
 
 std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,
+        StateComponent const& E, StateComponent const& F, int Verbose = 0);
+
+std::complex<double>
 overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
-        MatrixOperator const& E_, MatrixOperator const& F_, int Verbose = 0);
+        StateComponent const& E, StateComponent const& F, int Verbose = 0);
 
 #endif

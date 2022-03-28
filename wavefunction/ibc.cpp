@@ -496,32 +496,36 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, int Verbose)
 {
    CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
    CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
 
-   int IndexLeft1 = Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size());
-   int IndexLeft2 = Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size());
+   int LeftSize = Psi1.Left.size();
+   int RightSize = Psi1.Right.size();
+
+   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.WindowLeftSites) % LeftSize);
+   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.WindowLeftSites) % LeftSize);
    int IndexLeft = std::min(IndexLeft1, IndexLeft2);
 
-   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size());
-   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size());
+   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.WindowRightSites - 1) % RightSize);
+   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.WindowRightSites - 1) % RightSize);
    int IndexRight = std::max(IndexRight1, IndexRight2);
 
    // Before calculating the overlap, we must find the left/right eigenvectors
    // of the left/right boundary transfer matrices.
 
    // Get the identity quantum number.
+   // TODO: Is this always what we want?
    QuantumNumber QI(Psi1.GetSymmetryList());
 
    // Ensure that the semi-infinite boundaries have the same quantum numbers.
    QuantumNumber QShiftLeft1 = QI;
-   for (int i = 0; i < (IndexLeft1 - IndexLeft) / Psi1.Left.size(); ++i)
+   for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
       QShiftLeft1 = delta_shift(QShiftLeft1, Psi1.Left.qshift());
 
    QuantumNumber QShiftLeft2 = QI;
-   for (int i = 0; i < (IndexLeft2 - IndexLeft) / Psi2.Left.size(); ++i)
+   for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
       QShiftLeft2 = delta_shift(QShiftLeft2, Psi2.Left.qshift());
 
    InfiniteWavefunctionLeft Psi1Left = Psi1.Left;
@@ -532,22 +536,22 @@ overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
 
    // Calculate the left eigenvector of the left semi-infinite boundary.
    std::complex<double> OverlapL;
-   StateComponent ESC;
-   std::tie(OverlapL, ESC) = overlap(Psi1Left, Psi2Left, QI);
+   StateComponent E;
+   std::tie(OverlapL, std::ignore, E) = overlap(Psi1Left, StringOp, Psi2Left, QI);
 
    // Check that the eigenvalue has magnitude 1.
    //TRACE(OverlapL);
    if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
       WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
 
-   MatrixOperator E = delta_shift(ESC.front(), adjoint(Psi1.Left.qshift()));
+   E = delta_shift(E, adjoint(Psi1.Left.qshift()));
 
    QuantumNumber QShiftRight1 = QI;
-   for (int i = 0; i < (IndexRight - IndexRight1) / Psi1.Right.size(); ++i)
+   for (int i = 0; i < (IndexRight - IndexRight1) / RightSize; ++i)
       QShiftRight1 = delta_shift(QShiftRight1, adjoint(Psi1.Right.qshift()));
 
    QuantumNumber QShiftRight2 = QI;
-   for (int i = 0; i < (IndexRight - IndexRight2) / Psi2.Right.size(); ++i)
+   for (int i = 0; i < (IndexRight - IndexRight2) / RightSize; ++i)
       QShiftRight2 = delta_shift(QShiftRight2, adjoint(Psi2.Right.qshift()));
 
    InfiniteWavefunctionRight Psi1Right = Psi1.Right;
@@ -558,36 +562,31 @@ overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
 
    // Calculate the right eigenvector of the right semi-infinite boundary.
    std::complex<double> OverlapR;
-   StateComponent FSC;
-   std::tie(OverlapR, FSC) = overlap(Psi1Right, Psi2Right, QI);
+   StateComponent F;
+   std::tie(OverlapR, std::ignore, F) = overlap(Psi1Right, StringOp, Psi2Right, QI);
 
    // Check that the eigenvalue has magnitude 1.
    //TRACE(OverlapR);
    if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
       WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
 
-   MatrixOperator F = FSC.front();
-
    // Rescale E and F by the bond dimension.
    E *= std::sqrt(std::min(E.Basis1().total_degree(), E.Basis2().total_degree()));
    F *= std::sqrt(std::min(F.Basis1().total_degree(), F.Basis2().total_degree()));
 
-   if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2())
+   if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2() && E.size() == 1 && F.size() == 1)
    {
-      //E *= std::sqrt(E.Basis1().total_degree());
-      //F *= std::sqrt(F.Basis1().total_degree());
-
       // Remove spurious phase from E and F by setting the phase of the trace
       // to be zero (but only if the trace is nonzero).
 
-      std::complex<double> ETrace = trace(E);
+      std::complex<double> ETrace = trace(E.front());
 
       if (std::abs(ETrace) > TraceTol)
          E *= std::conj(ETrace) / std::abs(ETrace);
       else
          WARNING("The trace of E is below threshold, so the overlap will have a spurious phase contribution.")(ETrace);
 
-      std::complex<double> FTrace = trace(F);
+      std::complex<double> FTrace = trace(F.front());
 
       if (std::abs(FTrace) > TraceTol)
          F *= std::conj(FTrace) / std::abs(FTrace);
@@ -597,43 +596,71 @@ overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
    else
       WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
 
-   return overlap(Psi1, Psi2, E, F, Verbose);
+   return overlap(Psi1, StringOp, Psi2, E, F, Verbose);
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
-        MatrixOperator const& E_, MatrixOperator const& F_, int Verbose)
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
+{
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left)), Psi2, Verbose);
+}
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,
+        StateComponent const& E_, StateComponent const& F_, int Verbose)
 {
    CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
    CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
 
-   int IndexLeft1 = Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size());
-   int IndexLeft2 = Psi2.window_offset() - ((Psi2.Left.size() - Psi2.WindowLeftSites) % Psi2.Left.size());
+   int LeftSize = Psi1.Left.size();
+   int RightSize = Psi1.Right.size();
+
+   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.WindowLeftSites) % LeftSize);
+   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.WindowLeftSites) % LeftSize);
    int IndexLeft = std::min(IndexLeft1, IndexLeft2);
 
-   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size());
-   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((Psi2.Right.size() - Psi2.WindowRightSites - 1) % Psi2.Right.size());
+   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.WindowRightSites - 1) % RightSize);
+   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.WindowRightSites - 1) % RightSize);
    int IndexRight = std::max(IndexRight1, IndexRight2);
 
    if (Verbose > 0)
       std::cout << "Calculating IBC overlap over sites " << IndexLeft << " to " << IndexRight
                 << " (" << IndexRight - IndexLeft + 1 << " sites total)" << std::endl;
 
-   MatrixOperator E = E_;
-   MatrixOperator F = F_;
+   StateComponent E = E_;
+   StateComponent F = F_;
 
    // Calculate the overlap.
    ConstIBCIterator C1 = ConstIBCIterator(Psi1, IndexLeft);
    ConstIBCIterator C2 = ConstIBCIterator(Psi2, IndexLeft);
+   ProductMPO::const_iterator W = StringOp.begin();
+
+   // Initialize the position of W.
+   for (int i = 0; i < (IndexLeft % LeftSize + LeftSize) % LeftSize; ++i)
+   {
+      ++W;
+      if (W == StringOp.end())
+         W = StringOp.begin();
+   }
 
    for (int i = IndexLeft; i <= IndexRight; ++i)
    {
       if (Verbose > 2)
          std::cout << "Site " << i << std::endl;
 
-      E = operator_prod(herm(*C1), E, *C2);
-      ++C1, ++C2;
+      E = contract_from_left(*W, herm(*C1), E, *C2);
+
+      ++C1, ++C2, ++W;
+      if (W == StringOp.end())
+         W = StringOp.begin();
    }
 
    return inner_prod(F, E);
+}
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
+        StateComponent const& E, StateComponent const& F, int Verbose)
+{
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left)), Psi2, E, F, Verbose);
 }

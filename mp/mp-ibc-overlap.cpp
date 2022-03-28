@@ -26,6 +26,7 @@
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/prog_options.h"
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -69,6 +70,8 @@ int main(int argc, char** argv)
       bool Reflect = false;
       bool Conj = false;
       bool Simple = false;
+      std::string String;
+      ProductMPO StringOp;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -95,6 +98,8 @@ int main(int argc, char** argv)
           "Complex conjugate psi2")
          ("simple", prog_opt::bool_switch(&Simple),
           "Assume that psi1 and psi2 have the same semi-infinite boundaries")
+         ("string", prog_opt::value(&String),
+          "Calculate the overlap with this string MPO")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -198,6 +203,17 @@ int main(int argc, char** argv)
          inplace_conj(Psi2);
       }
 
+      if (vm.count("string"))
+      {
+         InfiniteLattice Lattice;
+         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+         Simple = false;
+      }
+      else
+      {
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left));
+      }
+
       if (!Quiet)
       {
          if (ShowRealPart)
@@ -217,7 +233,7 @@ int main(int argc, char** argv)
       if (Simple)
          x = overlap_simple(Psi1, Psi2, Verbose);
       else
-         x = overlap(Psi1, Psi2, Verbose);
+         x = overlap(Psi1, StringOp, Psi2, Verbose);
 
       PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 

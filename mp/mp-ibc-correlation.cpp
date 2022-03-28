@@ -201,7 +201,7 @@ int main(int argc, char** argv)
 
       IBCWavefunction Psi2;
 
-      MatrixOperator E, F;
+      StateComponent E, F;
 
       if (Conj)
       {
@@ -217,25 +217,21 @@ int main(int argc, char** argv)
 
          // Calculate the left eigenvector of the left semi-infinite boundary.
          std::complex<double> OverlapL;
-         StateComponent ESC;
-         std::tie(OverlapL, ESC) = overlap(Psi2.Left, Psi1.Left, QI);
+         std::tie(OverlapL, E) = overlap(Psi2.Left, Psi1.Left, QI);
 
          // Check that the eigenvalue has magnitude 1.
          if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
             WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
 
-         E = delta_shift(ESC.front(), adjoint(Psi1.Left.qshift()));
+         E = delta_shift(E, adjoint(Psi1.Left.qshift()));
 
          // Calculate the right eigenvector of the right semi-infinite boundary.
          std::complex<double> OverlapR;
-         StateComponent FSC;
-         std::tie(OverlapR, FSC) = overlap(Psi2.Right, Psi1.Right, QI);
+         std::tie(OverlapR, F) = overlap(Psi2.Right, Psi1.Right, QI);
 
          // Check that the eigenvalue has magnitude 1.
          if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
             WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
-
-         F = FSC.front();
 
          // We could try to fix E and F by hand, but it is easier to just force
          // the correlation function for t = 0, x = 0 to be 1.0 by using a
