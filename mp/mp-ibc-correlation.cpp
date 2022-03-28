@@ -79,6 +79,7 @@ int main(int argc, char** argv)
       int N = 0;
       int XMin = 0;
       int XMax = 0;
+      int UCSize = -1;
       int Digits = 0;
       std::complex<double> InitialTime = 0.0;
       // Scaling factor to remove the spurious phase when using the complex conjugate.
@@ -111,6 +112,7 @@ int main(int argc, char** argv)
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps", N).c_str())
 	 ("xmin", prog_opt::value(&XMin), FormatDefault("Minimum value of x", XMin).c_str())
 	 ("xmax,x", prog_opt::value(&XMax), FormatDefault("Maximum value of x", XMax).c_str())
+	 ("ucsize", prog_opt::value(&UCSize), "Unit cell size [default left boundary unit cell size]")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -191,6 +193,12 @@ int main(int argc, char** argv)
          Psi1Ptr = pheap::OpenPersistent(InitialFilename, mp_pheap::CacheSize(), true);
       }
       IBCWavefunction Psi1 = Psi1Ptr->get<IBCWavefunction>();
+
+      // If UCSize is not specified, then we set it to the left boundary unit
+      // cell size.
+      if (UCSize = -1)
+         UCSize = Psi1.Left.size();
+
       IBCWavefunction Psi2;
 
       MatrixOperator E, F;
@@ -213,7 +221,6 @@ int main(int argc, char** argv)
          std::tie(OverlapL, ESC) = overlap(Psi2.Left, Psi1.Left, QI);
 
          // Check that the eigenvalue has magnitude 1.
-         //TRACE(OverlapL);
          if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
             WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
 
@@ -225,7 +232,6 @@ int main(int argc, char** argv)
          std::tie(OverlapR, FSC) = overlap(Psi2.Right, Psi1.Right, QI);
 
          // Check that the eigenvalue has magnitude 1.
-         //TRACE(OverlapR);
          if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
             WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
 
@@ -234,37 +240,6 @@ int main(int argc, char** argv)
          // We could try to fix E and F by hand, but it is easier to just force
          // the correlation function for t = 0, x = 0 to be 1.0 by using a
          // scaling factor.
-#if 0
-         // Rescale E and F by the bond dimension.
-         E *= std::sqrt(std::min(E.Basis1().total_degree(), E.Basis2().total_degree()));
-         F *= std::sqrt(std::min(F.Basis1().total_degree(), F.Basis2().total_degree()));
-
-         if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2())
-         {
-            //E *= std::sqrt(E.Basis1().total_degree());
-            //F *= std::sqrt(F.Basis1().total_degree());
-
-            // Remove spurious phase from E and F by setting the phase of the trace
-            // to be zero (but only if the trace is nonzero).
-
-            std::complex<double> ETrace = trace(E);
-
-            if (std::abs(ETrace) > TraceTol)
-               E *= std::conj(ETrace) / std::abs(ETrace);
-            else
-               WARNING("The trace of E is below threshold, so the overlap will have a spurious phase contribution.")(ETrace);
-
-            std::complex<double> FTrace = trace(F);
-
-            if (std::abs(FTrace) > TraceTol)
-               F *= std::conj(FTrace) / std::abs(FTrace);
-            else
-               WARNING("The trace of F is below threshold, so the overlap will have a spurious phase contribution.")(FTrace);
-         }
-         else
-            WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
-#endif
-
          ScalingFactor = 1.0 / overlap(Psi2, Psi1, E, F);
       }
 
@@ -306,13 +281,13 @@ int main(int argc, char** argv)
          pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Filename);
          Psi2 = Psi2Ptr->get<IBCWavefunction>();
 
-         Psi2.WindowOffset += (XMin-1);
+         Psi2.WindowOffset += (XMin-1) * UCSize;
 
          for (int x = XMin; x <= XMax; ++x)
          {
             if (Verbose)
-               std::cout << "Translating Psi2 right by " << x << " sites..." << std::endl;
-            ++Psi2.WindowOffset;
+               std::cout << "Translating Psi2 right by " << x << " unit cells..." << std::endl;
+            Psi2.WindowOffset += UCSize;
 
             std::complex<double> Overlap;
 
@@ -335,7 +310,7 @@ int main(int argc, char** argv)
       if (Conj)
       {
          std::complex<double> FinalTime = double(N) * Timestep;
-         Psi2.WindowOffset -= XMax;
+         Psi2.WindowOffset -= XMax * UCSize;
 
          for (int tstep = 1; tstep <= N; ++tstep)
          {
@@ -359,14 +334,14 @@ int main(int argc, char** argv)
             TimeStr = formatting::format_digits(std::real(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
             BetaStr = formatting::format_digits(-std::imag(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
 
-            Psi2.WindowOffset += (XMin-1);
+            Psi2.WindowOffset += (XMin-1) * UCSize;
 
             for (int x = XMin; x <= XMax; ++x)
             {
 
                if (Verbose)
-                  std::cout << "Translating Psi2 right by " << x << " sites..." << std::endl;
-               ++Psi2.WindowOffset;
+                  std::cout << "Translating Psi2 right by " << x << " unit cells..." << std::endl;
+               Psi2.WindowOffset += UCSize;
 
                std::complex<double> Overlap;
 
@@ -382,7 +357,7 @@ int main(int argc, char** argv)
                PrintFormat(Overlap, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
             }
 
-            Psi2.WindowOffset -= XMax;
+            Psi2.WindowOffset -= XMax * UCSize;
          }
       }
 
