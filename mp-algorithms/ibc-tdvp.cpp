@@ -87,7 +87,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       MaxStates = std::max(MaxStates, (*CRight).Basis1().total_dimension());
    }
 
-   // Construct window Hamiltonian environment.
+   // Initialize the boundaries for the window Hamiltonian environment.
    Offset = Psi_.window_offset();
    RightStop = Psi_.window_size() - 1 + Psi_.window_offset();
    if (Comoving == 0)
@@ -99,7 +99,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    HamLeft = HamLeftUC.cend();
    --HamLeft;
    for (int i = 0; i < WindowLeftSites; ++i)
-      --HLeft, --CLeft, --HamLeft;
+      --CLeft, --HamLeft;
 
    // Note that we could just use *HamLeft if WindowLeftSites == 0, but this
    // would add a contribution to the energy from the boundary unit cell.
@@ -110,7 +110,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
 
    HamRight = HamRightUC.cbegin();
    for (int i = 0; i < WindowRightSites; ++i)
-      ++HRight, ++CRight, ++HamRight;
+      ++CRight, ++HamRight;
 
    if (WindowRightSites == 0)
       HamR.push_front(delta_shift(BlockHamR, PsiRight.qshift()));
@@ -122,16 +122,16 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    // Check whether there are any sites in the window, and if not, add some.
    if (Psi_.window_size() == 0)
    {
+      Psi = LinearWavefunction();
+      MatrixOperator Lambda = Psi_.Window.lambda_r();
+      Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
+
+      Hamiltonian = BasicTriangularMPO();
+
       if (UCExpand)
       {
          if (Verbose > 1)
             std::cout << "Initial window size = 0, adding two unit cells to window..." << std::endl;
-
-         Psi = LinearWavefunction();
-         MatrixOperator Lambda = Psi_.Window.lambda_r();
-         Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
-
-         Hamiltonian = BasicTriangularMPO();
 
          this->ExpandWindowLeft();
 
@@ -146,12 +146,6 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       {
          if (Verbose > 1)
             std::cout << "Initial window size = 0, adding site to window..." << std::endl;
-
-         Psi = LinearWavefunction();
-         MatrixOperator Lambda = Psi_.Window.lambda_r();
-         Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
-
-         Hamiltonian = BasicTriangularMPO();
 
          this->ExpandWindowRight();
 
@@ -168,10 +162,35 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
 
       C = Psi.begin();
 
-      if (Hamiltonian.size() < Psi.size())
-         Hamiltonian = repeat(Hamiltonian, Psi.size() / Hamiltonian.size());
+      // The window size minus the sites partially incorporated from the
+      // left/right boundaries.
+      int WindowSizeWholeUCs = Psi.size() - WindowRightSites - WindowLeftSites;
+
+      if (Hamiltonian.size() < WindowSizeWholeUCs)
+         Hamiltonian = repeat(Hamiltonian, WindowSizeWholeUCs / Hamiltonian.size());
+
+      // Now add the "left over" terms to Hamiltonian from partially
+      // incorporating unit cells from the left/right boundaries.
+      std::vector<OperatorComponent> HamiltonianNew;
+      HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+
+      for (int i = 0; i < WindowLeftSites; ++i)
+      {
+         --HLeft;
+         HamiltonianNew.insert(HamiltonianNew.begin(), *HLeft);
+      }
+
+      for (int i = 0; i < WindowRightSites; ++i)
+      {
+         HamiltonianNew.insert(HamiltonianNew.end(), *HRight);
+         ++HRight;
+      }
+
+      Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+
       H = Hamiltonian.begin();
 
+      // Construct the left Hamiltonian environments for the window.
       while (C != Psi.end())
       {
          if (Verbose > 1)
@@ -194,7 +213,6 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
             this->ExpandWindowLeftSite();
          while (WindowRightSites != 0)
             this->ExpandWindowRightSite();
-
       }
    }
 
