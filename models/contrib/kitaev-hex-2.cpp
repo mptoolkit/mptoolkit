@@ -90,7 +90,7 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Kitaev honeycomb model with a two-site unit cell");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
-         ("WY"         , "Wilson loop in the Y direction")
+         ("WY"         , "Wilson loop in the y direction")
          ("W"          , "plaquette operator")
          ;
       OpDescriptions.add_operators()
@@ -133,9 +133,9 @@ int main(int argc, char** argv)
       WY = WY * X(w)[0] * Z(w)[1];
 
       // Kitaev model interactions.
-      Lattice["H_xx"] = -sum_unit(X(0)[0] * X(w)[1]);
-      Lattice["H_yy"] = -sum_unit(Y(0)[0] * Y(0)[1]);
-      Lattice["H_zz"] = -sum_unit(Z(0)[0] * Z(-1)[1]);
+      Lattice["H_xx"] = sum_unit(X(0)[0] * X(w)[1]);
+      Lattice["H_yy"] = sum_unit(Y(0)[0] * Y(0)[1]);
+      Lattice["H_zz"] = sum_unit(Z(0)[0] * Z(-1)[1]);
 
       // Three spin interaction term.
       Lattice["H_3"] = sum_unit(Y(0)[1] * X(w)[1] * Z(0)[0]
