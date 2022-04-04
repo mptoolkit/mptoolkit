@@ -35,7 +35,7 @@
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/gmres.h"
 
-#define EXP_I(k) exp(std::complex<double>(0.0, 1.0) * (k))
+#define EXP_I_PI(k) exp(std::complex<double>(0.0, math_const::pi) * (k))
 
 namespace prog_opt = boost::program_options;
 
@@ -218,7 +218,7 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
       //for (double E : EValues)
       //   std::cout << E << std::endl;
       double Theta = EValues[0];    // smallest eigenvalue
-      std::cout << Theta << std::endl;
+      //std::cout << Theta << std::endl;
       double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
       VectorType y = M(0,0) * v[0];
       for (int j = 1; j <= i; ++j)
@@ -307,11 +307,11 @@ struct HEff
 
       BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
-      TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
+      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
 
       BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
 
-      TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
+      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
 
       BlockHamLDeque.push_back(BlockHamL);
       auto CL = PsiLinearLeft.begin();
@@ -331,7 +331,7 @@ struct HEff
          BlockHamRDeque.push_front(contract_from_right(herm(*O), *CR, BlockHamRDeque.front(), herm(*CR)));
       }
 
-      TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamLDeque.back(), PsiLeft.lambda_r())), BlockHamRDeque.back()));
+      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamLDeque.back(), PsiLeft.lambda_r())), BlockHamRDeque.back()));
    }
 
    std::deque<MatrixOperator>
@@ -358,12 +358,15 @@ struct HEff
       TRACE(norm_frob(Rho - inject_right(Rho, PsiLinearLeft, PsiLinearRight)));
 #endif
 
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearRight*EXP_I(k), BDeque,
-                                                             PsiLeft.qshift(), HamMPO, Rho, Rho, GMRESTol, Verbose);
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearRight*EXP_I(k), BDeque,
-                                                               PsiRight.qshift(), HamMPO, Rho, Rho, GMRESTol, Verbose);
+      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearRight, BDeque,
+                                                             PsiLeft.qshift(), HamMPO, Rho, Rho, EXP_I_PI(k), GMRESTol, Verbose);
+      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearRight, BDeque,
+                                                               PsiRight.qshift(), HamMPO, Rho, Rho, EXP_I_PI(k), GMRESTol, Verbose);
 
       //TRACE(norm_frob(BL))(norm_frob(BR));
+
+      BL *= EXP_I_PI(k);
+      BR *= EXP_I_PI(k);
 
       std::deque<MatrixOperator> Result;
       auto B = BDeque.begin();
@@ -376,7 +379,7 @@ struct HEff
       {
          Result.push_back(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR));
          //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *B)), *BHR)));
+         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *B)), *BHR)));
          ++B, ++NL, ++O, ++BHL, ++BHR;
       }
 
@@ -394,7 +397,7 @@ struct HEff
       {
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
          //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *B)), *BHR)));
+         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *B)), *BHR)));
          Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
          ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
       }
@@ -416,8 +419,8 @@ struct HEff
          --X;
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
          //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *B)), Tmp)));
-         TRACE(inner_prod(*R, *X));
+         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *B)), Tmp)));
+         //TRACE(inner_prod(*R, *X));
          Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
 
@@ -509,9 +512,9 @@ struct HEff
       MatrixOperator Ident = Initial_F(HamMPO, PsiLinearLeft.Basis2()).back();
       MatrixOperator Rho = D*D;
 
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearLeft*EXP_I(k), BDeque,
+      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearLeft*EXP_I_PI(k), BDeque,
                                                              PsiLeft.qshift(), HamMPO, Ident, Rho, GMRESTol, Verbose);
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearLeft*EXP_I(k), BDeque,
+      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearLeft*EXP_I_PI(k), BDeque,
                                                                PsiLeft.qshift(), HamMPO, Ident, Rho, GMRESTol, Verbose);
 
       //TRACE(norm_frob(BL))(norm_frob(BR));
@@ -634,7 +637,7 @@ int main(int argc, char** argv)
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian")
          ("momentum,k", prog_opt::value(&k),
-          "Excitation momentum")
+          "Excitation momentum (divided by pi)")
          ("maxiter", prog_opt::value<int>(&Iter),
           FormatDefault("Maximum number of Lanczos iterations", Iter).c_str())
          ("miniter", prog_opt::value<int>(&MinIter),
