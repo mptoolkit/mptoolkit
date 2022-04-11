@@ -1018,13 +1018,13 @@ struct SubProductLeftProject2
    MatrixOperator Ident;
 };
 
-std::complex<double>
+void
 SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                      std::deque<StateComponent> const& BDeque,
                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Ident, MatrixOperator const& Rho,
-                     std::complex<double> Phi, double Tol, int Verbose)
+                     std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (E1.is_null())
       E1 = Initial_E(Op, PsiLeft.Basis1());
@@ -1078,20 +1078,19 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    C = delta_shift(C, QShift);
 
    // orthogonalize
-   //TRACE(inner_prod(Rho, C));
    C -= inner_prod(Rho, C) * Ident;
 
    // solve for the first component
-   SubProductLeftProject2 ProdL(PsiRight, PsiLeft, QShift, Rho, Ident);
+   LinearWavefunction PsiRight2 = std::conj(ExpIK) * PsiRight;
+   SubProductLeftProject2 ProdL(PsiLeft, PsiRight2, QShift, Rho, Ident);
    E1[Col] = C;
    LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
-   //TRACE(norm_frob(E1[Col]));
 
    for (Col = 1; Col < Dim-1; ++Col)
    {
       Mask = mask_column(Op, Col);
       C = inject_left_mask(E0, PsiTri, Op.data(), PsiLeft, Mask)[Col]
-          + Phi * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
+          + ExpIK * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
       C = delta_shift(C, QShift);
 
       // Now do the classification, based on the properties of the diagonal operator
@@ -1105,7 +1104,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
             std::cerr << "Zero diagonal matrix element at column " << (Col+1) << std::endl;
          E1[Col] = C;
       }
-      else
+      else // TODO: Test this part.
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << (Col+1) << std::endl;
@@ -1121,9 +1120,6 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
          // Initial guess for linear solver
          E1[Col] = C;
 
-         //	 if (Col == 2)
-         //	    TRACE(C);
-
 	 LinearSolve(E1[Col], OneMinusTransferLeft2(Diag, PsiRight, PsiLeft, QShift), C, Tol, Verbose);
       }
    }
@@ -1137,36 +1133,15 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
 
    Mask = mask_column(Op, Col);
    C = inject_left_mask(E0, PsiTri, Op.data(), PsiLeft, Mask)[Col]
-       + Phi * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
+       + ExpIK * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
    C = delta_shift(C, QShift);
 
-   // The component in the direction of the identity is proportional to the energy
-   std::complex<double> Energy = inner_prod(Rho, C);
-   //TRACE(Energy);
-
    // orthogonalize
-   C -= Energy * Ident;
+   C -= inner_prod(Rho, C) * Ident;
 
    // solve for the final component
    E1[Col] = C;
    LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
-   //TRACE(norm_frob(E0[Col]));
-   //TRACE(norm_frob(E1[Col]));
-
-   // Make it Hermitian
-   //   E1.back() = 0.5 * (E1.back() + adjoint(E1.back()));
-
-   // Stability fix: remove overall constant
-   if (Verbose > 0)
-      std::cerr << "Overall constant: " << inner_prod(E1.back(), E1.front()) << '\n';
-   //E1.back() -= inner_prod(E1.front(), E1.back()) * E1.front();
-
-   // remove the spurious constant term from the energy
-   if (Verbose > 0)
-      std::cerr << "Spurious constant: " << inner_prod(E1.back(), Rho) << '\n';
-   //E1.back() -= inner_prod(Rho, E1.back()) * E1.front();
-
-   return Energy;
 }
 
 struct OneMinusTransferRight2
@@ -1223,13 +1198,13 @@ struct SubProductRightProject2
    MatrixOperator const& Ident;
 };
 
-std::complex<double>
+void
 SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                       std::deque<StateComponent> const& BDeque,
                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                       MatrixOperator const& Rho, MatrixOperator const& Ident,
-                      std::complex<double> Phi, double Tol, int Verbose)
+                      std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (F1.is_null())
       F1 = Initial_F(Op, PsiRight.Basis2());
@@ -1283,20 +1258,19 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    C.delta_shift(adjoint(QShift));
 
    // orthogonalize
-   //TRACE(inner_prod(Rho, C));
    C -= inner_prod(Rho, C) * Ident;
 
    // solve for the final component
-   SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident);
+   LinearWavefunction PsiLeft2 = ExpIK * PsiLeft;
+   SubProductRightProject2 ProdR(PsiLeft2, PsiRight, QShift, Rho, Ident);
    F1[Row] = C;
    LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
-   //TRACE(norm_frob(F1[Row]));
    
    for (Row = Dim-2; Row >= 1; --Row)
    {
       Mask = mask_row(Op, Row);
       C = inject_right_mask(F0, PsiTri, Op.data(), PsiRight, Mask)[Row]
-          + Phi * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
+          + ExpIK * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
       C.delta_shift(adjoint(QShift));
 
       // Now do the classification, based on the properties of the diagonal operator
@@ -1310,7 +1284,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
          F1[Row] = C;
       }
-      else
+      else // TODO: Test this part.
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
@@ -1339,36 +1313,13 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
 
    Mask = mask_row(Op, Row);
    C = inject_right_mask(F0, PsiTri, Op.data(), PsiRight, Mask)[Row]
-       + Phi * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
+       + ExpIK * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
    C.delta_shift(adjoint(QShift));
 
-   // The component in the direction of the identity is proportional to the energy
-   std::complex<double> Energy = inner_prod(Rho, C);
-   //TRACE(Energy);
-
    // orthogonalize
-   C -= Energy * Ident;
+   C -= inner_prod(Rho, C) * Ident;
 
    // solve for the first component
    F1[Row] = C;
    LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
-   //TRACE(norm_frob(F0[Row]));
-   //TRACE(norm_frob(F1[Row]));
-
-   // Make it Hermitian
-   //   F1.front() = 0.5 * (F1.front() + adjoint(F1.front()));
-
-   // stability fix
-   if (Verbose > 0)
-      std::cerr << "Overall constant " << inner_prod(F1.front(), F1.back()) << '\n';
-   //F1.front() -= inner_prod(F1.back(), F1.front()) * F1.back();
-
-   // remove the spurious constant term from the energy
-   if (Verbose > 0)
-      std::cerr << "Spurius constant " << inner_prod(F1.front(), Rho) << '\n';
-   //F1.front() -= inner_prod(Rho, F1.front()) * F1.back();
-
-   // Everything here is in the Hermitian representation, so the actual energy is
-   // the conjugate
-   return std::conj(Energy);
 }

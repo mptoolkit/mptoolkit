@@ -17,8 +17,6 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#define LEFT_RIGHT 1
-
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 #include "lattice/latticesite.h"
@@ -34,6 +32,7 @@
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/gmres.h"
+#include "common/unique.h"
 
 #define EXP_I_PI(k) exp(std::complex<double>(0.0, math_const::pi) * (k))
 
@@ -215,10 +214,12 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
 #endif
 
       LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
-      //for (double E : EValues)
-      //   std::cout << E << std::endl;
       double Theta = EValues[0];    // smallest eigenvalue
-      //std::cout << Theta << std::endl;
+
+      if (Verbose > 0)
+         std::cout << "i=" << i
+                   << ", E0=" << Theta << std::endl;
+
       double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
       VectorType y = M(0,0) * v[0];
       for (int j = 1; j <= i; ++j)
@@ -266,7 +267,6 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
 
 struct HEff
 {
-#if LEFT_RIGHT
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
         BasicTriangularMPO const& HamMPO_, double k_, double GMRESTol_, int Verbose_)
       : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
@@ -280,39 +280,37 @@ struct HEff
 
       PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
 
+      // Get the null space matrices corresponding to each A-matrix in PsiLeft.
       for (StateComponent C : PsiLinearLeft)
          NullLeftDeque.push_back(NullSpace2(C));
 
       if (HamMPO.size() < PsiLeft.size())
          HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
 
+      // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose);
+      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
       if (Verbose > 0)
          std::cout << "Left energy = " << LeftEnergy << std::endl;
 
-      //BlockHamL.back() -= LeftEnergy * BlockHamL.front();
-
       BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
+      // Solve the right Hamiltonian environment.
       BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
       MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
       Rho = delta_shift(Rho, adjoint(PsiRight.qshift()));
 
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiLinearRight, PsiRight.qshift(), HamMPO, Rho, GMRESTol, Verbose);
+      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiLinearRight, PsiRight.qshift(),
+                                                              HamMPO, Rho, GMRESTol, Verbose-1);
       if (Verbose > 0)
          std::cout << "Right energy = " << RightEnergy << std::endl;
 
-      //BlockHamR.front() -= RightEnergy * BlockHamR.back();
-
       BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
-      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
-
+      // Remove the contribution from the ground state energy density.
       BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
 
-      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR));
-
+      // Construct the partially contracted left Hamiltonian environments in the unit cell.
       BlockHamLDeque.push_back(BlockHamL);
       auto CL = PsiLinearLeft.begin();
       auto O = HamMPO.begin();
@@ -322,6 +320,7 @@ struct HEff
          ++CL, ++O;
       }
 
+      // Same for the right environments.
       BlockHamRDeque.push_front(BlockHamR);
       auto CR = PsiLinearRight.end();
       O = HamMPO.end();
@@ -330,13 +329,12 @@ struct HEff
          --CR, --O;
          BlockHamRDeque.push_front(contract_from_right(herm(*O), *CR, BlockHamRDeque.front(), herm(*CR)));
       }
-
-      //TRACE(inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamLDeque.back(), PsiLeft.lambda_r())), BlockHamRDeque.back()));
    }
 
    std::deque<MatrixOperator>
    operator()(std::deque<MatrixOperator> const& XDeque) const
    {
+      // Construct the "B"-matrices corresponding to the input "X"-matrices.
       std::deque<StateComponent> BDeque;
       auto NL = NullLeftDeque.begin();
       auto X = XDeque.begin();
@@ -346,28 +344,22 @@ struct HEff
          ++NL, ++X;
       }
       
+      // Calcaulate the terms in the triangular E and F matrices where there is
+      // one B-matrix on the top.
       StateComponent BL, BR;
       
-      //MatrixOperator Rho = U * D * adjoint(U);
-      MatrixOperator Rho = D;
+      SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearRight, BDeque,
+                           PsiLeft.qshift(), HamMPO, D, D, EXP_I_PI(PsiLeft.size()*k), GMRESTol, Verbose-1);
 
-#if 0
-      TRACE(norm_frob(Rho - inject_left(Rho, PsiLinearRight, PsiLinearLeft)));
-      TRACE(norm_frob(Rho - inject_right(Rho, PsiLinearRight, PsiLinearLeft)));
-      TRACE(norm_frob(Rho - inject_left(Rho, PsiLinearLeft, PsiLinearRight)));
-      TRACE(norm_frob(Rho - inject_right(Rho, PsiLinearLeft, PsiLinearRight)));
-#endif
+      SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearRight, BDeque,
+                            PsiRight.qshift(), HamMPO, D, D, EXP_I_PI(PsiLeft.size()*k), GMRESTol, Verbose-1);
 
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearRight, BDeque,
-                                                             PsiLeft.qshift(), HamMPO, Rho, Rho, EXP_I_PI(k), GMRESTol, Verbose);
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearRight, BDeque,
-                                                               PsiRight.qshift(), HamMPO, Rho, Rho, EXP_I_PI(k), GMRESTol, Verbose);
+      // Shift the phases by one unit cell.
+      BL *= EXP_I_PI(PsiLeft.size()*k);
+      BR *= EXP_I_PI(PsiLeft.size()*k);
 
-      //TRACE(norm_frob(BL))(norm_frob(BR));
-
-      BL *= EXP_I_PI(k);
-      BR *= EXP_I_PI(k);
-
+      // Calculate the contribution to HEff corresponding to where the
+      // B-matrices are on the same site.
       std::deque<MatrixOperator> Result;
       auto B = BDeque.begin();
       NL = NullLeftDeque.begin();
@@ -378,11 +370,11 @@ struct HEff
       while (B != BDeque.end())
       {
          Result.push_back(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR));
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR)));
-         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *B)), *BHR)));
          ++B, ++NL, ++O, ++BHL, ++BHR;
       }
 
+      // Calculate the contribution where the top B-matrix is in the left
+      // semi-infinite part.
       StateComponent Tmp = BL;
       B = BDeque.begin();
       NL = NullLeftDeque.begin();
@@ -396,12 +388,13 @@ struct HEff
       while (B != BDeque.end())
       {
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR)));
-         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *B)), *BHR)));
+         // TODO: We don't need to do this on the final step.
          Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
          ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
       }
 
+      // Calculate the contribution where the top B-matrix is in the right
+      // semi-infinite part.
       Tmp = BR;
       B = BDeque.end();
       NL = NullLeftDeque.end();
@@ -418,167 +411,11 @@ struct HEff
          --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
          --X;
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp)));
-         //TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *B)), Tmp)));
-         //TRACE(inner_prod(*R, *X));
          Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
 
-      //TRACE(norm_frob(Result));
       return Result;
    }
-#else
-   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, double k_, double GMRESTol_, int Verbose_)
-      : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
-        HamMPO(HamMPO_), k(k_), GMRESTol(GMRESTol_), Verbose(Verbose_)
-   {
-      CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
-
-      std::tie(PsiLinearLeft, D) = get_left_canonical(PsiLeft);
-      std::tie(PsiLinearRight, std::ignore) = get_left_canonical(PsiRight);
-
-      for (StateComponent C : PsiLinearLeft)
-         NullLeftDeque.push_back(NullSpace2(C));
-
-      if (HamMPO.size() < PsiLeft.size())
-         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
-
-      BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose);
-      if (Verbose > 0)
-         std::cout << "Left energy = " << LeftEnergy << std::endl;
-
-      //BlockHamL.back() -= LeftEnergy * BlockHamL.front();
-
-      BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
-
-      BlockHamR = Initial_F(HamMPO, PsiLinearLeft.Basis2());
-      MatrixOperator Ident = BlockHamR.back();
-
-      MatrixOperator Rho = D*D;
-      Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
-      BlockHamR.back() = Rho;
-
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiLinearLeft, PsiLeft.qshift(), HamMPO, Ident, GMRESTol, Verbose);
-      if (Verbose > 0)
-         std::cout << "Right energy = " << RightEnergy << std::endl;
-
-      //BlockHamR.front() -= RightEnergy * BlockHamR.back();
-
-      BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
-
-      TRACE(inner_prod(BlockHamL, BlockHamR));
-
-      BlockHamR.front() -= (RightEnergy + inner_prod(BlockHamL, BlockHamR)) * BlockHamR.back();
-
-      TRACE(inner_prod(BlockHamL, BlockHamR));
-
-      BlockHamLDeque.push_back(BlockHamL);
-      auto CL = PsiLinearLeft.begin();
-      auto O = HamMPO.begin();
-      while (CL != PsiLinearLeft.end())
-      {
-         BlockHamLDeque.push_back(contract_from_left(*O, herm(*CL), BlockHamLDeque.back(), *CL));
-         ++CL, ++O;
-      }
-
-      BlockHamRDeque.push_front(BlockHamR);
-      auto CR = PsiLinearLeft.end();
-      O = HamMPO.end();
-      while (CR != PsiLinearLeft.begin())
-      {
-         --CR, --O;
-         BlockHamRDeque.push_front(contract_from_right(herm(*O), *CR, BlockHamRDeque.front(), herm(*CR)));
-      }
-
-      TRACE(inner_prod(BlockHamLDeque.back(), BlockHamRDeque.back()));
-   }
-
-   std::deque<MatrixOperator>
-   operator()(std::deque<MatrixOperator> const& XDeque) const
-   {
-      std::deque<StateComponent> BDeque;
-      auto NL = NullLeftDeque.begin();
-      auto X = XDeque.begin();
-      while (NL != NullLeftDeque.end())
-      {
-         BDeque.push_back(prod(*NL, *X));
-         ++NL, ++X;
-      }
-      
-      StateComponent BL, BR;
-      
-      MatrixOperator Ident = Initial_F(HamMPO, PsiLinearLeft.Basis2()).back();
-      MatrixOperator Rho = D*D;
-
-      std::complex<double> LeftEnergy = SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearLeft*EXP_I_PI(k), BDeque,
-                                                             PsiLeft.qshift(), HamMPO, Ident, Rho, GMRESTol, Verbose);
-      std::complex<double> RightEnergy = SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearLeft*EXP_I_PI(k), BDeque,
-                                                               PsiLeft.qshift(), HamMPO, Ident, Rho, GMRESTol, Verbose);
-
-      //TRACE(norm_frob(BL))(norm_frob(BR));
-
-      std::deque<MatrixOperator> Result;
-      auto B = BDeque.begin();
-      NL = NullLeftDeque.begin();
-      auto O = HamMPO.begin();
-      auto BHL = BlockHamLDeque.begin();
-      auto BHR = BlockHamRDeque.begin();
-      ++BHR;
-      while (B != BDeque.end())
-      {
-         Result.push_back(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR));
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *B)), *BHR)));
-         ++B, ++NL, ++O, ++BHL, ++BHR;
-      }
-
-      StateComponent Tmp = BL;
-      B = BDeque.begin();
-      NL = NullLeftDeque.begin();
-      auto CL = PsiLinearLeft.begin();
-      auto CR = PsiLinearLeft.begin();
-      O = HamMPO.begin();
-      BHL = BlockHamLDeque.begin();
-      BHR = BlockHamRDeque.begin();
-      ++BHR;
-      auto R = Result.begin();
-      while (B != BDeque.end())
-      {
-         *R += scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *B)), *BHR)));
-         Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
-         ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
-      }
-
-      Tmp = BR;
-      B = BDeque.end();
-      NL = NullLeftDeque.end();
-      CL = PsiLinearLeft.end();
-      CR = PsiLinearLeft.end();
-      O = HamMPO.end();
-      BHL = BlockHamLDeque.end();
-      --BHL;
-      BHR = BlockHamRDeque.end();
-      R = Result.end();
-      X = XDeque.end();
-      while (B != BDeque.begin())
-      {
-         --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
-         --X;
-         *R += scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
-         //TRACE(norm_frob(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp)));
-         TRACE(trace(scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *B)), Tmp)));
-         TRACE(inner_prod(*R, *X));
-         Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
-      }
-
-      //TRACE(norm_frob(Result));
-      return Result;
-   }
-#endif
 
    std::deque<MatrixOperator>
    InitialGuess()
@@ -626,6 +463,7 @@ int main(int argc, char** argv)
       int Iter = 50;
       int MinIter = 4;
       double Tol = 1E-16;
+      int NDisplay = 5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -638,6 +476,8 @@ int main(int argc, char** argv)
           "Operator to use for the Hamiltonian")
          ("momentum,k", prog_opt::value(&k),
           "Excitation momentum (divided by pi)")
+         ("ndisplay,n", prog_opt::value<int>(&NDisplay),
+          FormatDefault("The number of lowest eigenvalues to display", NDisplay).c_str())
          ("maxiter", prog_opt::value<int>(&Iter),
           FormatDefault("Maximum number of Lanczos iterations", Iter).c_str())
          ("miniter", prog_opt::value<int>(&MinIter),
@@ -646,6 +486,7 @@ int main(int argc, char** argv)
           FormatDefault("Error tolerance for the Lanczos eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
+         ("seed", prog_opt::value<unsigned long>(), "random seed")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
@@ -668,6 +509,10 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
+         : (ext::get_unique() % RAND_MAX);
+      srand(RandSeed);
 
       mp_pheap::InitializeTempPHeap();
 
@@ -712,10 +557,12 @@ int main(int argc, char** argv)
 
       LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter, Tol, MinIter, Verbose);
 
-      std::cout << "Eigenvalues:" << std::endl;
+      std::cout << "#n      En" << std::endl;
 
-      for (double E : EValues)
-         std::cout << E << std::endl;
+      auto E = EValues.begin();
+      for (int i = 0; i < NDisplay && E != EValues.end(); ++i, ++E)
+         std::cout << std::setw(4) << i << "    "
+                   << std::setw(20) << *E << std::endl;
    }
    catch (prog_opt::error& e)
    {
