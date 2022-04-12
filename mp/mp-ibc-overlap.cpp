@@ -124,10 +124,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("rhs") == 0)
+      if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <psi2>" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [<psi2>]" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -179,8 +179,14 @@ int main(int argc, char** argv)
       if (Verbose)
          std::cout << "Loading RHS wavefunction..." << std::endl;
 
-      pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
-      IBCWavefunction Psi2 = Psi2Ptr->get<IBCWavefunction>();
+      IBCWavefunction Psi2;
+      if (RhsStr.empty())
+         Psi2 = Psi1;
+      else
+      {
+         pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(RhsStr);
+         Psi2 = Psi2Ptr->get<IBCWavefunction>();
+      }
 
       if (Verbose)
          std::cout << "Calculating overlap..." << std::endl;

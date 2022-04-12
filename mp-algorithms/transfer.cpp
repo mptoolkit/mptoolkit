@@ -54,7 +54,7 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
    int ncv = 0;
    CHECK_EQUAL(Psi1.size(), Psi2.size());
    CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   PackStateComponent Pack(StringOp.Basis2(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
    //   double tolsave = tol;
    //   int ncvsave = ncv;
@@ -81,7 +81,7 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
    int ncv = 0;
    CHECK_EQUAL(Psi1.size(), Psi2.size());
    CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis1(), Psi2.Basis1());
    int n = Pack.size();
    //   double tolsave = tol;
    //   int ncvsave = ncv;

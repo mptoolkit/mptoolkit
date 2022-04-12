@@ -198,6 +198,12 @@ expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose = 0);
 std::complex<double>
 overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
 
+// Find the left/right eigenvectors of the mixed transfer matrices of the
+// left/right semi-infinite boundaries respectively.
+std::tuple<StateComponent, StateComponent>
+get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
+                                   IBCWavefunction const& Psi2, int Verbose = 0);
+
 // A more general function to calculate the overlap, which attempts to handle
 // the case where the left/right boundaries of Psi1 and Psi2 may be different
 // (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).

@@ -19,6 +19,7 @@
 
 #include "ibc.h"
 #include "tensor/tensor_eigen.h"
+#include "mp-algorithms/transfer.h"
 
 //
 // WavefunctionSectionLeft
@@ -30,7 +31,7 @@
 // Base class CanonicalWavefunctionBase
 
 // The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
-double const OverlapTol = 1e-12;
+double const OverlapTol = 1e-8;
 
 // The tolerance of the trace of the left/right boundary eigenvectors for
 // fixing the phase when calculating the overlap of two general IBCs.
@@ -495,8 +496,9 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
    return trace(E);
 }
 
-std::complex<double>
-overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, int Verbose)
+std::tuple<StateComponent, StateComponent>
+get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
+                                   IBCWavefunction const& Psi2, int Verbose)
 {
    CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
    CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
@@ -512,73 +514,73 @@ overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction
    int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.WindowRightSites - 1) % RightSize);
    int IndexRight = std::max(IndexRight1, IndexRight2);
 
-   // Before calculating the overlap, we must find the left/right eigenvectors
-   // of the left/right boundary transfer matrices.
-
-   // Get the identity quantum number.
-   // TODO: Is this always what we want?
-   QuantumNumber QI(Psi1.GetSymmetryList());
-
    // Ensure that the semi-infinite boundaries have the same quantum numbers.
-   QuantumNumber QShiftLeft1 = QI;
-   for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
-      QShiftLeft1 = delta_shift(QShiftLeft1, Psi1.Left.qshift());
-
-   QuantumNumber QShiftLeft2 = QI;
-   for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
-      QShiftLeft2 = delta_shift(QShiftLeft2, Psi2.Left.qshift());
-
    InfiniteWavefunctionLeft Psi1Left = Psi1.Left;
-   inplace_qshift(Psi1Left, QShiftLeft1);
+   for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
+      inplace_qshift(Psi1Left, Psi1.Left.qshift());
 
    InfiniteWavefunctionLeft Psi2Left = Psi2.Left;
-   inplace_qshift(Psi2Left, QShiftLeft2);
+   for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
+      inplace_qshift(Psi2Left, Psi2.Left.qshift());
 
    // Calculate the left eigenvector of the left semi-infinite boundary.
    std::complex<double> OverlapL;
-   StateComponent E;
-   std::tie(OverlapL, std::ignore, E) = overlap(Psi1Left, StringOp, Psi2Left, QI);
+   MatrixOperator EL, ER;
+   std::tie(OverlapL, EL, ER) = get_transfer_eigenpair(get_left_canonical(Psi1Left).first, get_left_canonical(Psi2Left).first, Psi1.Left.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
-   //TRACE(OverlapL);
    if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
-      WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
+      WARNING("The overlap of the left boundaries is below threshold.")(OverlapL)(std::abs(OverlapL));
+
+   // Normalize EL s.t. the sum of the singular values of ER = 1.
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(ER, U, D, Vh);
+
+   ER *= 1.0 / trace(D);
+   EL *= 1.0 / inner_prod(delta_shift(ER, Psi1.Left.qshift()), EL);
+
+   StateComponent E(StringOp.Basis1(), EL.Basis1(), EL.Basis2());
+   E.front() = EL;
 
    E = delta_shift(E, adjoint(Psi1.Left.qshift()));
 
-   QuantumNumber QShiftRight1 = QI;
-   for (int i = 0; i < (IndexRight - IndexRight1) / RightSize; ++i)
-      QShiftRight1 = delta_shift(QShiftRight1, adjoint(Psi1.Right.qshift()));
-
-   QuantumNumber QShiftRight2 = QI;
-   for (int i = 0; i < (IndexRight - IndexRight2) / RightSize; ++i)
-      QShiftRight2 = delta_shift(QShiftRight2, adjoint(Psi2.Right.qshift()));
-
    InfiniteWavefunctionRight Psi1Right = Psi1.Right;
-   inplace_qshift(Psi1Right, QShiftRight1);
+   for (int i = 0; i < (IndexRight - IndexRight1) / RightSize; ++i)
+      inplace_qshift(Psi1Right, adjoint(Psi1.Right.qshift()));
 
    InfiniteWavefunctionRight Psi2Right = Psi2.Right;
-   inplace_qshift(Psi2Right, QShiftRight2);
+   for (int i = 0; i < (IndexRight - IndexRight2) / RightSize; ++i)
+      inplace_qshift(Psi2Right, adjoint(Psi2.Right.qshift()));
 
    // Calculate the right eigenvector of the right semi-infinite boundary.
    std::complex<double> OverlapR;
-   StateComponent F;
-   std::tie(OverlapR, std::ignore, F) = overlap(Psi1Right, StringOp, Psi2Right, QI);
+   MatrixOperator FL, FR;
+   std::tie(OverlapR, FL, FR) = get_transfer_eigenpair(get_right_canonical(Psi1Right).second, get_right_canonical(Psi2Right).second, Psi1.Right.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
-   //TRACE(OverlapR);
    if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
-      WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
+      WARNING("The overlap of the right boundaries is below threshold.")(OverlapR)(std::abs(OverlapR));
 
-   // Rescale E and F by the bond dimension.
-   E *= std::sqrt(std::min(E.Basis1().total_degree(), E.Basis2().total_degree()));
-   F *= std::sqrt(std::min(F.Basis1().total_degree(), F.Basis2().total_degree()));
+   // Normalize FR s.t. the sum of the singular values of FL = 1.
+   SingularValueDecomposition(FL, U, D, Vh);
 
+   FL *= 1.0 / trace(D);
+   FR *= 1.0 / inner_prod(delta_shift(FR, Psi1.Right.qshift()), FL);
+
+   StateComponent F(StringOp.Basis1(), FR.Basis1(), FR.Basis2());
+   F.front() = FR;
+
+   // Remove spurious phase from E and F by setting the phase of the trace
+   // to be zero (but only if the trace is nonzero).
+   // This will only work if E and F are square.
+   // This only ensures that any overlaps calculated using the same E and F
+   // matrices will have the same global phase: calculations using different
+   // boundary transfer matrices may end up having a nontrivial global phase
+   // shift.
+   // TODO: Figure out a better method to fix the phase.
    if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2() && E.size() == 1 && F.size() == 1)
    {
-      // Remove spurious phase from E and F by setting the phase of the trace
-      // to be zero (but only if the trace is nonzero).
-
       std::complex<double> ETrace = trace(E.front());
 
       if (std::abs(ETrace) > TraceTol)
@@ -596,6 +598,14 @@ overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction
    else
       WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
 
+   return std::make_tuple(E, F);
+}
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, int Verbose)
+{
+   StateComponent E, F;
+   std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi1, StringOp, Psi2, Verbose);
    return overlap(Psi1, StringOp, Psi2, E, F, Verbose);
 }
 
