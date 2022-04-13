@@ -502,9 +502,9 @@ int main(int argc, char** argv)
          ("right,r", prog_opt::value(&InputFileRight),
           "Input iMPS wavefunction for the right semi-infinite strip")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "Operator to use for the Hamiltonian")
+          "Operator to use for the Hamiltonian [required]")
          ("momentum,k", prog_opt::value(&k),
-          "Excitation momentum (divided by pi)")
+          FormatDefault("Excitation momentum (divided by pi)", k).c_str())
          ("ndisplay,n", prog_opt::value<int>(&NDisplay),
           FormatDefault("The number of lowest eigenvalues to display", NDisplay).c_str())
          ("maxiter", prog_opt::value<int>(&Iter),
@@ -515,7 +515,7 @@ int main(int argc, char** argv)
           FormatDefault("Error tolerance for the Lanczos eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
-         ("seed", prog_opt::value<unsigned long>(), "random seed")
+         ("seed", prog_opt::value<unsigned long>(), "Random seed")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
