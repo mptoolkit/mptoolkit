@@ -34,8 +34,6 @@
 #include "mp-algorithms/gmres.h"
 #include "common/unique.h"
 
-#define EXP_I_PI(k) exp(std::complex<double>(0.0, math_const::pi) * (k))
-
 namespace prog_opt = boost::program_options;
 
 double
@@ -268,17 +266,26 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
 struct HEff
 {
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, double k_, double GMRESTol_, int Verbose_)
+        BasicTriangularMPO const& HamMPO_, double k, double GMRESTol_, int Verbose_)
       : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
-        HamMPO(HamMPO_), k(k_), GMRESTol(GMRESTol_), Verbose(Verbose_)
+        HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
 
+      ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+
+      // Get PsiLeft and PsiRight as LinearWavefunctions.
       std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
 
+      MatrixOperator U;
+      RealDiagonalOperator D;
       std::tie(U, D, PsiLinearRight) = get_right_canonical(PsiRight);
-
       PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
+
+      // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
+      // and PsiRight: for use with SolveSimpleMPOLeft/Right2.
+      RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
+      RhoR = PsiLeft.lambda_r();
 
       // Get the null space matrices corresponding to each A-matrix in PsiLeft.
       for (StateComponent C : PsiLinearLeft)
@@ -304,8 +311,6 @@ struct HEff
                                                               HamMPO, Rho, GMRESTol, Verbose-1);
       if (Verbose > 0)
          std::cout << "Right energy = " << RightEnergy << std::endl;
-
-      BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
       // Remove the contribution from the ground state energy density.
       BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
@@ -343,20 +348,45 @@ struct HEff
          BDeque.push_back(prod(*NL, *X));
          ++NL, ++X;
       }
+
+      // Construct the "triangular" MPS unit cell.
+      LinearWavefunction PsiTri;
+
+      if (PsiLeft.size() == 1)
+         PsiTri.push_back(BDeque.back());
+      else
+      {
+         auto CL = PsiLinearLeft.begin();
+         auto CR = PsiLinearRight.begin();
+         auto B = BDeque.begin();
+         SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
+         PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
+         ++CL, ++CR, ++B;
+         for (int i = 1; i < PsiLeft.size()-1; ++i)
+         {
+            StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
+            SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
+            SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
+            PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+            ++CL, ++CR, ++B;
+         }
+         SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
+         PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
+      }
       
       // Calcaulate the terms in the triangular E and F matrices where there is
       // one B-matrix on the top.
-      StateComponent BL, BR;
-      
-      SolveSimpleMPO_Left2(BL, BlockHamL, PsiLinearLeft, PsiLinearRight, BDeque,
-                           PsiLeft.qshift(), HamMPO, D, D, EXP_I_PI(PsiLeft.size()*k), GMRESTol, Verbose-1);
+      StateComponent BlockHamLTri, BlockHamRTri;
 
-      SolveSimpleMPO_Right2(BR, BlockHamR, PsiLinearLeft, PsiLinearRight, BDeque,
-                            PsiRight.qshift(), HamMPO, D, D, EXP_I_PI(PsiLeft.size()*k), GMRESTol, Verbose-1);
+      SolveSimpleMPO_Left2(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                           PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
+
+      SolveSimpleMPO_Right2(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                            PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
 
       // Shift the phases by one unit cell.
-      BL *= EXP_I_PI(PsiLeft.size()*k);
-      BR *= EXP_I_PI(PsiLeft.size()*k);
+      BlockHamLTri *= ExpIK;
+      BlockHamRTri *= ExpIK;
 
       // Calculate the contribution to HEff corresponding to where the
       // B-matrices are on the same site.
@@ -375,7 +405,7 @@ struct HEff
 
       // Calculate the contribution where the top B-matrix is in the left
       // semi-infinite part.
-      StateComponent Tmp = BL;
+      StateComponent Tmp = BlockHamLTri;
       B = BDeque.begin();
       NL = NullLeftDeque.begin();
       auto CL = PsiLinearLeft.begin();
@@ -395,7 +425,7 @@ struct HEff
 
       // Calculate the contribution where the top B-matrix is in the right
       // semi-infinite part.
-      Tmp = BR;
+      Tmp = BlockHamRTri;
       B = BDeque.end();
       NL = NullLeftDeque.end();
       CL = PsiLinearLeft.end();
@@ -437,15 +467,14 @@ struct HEff
    InfiniteWavefunctionLeft const& PsiLeft;
    InfiniteWavefunctionLeft const& PsiRight;
    BasicTriangularMPO HamMPO;
-   double k;
    double GMRESTol;
    int Verbose;
+   std::complex<double> ExpIK;
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
-   MatrixOperator U;
-   RealDiagonalOperator D;
+   MatrixOperator RhoL, RhoR;
 };
 
 int main(int argc, char** argv)
@@ -550,6 +579,9 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+
+      // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
+      k *= PsiLeft.size() / Lattice.GetUnitCell().size();
 
       HEff EffectiveHamiltonian(PsiLeft, PsiRightLeft, HamMPO, k, GMRESTol, Verbose);
 

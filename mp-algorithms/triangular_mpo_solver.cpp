@@ -1021,40 +1021,13 @@ struct SubProductLeftProject2
 void
 SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     std::deque<StateComponent> const& BDeque,
+                     LinearWavefunction const& PsiTri,
                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Ident, MatrixOperator const& Rho,
                      std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (E1.is_null())
       E1 = Initial_E(Op, PsiLeft.Basis1());
-
-   // Construct the 'triangular' MPS unit cell.
-   LinearWavefunction PsiTri;
-
-   if (PsiLeft.size() == 1)
-   {
-      PsiTri.push_back(BDeque.back());
-   }
-   else
-   {
-      auto CLeft = PsiLeft.begin();
-      auto CRight = PsiRight.begin();
-      auto B = BDeque.begin();
-      SumBasis<VectorBasis> NewBasis0((*CLeft).Basis2(), (*B).Basis2());
-      PsiTri.push_back(tensor_row_sum(*CLeft, *B, NewBasis0));
-      ++CLeft, ++CRight, ++B;
-      for (int i = 1; i < PsiLeft.size()-1; ++i)
-      {
-         StateComponent Z = StateComponent((*CLeft).LocalBasis(), (*CRight).Basis1(), (*CLeft).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CLeft).Basis2(), (*B).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CLeft).Basis1(), (*CRight).Basis1());
-         PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CLeft, *B, NewBasis1), tensor_row_sum(Z, *CRight, NewBasis1), NewBasis2));
-         ++CLeft, ++CRight, ++B;
-      }
-      SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CRight).Basis1());
-      PsiTri.push_back(tensor_col_sum(*B, *CRight, NewBasis3));
-   }
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
@@ -1104,7 +1077,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
             std::cerr << "Zero diagonal matrix element at column " << (Col+1) << std::endl;
          E1[Col] = C;
       }
-      else // TODO: Test this part.
+      else
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << (Col+1) << std::endl;
@@ -1120,7 +1093,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
          // Initial guess for linear solver
          E1[Col] = C;
 
-	 LinearSolve(E1[Col], OneMinusTransferLeft2(Diag, PsiRight, PsiLeft, QShift), C, Tol, Verbose);
+	 LinearSolve(E1[Col], OneMinusTransferLeft2(Diag, PsiRight2, PsiLeft, QShift), C, Tol, Verbose);
       }
    }
    // Final column, must be identity
@@ -1201,40 +1174,13 @@ struct SubProductRightProject2
 void
 SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      std::deque<StateComponent> const& BDeque,
+                      LinearWavefunction const& PsiTri,
                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                       MatrixOperator const& Rho, MatrixOperator const& Ident,
                       std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (F1.is_null())
       F1 = Initial_F(Op, PsiRight.Basis2());
-
-   // Construct the 'triangular' MPS unit cell.
-   LinearWavefunction PsiTri;
-
-   if (PsiLeft.size() == 1)
-   {
-      PsiTri.push_back(BDeque.back());
-   }
-   else
-   {
-      auto CLeft = PsiLeft.begin();
-      auto CRight = PsiRight.begin();
-      auto B = BDeque.begin();
-      SumBasis<VectorBasis> NewBasis0((*CLeft).Basis2(), (*B).Basis2());
-      PsiTri.push_back(tensor_row_sum(*CLeft, *B, NewBasis0));
-      ++CLeft, ++CRight, ++B;
-      for (int i = 1; i < PsiLeft.size()-1; ++i)
-      {
-         StateComponent Z = StateComponent((*CLeft).LocalBasis(), (*CRight).Basis1(), (*CLeft).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CLeft).Basis2(), (*B).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CLeft).Basis1(), (*CRight).Basis1());
-         PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CLeft, *B, NewBasis1), tensor_row_sum(Z, *CRight, NewBasis1), NewBasis2));
-         ++CLeft, ++CRight, ++B;
-      }
-      SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CRight).Basis1());
-      PsiTri.push_back(tensor_col_sum(*B, *CRight, NewBasis3));
-   }
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
@@ -1284,7 +1230,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
          F1[Row] = C;
       }
-      else // TODO: Test this part.
+      else
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
@@ -1300,7 +1246,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
          // Initial guess for linear solver
          F1[Row] = C;
 
-	 LinearSolve(F1[Row], OneMinusTransferRight2(Diag, PsiLeft, PsiRight, QShift), C, Tol, Verbose);
+	 LinearSolve(F1[Row], OneMinusTransferRight2(Diag, PsiLeft2, PsiRight, QShift), C, Tol, Verbose);
       }
    }
    // First row, must be identity

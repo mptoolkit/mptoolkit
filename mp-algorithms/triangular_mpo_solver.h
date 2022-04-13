@@ -103,7 +103,7 @@ SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
 void
 SolveSimpleMPO_Left2(StateComponent& E2, StateComponent const& E1,
                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     std::deque<StateComponent> const& BDeque,
+                     LinearWavefunction const& PsiTri,
                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Ident, MatrixOperator const& Rho,
                      std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
@@ -111,7 +111,7 @@ SolveSimpleMPO_Left2(StateComponent& E2, StateComponent const& E1,
 void
 SolveSimpleMPO_Right2(StateComponent& F2, StateComponent const& F1,
                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      std::deque<StateComponent> const& BDeque,
+                      LinearWavefunction const& PsiTri,
                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                       MatrixOperator const& Rho, MatrixOperator const& Ident,
                       std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
