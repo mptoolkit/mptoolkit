@@ -1022,35 +1022,7 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    // Make it Hermitian
    //   E.back() = 0.5 * (E.back() + adjoint(E.back()));
 
-   // Stability fix: remove overall constant
-   if (Verbose > 0)
-      std::cerr << "Overall constant: " << inner_prod(E.back(), E.front()) << '\n';
-   E.back() -= inner_prod(E.front(), E.back()) * E.front();
-
-   // remove the spurious constant term from the energy
-   if (Verbose > 0)
-      std::cerr << "Spurious constant: " << inner_prod(E.back(), Rho) << '\n';
-   E.back() -= inner_prod(Rho, E.back()) * E.front();
-
-
-#if 0
-   // residual
-   MatrixOperator R = E.back();
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I)
-   {
-      R = operator_prod(herm(*I), R, *I);
-   }
-   R = delta_shift(R, QShift);
-   R += C;
-
-   DEBUG_TRACE("Residual norm")(norm_frob(E.back() - R));
-
-   E.back() = R;
-
-   // Make it Hermitian
-   E.back() = 0.5 * (E.back() + adjoint(E.back()));
-#endif
-
+   DEBUG_CHECK(norm_frob(inner_prod(Rho, E.back())) < 1E-12); // make sure that the final operator is orthogonal to the identity
 
 #if !defined(NDEBUG)
    {
