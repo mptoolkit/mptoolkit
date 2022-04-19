@@ -27,9 +27,7 @@
 #include "common/environment.h"
 #include "common/prog_options.h"
 #include "parser/number-parser.h"
-
-// The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
-double const OverlapTol = 1e-12;
+#include "lattice/infinite-parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -70,6 +68,8 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Conj = false;
       //bool Simple = false;
+      std::string String;
+      ProductMPO StringOp;
 
       std::string InputPrefix;
       std::string TimestepStr;
@@ -79,11 +79,10 @@ int main(int argc, char** argv)
       int N = 0;
       int XMin = 0;
       int XMax = 0;
+      int YMax = 0;
       int UCSize = -1;
       int Digits = 0;
       std::complex<double> InitialTime = 0.0;
-      // Scaling factor to remove the spurious phase when using the complex conjugate.
-      std::complex<double> ScalingFactor = 1.0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -106,12 +105,15 @@ int main(int argc, char** argv)
           "Complex conjugate psi2")
          //("simple", prog_opt::bool_switch(&Simple),
          // "Assume that psi1 and psi2 have the same semi-infinite boundaries")
+         ("string", prog_opt::value(&String),
+          "Use this string MPO representation for the cylinder translation operator")
 	 ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input wavefunctions")
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep")
 	 ("precision", prog_opt::value(&Digits), "Decimal precision in time value of the filenames")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps", N).c_str())
 	 ("xmin", prog_opt::value(&XMin), FormatDefault("Minimum value of x", XMin).c_str())
 	 ("xmax,x", prog_opt::value(&XMax), FormatDefault("Maximum value of x", XMax).c_str())
+	 ("ymax,y", prog_opt::value(&YMax), FormatDefault("Maximum value of y (requires --string)", YMax).c_str())
 	 ("ucsize", prog_opt::value(&UCSize), "Unit cell size [default left boundary unit cell size]")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
@@ -126,6 +128,7 @@ int main(int argc, char** argv)
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
       prog_opt::notify(vm);
+
 
       if (vm.count("help") > 0 || vm.count("wavefunction") == 0)
       {
@@ -198,45 +201,49 @@ int main(int argc, char** argv)
       // cell size.
       if (UCSize = -1)
          UCSize = Psi1.Left.size();
+      
+      if (vm.count("string"))
+      {
+         InfiniteLattice Lattice;
+         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+      }
+      else
+      {
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi1.Left));
+      }
+
+      // Get the string operators representing the rotations by 0, 1, ..., YMax sites.
+      std::vector<ProductMPO> StringOpVec;
+      StringOpVec.push_back(ProductMPO::make_identity(ExtractLocalBasis(Psi1.Left)));
+
+      for (int y = 1; y <= YMax; ++y)
+         StringOpVec.push_back(pow(StringOp, y));
 
       IBCWavefunction Psi2;
 
-      StateComponent E, F;
-
+      Psi2 = Psi1;
       if (Conj)
-      {
-         Psi2 = Psi1;
          inplace_conj(Psi1);
 
-         int IndexLeft = Psi1.window_offset() - ((Psi1.Left.size() - Psi1.WindowLeftSites) % Psi1.Left.size());
+      std::vector<StateComponent> EVec, FVec;
+      // Scaling factor to remove the spurious phase when using the complex conjugate.
+      std::vector<std::complex<double>> PhaseFactorVec;
+      
+      auto Op = StringOpVec.begin();
+      for (int y = 0; y <= YMax; ++y)
+      {
+         StateComponent E, F;
+         std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi2, *Op, Psi1, Verbose);
+         EVec.push_back(E);
+         FVec.push_back(F);
 
-         int IndexRight = Psi1.window_size() + Psi1.window_offset() + ((Psi1.Right.size() - Psi1.WindowRightSites - 1) % Psi1.Right.size());
+         std::complex<double> Overlap = overlap(Psi2, Psi1, E, F);
+         // TODO: Here we assume that the phases for the x = t = 0 overlaps
+         // should all be 0: this may not be the case, and we need to get the
+         // correct phases from somewhere.
+         PhaseFactorVec.push_back(std::abs(Overlap) / Overlap);
 
-         // Get the identity quantum number.
-         QuantumNumber QI(Psi1.GetSymmetryList());
-
-         // Calculate the left eigenvector of the left semi-infinite boundary.
-         std::complex<double> OverlapL;
-         std::tie(OverlapL, E) = overlap(Psi2.Left, Psi1.Left, QI);
-
-         // Check that the eigenvalue has magnitude 1.
-         if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
-            WARNING("The overlap of the left boundaries is below threshold.")(OverlapL);
-
-         E = delta_shift(E, adjoint(Psi1.Left.qshift()));
-
-         // Calculate the right eigenvector of the right semi-infinite boundary.
-         std::complex<double> OverlapR;
-         std::tie(OverlapR, F) = overlap(Psi2.Right, Psi1.Right, QI);
-
-         // Check that the eigenvalue has magnitude 1.
-         if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
-            WARNING("The overlap of the right boundaries is below threshold.")(OverlapR);
-
-         // We could try to fix E and F by hand, but it is easier to just force
-         // the correlation function for t = 0, x = 0 to be 1.0 by using a
-         // scaling factor.
-         ScalingFactor = 1.0 / overlap(Psi2, Psi1, E, F);
+         ++Op;
       }
 
       if (!Quiet)
@@ -247,6 +254,8 @@ int main(int argc, char** argv)
             std::cout << "#beta         ";
          if (XMin != 0 || XMax != 0)
             std::cout << "#x            ";
+         if (YMax != 0)
+            std::cout << "#y            ";
          if (ShowRealPart)
             std::cout << "#real                   ";
          if (ShowImagPart)
@@ -281,38 +290,46 @@ int main(int argc, char** argv)
 
          for (int x = XMin; x <= XMax; ++x)
          {
-            if (Verbose)
-               std::cout << "Translating Psi2 right by " << x << " unit cells..." << std::endl;
             Psi2.WindowOffset += UCSize;
 
-            std::complex<double> Overlap;
+            Op = StringOpVec.begin();
+            auto E = EVec.begin();
+            auto F = FVec.begin();
+            auto PhaseFactor = PhaseFactorVec.begin();
 
-            if (!Conj)
-               Overlap = overlap_simple(Psi2, Psi1, Verbose);
-            else
-               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F, Verbose);
+            for (int y = 0; y <= YMax; ++y)
+            {
+               std::complex<double> Overlap;
 
-            if (std::real(Timestep) != 0.0)
-               std::cout << std::setw(10) << TimeStr << "    ";
-            if (std::imag(Timestep) != 0.0)
-               std::cout << std::setw(10) << BetaStr << "    ";
-            if (XMin != 0 || XMax != 0)
-               std::cout << std::setw(10) << x << "    ";
+               Overlap = *PhaseFactor * overlap(Psi2, *Op, Psi1, *E, *F, Verbose);
 
-            PrintFormat(Overlap, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+               if (std::real(Timestep) != 0.0)
+                  std::cout << std::setw(10) << TimeStr << "    ";
+               if (std::imag(Timestep) != 0.0)
+                  std::cout << std::setw(10) << BetaStr << "    ";
+               if (XMin != 0 || XMax != 0)
+                  std::cout << std::setw(10) << x << "    ";
+               if (YMax != 0)
+                  std::cout << std::setw(10) << y << "    ";
+
+               PrintFormat(Overlap, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+
+               ++Op, ++E, ++F, ++PhaseFactor;
+            }
          }
       }
       
       if (Conj)
       {
          std::complex<double> FinalTime = double(N) * Timestep;
-         Psi2.WindowOffset -= XMax * UCSize;
+            Psi2.WindowOffset -= XMax * UCSize;
 
          for (int tstep = 1; tstep <= N; ++tstep)
          {
             if (Verbose)
                std::cout << "Loading RHS wavefunction..." << std::endl;
 
+            // The time strings for the input filename.
             std::string Filename = InputPrefix;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), Digits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), Digits);
@@ -327,6 +344,7 @@ int main(int argc, char** argv)
             IBCWavefunction Psi1 = Psi1Ptr->get<IBCWavefunction>();
             inplace_conj(Psi1);
 
+            // The time strings for outputting to the command line.
             TimeStr = formatting::format_digits(std::real(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
             BetaStr = formatting::format_digits(-std::imag(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
 
@@ -334,25 +352,33 @@ int main(int argc, char** argv)
 
             for (int x = XMin; x <= XMax; ++x)
             {
-
-               if (Verbose)
-                  std::cout << "Translating Psi2 right by " << x << " unit cells..." << std::endl;
                Psi2.WindowOffset += UCSize;
 
-               std::complex<double> Overlap;
+               Op = StringOpVec.begin();
+               auto E = EVec.begin();
+               auto F = FVec.begin();
+               auto PhaseFactor = PhaseFactorVec.begin();
 
-               Overlap = ScalingFactor * overlap(Psi2, Psi1, E, F, Verbose);
+               for (int y = 0; y <= YMax; ++y)
+               {
+                  std::complex<double> Overlap;
 
-               if (std::real(Timestep) != 0.0)
-                  std::cout << std::setw(10) << TimeStr << "    ";
-               if (std::imag(Timestep) != 0.0)
-                  std::cout << std::setw(10) << BetaStr << "    ";
-               if (XMin != 0 || XMax != 0)
-                  std::cout << std::setw(10) << x << "    ";
+                  Overlap = *PhaseFactor * overlap(Psi2, *Op, Psi1, *E, *F, Verbose);
 
-               PrintFormat(Overlap, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+                  if (std::real(Timestep) != 0.0)
+                     std::cout << std::setw(10) << TimeStr << "    ";
+                  if (std::imag(Timestep) != 0.0)
+                     std::cout << std::setw(10) << BetaStr << "    ";
+                  if (XMin != 0 || XMax != 0)
+                     std::cout << std::setw(10) << x << "    ";
+                  if (YMax != 0)
+                     std::cout << std::setw(10) << y << "    ";
+
+                  PrintFormat(Overlap, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+
+                  ++Op, ++E, ++F, ++PhaseFactor;
+               }
             }
-
             Psi2.WindowOffset -= XMax * UCSize;
          }
       }
