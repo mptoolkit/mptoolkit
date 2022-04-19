@@ -968,19 +968,21 @@ SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
 struct OneMinusTransferLeft2
 {
    OneMinusTransferLeft2(GenericMPO const& Op_, LinearWavefunction const& Psi1_,
-                        LinearWavefunction const& Psi2_, QuantumNumber const& QShift_)
-      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_)
+                        LinearWavefunction const& Psi2_, QuantumNumber const& QShift_,
+                        std::complex<double> ExpIK_)
+      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), ExpIK(ExpIK_)
    {}
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      return x - delta_shift(inject_left(x, Psi1, Op, Psi2), QShift);
+      return x - ExpIK * delta_shift(inject_left(x, Psi1, Op, Psi2), QShift);
    }
 
    GenericMPO const& Op;
    LinearWavefunction const& Psi1;
    LinearWavefunction const& Psi2;
    QuantumNumber const& QShift;
+   std::complex<double> ExpIK;
 };
 
 struct SubProductLeftProject2
@@ -990,8 +992,8 @@ struct SubProductLeftProject2
 
    SubProductLeftProject2(LinearWavefunction const& Psi1_, LinearWavefunction const& Psi2_,
                           QuantumNumber const& QShift_, MatrixOperator const& Proj_,
-                          MatrixOperator const& Ident_)
-      : Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_)
+                          MatrixOperator const& Ident_, std::complex<double> ExpIK_)
+      : Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_), ExpIK(ExpIK_)
    {
    }
 
@@ -1005,6 +1007,7 @@ struct SubProductLeftProject2
          Result = operator_prod(herm(*I2), Result, *I1);
          ++I1, ++I2;
       }
+      Result *= ExpIK;
       Result = In - delta_shift(Result, QShift);
       //Result = 0.5 * (Result + adjoint(Result));
       Result -= inner_prod(Proj, Result) * Ident;
@@ -1016,6 +1019,7 @@ struct SubProductLeftProject2
    QuantumNumber QShift;
    MatrixOperator Proj;
    MatrixOperator Ident;
+   std::complex<double> ExpIK;
 };
 
 void
@@ -1054,8 +1058,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    C -= inner_prod(Rho, C) * Ident;
 
    // solve for the first component
-   LinearWavefunction PsiRight2 = std::conj(ExpIK) * PsiRight;
-   SubProductLeftProject2 ProdL(PsiLeft, PsiRight2, QShift, Rho, Ident);
+   SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
    E1[Col] = C;
    LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
 
@@ -1093,7 +1096,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
          // Initial guess for linear solver
          E1[Col] = C;
 
-	 LinearSolve(E1[Col], OneMinusTransferLeft2(Diag, PsiRight2, PsiLeft, QShift), C, Tol, Verbose);
+	 LinearSolve(E1[Col], OneMinusTransferLeft2(Diag, PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
       }
    }
    // Final column, must be identity
@@ -1120,19 +1123,21 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
 struct OneMinusTransferRight2
 {
    OneMinusTransferRight2(GenericMPO const& Op_, LinearWavefunction const& Psi1_,
-                          LinearWavefunction const& Psi2_, QuantumNumber const& QShift_)
-      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_)
+                          LinearWavefunction const& Psi2_, QuantumNumber const& QShift_,
+                          std::complex<double> ExpIK_)
+      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), ExpIK(ExpIK_)
    {}
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      return x - delta_shift(inject_right(x, Psi1, Op, Psi2), adjoint(QShift));
+      return x - ExpIK * delta_shift(inject_right(x, Psi1, Op, Psi2), adjoint(QShift));
    }
 
    GenericMPO const& Op;
    LinearWavefunction const& Psi1;
    LinearWavefunction const& Psi2;
    QuantumNumber const& QShift;
+   std::complex<double> ExpIK;
 };
 
 struct SubProductRightProject2
@@ -1142,8 +1147,8 @@ struct SubProductRightProject2
 
    SubProductRightProject2(LinearWavefunction const& Psi1_, LinearWavefunction const& Psi2_,
                            QuantumNumber const& QShift_, MatrixOperator const& Proj_,
-                           MatrixOperator const& Ident_)
-      : Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_)
+                           MatrixOperator const& Ident_, std::complex<double> ExpIK_)
+      : Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_), ExpIK(ExpIK_)
    {
    }
 
@@ -1157,6 +1162,7 @@ struct SubProductRightProject2
          --I1, --I2;
          Result = operator_prod(*I1, Result, herm(*I2));
       }
+      Result *= ExpIK;
       Result = delta_shift(Result, adjoint(QShift));
       Result = In - Result;
       //Result = 0.5 * (Result + adjoint(Result));
@@ -1169,6 +1175,7 @@ struct SubProductRightProject2
    QuantumNumber QShift;
    MatrixOperator const& Proj;
    MatrixOperator const& Ident;
+   std::complex<double> ExpIK;
 };
 
 void
@@ -1207,8 +1214,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    C -= inner_prod(Rho, C) * Ident;
 
    // solve for the final component
-   LinearWavefunction PsiLeft2 = ExpIK * PsiLeft;
-   SubProductRightProject2 ProdR(PsiLeft2, PsiRight, QShift, Rho, Ident);
+   SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
    F1[Row] = C;
    LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
    
@@ -1246,7 +1252,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
          // Initial guess for linear solver
          F1[Row] = C;
 
-	 LinearSolve(F1[Row], OneMinusTransferRight2(Diag, PsiLeft2, PsiRight, QShift), C, Tol, Verbose);
+	 LinearSolve(F1[Row], OneMinusTransferRight2(Diag, PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
       }
    }
    // First row, must be identity
