@@ -1054,13 +1054,18 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    MatrixOperator C = inject_left_mask(E0, PsiTri, Op.data(), PsiLeft, Mask)[Col];
    C = delta_shift(C, QShift);
 
-   // orthogonalize
-   C -= inner_prod(Rho, C) * Ident;
+   if (Rho.is_null())
+      LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
 
-   // solve for the first component
-   SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
-   E1[Col] = C;
-   LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+      // solve for the first component
+      SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
+      E1[Col] = C;
+      LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+   }
 
    for (Col = 1; Col < Dim-1; ++Col)
    {
@@ -1112,12 +1117,18 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
        + ExpIK * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
    C = delta_shift(C, QShift);
 
-   // orthogonalize
-   C -= inner_prod(Rho, C) * Ident;
+   if (Rho.is_null())
+      LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
 
-   // solve for the final component
-   E1[Col] = C;
-   LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+      // solve for the final component
+      SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
+      E1[Col] = C;
+      LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+   }
 }
 
 struct OneMinusTransferRight2
@@ -1210,13 +1221,18 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    MatrixOperator C = inject_right_mask(F0, PsiTri, Op.data(), PsiRight, Mask)[Row];
    C.delta_shift(adjoint(QShift));
 
-   // orthogonalize
-   C -= inner_prod(Rho, C) * Ident;
+   if (Rho.is_null())
+      LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
 
-   // solve for the final component
-   SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
-   F1[Row] = C;
-   LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+      // solve for the final component
+      SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
+      F1[Row] = C;
+      LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+   }
    
    for (Row = Dim-2; Row >= 1; --Row)
    {
@@ -1268,10 +1284,16 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
        + ExpIK * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
    C.delta_shift(adjoint(QShift));
 
-   // orthogonalize
-   C -= inner_prod(Rho, C) * Ident;
+   if (Rho.is_null())
+      LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
 
-   // solve for the first component
-   F1[Row] = C;
-   LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+      // solve for the first component
+      SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
+      F1[Row] = C;
+      LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+   }
 }

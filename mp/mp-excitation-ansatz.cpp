@@ -33,6 +33,10 @@
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/gmres.h"
 #include "common/unique.h"
+#include "mp-algorithms/transfer.h"
+
+// The tolerance for the largest eigenvalue of the mixed tranfer matrix.
+double const OverlapTol = 1e-8;
 
 namespace prog_opt = boost::program_options;
 
@@ -262,7 +266,6 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
    return EValues;
 }
 
-
 struct HEff
 {
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
@@ -271,6 +274,7 @@ struct HEff
         HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
+      CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
 
       ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
 
@@ -284,8 +288,23 @@ struct HEff
 
       // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
       // and PsiRight: for use with SolveSimpleMPOLeft/Right2.
-      RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
-      RhoR = PsiLeft.lambda_r();
+      std::complex<double> Overlap;
+
+      std::tie(Overlap, RhoLeftL, RhoLeftR) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), ProductMPO::make_identity(ExtractLocalBasis(PsiLeft)));
+
+      if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
+      {
+         RhoLeftL = MatrixOperator();
+         RhoLeftR = MatrixOperator();
+      }
+
+      std::tie(Overlap, RhoRightL, RhoRightR) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), ProductMPO::make_identity(ExtractLocalBasis(PsiLeft)));
+
+      if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
+      {
+         RhoRightL = MatrixOperator();
+         RhoRightR = MatrixOperator();
+      }
 
       // Get the null space matrices corresponding to each A-matrix in PsiLeft.
       for (StateComponent C : PsiLinearLeft)
@@ -313,7 +332,7 @@ struct HEff
          std::cout << "Right energy = " << RightEnergy << std::endl;
 
       // Remove the contribution from the ground state energy density.
-      BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
+      BlockHamR.front() -= 2.0 * RightEnergy * BlockHamR.back();
 
       // Construct the partially contracted left Hamiltonian environments in the unit cell.
       BlockHamLDeque.push_back(BlockHamL);
@@ -379,10 +398,10 @@ struct HEff
       StateComponent BlockHamLTri, BlockHamRTri;
 
       SolveSimpleMPO_Left2(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
+                           PsiLeft.qshift(), HamMPO, RhoLeftL, RhoLeftR, ExpIK, GMRESTol, Verbose-1);
 
       SolveSimpleMPO_Right2(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                            PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
+                            PsiRight.qshift(), HamMPO, RhoRightL, RhoRightR, ExpIK, GMRESTol, Verbose-1);
 
       // Shift the phases by one unit cell.
       BlockHamLTri *= ExpIK;
@@ -474,7 +493,8 @@ struct HEff
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
-   MatrixOperator RhoL, RhoR;
+   MatrixOperator RhoLeftL, RhoLeftR;
+   MatrixOperator RhoRightL, RhoRightR;
 };
 
 int main(int argc, char** argv)
@@ -573,6 +593,7 @@ int main(int argc, char** argv)
       // If the bases of the two boundary unit cells have only one quantum
       // number sector, manually ensure that they match.
       // FIXME: This workaround probably will not work for non-Abelian symmetries.
+      // TODO: This may not be needed.
       if (PsiLeft.Basis2().size() == 1 && PsiRight.Basis1().size() == 1)
          inplace_qshift(PsiRight, delta_shift(PsiLeft.Basis2()[0], adjoint(PsiRight.Basis1()[0])));
 
