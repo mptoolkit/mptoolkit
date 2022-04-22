@@ -4,7 +4,7 @@
 //
 // models/spin-u1u1.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,13 +16,120 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
-// SU(3) spin chain in the fundamental representation,
-// broken down to U(1)xU(1)
-
+//
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
-
+// SU(3) spin chain in the fundamental representation,
+// broken down to U(1)xU(1)
+//
+// This uses the basis from https://arxiv.org/abs/0801.3565
+//
+// Start from the Gell-Mann matrices
+//
+// L1 = [  0  1  0 ]
+//      [  1  0  0 ]
+//      [  0  0  0 ]
+//
+// L2 = [  0 -i  0 ]
+//      [  i  0  0 ]
+//      [  0  0  0 ]
+//
+// L3 = [  1  0  0 ]
+//      [  0 -1  0 ]
+//      [  0  0  0 ]
+//
+// L4 = [  0  0  1 ]
+//      [  0  0  0 ]
+//      [  1  0  0 ]
+//
+// L5 = [  0  0 -i ]
+//      [  0  0  0 ]
+//      [  i  0  0 ]
+//
+// L6 = [  0  0  0 ]
+//      [  0  0  1 ]
+//      [  0  1  0 ]
+//
+// L7 = [  0  0  0 ]
+//      [  0  0 -i ]
+//      [  0  i  0 ]
+//
+// L8 = (1/sqrt(3)) [  1  0  0 ]
+//                  [  0  1  0 ]
+//                  [  0  0 -2 ]
+//
+// We take the U(1) generators to be L3/2 and L8 * sqrt(3)/2.  We denote the basis by the eigenvalues of L3,
+// being (1,-1,0), which have quantum numbers (1/2,1/2), (-1/2,1/2) and (0,-1) respectively.
+//
+// A conventient representation is
+// Tp = L1 + i*L2
+// Tm = L1 - i*L2
+// Vp = L4 + i*L5
+// Vp = L4 - i*L5
+// Up = L6 + i*L7
+// Um = L6 - i*L7
+//
+// Tp,Tm are raising/lowering operators in the first two states.
+// Up,Um are raising/lowering operators in the second two states.
+// Vp,Vm are raising/lowering operators between the first and last states.
+//
+// Relation so S=1 matrices
+// ========================
+//
+// We construct the S=1 Pauli matrices, using the same basis of (1,-1,0).
+//
+// Sz = [  1  0  0 ]
+//      [  0 -1  0 ]
+//      [  0  0  0 ]
+//
+// Sx = (1/sqrt(2)) [  0  0  1 ]
+//                  [  0  0  1 ]
+//                  [  1  1  0 ]
+//
+// Sy = (1/sqrt(2)) [  0  0 -i ]
+//                  [  0  0  i ]
+//                  [  i -i  0 ]
+//
+// Sp = sqrt(2) [  0  0  1 ]
+//              [  0  0  0 ]
+//              [  0  1  0 ]
+//
+// Sm = sqrt(2) [  0  0  0 ]
+//              [  0  0  1 ]
+//              [  1  0  0 ]
+//
+// Sz = L3
+// Sx = (1/sqrt(2)) (L4 + L6)
+// Sy = (1/sqrt(2)) (L5 - L7)
+//
+// Hamiltonians
+// ============
+//
+// The SU(3) spin chain has the Hamiltonian
+//
+// H_{SU(3)} = (J/4) sum_j sum_{a=1}^8 La(j) La(j+1)
+//
+// This is closely related to the S=1 bilinear biquadratic model
+// H_{bq} = J sum_j S_j \cdot S_{j+1} + (S_j \cdot S_{j+1})^2
+//
+// via S_j \cdot S_{j+1} + (S_j \cdot S_{j+1})^2 = 1 + 1/3 + (1/2) sum_{a=1}^8 La(j) La(j+1)
+//
+// Hence the translation is
+// H_{bq} = (4/3) N + 2 H_{SU(3)}
+//
+// The energy per site of the bilinear biquadriatic model (with J=1) is known to be
+// E = -ln(3) - pi/(3 sqrt(3)) + 1 = -0.703212076746182.....
+//
+// so the energy per site of the SU(3) spin chain (with J=1) is
+// E = -1/6 - ln(3)/2 - pi/(6 sqrt(3))
+//
+// To write the Hamiltonian in terms of the generators, we can use
+//
+// H_{bq} = (4/3) + (1/2) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
+//
+// and H_{SU(2)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
+//
 
 
 inline
