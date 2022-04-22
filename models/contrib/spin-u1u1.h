@@ -119,16 +119,16 @@
 // H_{bq} = (4/3) N + 2 H_{SU(3)}
 //
 // The energy per site of the bilinear biquadriatic model (with J=1) is known to be
-// E = -ln(3) - pi/(3 sqrt(3)) + 1 = -0.703212076746182.....
+// E_BQ = -ln(3) - pi/(3 sqrt(3)) + 2 = 0.296787923253818
 //
 // so the energy per site of the SU(3) spin chain (with J=1) is
-// E = -1/6 - ln(3)/2 - pi/(6 sqrt(3))
+// E_SU3 = 1/3 - ln(3)/2 - pi/(6 sqrt(3)) = -0.518272705039758
 //
 // To write the Hamiltonian in terms of the generators, we can use
 //
 // H_{bq} = (4/3) + (1/2) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
 //
-// and H_{SU(2)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
+// and H_{SU(3)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
 //
 
 inline

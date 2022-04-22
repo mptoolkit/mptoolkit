@@ -68,18 +68,25 @@
 // The basis is an SU(2) doublet and an SU(2) singlet, that have U(1) charges 1 and -2 respectively.
 //
 // The Hamiltonian
+// ===============
+//
+// The 8 generators split into
+//
+// inner(S,S) = L1.L1 + L2.L2 + L3.L3
+// inner(U,U) + inner(V,V) = L4.L4 + L5.L5 + L6.L6 + L7.L7
+// L8.L8
 
 inline
 LatticeSite SpinSU2U1()
 {
-   SymmetryList Symmetry("S:SU(1),Qz:U(1)");
+   SymmetryList Symmetry("S:SU(2),Qz:U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2, QuantumNumbers::U1>
       QN(Symmetry);
    SiteBasis Basis(Symmetry);
    SiteOperator L8;
    SiteOperator S, U, V, Qz;
 
-   SiteOperator R, P, I, U;
+   SiteOperator R, P, I;
    LatticeSite Site;
 
    // The quantum numbers of the basis are L3/2 and sqrt(3)*L8
@@ -95,13 +102,14 @@ LatticeSite SpinSU2U1()
    // Annihilate a spin to a (0,-2) state
    V = SiteOperator(Basis, QN(0.5,-3), LatticeCommute::Bosonic);
 
-   // Create a spin from a (0,-2) state.  This is the Hermitian conjugate of V
+   // Create a spin-1/2, conjugate of V
    U = SiteOperator(Basis, QN(0.5,3), LatticeCommute::Bosonic);
 
    P = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
-   U = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
+
+   S("s", "s")    = std::sqrt(3.0);
 
    L8("s", "s")   =  1.0 / std::sqrt(3.0);
    L8("0", "0")   = -2.0 / std::sqrt(3.0);
@@ -109,8 +117,8 @@ LatticeSite SpinSU2U1()
    Qz("s", "s")   =  1.0;
    Qz("0", "0")   = -2.0;
 
-   U("0", "s")    =  1.0;
-   V = adjoint(U);
+   V("0", "s")    =  2.0;
+   U = adjoint(V);
 
    I("s", "s")    =  1.0;
    I("0", "0")    =  1.0;
@@ -118,16 +126,12 @@ LatticeSite SpinSU2U1()
    P = I;
    R = I;
 
-   U("s", "s")    = -1.0;
-   U("0", "0")    =  1.0;
-
    Site["I"] = I;
    Site["P"] = P;
    Site["R"] = R;
-   Site["U"] = U;
    Site["L8"] = L8;
-   Site["Sz"] = Sz;
    Site["Qz"] = Qz;
+   Site["S"] = S;
    Site["U"] = U;
    Site["V"] = V;
    return Site;
