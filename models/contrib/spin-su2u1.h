@@ -70,7 +70,7 @@
 // The Hamiltonian
 
 inline
-LatticeSite SU2U1SpinSite()
+LatticeSite SpinSU2U1()
 {
    SymmetryList Symmetry("S:SU(1),Qz:U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::SU2, QuantumNumbers::U1>

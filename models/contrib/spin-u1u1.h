@@ -131,9 +131,8 @@
 // and H_{SU(2)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
 //
 
-
 inline
-LatticeSite CreateU1U1SpinSite()
+LatticeSite SpinU1U1()
 {
    SymmetryList Symmetry("Sz:U(1),Qz:U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1, QuantumNumbers::U1>

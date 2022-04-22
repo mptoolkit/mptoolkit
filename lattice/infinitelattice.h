@@ -208,6 +208,18 @@ BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op);
 
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op_)
+{
+   return prod_unit_left_to_right(Op_.MPO(), Op_.GetSiteList()->size());
+}
+
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
+{
+   return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
+}
+
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
 BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink,
                        BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);

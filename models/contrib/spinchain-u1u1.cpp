@@ -4,7 +4,7 @@
 //
 // models/spinchain-u1.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-u1.h"
+#include "models/contrib/spin-u1u1.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -31,13 +31,11 @@ int main(int argc, char** argv)
 {
    try
    {
-      half_int Spin = 0.5;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -49,30 +47,17 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1) Spin chain");
+      OpDescriptions.set_description("SU(3) Spin-1 chain in the U(1)xU(1) basis");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J1z"  , "nearest neighbor spin coupling Sz Sz")
-         ("H_J1t"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_J2z"  , "next-nearest neighbor spin coupling Sz Sz")
-         ("H_J2t"  , "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J2"   , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_B1"   , "nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_B2"   , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
-         ("H_mu"   , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-	 ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
-	 ("H_stag" , "staggered field (-1)^n Sz(n)")
-         ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_t"  , "nearest neighbor T-channel exchange")
+         ("H_v"  , "nearest neighbor V-channel exchange")
+         ("H_u"  , "nearest neighbor U-channel exchange")
+         ("H_3"  , "nearest neighbor L3-L3")
+         ("H_8"  , "nearest neighbor L8-L8")
+         ("H_BQ" , "Bilinear-biquadratic model = (4/3) + 0.5*(H_t + H_v + H_u + H_3 + H_8)")
+         ("H_SU2" , "Bilinear-biquadratic model = 0.25*(H_t + H_v + H_u + H_3 + H_8) = 0.25*(sum over SU(3) generators)")
          ;
-
-      OpDescriptions.add_functions()
-	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1",
-	  [&Spin]()->bool {return Spin==1;})
-         ("H_murray", "Biquadratic model with anisotropy, parameterized by xy and z", "spin 1",
-	  [&Spin]()->bool {return Spin==1;})
-	 ;
 
       if (vm.count("help") || !vm.count("out"))
       {
@@ -83,47 +68,19 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = SpinU1(Spin);
+      LatticeSite Site = SpinU1U1();
       UnitCell Cell(Site);
-      UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+      UnitCellOperator Tp(Cell, "Tp"), Tm(Cell, "Tm"), Vp(Cell, "Vp"), Vm(Cell, "Vm"), Up(Cell, "Up"), Um(Cell, "Um");
+      UnitCellOperator Sz(Cell, "Sz"), Qz(Cell, "Qz"), L3(Cell, "L3"), L8(Cell, "L8"), I(Cell, "I");
       InfiniteLattice Lattice(&Cell);
 
-      Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
-      Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
-      Lattice["H_J1"]  = Lattice["H_J1z"] + Lattice["H_J1t"];
-
-      Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
-      Lattice["H_J2t"] = sum_unit(0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
-      Lattice["H_J2"] = sum_unit(Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
-
-      Lattice["H_B1"] = sum_unit(pow(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
-      Lattice["H_B2"] = sum_unit(pow(Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)), 2));
-
-      Lattice["H_B1xy"] = sum_unit(pow(0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)), 2));
-
-      Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
-
-      Lattice["H_dimer"] = sum_unit(Sz(0)*Sz(1) + 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1))
-				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
-
-      Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);
-
-      if (Spin == 1)
-      {
-         Lattice["H_AKLT"] = Lattice["H_J1"] + (1.0/3.0)*Lattice["H_B1"];
-	 Lattice.func("H_BQ")("theta") = "cos(theta)*H_J1 + sin(theta)*H_B1";
-         // note the parser doesn't handle precedence of negation and power properly,
-         // -3^2 == (-3)^2 rather than -(3^2).  So we need to include brackets.
-         Lattice.func("H_murray")("xy", "z") = "sum_unit(-((xy*0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1)) "
-            " + z*Sz(0)*Sz(1))^2))";
-      }
-
-      Lattice.func("H_J1t_twist")("theta") =
-         "0.5 * sum_unit(exp(i*theta)*Sp(0)*Sm(1) + exp(-i*theta)*Sm(0)*Sp(1))";
-      Lattice.func("H_J1t_twist").set_description("Twisted spin exchange");
-
-      Lattice.func("H_J1_twist")("theta") = "H_J1z + H_J1t_twist{theta}";
-      Lattice.func("H_J1_twist").set_description("Twisted J1");
+      Lattice["H_t"] = 0.5 * sum_unit(Tp(0)*Tm(1) + Tm(0)*Tp(1));
+      Lattice["H_v"] = 0.5 * sum_unit(Vp(0)*Vm(1) + Vm(0)*Vp(1));
+      Lattice["H_u"] = 0.5 * sum_unit(Up(0)*Um(1) + Um(0)*Up(1));
+      Lattice["H_3"] = sum_unit(L3(0)*L3(1));
+      Lattice["H_8"] = sum_unit(L8(0)*L8(1));
+      Lattice["H_BQ"] = sum_unit(I(0)*(4.0/3.0)) + 0.5*(Lattice["H_t"] + Lattice["H_v"] + Lattice["H_u"] + Lattice["H_3"] + Lattice["H_8"]);
+      Lattice["H_BQ"] = 0.25*(Lattice["H_t"] + Lattice["H_v"] + Lattice["H_u"] + Lattice["H_3"] + Lattice["H_8"]);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
