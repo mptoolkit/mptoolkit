@@ -146,9 +146,9 @@ LatticeSite SpinU1U1()
 
    // Basis is labelled by Sz = L3/2 and Qz = L8 * sqrt(3)/2
    // we label the local basis as 1,-1,0, the eigenvalue of L3
-   Basis.push_back("1", QN(0.5, 0.5));
-   Basis.push_back("-1", QN(-0.5, 0.5));
-   Basis.push_back("0", QN(0, -1));
+   Basis.push_back("1", QN(0.5, 1));
+   Basis.push_back("-1", QN(-0.5, 1));
+   Basis.push_back("0", QN(0, -2));
 
    OperatorDescriptions OpDescriptions;
    OpDescriptions.add_operators()
@@ -181,13 +181,13 @@ LatticeSite SpinU1U1()
 
    // V+ = L4 + i*L5
    // V- = L4 - i*L5
-   Vp = SiteOperator(Basis, QN(0.5,1.5), LatticeCommute::Bosonic);
-   Vm = SiteOperator(Basis, QN(-0.5,-1.5), LatticeCommute::Bosonic);
+   Vp = SiteOperator(Basis, QN(0.5,3), LatticeCommute::Bosonic);
+   Vm = SiteOperator(Basis, QN(-0.5,-3), LatticeCommute::Bosonic);
 
    // U+ = L6 + i*L7
    // U- = L6 - i*L7
-   Up = SiteOperator(Basis, QN(-0.5,1.5), LatticeCommute::Bosonic);
-   Um = SiteOperator(Basis, QN(0.5,-1.5), LatticeCommute::Bosonic);
+   Up = SiteOperator(Basis, QN(-0.5,3), LatticeCommute::Bosonic);
+   Um = SiteOperator(Basis, QN(0.5,-3), LatticeCommute::Bosonic);
 
    P = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
@@ -204,9 +204,9 @@ LatticeSite SpinU1U1()
    Sz("1", "1")   =  0.5;
    Sz("-1", "-1") = -0.5;
 
-   Qz("1", "1")   =  0.5;
-   Qz("-1", "-1") =  0.5;
-   Qz("0", "0")   = -1.0;
+   Qz("1", "1")   =  1.0;
+   Qz("-1", "-1") =  1.0;
+   Qz("0", "0")   = -2.0;
 
    Tp("1", "-1")  =  2.0;
    Tm("-1", "1")  =  2.0;
