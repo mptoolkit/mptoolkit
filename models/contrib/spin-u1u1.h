@@ -150,6 +150,24 @@ LatticeSite SpinU1U1()
    Basis.push_back("-1", QN(-0.5, 0.5));
    Basis.push_back("0", QN(0, -1));
 
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"   , "identity")
+      ("R"   , "reflection")
+      ("P"   , "fermion parity")
+      ("U"   , "unitary rotation in lambda_8 direction")
+      ("L3"  , "U(1) generator lambda_3")
+      ("L8"  , "U(1) generator lambda_8")
+      ("Sz"  , "U(1) generator lambda_3 scaled to have integer eigenvalues -1/2,1/2")
+      ("Qz"  , "U(1) generator scaled to have integer eigenvalues 1/2,1/2,-1")
+      ("Tp"  , "T raising operator")
+      ("Tm"  , "T lowering operator")
+      ("Vp"  , "V raising operator")
+      ("Vm"  , "V lowering operator")
+      ("Up"  , "U raising operator")
+      ("Um"  , "U lowering operator")
+      ;
+
    L3 = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
    L8 = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
@@ -224,5 +242,8 @@ LatticeSite SpinU1U1()
    Site["Vm"] = Vm;
    Site["Up"] = Up;
    Site["Um"] = Um;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }

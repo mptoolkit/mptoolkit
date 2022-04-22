@@ -93,6 +93,18 @@ LatticeSite SpinSU2U1()
    Basis.push_back("s", QN(0.5, 1));
    Basis.push_back("0", QN(0, -2));
 
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"   , "identity")
+      ("R"   , "reflection")
+      ("P"   , "fermion parity")
+      ("L8"  , "U(1) generator lambda_8")
+      ("Qz"  , "U(1) generator scaled to have integer eigenvalues 1,1,-2")
+      ("S"   , "SU(2) spin operator")
+      ("U"   , "Spin creation operator")
+      ("V"   , "Spin annihilation operator")
+      ;
+
    L8 = SiteOperator(Basis, QN(0,0), LatticeCommute::Bosonic);
 
    S = SiteOperator(Basis, QN(1,0), LatticeCommute::Bosonic);
@@ -134,5 +146,8 @@ LatticeSite SpinSU2U1()
    Site["S"] = S;
    Site["U"] = U;
    Site["V"] = V;
+
+   Site.set_operator_descriptions(OpDescriptions);
+
    return Site;
 }
