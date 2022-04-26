@@ -1054,17 +1054,18 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    MatrixOperator C = inject_left_mask(E0, PsiTri, Op.data(), PsiLeft, Mask)[Col];
    C = delta_shift(C, QShift);
 
-   if (Rho.is_null())
+   // solve for the first component
+   // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
+   // we do not need to orthogonalize against the leading eigenvector.
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
       LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
    else
    {
       // orthogonalize
       C -= inner_prod(Rho, C) * Ident;
 
-      // solve for the first component
-      SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
       E1[Col] = C;
-      LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+      LinearSolve(E1[Col], SubProductLeftProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
 
    for (Col = 1; Col < Dim-1; ++Col)
@@ -1117,17 +1118,16 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
        + ExpIK * inject_left_mask(E1, PsiRight, Op.data(), PsiLeft, Mask)[Col];
    C = delta_shift(C, QShift);
 
-   if (Rho.is_null())
+   // solve for the final component
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
       LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
    else
    {
       // orthogonalize
       C -= inner_prod(Rho, C) * Ident;
 
-      // solve for the final component
-      SubProductLeftProject2 ProdL(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
       E1[Col] = C;
-      LinearSolve(E1[Col], ProdL, C, Tol, Verbose);
+      LinearSolve(E1[Col], SubProductLeftProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
 }
 
@@ -1221,17 +1221,18 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    MatrixOperator C = inject_right_mask(F0, PsiTri, Op.data(), PsiRight, Mask)[Row];
    C.delta_shift(adjoint(QShift));
 
-   if (Rho.is_null())
+   // solve for the final component
+   // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
+   // we do not need to orthogonalize against the leading eigenvector.
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
       LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
    else
    {
       // orthogonalize
       C -= inner_prod(Rho, C) * Ident;
 
-      // solve for the final component
-      SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
       F1[Row] = C;
-      LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+      LinearSolve(F1[Row], SubProductRightProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
    
    for (Row = Dim-2; Row >= 1; --Row)
@@ -1284,16 +1285,15 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
        + ExpIK * inject_right_mask(F1, PsiLeft, Op.data(), PsiRight, Mask)[Row];
    C.delta_shift(adjoint(QShift));
 
-   if (Rho.is_null())
+   // solve for the first component
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
       LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
    else
    {
       // orthogonalize
       C -= inner_prod(Rho, C) * Ident;
 
-      // solve for the first component
-      SubProductRightProject2 ProdR(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK);
       F1[Row] = C;
-      LinearSolve(F1[Row], ProdR, C, Tol, Verbose);
+      LinearSolve(F1[Row], SubProductRightProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
 }

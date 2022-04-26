@@ -33,10 +33,6 @@
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/gmres.h"
 #include "common/unique.h"
-#include "mp-algorithms/transfer.h"
-
-// The tolerance for the largest eigenvalue of the mixed tranfer matrix.
-double const OverlapTol = 1e-8;
 
 namespace prog_opt = boost::program_options;
 
@@ -268,14 +264,15 @@ LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
 
 struct HEff
 {
-   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, double k, double GMRESTol_, int Verbose_)
-      : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
+   HEff() {}
+
+   // Initializer for the case where the A-matrices to the left and the right
+   // of the excitation correspond to the same ground state Psi.
+   HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
+        double k, double GMRESTol_, int Verbose_)
+      : PsiLeft(Psi_), PsiRight(Psi_),
         HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
-      CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
-      CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
-
       ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
 
       // Get PsiLeft and PsiRight as LinearWavefunctions.
@@ -288,30 +285,8 @@ struct HEff
 
       // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
       // and PsiRight: for use with SolveSimpleMPOLeft/Right2.
-      std::complex<double> Overlap;
-
-      std::tie(Overlap, RhoLeftL, RhoLeftR) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), ProductMPO::make_identity(ExtractLocalBasis(PsiLeft)));
-
-      if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
-      {
-         RhoLeftL = MatrixOperator();
-         RhoLeftR = MatrixOperator();
-      }
-
-      std::tie(Overlap, RhoRightL, RhoRightR) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), ProductMPO::make_identity(ExtractLocalBasis(PsiLeft)));
-
-      if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
-      {
-         RhoRightL = MatrixOperator();
-         RhoRightR = MatrixOperator();
-      }
-
-      // Get the null space matrices corresponding to each A-matrix in PsiLeft.
-      for (StateComponent C : PsiLinearLeft)
-         NullLeftDeque.push_back(NullSpace2(C));
-
-      if (HamMPO.size() < PsiLeft.size())
-         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
+      RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
+      RhoR = PsiLeft.lambda_r();
 
       // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
@@ -332,7 +307,87 @@ struct HEff
          std::cout << "Right energy = " << RightEnergy << std::endl;
 
       // Remove the contribution from the ground state energy density.
+      BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
+
+      this->Initialize();
+   }
+
+   // Initializer for the case where PsiLeft and PsiRight are two DIFFERENT ground states.
+   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
+        BasicTriangularMPO const& HamMPO_, double k, double GMRESTol_, int Verbose_)
+      : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
+        HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
+   {
+      CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
+      CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
+
+      ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+
+      // Get PsiLeft and PsiRight as LinearWavefunctions.
+      std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
+
+      MatrixOperator U;
+      RealDiagonalOperator D;
+      std::tie(U, D, PsiLinearRight) = get_right_canonical(PsiRight);
+      PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
+
+      // Since the leading eigenvalue of the left/right mixed transfer matrix
+      // has magnitude < 1, we do not need to orthogonalize the E/F matrix
+      // elements against its eigenvectors.
+      RhoL = MatrixOperator();
+      RhoR = MatrixOperator();
+
+      // Solve the left Hamiltonian environment.
+      BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
+      std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
+      if (Verbose > 0)
+         std::cout << "Left energy = " << LeftEnergy << std::endl;
+
+      BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
+
+      // Solve the right Hamiltonian environment.
+      BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
+      MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+      Rho = delta_shift(Rho, adjoint(PsiRight.qshift()));
+
+      std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiLinearRight, PsiRight.qshift(),
+                                                              HamMPO, Rho, GMRESTol, Verbose-1);
+      if (Verbose > 0)
+         std::cout << "Right energy = " << RightEnergy << std::endl;
+
+      // TODO: Figure out how to shift the overall constant in BlockHamR such
+      // that the energy corresponds to the excitation energy above the ground
+      // state.
+#if 0
+      // Solve the right Hamiltonian environment for PsiLeft (to fix the total energy).
+      LinearWavefunction PsiLinear;
+      std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
+      PsiLinear.set_front(prod(U, PsiLinear.get_front()));
+
+      StateComponent BlockHamLR = Initial_F(HamMPO, PsiLinear.Basis2());
+      Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+      Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
+
+      SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
+
+      // Remove the contribution from the ground state energy density.
+      BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR)) * BlockHamR.back();
+#endif
       BlockHamR.front() -= 2.0 * RightEnergy * BlockHamR.back();
+
+      this->Initialize();
+   }
+
+   // This function performs the part of the initialization common to both cases above.
+   void
+   Initialize()
+   {
+      // Get the null space matrices corresponding to each A-matrix in PsiLeft.
+      for (StateComponent C : PsiLinearLeft)
+         NullLeftDeque.push_back(NullSpace2(C));
+
+      if (HamMPO.size() < PsiLeft.size())
+         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
 
       // Construct the partially contracted left Hamiltonian environments in the unit cell.
       BlockHamLDeque.push_back(BlockHamL);
@@ -398,10 +453,10 @@ struct HEff
       StateComponent BlockHamLTri, BlockHamRTri;
 
       SolveSimpleMPO_Left2(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiLeft.qshift(), HamMPO, RhoLeftL, RhoLeftR, ExpIK, GMRESTol, Verbose-1);
+                           PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
 
       SolveSimpleMPO_Right2(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                            PsiRight.qshift(), HamMPO, RhoRightL, RhoRightR, ExpIK, GMRESTol, Verbose-1);
+                            PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
 
       // Shift the phases by one unit cell.
       BlockHamLTri *= ExpIK;
@@ -483,8 +538,8 @@ struct HEff
       return Result;
    }
 
-   InfiniteWavefunctionLeft const& PsiLeft;
-   InfiniteWavefunctionLeft const& PsiRight;
+   InfiniteWavefunctionLeft PsiLeft;
+   InfiniteWavefunctionLeft PsiRight;
    BasicTriangularMPO HamMPO;
    double GMRESTol;
    int Verbose;
@@ -493,8 +548,7 @@ struct HEff
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
-   MatrixOperator RhoLeftL, RhoLeftR;
-   MatrixOperator RhoRightL, RhoRightR;
+   MatrixOperator RhoL, RhoR;
 };
 
 int main(int argc, char** argv)
@@ -517,12 +571,6 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("left,l", prog_opt::value(&InputFileLeft),
-          "Input iMPS wavefunction for the left semi-infinite strip [required]")
-         ("right,r", prog_opt::value(&InputFileRight),
-          "Input iMPS wavefunction for the right semi-infinite strip")
-         ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "Operator to use for the Hamiltonian [required]")
          ("momentum,k", prog_opt::value(&k),
           FormatDefault("Excitation momentum (divided by pi)", k).c_str())
          ("ndisplay,n", prog_opt::value<int>(&NDisplay),
@@ -540,18 +588,30 @@ int main(int argc, char** argv)
           "Increase verbosity (can be used more than once)")
          ;
 
+      prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("psi", prog_opt::value(&InputFileLeft), "psi")
+         ("ham", prog_opt::value(&HamStr), "ham")
+         ("psi2", prog_opt::value(&InputFileRight), "psi2")
+         ;
+
+      prog_opt::positional_options_description p;
+      p.add("psi", 1);
+      p.add("ham", 1);
+      p.add("psi2", 1);
+
       prog_opt::options_description opt;
-      opt.add(desc);
+      opt.add(desc).add(hidden);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(opt).run(), vm);
+                      options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("left") == 0 || vm.count("Hamiltonian") == 0)
+      if (vm.count("help") || vm.count("ham") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <hamiltonian> [psi-right]" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -566,36 +626,7 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
 
       pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
-      pvalue_ptr<MPWavefunction> InPsiRight;
-
-      if (vm.count("right"))
-         InPsiRight = pheap::ImportHeap(InputFileRight);
-      else
-         InPsiRight = pheap::ImportHeap(InputFileLeft);
-
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
-
-      // There are some situations where the first method does not work
-      // properly, so temporarily use the second method as a workaround.
-#if 0
-      InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-#else
-      InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
-
-      MatrixOperator U;
-      RealDiagonalOperator D;
-      LinearWavefunction PsiRightLinear;
-      std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
-
-      InfiniteWavefunctionRight PsiRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
-#endif
-
-      // If the bases of the two boundary unit cells have only one quantum
-      // number sector, manually ensure that they match.
-      // FIXME: This workaround probably will not work for non-Abelian symmetries.
-      // TODO: This may not be needed.
-      if (PsiLeft.Basis2().size() == 1 && PsiRight.Basis1().size() == 1)
-         inplace_qshift(PsiRight, delta_shift(PsiLeft.Basis2()[0], adjoint(PsiRight.Basis1()[0])));
 
       InfiniteLattice Lattice;
       BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
@@ -604,7 +635,16 @@ int main(int argc, char** argv)
       // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
       k *= PsiLeft.size() / Lattice.GetUnitCell().size();
 
-      HEff EffectiveHamiltonian(PsiLeft, PsiRightLeft, HamMPO, k, GMRESTol, Verbose);
+      HEff EffectiveHamiltonian;
+
+      if (vm.count("psi2"))
+      {
+         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
+         InfiniteWavefunctionLeft PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
+         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, k, GMRESTol, Verbose);
+      }
+      else
+         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, k, GMRESTol, Verbose);
 
       std::deque<MatrixOperator> XDeque = EffectiveHamiltonian.InitialGuess();
 
