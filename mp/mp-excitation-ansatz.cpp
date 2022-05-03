@@ -288,6 +288,9 @@ struct HEff
       RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
       RhoR = PsiLeft.lambda_r();
 
+      if (HamMPO.size() < PsiLeft.size())
+         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
+
       // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
       std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
@@ -307,7 +310,27 @@ struct HEff
          std::cout << "Right energy = " << RightEnergy << std::endl;
 
       // Remove the contribution from the ground state energy density.
-      BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR)) * BlockHamR.back();
+      // To do this we need to remove the energy density contribution from one
+      // unit cell due to the excitation ansatz window (the RightEnergy term),
+      // and one contribution from the "bond energy", which is the energy
+      // contribution from the terms in the Hamiltonian which cross the bond at
+      // a unit cell boundary.
+      std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR);
+
+      // An alternate way to calculate the bond energy using only the right
+      // block Hamiltonian by essentially setting the upper-right element in
+      // the unit cell MPO to be zero.
+      // Unfortunately, this method does not work when there are diagonal terms
+      // in the MPO.
+#if 0
+      std::vector<std::vector<int>> Mask = mask_row(HamMPO, 0);
+      Mask.back().back() = 0;
+      MatrixOperator C = inject_right_mask(BlockHamR, PsiLinearRight, HamMPO.data(), PsiLinearRight, Mask)[0];
+      C.delta_shift(adjoint(PsiRight.qshift()));
+      std::complex<double> BondEnergy = inner_prod(Rho, C);
+#endif
+
+      BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
 
       this->Initialize();
    }
@@ -337,6 +360,9 @@ struct HEff
       RhoL = MatrixOperator();
       RhoR = MatrixOperator();
 
+      if (HamMPO.size() < PsiLeft.size())
+         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
+
       // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
       std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
@@ -355,11 +381,8 @@ struct HEff
       if (Verbose > 0)
          std::cout << "Right energy = " << RightEnergy << std::endl;
 
-      // TODO: Figure out how to shift the overall constant in BlockHamR such
-      // that the energy corresponds to the excitation energy above the ground
-      // state.
-#if 0
-      // Solve the right Hamiltonian environment for PsiLeft (to fix the total energy).
+      // Solve the right Hamiltonian environment for PsiLeft to find the "bond
+      // energy": see the comments above.
       LinearWavefunction PsiLinear;
       std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
       PsiLinear.set_front(prod(U, PsiLinear.get_front()));
@@ -369,11 +392,10 @@ struct HEff
       Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
       SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
+      std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
 
       // Remove the contribution from the ground state energy density.
-      BlockHamR.front() -= (RightEnergy + inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR)) * BlockHamR.back();
-#endif
-      BlockHamR.front() -= 2.0 * RightEnergy * BlockHamR.back();
+      BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
 
       this->Initialize();
    }
@@ -385,9 +407,6 @@ struct HEff
       // Get the null space matrices corresponding to each A-matrix in PsiLeft.
       for (StateComponent C : PsiLinearLeft)
          NullLeftDeque.push_back(NullSpace2(C));
-
-      if (HamMPO.size() < PsiLeft.size())
-         HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
 
       // Construct the partially contracted left Hamiltonian environments in the unit cell.
       BlockHamLDeque.push_back(BlockHamL);
