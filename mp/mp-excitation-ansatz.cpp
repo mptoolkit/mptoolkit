@@ -708,7 +708,9 @@ int main(int argc, char** argv)
 
          std::deque<MatrixOperator> XDeque = EffectiveHamiltonian.InitialGuess();
 
-         LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter, Tol, MinIter, Verbose);
+         int Iter_ = Iter;
+         double Tol_ = Tol;
+         LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter_, Tol_, MinIter, Verbose);
 
          // Print results for this k.
          auto E = EValues.begin();
