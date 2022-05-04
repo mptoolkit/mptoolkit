@@ -273,7 +273,7 @@ struct HEff
       : PsiLeft(Psi_), PsiRight(Psi_),
         HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
-      ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+      this->SetK(k);
 
       // Get PsiLeft and PsiRight as LinearWavefunctions.
       std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
@@ -288,8 +288,10 @@ struct HEff
       RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
       RhoR = PsiLeft.lambda_r();
 
+      // Ensure HamMPO is the correct size.
       if (HamMPO.size() < PsiLeft.size())
          HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
+      CHECK_EQUAL(HamMPO.size(), PsiLeft.size());
 
       // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
@@ -330,6 +332,9 @@ struct HEff
       std::complex<double> BondEnergy = inner_prod(Rho, C);
 #endif
 
+      if (Verbose > 0)
+         std::cout << "Bond energy = " << BondEnergy << std::endl;
+
       BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
 
       this->Initialize();
@@ -344,7 +349,7 @@ struct HEff
       CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
       CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
 
-      ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+      this->SetK(k);
 
       // Get PsiLeft and PsiRight as LinearWavefunctions.
       std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
@@ -360,8 +365,10 @@ struct HEff
       RhoL = MatrixOperator();
       RhoR = MatrixOperator();
 
+      // Ensure HamMPO is the correct size.
       if (HamMPO.size() < PsiLeft.size())
          HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
+      CHECK_EQUAL(HamMPO.size(), PsiLeft.size());
 
       // Solve the left Hamiltonian environment.
       BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
@@ -393,6 +400,9 @@ struct HEff
 
       SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
       std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
+
+      if (Verbose > 0)
+         std::cout << "Bond energy = " << BondEnergy << std::endl;
 
       // Remove the contribution from the ground state energy density.
       BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
@@ -466,7 +476,7 @@ struct HEff
          SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
          PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
       }
-      
+
       // Calcaulate the terms in the triangular E and F matrices where there is
       // one B-matrix on the top.
       StateComponent BlockHamLTri, BlockHamRTri;
@@ -557,6 +567,12 @@ struct HEff
       return Result;
    }
 
+   void
+   SetK(double k)
+   {
+      ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+   }
+
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionLeft PsiRight;
    BasicTriangularMPO HamMPO;
@@ -578,7 +594,9 @@ int main(int argc, char** argv)
       std::string InputFileLeft;
       std::string InputFileRight;
       std::string HamStr;
-      double k = 0;
+      double KMax = 0;
+      double KMin = 0;
+      int KNum = 1;
       bool Random = false;
       bool Force = false;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
@@ -590,8 +608,12 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("momentum,k", prog_opt::value(&k),
-          FormatDefault("Excitation momentum (divided by pi)", k).c_str())
+         ("kmax,k", prog_opt::value(&KMax),
+          FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin),
+          FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("knum", prog_opt::value(&KNum),
+          "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
          ("ndisplay,n", prog_opt::value<int>(&NDisplay),
           FormatDefault("The number of lowest eigenvalues to display", NDisplay).c_str())
          ("maxiter", prog_opt::value<int>(&Iter),
@@ -651,11 +673,14 @@ int main(int argc, char** argv)
       BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
+      double k = KMax;
       // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
       k *= PsiLeft.size() / Lattice.GetUnitCell().size();
 
-      HEff EffectiveHamiltonian;
+      double KStep = (KMax-KMin)/(KNum-1);
 
+      // Initialize the effective Hamiltonian.
+      HEff EffectiveHamiltonian;
       if (vm.count("psi2"))
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
@@ -665,16 +690,36 @@ int main(int argc, char** argv)
       else
          EffectiveHamiltonian = HEff(PsiLeft, HamMPO, k, GMRESTol, Verbose);
 
-      std::deque<MatrixOperator> XDeque = EffectiveHamiltonian.InitialGuess();
+      // Print column headers.
+      if (KNum > 1)
+         std::cout << "#k                  ";
+      std::cout << "#n        #En" << std::endl;
+      std::cout << std::left;
 
-      LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter, Tol, MinIter, Verbose);
+      // Calculate the excitation spectrum for each k desired.
+      for (int n = 0; n < KNum; ++n)
+      {
+         if (KNum > 1)
+         {
+            k = KMin + KStep * n;
+            k *= PsiLeft.size() / Lattice.GetUnitCell().size();
+            EffectiveHamiltonian.SetK(k);
+         }
 
-      std::cout << "#n      En" << std::endl;
+         std::deque<MatrixOperator> XDeque = EffectiveHamiltonian.InitialGuess();
 
-      auto E = EValues.begin();
-      for (int i = 0; i < NDisplay && E != EValues.end(); ++i, ++E)
-         std::cout << std::setw(4) << i << "    "
-                   << std::setw(20) << *E << std::endl;
+         LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter, Tol, MinIter, Verbose);
+
+         // Print results for this k.
+         auto E = EValues.begin();
+         for (int i = 0; i < NDisplay && E != EValues.end(); ++i, ++E)
+         {
+            if (KNum > 1)
+               std::cout << std::setw(20) << KMin + KStep * n;
+            std::cout << std::setw(10) << i
+                      << std::setw(20) << *E << std::endl;
+         }
+      }
    }
    catch (prog_opt::error& e)
    {
