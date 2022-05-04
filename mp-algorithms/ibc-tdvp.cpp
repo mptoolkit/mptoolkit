@@ -47,17 +47,42 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
 
    if (HamiltonianLeft.size() < PsiLeft.size())
       HamiltonianLeft = repeat(HamiltonianLeft, PsiLeft.size() / HamiltonianLeft.size());
+   CHECK_EQUAL(HamiltonianLeft.size(), PsiLeft.size());
 
    if (HamiltonianRight.size() < PsiRight.size())
       HamiltonianRight = repeat(HamiltonianRight, PsiRight.size() / HamiltonianRight.size());
+   CHECK_EQUAL(HamiltonianRight.size(), PsiRight.size());
 
    // Construct left Hamiltonian environment.
    StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis1());
    std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
                                                          GMRESTol, Verbose-1);
    if (Verbose > 0)
-      std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
+      std::cout << "Left energy = " << LeftEnergy << std::endl;
 
+   // Remove a spurious contribution from the "bond energy", which is the
+   // energy contribution from the terms in the Hamiltonian which cross the
+   // bond at a unit cell boundary. To calculate this, we need the right
+   // Hamiltonian environment for PsiLeft.
+   LinearWavefunction PsiLinear;
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
+   PsiLinear.set_front(prod(U, PsiLinear.get_front()));
+
+   StateComponent BlockHamLR = Initial_F(HamiltonianLeft, PsiLinear.Basis2());
+   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+   Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
+
+   SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamiltonianLeft, Rho, GMRESTol, Verbose-1);
+   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
+
+   if (Verbose > 0)
+      std::cout << "Bond energy = " << BondEnergy << std::endl;
+
+   BlockHamL.back() -= BondEnergy * BlockHamL.front();
+
+   // Calculate the left Hamiltonian environments for each position in the unit cell.
    HamLeftUC.push_back(BlockHamL);
 
    HLeft = HamiltonianLeft.begin();
@@ -74,8 +99,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
                                                            GMRESTol, Verbose-1);
    if (Verbose > 0)
-      std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
+      std::cout << "Right energy = " << RightEnergy << std::endl;
 
+   // Calculate the right Hamiltonian environments for each position in the unit cell.
    HamRightUC.push_front(BlockHamR);
 
    HRight = HamiltonianRight.end();
@@ -228,8 +254,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
    {
       // Perform SVD to left-orthogonalize current site.
       MatrixOperator M = ExpandBasis2(*C);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
+      MatrixOperator Vh;
 
       SingularValueDecomposition(M, U, D, Vh);
 
