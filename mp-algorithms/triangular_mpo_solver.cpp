@@ -1031,7 +1031,7 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
                      std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (E1.is_null())
-      E1 = Initial_E(Op, PsiLeft.Basis1());
+      E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
@@ -1198,7 +1198,7 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
                       std::complex<double> ExpIK, double Tol, int Verbose)
 {
    if (F1.is_null())
-      F1 = Initial_F(Op, PsiRight.Basis2());
+      F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
