@@ -526,6 +526,7 @@ BasicTriangularMPO operator+(BasicTriangularMPO const& x, BasicTriangularMPO con
       int x_cols = x[Here].Basis2().size();
       int y_cols = y[Here].Basis2().size();
 
+      // TODO: this should throw an exception so that if it comes from the parser then we can give a sensible error message
       CHECK(norm_frob(x[Here](0,0) - y[Here](0,0)) < 1E-10)(x[Here](0,0))(y[Here](0,0));
       CHECK(norm_frob(x[Here](x_rows-1, x_cols-1) - y[Here](y_rows-1, y_cols-1)) < 1E-10)
             (x[Here](x_rows-1, x_cols-1))(y[Here](y_rows-1, y_cols-1));
