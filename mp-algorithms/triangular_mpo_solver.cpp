@@ -1058,7 +1058,10 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
    // we do not need to orthogonalize against the leading eigenvector.
    if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      E1[Col] = C;
       LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   }
    else
    {
       // orthogonalize
@@ -1120,7 +1123,10 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
 
    // solve for the final component
    if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      E1[Col] = C;
       LinearSolve(E1[Col], OneMinusTransferLeft2(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   }
    else
    {
       // orthogonalize
@@ -1129,6 +1135,28 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
       E1[Col] = C;
       LinearSolve(E1[Col], SubProductLeftProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
+}
+
+// TODO: If PsiLeft and PsiRight are the same physical wavefunction, and ExpIK
+// == 1, then we need to orthogonalize against the eigenvector of the mixed
+// transfer matrix.
+void
+SolveStringMPO_Left2(MatrixOperator& E1, MatrixOperator const& E0,
+                     LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                     LinearWavefunction const& PsiTri,
+                     QuantumNumber const& QShift, ProductMPO const& Op,
+                     std::complex<double> ExpIK, double Tol, int Verbose)
+{
+   CHECK(Op.is_string());
+
+   if (E1.is_null())
+      E1 = MatrixOperator(PsiRight.Basis1(), PsiLeft.Basis1());
+
+   MatrixOperator C = inject_left(E0, PsiTri, Op.data(), PsiLeft);
+   C = delta_shift(C, QShift);
+
+   E1 = C;
+   LinearSolve(E1, OneMinusTransferLeft2(Op, PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
 }
 
 struct OneMinusTransferRight2
@@ -1225,7 +1253,10 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
    // we do not need to orthogonalize against the leading eigenvector.
    if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      F1[Row] = C;
       LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   }
    else
    {
       // orthogonalize
@@ -1287,7 +1318,10 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
 
    // solve for the first component
    if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      F1[Row] = C;
       LinearSolve(F1[Row], OneMinusTransferRight2(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   }
    else
    {
       // orthogonalize
@@ -1296,4 +1330,23 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
       F1[Row] = C;
       LinearSolve(F1[Row], SubProductRightProject2(PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
    }
+}
+
+void
+SolveStringMPO_Right2(MatrixOperator& F1, MatrixOperator const& F0,
+                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                      LinearWavefunction const& PsiTri,
+                      QuantumNumber const& QShift, ProductMPO const& Op,
+                      std::complex<double> ExpIK, double Tol, int Verbose)
+{
+   CHECK(Op.is_string());
+
+   if (F1.is_null())
+      F1 = MatrixOperator(PsiLeft.Basis2(), PsiRight.Basis2());
+
+   MatrixOperator C = inject_right(F0, PsiTri, Op.data(), PsiRight);
+   C.delta_shift(adjoint(QShift));
+
+   F1 = C;
+   LinearSolve(F1, OneMinusTransferRight2(Op, PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
 }

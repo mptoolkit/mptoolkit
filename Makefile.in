@@ -511,7 +511,7 @@ mp-itebd : tebd.o number-parser.o
 mp-ibc-join : random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-ibc-overlap : packunpack.o transfer.o
 mp-ibc-correlation : packunpack.o transfer.o number-parser.o
-mp-excitation-ansatz : triangular_mpo_solver.o ef-optim.o momentum_operations.o
+mp-excitation-ansatz : triangular_mpo_solver.o ef-optim.o momentum_operations.o packunpack.o transfer.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
@@ -571,6 +571,7 @@ LIBS_mp-aux-project = $(LIBARPACK)
 LIBS_mp-iexpectation-cross = $(LIBARPACK)
 LIBS_mp-ibc-overlap = $(LIBARPACK)
 LIBS_mp-ibc-correlation = $(LIBARPACK)
+LIBS_mp-excitation-ansatz = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

@@ -33,8 +33,14 @@
 #include "wavefunction/operator_actions.h"
 #include "mp-algorithms/gmres.h"
 #include "common/unique.h"
+#include "mp-algorithms/transfer.h"
+#include "tensor/tensor_eigen.h"
 
 namespace prog_opt = boost::program_options;
+
+// The tolerance of the trace of the left/right boundary eigenvectors for
+// fixing their relative phase.
+double const TraceTol = 1e-8;
 
 double
 norm_frob_sq(std::deque<MatrixOperator> const& Input)
@@ -269,9 +275,9 @@ struct HEff
    // Initializer for the case where the A-matrices to the left and the right
    // of the excitation correspond to the same ground state Psi.
    HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
-        double k, double GMRESTol_, int Verbose_)
-      : PsiLeft(Psi_), PsiRight(Psi_),
-        HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
+        ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
+      : PsiLeft(Psi_), PsiRight(Psi_), HamMPO(HamMPO_),
+        StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       this->SetK(k);
 
@@ -342,9 +348,10 @@ struct HEff
 
    // Initializer for the case where PsiLeft and PsiRight are two DIFFERENT ground states.
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, double k, double GMRESTol_, int Verbose_)
-      : PsiLeft(PsiLeft_), PsiRight(PsiRight_),
-        HamMPO(HamMPO_), GMRESTol(GMRESTol_), Verbose(Verbose_)
+        BasicTriangularMPO const& HamMPO_, ProductMPO const& StringOp_, double k,
+        double GMRESTol_, int Verbose_)
+      : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_),
+        StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
       CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
@@ -436,6 +443,79 @@ struct HEff
       {
          --CR, --O;
          BlockHamRDeque.push_front(contract_from_right(herm(*O), *CR, BlockHamRDeque.front(), herm(*CR)));
+      }
+
+      if (!StringOp.is_null())
+      {
+         MatrixOperator Tmp;
+
+         // Calculate the left/right eigenvectors of the transfer matrix with
+         // the string operator corresponding to Ty, fixing their norms and
+         // relative phases.
+         std::tie(std::ignore, TyL, Tmp) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearLeft, PsiLeft.qshift(), StringOp);
+
+         // Normalize TyL s.t. the sum of the singular values of Tmp = 1.
+         MatrixOperator U, Vh;
+         RealDiagonalOperator D;
+         SingularValueDecomposition(Tmp, U, D, Vh);
+
+         Tmp *= 1.0 / trace(D);
+         TyL *= 1.0 / inner_prod(delta_shift(Tmp, PsiLeft.qshift()), TyL);
+
+         std::tie(std::ignore, Tmp, TyR) = get_transfer_eigenpair(PsiLinearRight, PsiLinearRight, PsiRight.qshift(), StringOp);
+
+         // Normalize TyR s.t. the sum of the singular values of Tmp = 1.
+         SingularValueDecomposition(Tmp, U, D, Vh);
+
+         Tmp *= 1.0 / trace(D);
+         TyR *= 1.0 / inner_prod(delta_shift(TyR, PsiRight.qshift()), Tmp);
+
+         // Fix the phases of TyL and TyR by setting the phases of their traces to be zero.
+         // TODO: Figure out a better method to fix the phase: see wavefunction/ibc.cpp.
+         if (TyL.Basis1() == TyL.Basis2() && TyR.Basis1() == TyR.Basis2())
+         {
+            std::complex<double> TyLTrace = trace(TyL);
+
+            if (std::abs(TyLTrace) > TraceTol)
+               TyL *= std::conj(TyLTrace) / std::abs(TyLTrace);
+            else
+               WARNING("The trace of TyL is below threshold, so the overlap will have a spurious phase contribution.")(TyLTrace);
+
+            std::complex<double> TyRTrace = trace(TyR);
+
+            if (std::abs(TyRTrace) > TraceTol)
+               TyR *= std::conj(TyRTrace) / std::abs(TyRTrace);
+            else
+               WARNING("The trace of TyR is below threshold, so the overlap will have a spurious phase contribution.")(TyRTrace);
+         }
+         else
+            WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
+
+         // Construct the partially contracted versions of TyL and TyR.
+         StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
+         TyLSC.front() = TyL;
+
+         TyLDeque.push_back(TyLSC);
+
+         CL = PsiLinearLeft.begin();
+         O = StringOp.begin();
+         while (CL != PsiLinearLeft.end())
+         {
+            TyLDeque.push_back(contract_from_left(*O, herm(*CL), TyLDeque.back(), *CL));
+            ++CL, ++O;
+         }
+
+         StateComponent TyRSC = StateComponent(StringOp.Basis2(), PsiRight.Basis2(), PsiRight.Basis2());
+         TyRSC.front() = TyR;
+
+         TyRDeque.push_front(TyRSC);
+         CR = PsiLinearRight.end();
+         O = StringOp.end();
+         while (CR != PsiLinearRight.begin())
+         {
+            --CR, --O;
+            TyRDeque.push_front(contract_from_right(herm(*O), *CR, TyRDeque.front(), herm(*CR)));
+         }
       }
    }
 
@@ -538,16 +618,140 @@ struct HEff
       --BHL;
       BHR = BlockHamRDeque.end();
       R = Result.end();
-      X = XDeque.end();
       while (B != BDeque.begin())
       {
          --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
-         --X;
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
          Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
 
+      // Code to target excitations with a specific y-momentum (WIP).
+#if 0
+      if (!StringOp.is_null())
+      {
+         std::complex<double> Alpha = 10.0;
+
+         MatrixOperator E, F;
+         SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                              PsiLeft.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+         SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                               PsiRight.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+
+         E *= ExpIK;
+         F *= ExpIK;
+
+         // Calculate the contribution to HEff corresponding to where the
+         // B-matrices are on the same site.
+         B = BDeque.begin();
+         NL = NullLeftDeque.begin();
+         O = StringOp.begin();
+         BHL = TyLDeque.begin();
+         BHR = TyRDeque.begin();
+         ++BHR;
+         R = Result.begin();
+         while (B != BDeque.end())
+         {
+            *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR);
+            ++B, ++NL, ++O, ++BHL, ++BHR, ++R;
+         }
+
+         // Calculate the contribution where the top B-matrix is in the left
+         // semi-infinite part.
+         Tmp = StateComponent(StringOp.Basis1(), PsiLinearRight.Basis1(), PsiLinearLeft.Basis1());
+         Tmp.front() = E;
+         B = BDeque.begin();
+         NL = NullLeftDeque.begin();
+         CL = PsiLinearLeft.begin();
+         CR = PsiLinearRight.begin();
+         O = StringOp.begin();
+         BHL = TyLDeque.begin();
+         BHR = TyRDeque.begin();
+         ++BHR;
+         R = Result.begin();
+         while (B != BDeque.end())
+         {
+            *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
+            // TODO: We don't need to do this on the final step.
+            Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
+            ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
+         }
+
+         // Calculate the contribution where the top B-matrix is in the right
+         // semi-infinite part.
+         Tmp = StateComponent(StringOp.Basis2(), PsiLinearLeft.Basis2(), PsiLinearRight.Basis2());
+         Tmp.front() = F;
+         B = BDeque.end();
+         NL = NullLeftDeque.end();
+         CL = PsiLinearLeft.end();
+         CR = PsiLinearRight.end();
+         O = StringOp.end();
+         BHL = TyLDeque.end();
+         --BHL;
+         BHR = TyRDeque.end();
+         R = Result.end();
+         while (B != BDeque.begin())
+         {
+            --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
+            *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
+            Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
+         }
+      }
+#endif
+
       return Result;
+   }
+
+   std::complex<double>
+   Ty(std::deque<MatrixOperator> const& XDeque) const
+   {
+      // Construct the "B"-matrices corresponding to the input "X"-matrices.
+      std::deque<StateComponent> BDeque;
+      auto NL = NullLeftDeque.begin();
+      auto X = XDeque.begin();
+      while (NL != NullLeftDeque.end())
+      {
+         BDeque.push_back(prod(*NL, *X));
+         ++NL, ++X;
+      }
+
+      // Construct the "triangular" MPS unit cell.
+      LinearWavefunction PsiTri;
+
+      if (PsiLeft.size() == 1)
+         PsiTri.push_back(BDeque.back());
+      else
+      {
+         auto CL = PsiLinearLeft.begin();
+         auto CR = PsiLinearRight.begin();
+         auto B = BDeque.begin();
+         SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
+         PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
+         ++CL, ++CR, ++B;
+         for (int i = 1; i < PsiLeft.size()-1; ++i)
+         {
+            StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
+            SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
+            SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
+            PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+            ++CL, ++CR, ++B;
+         }
+         SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
+         PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
+      }
+
+      MatrixOperator E, F;
+      SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                           PsiLeft.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+      SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                            PsiRight.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+
+      E *= ExpIK;
+      F *= ExpIK;
+
+      std::complex<double> Ty = inner_prod(inject_left(TyL, PsiTri, StringOp, PsiTri), TyR)
+                              + inner_prod(inject_left(E, PsiLinearRight, StringOp, PsiTri), TyR)
+                              + inner_prod(inject_left(TyL, PsiLinearLeft, StringOp, PsiTri), F);
+      return Ty;
    }
 
    std::deque<MatrixOperator>
@@ -576,14 +780,18 @@ struct HEff
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionLeft PsiRight;
    BasicTriangularMPO HamMPO;
+   ProductMPO StringOp;
    double GMRESTol;
    int Verbose;
    std::complex<double> ExpIK;
+
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
    MatrixOperator RhoL, RhoR;
+   MatrixOperator TyL, TyR;
+   std::deque<StateComponent> TyLDeque, TyRDeque;
 };
 
 int main(int argc, char** argv)
@@ -604,6 +812,8 @@ int main(int argc, char** argv)
       int MinIter = 4;
       double Tol = 1E-16;
       int NDisplay = 5;
+      std::string String;
+      ProductMPO StringOp;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -625,6 +835,8 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
+         ("string", prog_opt::value(&String),
+          "Use this string MPO representation for the cylinder translation operator")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
@@ -673,6 +885,12 @@ int main(int argc, char** argv)
       BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
+      if (vm.count("string"))
+      {
+         InfiniteLattice Lattice;
+         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+      }
+
       double k = KMax;
       // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
       k *= PsiLeft.size() / Lattice.GetUnitCell().size();
@@ -685,10 +903,10 @@ int main(int argc, char** argv)
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
          InfiniteWavefunctionLeft PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, k, GMRESTol, Verbose);
+         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, StringOp, k, GMRESTol, Verbose);
       }
       else
-         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, k, GMRESTol, Verbose);
+         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, StringOp, k, GMRESTol, Verbose);
 
       // Print column headers.
       if (KNum > 1)
