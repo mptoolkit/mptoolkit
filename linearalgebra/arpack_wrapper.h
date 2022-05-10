@@ -44,11 +44,29 @@ namespace LinearAlgebra
 // Sort       if true, then sort the eigenvalues in order of decreasing magnitude
 // Verbose    verbose output level
 
+enum class WhichEigenvalues { LargestMagnitude, SmallestMagnitude, LargestReal, SmallestReal,
+      LargestImag, SmallestImag, LargestAlgebraic, SmallestAlgebraic, BothEnds };
+
+std::string ToStr(WhichEigenvalues);
+
+// For generic problems, WhichEigenvalues must be one of
+// LargestMagnitude, SmallestMagnitude, LargestReal, SmallestReal, LargestImag, SmallestImag
+template <typename MultFunc>
+Vector<std::complex<double> >
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol = 1e-10,
+                  std::vector<std::complex<double> >* OutputVectors = NULL,
+                  int ncv = 0, bool Sort = false, int Verbose = 0);
+
+// For backwards compatibility, target the eigenvalues with the largest magnitude if unspecified.
 template <typename MultFunc>
 Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
                   std::vector<std::complex<double> >* OutputVectors = NULL,
-                  int ncv = 0, bool Sort = false, int Verbose = 0);
+                  int ncv = 0, bool Sort = false, int Verbose = 0)
+{
+   return DiagonalizeARPACK(Mult, n, NumEigen, WhichEigenvalues::LargestMagnitude, tol,
+                  OutputVectors, ncv, Sort, Verbose);
+}
 
 // Match left and right eigenvectors to the correct complex eigenvalues.
 // This works by finding a pairing of numerically identical eigenvalues,

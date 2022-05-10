@@ -124,6 +124,18 @@ kahan_sum(FwdIter start, FwdIter end)
 
 } // namespace numerics
 
+// For complex numbers that have a small imaginary component (smaller than epsilon * real part),
+// force it to be zero.
+template <typename T>
+std::complex<T>
+remove_small_imag(std::complex<T> x)
+{
+   using std::abs;
+   if (abs(x.imag()) < 30*std::numeric_limits<T>::epsilon() * abs(x.real()))
+      x.imag(0.0);
+   return x;
+}
+
 //
 // norm_2, norm_2_sq
 //

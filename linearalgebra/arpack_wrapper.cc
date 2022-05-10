@@ -25,9 +25,27 @@
 namespace LinearAlgebra
 {
 
+inline std::string ToStr(WhichEigenvalues w)
+{
+   switch (w)
+   {
+      case WhichEigenvalues::LargestMagnitude : return "LM";
+      case WhichEigenvalues::SmallestMagnitude : return "SM";
+      case WhichEigenvalues::LargestReal : return "LR";
+      case WhichEigenvalues::SmallestReal : return "SR";
+      case WhichEigenvalues::LargestImag : return "LI";
+      case WhichEigenvalues::SmallestImag : return "SI";
+      case WhichEigenvalues::LargestAlgebraic : return "LA";
+      case WhichEigenvalues::SmallestAlgebraic : return "SA";
+      case WhichEigenvalues::BothEnds : return "BE";
+   }
+   return "";
+}
+
+
 template <typename MultFunc>
 Vector<std::complex<double> >
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol,
                   std::vector<std::complex<double> >* OutputVectors,
                   int ncv, bool Sort, int Verbose)
 {
@@ -79,7 +97,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    // arpack parameters
    int ido = 0;  // first call
    char bmat = 'I'; // standard eigenvalue problem
-   char which[3] = "LM";                      // largest magnitude
+   std::string w = ToStr(which);
    int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
    std::vector<std::complex<double> > resid(n);  // residual
    ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
@@ -103,7 +121,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
 
    int NumMultiplies = 0;
 
-   ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
+   ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
                   &v[0], ldv, &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
    CHECK(info >= 0)(info)(n)(nev)(ncv);
@@ -122,7 +140,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
          PANIC("unexpected reverse communication operation.")(ido);
       }
 
-      ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
+      ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
       CHECK(info >= 0)(info);
@@ -143,7 +161,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
    std::complex<double> sigma;   // not referenced
    std::vector<std::complex<double> > workev(2*ncv);
    ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                  bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
+                  bmat, n, w.c_str(), nev, tol, &resid[0], ncv, &v[0], ldv,
                   &iparam, &ipntr, &workd[0],
                   &workl[0], lworkl, &rwork[0], &info);
    CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);

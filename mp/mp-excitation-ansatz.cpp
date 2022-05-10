@@ -17,256 +17,32 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "mp/copyright.h"
-#include "wavefunction/mpwavefunction.h"
-#include "lattice/latticesite.h"
 #include "common/environment.h"
-#include "common/terminal.h"
-#include "common/prog_options.h"
+#include "common/formatting.h"
 #include "common/prog_opt_accum.h"
-#include "common/environment.h"
-#include "interface/inittemp.h"
-#include "mp-algorithms/lanczos.h"
-#include "lattice/infinitelattice.h"
-#include "lattice/infinite-parser.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
-#include "wavefunction/operator_actions.h"
-#include "mp-algorithms/gmres.h"
+#include "common/prog_options.h"
+#include "common/terminal.h"
 #include "common/unique.h"
+#include "interface/inittemp.h"
+#include "lattice/infinite-parser.h"
+#include "lattice/infinitelattice.h"
+#include "lattice/latticesite.h"
+#include "linearalgebra/arpack_wrapper.h"
+#include "mp-algorithms/gmres.h"
+#include "mp-algorithms/lanczos.h"
 #include "mp-algorithms/transfer.h"
+#include "mp-algorithms/triangular_mpo_solver.h"
+#include "mp/copyright.h"
+#include "mps/packunpack.h"
 #include "tensor/tensor_eigen.h"
+#include "wavefunction/mpwavefunction.h"
+#include "wavefunction/operator_actions.h"
 
 namespace prog_opt = boost::program_options;
 
 // The tolerance of the trace of the left/right boundary eigenvectors for
 // fixing their relative phase.
 double const TraceTol = 1e-8;
-
-double
-norm_frob_sq(std::deque<MatrixOperator> const& Input)
-{
-   double Result = 0.0;
-   for (auto I : Input)
-      Result += norm_frob_sq(I);
-   return Result;
-}
-
-double
-norm_frob(std::deque<MatrixOperator> const& Input)
-{
-   return std::sqrt(norm_frob_sq(Input));
-}
-
-std::deque<MatrixOperator>&
-operator*=(std::deque<MatrixOperator>& Input, double x)
-{
-   for (auto& I : Input)
-      I *= x;
-   return Input;
-}
-
-std::deque<MatrixOperator>
-operator*(double x, std::deque<MatrixOperator> const& Input)
-{
-   std::deque<MatrixOperator> Result = Input;
-   Result *= x;
-   return Result;
-}
-
-std::deque<MatrixOperator>&
-operator+=(std::deque<MatrixOperator>& Input1, std::deque<MatrixOperator> const& Input2)
-{
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      *I1 += *I2;
-      ++I1, ++I2;
-   }
-   return Input1;
-}
-
-std::deque<MatrixOperator>&
-operator-=(std::deque<MatrixOperator>& Input1, std::deque<MatrixOperator> const& Input2)
-{
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      *I1 -= *I2;
-      ++I1, ++I2;
-   }
-   return Input1;
-}
-
-std::complex<double>
-inner_prod(std::deque<MatrixOperator> const& Input1, std::deque<MatrixOperator> const& Input2)
-{
-   std::complex<double> Result = 0.0;
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      Result += inner_prod(*I1, *I2);
-      ++I1, ++I2;
-   }
-   return Result;
-}
-
-// NB: This is a modified version of mp-algorithms/lanczos.h which returns the
-// found eigenvalues, and not just the lowest one.
-// TODO: Use a better version of Lanczos to find the lowest n eigenvalues.
-template <typename VectorType, typename MultiplyFunctor>
-LinearAlgebra::Vector<double>
-LanczosFull(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iterations,
-        double& Tol, int MinIter = 2, int Verbose = 0)
-{
-   std::vector<VectorType>     v;          // the Krylov vectors
-   std::vector<VectorType>     Hv;         // the Krylov vectors
-
-   LinearAlgebra::Matrix<double> SubH(Iterations+1, Iterations+1, 0.0);
-
-   VectorType w = Guess;
-
-   double Beta = norm_frob(w);
-   //TRACE(Beta);
-   CHECK(!std::isnan(Beta));
-   // double OrigBeta = Beta;      // original norm, not used
-   w *= 1.0 / Beta;
-   v.push_back(w);
-
-   w = MatVecMultiply(v[0]);
-   Hv.push_back(w);
-   SubH(0,0) = real(inner_prod(v[0], w));
-   w -= SubH(0,0) * v[0];
-
-   Beta = norm_frob(w);
-   //TRACE(Beta);
-   if (Beta < LanczosBetaTol)
-   {
-      if (Verbose > 0)
-         std::cerr << "lanczos: immediate return, invariant subspace found, Beta="
-                   << Beta << '\n';
-      Guess = v[0];
-      Iterations = 1;
-      Tol = Beta;
-      LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,1),
-                                             LinearAlgebra::range(0,1));
-      LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
-      return EValues;
-   }
-
-   // It isn't meaningful to do a Krylov algorithm with only one matrix-vector multiply,
-   // but we postpone the check until here to allow the corner case of
-   // Iterations==1 but the algorithm converged in 1 step,
-   // which might happen for example if the Hilbert space is 1-dimensional
-   // (external checks that set Iterations=max(Iterations,Dimension) are not unreasonable).
-   CHECK(Iterations > 1)("Number of iterations must be greater than one")(Iterations);
-
-   for (int i = 1; i < Iterations; ++i)
-   {
-      SubH(i, i-1) = SubH(i-1, i) = Beta;
-      w *= 1.0 / Beta;
-      v.push_back(w);
-      w = MatVecMultiply(v[i]);
-      Hv.push_back(w);
-      w -= Beta*v[i-1];
-      SubH(i,i) = real(inner_prod(v[i], w));
-      w -= SubH(i,i) * v[i];
-      Beta = norm_frob(w);
-      //TRACE(Beta);
-
-
-      if (Beta < LanczosBetaTol)
-      {
-         // Early return, we can't improve over the previous energy and eigenvector
-         if (Verbose > 0)
-            std::cerr << "lanczos: early return, invariant subspace found, Beta="
-                      << Beta << ", iterations=" << (i+1) << '\n';
-         Iterations = i+1;
-         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
-                                                LinearAlgebra::range(0,i+1));
-         LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
-         double Theta = EValues[0];    // smallest eigenvalue
-         double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
-         VectorType y = M(0,0) * v[0];
-         for (int j = 1; j <= i; ++j)
-            y += M(0,j) * v[j];
-         Tol = Beta / SpectralDiameter;
-         Guess = y;
-         return EValues;
-      }
-
-      // solution of the tridiagonal subproblem
-      LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
-                                             LinearAlgebra::range(0,i+1));
-#if 0
-      if (std::isnan(M(0,0)))
-      {
-         std::ofstream Out("lanczos_debug.txt");
-         Out << "NAN encountered in Lanczos\n"
-             << "Beta=" << Beta << "\n\n"
-             << "norm_frob(Guess)=" << norm_frob(Guess) << "\n\n"
-             << "Guess=" << Guess << "\n\n"
-             << "M=" << "\n\n"
-             << "SubH=" << SubH << "\n\n";
-         for (unsigned n = 0; n < v.size(); ++n)
-         {
-            Out << "V[" << n << "]=" << v[n] << "\n\n";
-         }
-      }
-#endif
-
-      LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
-      double Theta = EValues[0];    // smallest eigenvalue
-
-      if (Verbose > 0)
-         std::cout << "i=" << i
-                   << ", E0=" << Theta << std::endl;
-
-      double SpectralDiameter = EValues[i] - EValues[0];  // largest - smallest
-      VectorType y = M(0,0) * v[0];
-      for (int j = 1; j <= i; ++j)
-         y += M(0,j) * v[j];
-
-      // residual = H*y - Theta*y
-      VectorType r = (-Theta) * y;
-      for (int j = 0; j < i; ++j)
-         r += M(0,j) * Hv[j];
-
-      double ResidNorm = norm_frob(r);
-
-      if (ResidNorm < fabs(Tol * SpectralDiameter) && i+1 >= MinIter)
-         //if (ResidNorm < Tol && i+1 >= MinIter)
-      {
-         if (Verbose > 0)
-            std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
-                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
-                      << ", iterations=" << (i+1) << '\n';
-         Iterations = i+1;
-         Tol = ResidNorm / SpectralDiameter;
-         Guess = y;
-         return EValues;
-      }
-      else if (Verbose > 2)
-      {
-         std::cerr << "lanczos: Eigen=" << Theta << ", ResidNorm="
-                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
-                      << ", iterations=" << (i+1) << '\n';
-      }
-
-      if (i == Iterations-1) // finished?
-      {
-         Guess = y;
-         Tol = -ResidNorm / SpectralDiameter;
-         return EValues;
-      }
-   }
-
-   PANIC("Should never get here");
-   LinearAlgebra::Vector<double> EValues(0);
-   return EValues;
-}
 
 struct HEff
 {
@@ -275,8 +51,9 @@ struct HEff
    // Initializer for the case where the A-matrices to the left and the right
    // of the excitation correspond to the same ground state Psi.
    HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
-        ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
-      : PsiLeft(Psi_), PsiRight(Psi_), HamMPO(HamMPO_),
+        QuantumNumbers::QuantumNumber const& Q_, ProductMPO const& StringOp_,
+        double k, double GMRESTol_, int Verbose_)
+      : PsiLeft(Psi_), PsiRight(Psi_), HamMPO(HamMPO_), Q(Q_),
         StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       this->SetK(k);
@@ -348,9 +125,9 @@ struct HEff
 
    // Initializer for the case where PsiLeft and PsiRight are two DIFFERENT ground states.
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, ProductMPO const& StringOp_, double k,
-        double GMRESTol_, int Verbose_)
-      : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_),
+        BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
+        ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
+      : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_), Q(Q_),
         StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
    {
       CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
@@ -754,6 +531,7 @@ struct HEff
       return Ty;
    }
 
+   // This function is unused.
    std::deque<MatrixOperator>
    InitialGuess()
    {
@@ -762,9 +540,24 @@ struct HEff
       auto CR = PsiLinearRight.begin();
       while (NL != NullLeftDeque.end())
       {
-         MatrixOperator C = MakeRandomMatrixOperator((*NL).Basis2(), (*CR).Basis2());
+         MatrixOperator C = MakeRandomMatrixOperator((*NL).Basis2(), (*CR).Basis2(), Q);
          C *= 1.0 / norm_frob(C);
          Result.push_back(C);
+         ++NL, ++CR;
+      }
+
+      return Result;
+   }
+
+   std::deque<PackMatrixOperator>
+   PackInitialize()
+   {
+      std::deque<PackMatrixOperator> Result;
+      auto NL = NullLeftDeque.begin();
+      auto CR = PsiLinearRight.begin();
+      while (NL != NullLeftDeque.end())
+      {
+         Result.push_back(PackMatrixOperator((*NL).Basis2(), (*CR).Basis2(), Q));
          ++NL, ++CR;
       }
 
@@ -780,6 +573,7 @@ struct HEff
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionLeft PsiRight;
    BasicTriangularMPO HamMPO;
+   QuantumNumbers::QuantumNumber Q;
    ProductMPO StringOp;
    double GMRESTol;
    int Verbose;
@@ -794,6 +588,64 @@ struct HEff
    std::deque<StateComponent> TyLDeque, TyRDeque;
 };
 
+struct PackHEff
+{
+   PackHEff(HEff EffectiveHamiltonian_)
+          : EffectiveHamiltonian(EffectiveHamiltonian_)
+   {
+      Pack = EffectiveHamiltonian.PackInitialize();
+      Size = 0;
+      for (auto P : Pack)
+         Size += P.size();
+   }
+
+   void
+   operator()(std::complex<double> const* In_, std::complex<double>* Out_) const
+   {
+      std::deque<MatrixOperator> XDeque = this->unpack(In_);
+      XDeque = EffectiveHamiltonian(XDeque);
+      this->pack(XDeque, Out_);
+   }
+
+   std::deque<MatrixOperator>
+   unpack(std::complex<double> const* In_) const
+   {
+      std::complex<double> const* In = In_;
+      std::deque<MatrixOperator> XDeque;
+      for (auto P : Pack)
+      {
+         XDeque.push_back(P.unpack(In));
+         In += P.size();
+      }
+
+      return XDeque;
+   }
+
+   void
+   pack(std::deque<MatrixOperator> XDeque, std::complex<double>* Out_) const
+   {
+      std::complex<double>* Out = Out_;
+      auto P = Pack.begin();
+      auto X = XDeque.begin();
+      while (P != Pack.end())
+      {
+         (*P).pack(*X, Out);
+         Out += (*P).size();
+         ++P, ++X;
+      }
+   }
+
+   int
+   size() const
+   {
+      return Size;
+   }
+
+   std::deque<PackMatrixOperator> Pack;
+   HEff EffectiveHamiltonian;
+   int Size;
+};
+
 int main(int argc, char** argv)
 {
    try
@@ -805,13 +657,11 @@ int main(int argc, char** argv)
       double KMax = 0;
       double KMin = 0;
       int KNum = 1;
-      bool Random = false;
-      bool Force = false;
-      double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
-      int Iter = 50;
-      int MinIter = 4;
-      double Tol = 1E-16;
-      int NDisplay = 5;
+      double GMRESTol = 1e-13;    // tolerance for GMRES for the initial H matrix elements.
+      double Tol = 1e-10;
+      int NumEigen = 1;
+      std::string QuantumNumber;
+      QuantumNumbers::QuantumNumber Q;
       std::string String;
       ProductMPO StringOp;
 
@@ -824,17 +674,15 @@ int main(int argc, char** argv)
           FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum),
           "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
-         ("ndisplay,n", prog_opt::value<int>(&NDisplay),
-          FormatDefault("The number of lowest eigenvalues to display", NDisplay).c_str())
-         ("maxiter", prog_opt::value<int>(&Iter),
-          FormatDefault("Maximum number of Lanczos iterations", Iter).c_str())
-         ("miniter", prog_opt::value<int>(&MinIter),
-          FormatDefault("Minimum number of Lanczos iterations", MinIter).c_str())
+         ("numeigen,n", prog_opt::value<int>(&NumEigen),
+          FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
          ("tol", prog_opt::value(&Tol),
-          FormatDefault("Error tolerance for the Lanczos eigensolver", Tol).c_str())
+          FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
+         //("quantumnumber,q", prog_opt::value(&QuantumNumber),
+         // "The quantum number sector for the excitation [default identity]")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -885,6 +733,12 @@ int main(int argc, char** argv)
       BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
+      // TODO: Add support for excitations with quantum numbers other than the identity.
+      if (vm.count("quantumnumber"))
+         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), QuantumNumber);
+      else
+         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList());
+
       if (vm.count("string"))
       {
          InfiniteLattice Lattice;
@@ -903,15 +757,18 @@ int main(int argc, char** argv)
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
          InfiniteWavefunctionLeft PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, StringOp, k, GMRESTol, Verbose);
+         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
       }
       else
-         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, StringOp, k, GMRESTol, Verbose);
+         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
 
       // Print column headers.
       if (KNum > 1)
          std::cout << "#k                  ";
-      std::cout << "#n        #En" << std::endl;
+      if (NumEigen > 1)
+         std::cout << "#n        ";
+      if (KNum > 1 || NumEigen > 1)
+      std::cout << "#E" << std::endl;
       std::cout << std::left;
 
       // Calculate the excitation spectrum for each k desired.
@@ -924,20 +781,24 @@ int main(int argc, char** argv)
             EffectiveHamiltonian.SetK(k);
          }
 
-         std::deque<MatrixOperator> XDeque = EffectiveHamiltonian.InitialGuess();
-
-         int Iter_ = Iter;
-         double Tol_ = Tol;
-         LinearAlgebra::Vector<double> EValues = LanczosFull(XDeque, EffectiveHamiltonian, Iter_, Tol_, MinIter, Verbose);
+         PackHEff PackEH = PackHEff(EffectiveHamiltonian);
+         LinearAlgebra::Vector<std::complex<double>> EValues
+            = LinearAlgebra::DiagonalizeARPACK(PackEH, PackEH.size(), NumEigen,
+                                               LinearAlgebra::WhichEigenvalues::SmallestReal,
+                                               Tol, NULL, 0, true, Verbose);
 
          // Print results for this k.
-         auto E = EValues.begin();
-         for (int i = 0; i < NDisplay && E != EValues.end(); ++i, ++E)
+         // Note that the eigenvalues are sorted in decreasing order, so we
+         // need to iterate backwards.
+         auto E = EValues.end();
+         for (int i = 0; i < NumEigen && E != EValues.begin(); ++i)
          {
+            --E;
             if (KNum > 1)
                std::cout << std::setw(20) << KMin + KStep * n;
-            std::cout << std::setw(10) << i
-                      << std::setw(20) << *E << std::endl;
+            if (NumEigen > 1)
+               std::cout << std::setw(10) << i;
+            std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;
          }
       }
    }
