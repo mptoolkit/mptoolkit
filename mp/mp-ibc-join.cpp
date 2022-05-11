@@ -26,25 +26,29 @@
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
-#include "mp-algorithms/lanczos.h"
 #include "lattice/infinitelattice.h"
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
+#include "linearalgebra/arpack_wrapper.h"
+#include "mps/packunpack.h"
 
 namespace prog_opt = boost::program_options;
 
 struct CMultiply
 {
    CMultiply(StateComponent const& E_, StateComponent const& F_)
-      : E(E_), F(F_)
+      : P(E_.Basis2(), F_.Basis2(), E_[0].TransformsAs()), E(E_), F(F_)
    {
    }
 
-   MatrixOperator operator()(MatrixOperator const& C) const
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
-      return operator_prod(E, C, herm(F));
+      MatrixOperator C = P.unpack(In);
+      C = operator_prod(E, C, herm(F));
+      P.pack(C, Out);
    }
 
+   PackMatrixOperator P;
    StateComponent const& E;
    StateComponent const& F;
 };
@@ -61,9 +65,8 @@ int main(int argc, char** argv)
       bool Random = false;
       bool Force = false;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
-      int Iter = 50;
-      int MinIter = 4;
-      double Tol = 1E-16;
+      double Tol = 1E-15;
+      int NumEigen = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -77,12 +80,7 @@ int main(int argc, char** argv)
          ("random", prog_opt::bool_switch(&Random), "Don't minimize the Hamiltonian, make a random state instead")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "model Hamiltonian, of the form lattice:operator")
-         ("maxiter", prog_opt::value<int>(&Iter),
-          FormatDefault("Maximum number of Lanczos iterations", Iter).c_str())
-         ("miniter", prog_opt::value<int>(&MinIter),
-          FormatDefault("Minimum number of Lanczos iterations", MinIter).c_str())
-         ("tol", prog_opt::value(&Tol),
-          FormatDefault("Error tolerance for the Lanczos eigensolver", Tol).c_str())
+         ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance of the eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -178,12 +176,18 @@ int main(int argc, char** argv)
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
-         double Energy = Lanczos(C, CMultiply(BlockHamL, BlockHamR),
-                                 Iter, Tol, MinIter, Verbose);
+         CMultiply Mult(BlockHamL, BlockHamR);
 
-         C *= 1.0 / norm_frob(C);
+         std::vector<std::vector<std::complex<double>>> OutputVectors(NumEigen, std::vector<std::complex<double>>(Mult.P.size()));
 
-         std::cout << "Energy is " << Energy << '\n';
+         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal, Tol, OutputVectors.data(), 0, false, Verbose-1);
+
+         C = Mult.P.unpack(OutputVectors[0].data());
+
+         for (auto e : Eigs)
+         {
+            std::cout << "Energy = " << formatting::format_complex(remove_small_imag(e)) << '\n';
+         }
       }
       else
       {

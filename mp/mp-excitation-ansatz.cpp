@@ -789,23 +789,19 @@ int main(int argc, char** argv)
          LinearAlgebra::Vector<std::complex<double>> EValues
             = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen,
                                                LinearAlgebra::WhichEigenvalues::SmallestReal,
-                                               Tol, &EVectors, 0, true, Verbose);
+                                               Tol, &EVectors, 0, false, Verbose);
 
          // Print results for this k.
-         // Note that the eigenvalues are sorted in decreasing order, so we
-         // need to iterate backwards.
-         auto E = EValues.end();
-         for (int i = 0; i < NumEigen && E != EValues.begin(); ++i)
+         auto E = EValues.begin();
+         for (int i = 0; i < NumEigen && E != EValues.end(); ++i, ++E)
          {
-            --E;
             if (KNum > 1)
                std::cout << std::setw(20) << KMin + KStep * n;
             if (NumEigen > 1)
                std::cout << std::setw(10) << i;
             if (vm.count("string"))
             {
-               int Index = (NumEigen-i-1) * PackH.size();
-               std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
+               std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[i*PackH.size()]));
                std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
             }
             std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;

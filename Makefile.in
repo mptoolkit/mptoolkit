@@ -561,6 +561,7 @@ mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o r
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
+LIBS_mp-ibc-join = $(LIBARPACK)
 LIBS_mp-ioverlap = $(LIBARPACK)
 LIBS_mp-ispectrum = $(LIBARPACK)
 LIBS_mp-aux-algebra = $(LIBARPACK)
