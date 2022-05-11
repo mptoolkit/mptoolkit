@@ -590,10 +590,10 @@ struct HEff
 
 struct PackHEff
 {
-   PackHEff(HEff EffectiveHamiltonian_)
-          : EffectiveHamiltonian(EffectiveHamiltonian_)
+   PackHEff(HEff H_)
+          : H(H_)
    {
-      Pack = EffectiveHamiltonian.PackInitialize();
+      Pack = H.PackInitialize();
       Size = 0;
       for (auto P : Pack)
          Size += P.size();
@@ -603,7 +603,7 @@ struct PackHEff
    operator()(std::complex<double> const* In_, std::complex<double>* Out_) const
    {
       std::deque<MatrixOperator> XDeque = this->unpack(In_);
-      XDeque = EffectiveHamiltonian(XDeque);
+      XDeque = H(XDeque);
       this->pack(XDeque, Out_);
    }
 
@@ -642,7 +642,7 @@ struct PackHEff
    }
 
    std::deque<PackMatrixOperator> Pack;
-   HEff EffectiveHamiltonian;
+   HEff H;
    int Size;
 };
 
@@ -752,22 +752,24 @@ int main(int argc, char** argv)
       double KStep = (KMax-KMin)/(KNum-1);
 
       // Initialize the effective Hamiltonian.
-      HEff EffectiveHamiltonian;
+      HEff H;
       if (vm.count("psi2"))
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
          InfiniteWavefunctionLeft PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-         EffectiveHamiltonian = HEff(PsiLeft, PsiRight, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
+         H = HEff(PsiLeft, PsiRight, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
       }
       else
-         EffectiveHamiltonian = HEff(PsiLeft, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
+         H = HEff(PsiLeft, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
 
       // Print column headers.
       if (KNum > 1)
-         std::cout << "#k                  ";
+         std::cout << "#kx                 ";
       if (NumEigen > 1)
          std::cout << "#n        ";
-      if (KNum > 1 || NumEigen > 1)
+      if (vm.count("string"))
+         std::cout << "#Ty                                               ";
+      if (KNum > 1 || NumEigen > 1 || vm.count("string"))
       std::cout << "#E" << std::endl;
       std::cout << std::left;
 
@@ -778,14 +780,16 @@ int main(int argc, char** argv)
          {
             k = KMin + KStep * n;
             k *= PsiLeft.size() / Lattice.GetUnitCell().size();
-            EffectiveHamiltonian.SetK(k);
+            H.SetK(k);
          }
 
-         PackHEff PackEH = PackHEff(EffectiveHamiltonian);
+         PackHEff PackH = PackHEff(H);
+         std::vector<std::complex<double>> EVectors;
+
          LinearAlgebra::Vector<std::complex<double>> EValues
-            = LinearAlgebra::DiagonalizeARPACK(PackEH, PackEH.size(), NumEigen,
+            = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen,
                                                LinearAlgebra::WhichEigenvalues::SmallestReal,
-                                               Tol, NULL, 0, true, Verbose);
+                                               Tol, &EVectors, 0, true, Verbose);
 
          // Print results for this k.
          // Note that the eigenvalues are sorted in decreasing order, so we
@@ -798,6 +802,12 @@ int main(int argc, char** argv)
                std::cout << std::setw(20) << KMin + KStep * n;
             if (NumEigen > 1)
                std::cout << std::setw(10) << i;
+            if (vm.count("string"))
+            {
+               int Index = (NumEigen-i-1) * PackH.size();
+               std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
+               std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
+            }
             std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;
          }
       }
