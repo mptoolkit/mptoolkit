@@ -126,9 +126,9 @@
 //
 // To write the Hamiltonian in terms of the generators, we can use
 //
-// H_{bq} = (4/3) + (1/2) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
+// H_{bq} = (4/3) + (1/2) [ (1/2) (Tp Tm + Vp Vm + Up Um + h.c.) + L3 L3 + L8 L8 ]
 //
-// and H_{SU(3)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um) + L3 L3 + L8 L8 ]
+// and H_{SU(3)} = (1/4) [ (1/2) (Tp Tm + Vp Vm + Up Um + h.c.) + L3 L3 + L8 L8 ]
 //
 
 inline
