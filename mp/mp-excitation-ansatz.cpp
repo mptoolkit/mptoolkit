@@ -71,6 +71,14 @@ struct HEff
       RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
       RhoR = PsiLeft.lambda_r();
 
+      if (!StringOp.is_null())
+      {
+         // Calculate the left/right eigenvectors of the mixed transfer
+         // matrices with the string operator corresponding to Ty.
+         std::tie(std::ignore, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
+         std::tie(std::ignore, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
+      }
+
       // Ensure HamMPO is the correct size.
       if (HamMPO.size() < PsiLeft.size())
          HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
@@ -148,6 +156,14 @@ struct HEff
       // elements against its eigenvectors.
       RhoL = MatrixOperator();
       RhoR = MatrixOperator();
+
+      if (!StringOp.is_null())
+      {
+         TyLRLeft = MatrixOperator();
+         TyLRRight = MatrixOperator();
+         TyRLLeft = MatrixOperator();
+         TyRLRight = MatrixOperator();
+      }
 
       // Ensure HamMPO is the correct size.
       if (HamMPO.size() < PsiLeft.size())
@@ -256,18 +272,20 @@ struct HEff
             if (std::abs(TyLTrace) > TraceTol)
                TyL *= std::conj(TyLTrace) / std::abs(TyLTrace);
             else
-               WARNING("The trace of TyL is below threshold, so the overlap will have a spurious phase contribution.")(TyLTrace);
+               WARNING("The trace of TyL is below threshold, so Ty will have a spurious phase contribution.")(TyLTrace);
 
             std::complex<double> TyRTrace = trace(TyR);
 
             if (std::abs(TyRTrace) > TraceTol)
                TyR *= std::conj(TyRTrace) / std::abs(TyRTrace);
             else
-               WARNING("The trace of TyR is below threshold, so the overlap will have a spurious phase contribution.")(TyRTrace);
+               WARNING("The trace of TyR is below threshold, so Ty will have a spurious phase contribution.")(TyRTrace);
          }
          else
-            WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
+            WARNING("Psi1 and Psi2 have different boundary bases, so Ty will have a spurious phase contribution.");
 
+         // Only needed when adding TyEff to HEff.
+#if 0
          // Construct the partially contracted versions of TyL and TyR.
          StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
          TyLSC.front() = TyL;
@@ -293,6 +311,7 @@ struct HEff
             --CR, --O;
             TyRDeque.push_front(contract_from_right(herm(*O), *CR, TyRDeque.front(), herm(*CR)));
          }
+#endif
       }
    }
 
@@ -340,7 +359,6 @@ struct HEff
 
       SolveSimpleMPO_Left2(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
                            PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
-
       SolveSimpleMPO_Right2(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
                             PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
 
@@ -410,9 +428,9 @@ struct HEff
 
          MatrixOperator E, F;
          SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiLeft.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+                              PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
          SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                               PsiRight.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+                               PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
          E *= ExpIK;
          F *= ExpIK;
@@ -518,9 +536,9 @@ struct HEff
 
       MatrixOperator E, F;
       SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiLeft.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+                           PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
       SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                            PsiRight.qshift(), StringOp, ExpIK, GMRESTol, Verbose-1);
+                            PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
       E *= ExpIK;
       F *= ExpIK;
@@ -583,9 +601,18 @@ struct HEff
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
+   // Eigenvectors of the left/right mixed transfer matrices.
    MatrixOperator RhoL, RhoR;
+   // Eigenvectors of the left/right non-mixed (i.e. left/left and right/right)
+   // transfer matrices with the Ty operator.
    MatrixOperator TyL, TyR;
-   std::deque<StateComponent> TyLDeque, TyRDeque;
+   // Partially contracted versions of TyL and TyR.
+   // Only needed when adding TyEff to HEff.
+   //std::deque<StateComponent> TyLDeque, TyRDeque;
+   // Left/right eigenvectors of the left/right mixed transfer matrices with
+   // the Ty operator.
+   MatrixOperator TyLRLeft, TyLRRight;
+   MatrixOperator TyRLLeft, TyRLRight;
 };
 
 struct PackHEff

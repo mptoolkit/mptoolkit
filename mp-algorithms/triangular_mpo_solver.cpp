@@ -1137,14 +1137,40 @@ SolveSimpleMPO_Left2(StateComponent& E1, StateComponent const& E0,
    }
 }
 
-// TODO: If PsiLeft and PsiRight are the same physical wavefunction, and ExpIK
-// == 1, then we need to orthogonalize against the eigenvector of the mixed
-// transfer matrix.
+struct SubProductLeftProject2Op
+{
+   typedef MatrixOperator result_type;
+   typedef MatrixOperator argument_type;
+
+   SubProductLeftProject2Op(GenericMPO const& Op_, LinearWavefunction const& Psi1_, LinearWavefunction const& Psi2_,
+                            QuantumNumber const& QShift_, MatrixOperator const& Proj_,
+                            MatrixOperator const& Ident_, std::complex<double> ExpIK_)
+      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_), ExpIK(ExpIK_)
+   {
+   }
+
+   MatrixOperator operator()(MatrixOperator const& In) const
+   {
+      MatrixOperator Result = In - ExpIK * delta_shift(inject_left(In, Psi1, Op, Psi2), QShift);
+      Result -= inner_prod(Proj, Result) * Ident;
+      return Result;
+   }
+
+   LinearWavefunction const& Psi1;
+   LinearWavefunction const& Psi2;
+   GenericMPO const& Op;
+   QuantumNumber QShift;
+   MatrixOperator Proj;
+   MatrixOperator Ident;
+   std::complex<double> ExpIK;
+};
+
 void
 SolveStringMPO_Left2(MatrixOperator& E1, MatrixOperator const& E0,
                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                      LinearWavefunction const& PsiTri,
                      QuantumNumber const& QShift, ProductMPO const& Op,
+                     MatrixOperator const& Ident, MatrixOperator const& Rho,
                      std::complex<double> ExpIK, double Tol, int Verbose)
 {
    CHECK(Op.is_string());
@@ -1155,8 +1181,19 @@ SolveStringMPO_Left2(MatrixOperator& E1, MatrixOperator const& E0,
    MatrixOperator C = inject_left(E0, PsiTri, Op.data(), PsiLeft);
    C = delta_shift(C, QShift);
 
-   E1 = C;
-   LinearSolve(E1, OneMinusTransferLeft2(Op, PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      E1 = C;
+      LinearSolve(E1, OneMinusTransferLeft2(Op, PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
+   }
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
+
+      E1 = C;
+      LinearSolve(E1, SubProductLeftProject2Op(Op, PsiRight, PsiLeft, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
+   }
 }
 
 struct OneMinusTransferRight2
@@ -1332,11 +1369,40 @@ SolveSimpleMPO_Right2(StateComponent& F1, StateComponent const& F0,
    }
 }
 
+struct SubProductRightProject2Op
+{
+   typedef MatrixOperator result_type;
+   typedef MatrixOperator argument_type;
+
+   SubProductRightProject2Op(GenericMPO const& Op_, LinearWavefunction const& Psi1_, LinearWavefunction const& Psi2_,
+                             QuantumNumber const& QShift_, MatrixOperator const& Proj_,
+                             MatrixOperator const& Ident_, std::complex<double> ExpIK_)
+      : Op(Op_), Psi1(Psi1_), Psi2(Psi2_), QShift(QShift_), Proj(Proj_), Ident(Ident_), ExpIK(ExpIK_)
+   {
+   }
+
+   MatrixOperator operator()(MatrixOperator const& In) const
+   {
+      MatrixOperator Result = In - ExpIK * delta_shift(inject_right(In, Psi1, Op, Psi2), adjoint(QShift));
+      Result -= inner_prod(Proj, Result) * Ident;
+      return Result;
+   }
+
+   LinearWavefunction const& Psi1;
+   LinearWavefunction const& Psi2;
+   GenericMPO const& Op;
+   QuantumNumber QShift;
+   MatrixOperator Proj;
+   MatrixOperator Ident;
+   std::complex<double> ExpIK;
+};
+
 void
 SolveStringMPO_Right2(MatrixOperator& F1, MatrixOperator const& F0,
                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                       LinearWavefunction const& PsiTri,
                       QuantumNumber const& QShift, ProductMPO const& Op,
+                      MatrixOperator const& Rho, MatrixOperator const& Ident,
                       std::complex<double> ExpIK, double Tol, int Verbose)
 {
    CHECK(Op.is_string());
@@ -1347,6 +1413,17 @@ SolveStringMPO_Right2(MatrixOperator& F1, MatrixOperator const& F0,
    MatrixOperator C = inject_right(F0, PsiTri, Op.data(), PsiRight);
    C.delta_shift(adjoint(QShift));
 
-   F1 = C;
-   LinearSolve(F1, OneMinusTransferRight2(Op, PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   {
+      F1 = C;
+      LinearSolve(F1, OneMinusTransferRight2(Op, PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
+   }
+   else
+   {
+      // orthogonalize
+      C -= inner_prod(Rho, C) * Ident;
+
+      F1 = C;
+      LinearSolve(F1, SubProductRightProject2Op(Op, PsiLeft, PsiRight, QShift, Rho, Ident, ExpIK), C, Tol, Verbose);
+   }
 }
