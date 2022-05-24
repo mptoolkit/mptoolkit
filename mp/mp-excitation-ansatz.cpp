@@ -76,7 +76,9 @@ struct HEff
          // Calculate the left/right eigenvectors of the mixed transfer
          // matrices with the string operator corresponding to Ty.
          std::tie(std::ignore, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
+         TyLRRight = delta_shift(TyLRRight, PsiLeft.qshift());
          std::tie(std::ignore, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
+         TyRLLeft = delta_shift(TyRLLeft, adjoint(PsiRight.qshift()));
       }
 
       // Ensure HamMPO is the correct size.
