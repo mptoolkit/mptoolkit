@@ -29,7 +29,6 @@
 #include "lattice/latticesite.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include "mp-algorithms/gmres.h"
-#include "mp-algorithms/lanczos.h"
 #include "mp-algorithms/transfer.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "mp/copyright.h"
@@ -398,9 +397,10 @@ struct HEff
       while (B != BDeque.end())
       {
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
-         // TODO: We don't need to do this on the final step.
-         Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
-         ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
+         ++R;
+         if (R != Result.end())
+            Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
+         ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR;
       }
 
       // Calculate the contribution where the top B-matrix is in the right
@@ -419,7 +419,8 @@ struct HEff
       {
          --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
          *R += scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
-         Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
+         if (B != BDeque.begin())
+            Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
 
       // Code to target excitations with a specific y-momentum (WIP).
@@ -468,9 +469,10 @@ struct HEff
          while (B != BDeque.end())
          {
             *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
-            // TODO: We don't need to do this on the final step.
-            Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
-            ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR, ++R;
+            ++R;
+            if (R != Result.end())
+               Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
+            ++B, ++NL, ++CL, ++CR, ++O, ++BHL, ++BHR;
          }
 
          // Calculate the contribution where the top B-matrix is in the right
@@ -490,7 +492,8 @@ struct HEff
          {
             --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
             *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
-            Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
+            if (B != BDeque.end())
+               Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
          }
       }
 #endif
