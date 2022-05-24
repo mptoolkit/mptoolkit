@@ -418,6 +418,8 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
+         if (Verbose >= 2)
+            std::cerr << "Evaluating sector " << (*I) << '\n';
          //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
          std::vector<std::complex<double>> Eigen;
          int Length;

@@ -282,6 +282,9 @@ LatticeSite SpinU1U1U1()
    Site["L3"] = L3;
    Site["L8"] = L8;
    Site["L15"] = L15;
+   Site["M3"] = M3;
+   Site["M8"] = M8;
+   Site["M15"] = M15;
    Site["Tp"] = Tp;
    Site["Tm"] = Tm;
    Site["Tz"] = Tz;
