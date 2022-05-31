@@ -58,13 +58,25 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) Bose-Hubbard cylinder square lattice");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
-         ("H_Jx" , "nearest-neighbor hopping in x-direction")
-         ("H_Jy" , "nearest-neighbor hopping in y-direction")
-         ("H_J"  , "nearest-neighbor hopping")
-         ("H_U"  , "on-site Coulomb interaction N*(N-1)/2")
-         ("H_Vx"  , "nearest-neighbour Coulomb repulsion in x-direction")
-         ("H_Vy"  , "nearest-neighbour Coulomb repulsion in x-direction")
-         ("H_V"  , "nearest-neighbour Coulomb repulsion")
+         ("H_Jxp"  , "nearest-neighbor hopping in +x-direction")
+         ("H_Jxm"  , "nearest-neighbor hopping in -x-direction")
+         ("H_Jyp"  , "nearest-neighbor hopping in +y-direction")
+         ("H_Jym"  , "nearest-neighbor hopping in -y-direction")
+         ("H_Jx"   , "nearest-neighbor hopping in x-direction")
+         ("H_Jy"   , "nearest-neighbor hopping in y-direction")
+         ("H_J"    , "nearest-neighbor hopping")
+         ("H_U"    , "on-site Coulomb interaction N*(N-1)/2")
+         ("H_Vx"   , "nearest-neighbour Coulomb repulsion in x-direction")
+         ("H_Vy"   , "nearest-neighbour Coulomb repulsion in x-direction")
+         ("H_V"    , "nearest-neighbour Coulomb repulsion")
+         ("H_delta", "QLM link potential", "x = 0, y even",
+         [&x, &y]()->bool{return x == 0 && y%2 == 0;})
+         ("H_eta"  , "QLM eta potential", "x = 0, y even",
+         [&x, &y]()->bool{return x == 0 && y%2 == 0;})
+         ;
+      OpDescriptions.add_functions()
+         ("H_Jx"   , "nearest-neighbor complex hopping in x-direction")
+         ("H_Jy"   , "nearest-neighbor complex hopping in x-direction")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -84,15 +96,17 @@ int main(int argc, char** argv)
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
 
       // Define hopping terms and near-neighbour interactions.
-      UnitCellMPO Jx, Jy, Vx, Vy;
+      UnitCellMPO Jxp, Jxm, Jyp, Jym, Vx, Vy;
 
       // the XY configuration is special
       if (x == 0)
       {
          for (int i = 0; i < y; ++i)
          {
-            Jx += BH(0)[i]*B(1)[i] + B(0)[i]*BH(1)[i];
-            Jy += BH(0)[i]*B(0)[(i+1)%y] + B(0)[i]*BH(0)[(i+1)%y];
+            Jxp += BH(0)[i]*B(1)[i];
+            Jxm += B(0)[i]*BH(1)[i];
+            Jyp += BH(0)[i]*B(0)[(i+1)%y];
+            Jym += B(0)[i]*BH(0)[(i+1)%y];
             Vx += N(0)[i]*N(1)[i];
             Vy += N(0)[i]*N(0)[(i+1)%y];
          }
@@ -101,22 +115,31 @@ int main(int argc, char** argv)
       {
          for (int i = 0; i < x-1; ++i)
          {
-            Jx += BH(0)[i]*B(0)[i+1] + B(0)[i]*BH(0)[i+1];
+            Jxp += BH(0)[i]*B(0)[i+1];
+            Jxm += B(0)[i]*BH(0)[i+1];
             Vx += N(0)[i]*N(0)[i+1];
          }
-         Jx += BH(0)[x-1]*B(y+1)[0] + B(0)[x-1]*BH(y+1)[0];
+         Jxp += BH(0)[x-1]*B(y+1)[0];
+         Jxm += B(0)[x-1]*BH(y+1)[0];
          Vx += N(0)[x-1]*N(y+1)[0];
 
          for (int i = 0; i < x; ++i)
          {
-            Jy += BH(0)[i]*B(1)[i] + B(0)[i]*BH(1)[i];
+            Jyp += BH(0)[i]*B(1)[i];
+            Jym += B(0)[i]*BH(1)[i];
             Vy += N(0)[i]*N(1)[i];
          }
       }
 
-      Lattice["H_Jx"] = sum_unit(Jx);
-      Lattice["H_Jy"] = sum_unit(Jy);
-      Lattice["H_J"] = sum_unit(Jx+Jy);
+      Lattice["H_Jxp"] = sum_unit(Jxp);
+      Lattice["H_Jxm"] = sum_unit(Jxm);
+      Lattice["H_Jx"] = sum_unit(Jxp+Jxm);
+      Lattice.func("H_Jx")(arg("theta")) = "exp(-i*theta)*H_Jxp + exp(i*theta)*H_Jxm";
+      Lattice["H_Jyp"] = sum_unit(Jyp);
+      Lattice["H_Jym"] = sum_unit(Jym);
+      Lattice["H_Jy"] = sum_unit(Jyp+Jym);
+      Lattice.func("H_Jy")(arg("theta")) = "exp(-i*theta)*H_Jyp + exp(i*theta)*H_Jym";
+      Lattice["H_J"] = sum_unit(Jxp+Jxm+Jyp+Jym);
 
       Lattice["H_Vx"] = sum_unit(Vx);
       Lattice["H_Vy"] = sum_unit(Vy);
@@ -129,6 +152,21 @@ int main(int argc, char** argv)
          U += 0.5*N2(0)[i];
 
       Lattice["H_U"] = sum_unit(U);
+
+      // Define QLM potentials.
+      if (x == 0 && y%2 == 0)
+      {
+         UnitCellMPO H_delta, H_eta;
+
+         for (int i = 0; i < CellSize/2; ++i)
+         {
+            H_delta += N(0)[2*i+1] + N(1)[2*i];
+            H_eta += N(1)[2*i+1];
+         }
+
+         Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
+         Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
