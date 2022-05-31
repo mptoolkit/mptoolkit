@@ -5,7 +5,7 @@
 // models/contrib/bosehubbardcylinder-u1.cpp
 //
 // Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -58,10 +58,10 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) Bose-Hubbard cylinder square lattice");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
-         ("H_Jxp"  , "nearest-neighbor hopping in +x-direction")
          ("H_Jxm"  , "nearest-neighbor hopping in -x-direction")
-         ("H_Jyp"  , "nearest-neighbor hopping in +y-direction")
+         ("H_Jxp"  , "nearest-neighbor hopping in +x-direction")
          ("H_Jym"  , "nearest-neighbor hopping in -y-direction")
+         ("H_Jyp"  , "nearest-neighbor hopping in +y-direction")
          ("H_Jx"   , "nearest-neighbor hopping in x-direction")
          ("H_Jy"   , "nearest-neighbor hopping in y-direction")
          ("H_J"    , "nearest-neighbor hopping")
@@ -96,17 +96,17 @@ int main(int argc, char** argv)
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
 
       // Define hopping terms and near-neighbour interactions.
-      UnitCellMPO Jxp, Jxm, Jyp, Jym, Vx, Vy;
+      UnitCellMPO Jxm, Jxp, Jym, Jyp, Vx, Vy;
 
       // the XY configuration is special
       if (x == 0)
       {
          for (int i = 0; i < y; ++i)
          {
-            Jxp += BH(0)[i]*B(1)[i];
-            Jxm += B(0)[i]*BH(1)[i];
-            Jyp += BH(0)[i]*B(0)[(i+1)%y];
-            Jym += B(0)[i]*BH(0)[(i+1)%y];
+            Jxm += BH(0)[i]*B(1)[i];
+            Jxp += B(0)[i]*BH(1)[i];
+            Jym += BH(0)[i]*B(0)[(i+1)%y];
+            Jyp += B(0)[i]*BH(0)[(i+1)%y];
             Vx += N(0)[i]*N(1)[i];
             Vy += N(0)[i]*N(0)[(i+1)%y];
          }
@@ -115,30 +115,30 @@ int main(int argc, char** argv)
       {
          for (int i = 0; i < x-1; ++i)
          {
-            Jxp += BH(0)[i]*B(0)[i+1];
-            Jxm += B(0)[i]*BH(0)[i+1];
+            Jxm += BH(0)[i]*B(0)[i+1];
+            Jxp += B(0)[i]*BH(0)[i+1];
             Vx += N(0)[i]*N(0)[i+1];
          }
-         Jxp += BH(0)[x-1]*B(y+1)[0];
-         Jxm += B(0)[x-1]*BH(y+1)[0];
+         Jxm += BH(0)[x-1]*B(y+1)[0];
+         Jxp += B(0)[x-1]*BH(y+1)[0];
          Vx += N(0)[x-1]*N(y+1)[0];
 
          for (int i = 0; i < x; ++i)
          {
-            Jyp += BH(0)[i]*B(1)[i];
-            Jym += B(0)[i]*BH(1)[i];
+            Jym += BH(0)[i]*B(1)[i];
+            Jyp += B(0)[i]*BH(1)[i];
             Vy += N(0)[i]*N(1)[i];
          }
       }
 
-      Lattice["H_Jxp"] = sum_unit(Jxp);
       Lattice["H_Jxm"] = sum_unit(Jxm);
-      Lattice["H_Jx"] = sum_unit(Jxp+Jxm);
-      Lattice.func("H_Jx")(arg("theta")) = "exp(-i*theta)*H_Jxp + exp(i*theta)*H_Jxm";
-      Lattice["H_Jyp"] = sum_unit(Jyp);
+      Lattice["H_Jxp"] = sum_unit(Jxp);
+      Lattice["H_Jx"] = sum_unit(Jxm+Jxp);
+      Lattice.func("H_Jx")(arg("theta")) = "exp(-i*theta)*H_Jxm + exp(i*theta)*H_Jxp";
       Lattice["H_Jym"] = sum_unit(Jym);
-      Lattice["H_Jy"] = sum_unit(Jyp+Jym);
-      Lattice.func("H_Jy")(arg("theta")) = "exp(-i*theta)*H_Jyp + exp(i*theta)*H_Jym";
+      Lattice["H_Jyp"] = sum_unit(Jyp);
+      Lattice["H_Jy"] = sum_unit(Jym+Jyp);
+      Lattice.func("H_Jy")(arg("theta")) = "exp(-i*theta)*H_Jym + exp(i*theta)*H_Jyp";
       Lattice["H_J"] = sum_unit(Jxp+Jxm+Jyp+Jym);
 
       Lattice["H_Vx"] = sum_unit(Vx);
