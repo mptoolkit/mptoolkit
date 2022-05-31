@@ -47,7 +47,7 @@ namespace LinearAlgebra
 template <typename MultFunc>
 Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
-                  std::vector<std::complex<double> >* OutputVectors = NULL,
+                  std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0);
 
 // Match left and right eigenvectors to the correct complex eigenvalues.
@@ -59,10 +59,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
 
 void
 MatchEigenvectors(int n,
-                  Vector<std::complex<double> >& LeftValues,
-                  std::vector<std::complex<double> >& LeftVectors,
-                  Vector<std::complex<double> >& RightValues,
-                  std::vector<std::complex<double> >& RightVextors, double tol = 1e-10);
+                  Vector<std::complex<double>>& LeftValues,
+                  std::vector<std::complex<double>>& LeftVectors,
+                  Vector<std::complex<double>>& RightValues,
+                  std::vector<std::complex<double>>& RightVextors, double tol = 1e-10);
 
 } // namespace LinearAlgebra
 
