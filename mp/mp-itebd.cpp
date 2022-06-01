@@ -38,6 +38,7 @@
 #include <cctype>
 #include "interface/inittemp.h"
 #include "common/openmp.h"
+#include "parser/parser.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -113,6 +114,88 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    Lambda.pop_front();
 }
 
+struct HamiltonianGates
+{
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   std::vector<std::vector<SimpleOperator>> OddU;
+   std::vector<SimpleOperator> EvenContinuation;
+};
+
+// Construct the 2-body gates from the Hamiltonian.
+// We assume that the Hamiltonian has already been converted to an appropriate size unit cell.
+HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<double> Timestep, LTSDecomposition const& decomp)
+{
+   int UnitCellSize = HamMPO.size();
+
+   // Assemble the Hamiltonian into the bond terms
+   std::vector<SimpleOperator> BondH(UnitCellSize);
+   auto SplitTerms = SplitMPO(HamMPO);
+   for (int i = 0; i < SplitTerms.size(); ++i)
+   {
+      for (auto const& op : SplitTerms[i])
+      {
+         if (op.size() == 1)
+         {
+            // split single-site operators over the two bonds, if i=0 then
+            // the split wraps around the unit cell
+            SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[(i+1)%UnitCellSize](0,0));
+            BondH[i] += 0.5 * p.scalar();
+            SimpleRedOperator q = tensor_prod(HamMPO[(i+UnitCellSize-1)%UnitCellSize](0,0), op[0](0,0));
+            BondH[(i+UnitCellSize-1)%UnitCellSize] += 0.5 * q.scalar();
+         }
+         else if (op.size() == 2)
+         {
+               BondH[i] += coarse_grain(op).scalar();
+         }
+         else
+         {
+            throw std::runtime_error("fatal: operator has support over more than 2 sites.");
+         }
+      }
+   }
+
+   // Exponentiate the bond operators and split into even and odd slices
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   for (auto x : decomp.a_)
+   {
+      std::vector<SimpleOperator> Terms;
+      for (int i = 0; i < BondH.size(); i += 2)
+      {
+         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+      }
+      EvenU.push_back(std::move(Terms));
+   }
+
+   std::vector<std::vector<SimpleOperator>> OddU;
+   // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
+   // This means that the first odd-bond operator we need is the one that wraps around, which is at the end of the list.
+   // To allow for this, we reserve the first element of the Terms vector and move the last element to the front
+   for (auto x : decomp.b_)
+   {
+      std::vector<SimpleOperator> Terms;
+      Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-2]));
+      for (int i = 1; i < BondH.size()-2; i += 2)
+      {
+         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+      }
+      OddU.push_back(std::move(Terms));
+   }
+
+   // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
+   // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
+   std::vector<SimpleOperator> EvenContinuation;
+   if (decomp.a_.size() == decomp.b_.size()+1)
+   {
+      double x = decomp.a_.front() + decomp.a_.back();
+      for (int i = 0; i < BondH.size(); i += 2)
+      {
+         EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+      }
+   }
+
+   return {EvenU, OddU, EvenContinuation};
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -134,7 +217,10 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
       int Coarsegrain = 1;
+      std::string Magnus = "2";
+      std::string TimeVar = "t";
       std::string DecompositionStr = "optimized4-11";
+      bool TimeDependent = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -156,6 +242,8 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("coarsegrain", prog_opt::value(&Coarsegrain),
           "coarse-grain N-to-1 sites")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -262,96 +350,53 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      std::string HamOperator;
+      std::tie(HamOperator, Lattice) = ParseOperatorStringAndLattice(HamStr);
 
-      //Coarse-grain, if necessary
-      if (vm.count("coarsegrain"))
+      // attempt to convert the operator into an MPO.  If it works, then the Hamiltonian is time-independent.
+      // If it fails, assume it failed because the time variable isn't defined yet.  If there is some other error
+      // in the operator, we'll catch it later.
+      try
       {
+         HamMPO = ParseTriangularOperator(Lattice, HamOperator);
+         //Coarse-grain, if necessary
          HamMPO = coarse_grain(HamMPO, Coarsegrain);
-      }
 
-      // Make sure the unit cell is an even size
-      int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
+         // Make sure the unit cell is an even size
+         int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
 
-      // and adjust the wavefunction and hamiltonian to match the unit cell size
-      if (Psi.size() != UnitCellSize)
-      {
-         std::cerr << "mp-itebd: warning: extending wavefunction unit cell to " << UnitCellSize << " sites.\n";
-         Psi = repeat(Psi, UnitCellSize / Psi.size());
-      }
-      HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
+         HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
 
-      // Assemble the Hamiltonian into the bond terms
-      std::vector<SimpleOperator> BondH(UnitCellSize);
-      auto SplitTerms = SplitMPO(HamMPO);
-      for (int i = 0; i < SplitTerms.size(); ++i)
-      {
-         for (auto const& op : SplitTerms[i])
+         // and adjust the wavefunction and hamiltonian to match the unit cell size
+         if (Psi.size() != UnitCellSize)
          {
-            if (op.size() == 1)
-            {
-               // split single-site operators over the two bonds, if i=0 then
-               // the split wraps around the unit cell
-               SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[(i+1)%UnitCellSize](0,0));
-               BondH[i] += 0.5 * p.scalar();
-               SimpleRedOperator q = tensor_prod(HamMPO[(i+UnitCellSize-1)%UnitCellSize](0,0), op[0](0,0));
-               BondH[(i+UnitCellSize-1)%UnitCellSize] += 0.5 * q.scalar();
-            }
-            else if (op.size() == 2)
-            {
-                  BondH[i] += coarse_grain(op).scalar();
-            }
-            else
-            {
-               throw std::runtime_error("fatal: operator has support over more than 2 sites.");
-            }
+            std::cerr << "mp-itebd: warning: extending wavefunction unit cell to " << UnitCellSize << " sites.\n";
+            Psi = repeat(Psi, UnitCellSize / Psi.size());
          }
       }
-
-      // Exponentiate the bond operators and split into even and odd slices
-      std::vector<std::vector<SimpleOperator>> EvenU;
-      for (auto x : decomp.a_)
+      catch (Parser::ParserError& e)
       {
-         std::vector<SimpleOperator> Terms;
-         for (int i = 0; i < BondH.size(); i += 2)
+         if (Verbose > 1)
          {
-            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.";
          }
-         EvenU.push_back(std::move(Terms));
+         TimeDependent = true;
+      }
+      catch (...)
+      {
+         throw;
       }
 
-      std::vector<std::vector<SimpleOperator>> OddU;
-      // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
-      // This means that the first odd-bond operator we need is the one that wraps around, which is at the end of the list.
-      // To allow for this, we reserve the first element of the Terms vector and move the last element to the front
-      for (auto x : decomp.b_)
+      HamiltonianGates Gates;
+      if (!TimeDependent)
       {
-         std::vector<SimpleOperator> Terms;
-         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-2]));
-         for (int i = 1; i < BondH.size()-2; i += 2)
+         Gates = AssembleHamiltonian(HamMPO, Timestep, decomp);
+         std::cout << "Using decomposition " << DecompositionStr << '\n';
+         if (Verbose > 0)
          {
-            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+            std::cout << "Number of even slices: " << Gates.EvenU.size() << '\n';
+            std::cout << "Number of odd slices: " << Gates.OddU.size() << '\n';
          }
-         OddU.push_back(std::move(Terms));
-      }
-
-      // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
-      // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
-      std::vector<SimpleOperator> EvenContinuation;
-      if (decomp.a_.size() == decomp.b_.size()+1)
-      {
-         double x = decomp.a_.front() + decomp.a_.back();
-         for (int i = 0; i < BondH.size(); i += 2)
-         {
-            EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
-         }
-      }
-
-      std::cout << "Using decomposition " << DecompositionStr << '\n';
-      if (Verbose > 0)
-      {
-         std::cout << "Number of even slices: " << EvenU.size() << '\n';
-         std::cout << "Number of odd slices: " << OddU.size() << '\n';
       }
 
       StatesInfo SInfo;
@@ -382,28 +427,60 @@ int main(int argc, char** argv)
 
       while (tstep < N)
       {
+         // If the Hamiltonian is time-dependent, we need to construct it now
+         if (TimeDependent)
+         {
+            if (Magnus == "2")
+            {
+               std::complex<double> t = InitialTime + (tstep+0.5)*Timestep;
+               HamMPO = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t}});
+            }
+            else if (Magnus == "4")
+            {
+               std::complex<double> t1 = InitialTime + (tstep + 0.5 - std::sqrt(3.0)/6.0)*Timestep;
+               std::complex<double> t2 = InitialTime + (tstep + 0.5 + std::sqrt(3.0)/6.0)*Timestep;
+               BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
+               BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
+               HamMPO = 0.5 * (A1 + A2) + (1.0 / 12.0) * (A1*A2 - A2*A1);
+            }
+            else
+            {
+               std::cerr << "Unknown --magnus option\n";
+               return 1;
+            }
+            //Coarse-grain, if necessary
+            HamMPO = coarse_grain(HamMPO, Coarsegrain);
+
+            // Make sure the unit cell is an even size
+            int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
+
+            HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
+
+            Gates = AssembleHamiltonian(HamMPO, Timestep, decomp);
+         }
+
          if (Continue)
          {
             if (Verbose > 1)
             {
                std::cout << "Merge slice\n";
             }
-            DoEvenSlice(PsiVec, Lambda, EvenContinuation, SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, Gates.EvenContinuation, SInfo, Verbose);
          }
          else
          {
-            DoEvenSlice(PsiVec, Lambda, EvenU[0], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, Gates.EvenU[0], SInfo, Verbose);
          }
 
-         DoOddSlice(PsiVec, Lambda, QShift, OddU[0], SInfo, Verbose);
-         for (int bi = 1; bi < OddU.size(); ++bi)
+         DoOddSlice(PsiVec, Lambda, QShift, Gates.OddU[0], SInfo, Verbose);
+         for (int bi = 1; bi < Gates.OddU.size(); ++bi)
          {
-            DoEvenSlice(PsiVec, Lambda, EvenU[bi], SInfo, Verbose);
-            DoOddSlice(PsiVec, Lambda, QShift, OddU[bi], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, Gates.EvenU[bi], SInfo, Verbose);
+            DoOddSlice(PsiVec, Lambda, QShift, Gates.OddU[bi], SInfo, Verbose);
          }
 
          // do we do a continuation?
-         Continue = EvenU.size() > OddU.size();
+         Continue = (Gates.EvenU.size() > Gates.OddU.size()) && !TimeDependent;
 
          ++tstep;
          std::cout << "Timestep " << formatting::format_complex(tstep)
@@ -413,15 +490,15 @@ int main(int argc, char** argv)
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
             LinearWavefunction Psi;
-            if (EvenU.size() > OddU.size())
+            if (Gates.EvenU.size() > Gates.OddU.size())
             {
-               CHECK_EQUAL(EvenU.size(), OddU.size()+1);
+               CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
                std::cout << "Doing final slice before saving wavefunction.\n";
                // do the final slice to finish the timstep.  Make a copy of the wavefunction since it is better to
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
-               DoEvenSlice(PsiVecSave, LambdaSave, EvenU.back(), SInfo, Verbose);
+               DoEvenSlice(PsiVecSave, LambdaSave, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
