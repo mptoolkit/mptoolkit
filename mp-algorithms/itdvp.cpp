@@ -46,9 +46,8 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
              std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
              double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
              double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_)
-             
    : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
-     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_) 
+     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_)
 {
    QShift = Psi_.qshift();
    std::tie(Psi, LambdaR) = get_left_canonical(Psi_);
@@ -64,6 +63,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
    Rho = delta_shift(Rho, QShift);
    InitialE = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
+   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
    for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
@@ -360,7 +360,7 @@ iTDVP::Evolve()
       this->EvolveRight((*Gamma)*Timestep);
       ++Gamma;
    }
-   
+
    if (Epsilon)
       this->CalculateEps();
 }
@@ -639,7 +639,7 @@ iTDVP::ExpandRightBond()
       C = Psi.begin();
       *C = delta_shift(*C, adjoint(QShift));
 
-      // Add zeros to LambdaR so the bonds match. 
+      // Add zeros to LambdaR so the bonds match.
       MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
       LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
       LambdaR = UReg * LambdaR;
@@ -650,7 +650,7 @@ iTDVP::ExpandRightBond()
    X.pop_front();
    Y.pop_front();
 
-   // Add zeros to the current site so the left bond matches. 
+   // Add zeros to the current site so the left bond matches.
    Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
    *C = tensor_col_sum(*C, Z, NewBasis);
    *C = prod(UReg, *C);
