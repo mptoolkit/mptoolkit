@@ -245,7 +245,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " Sweep=" << Sweep
+                      << " SweepL=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
                       << " LambdaRDiff=" << LambdaRDiff
                       << std::endl;
@@ -256,7 +256,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " Sweep=" << Sweep
+                      << " SweepL=" << Sweep
                       << std::endl;
          }
       }
@@ -320,7 +320,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " Sweep=" << Sweep
+                      << " SweepR=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
                       << " LambdaRDiff=" << LambdaRDiff
                       << std::endl;
@@ -331,7 +331,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
-                      << " Sweep=" << Sweep
+                      << " SweepR=" << Sweep
                       << std::endl;
          }
       }
