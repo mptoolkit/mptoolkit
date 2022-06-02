@@ -29,10 +29,11 @@ class iTDVP : public TDVP
    public:
       iTDVP() {}
 
-      iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-            double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-            double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_);
+      iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
+            std::complex<double> InitialTime_, std::complex<double> Timestep_,
+            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+            bool Epsilon_, int Verbose_, double GMRESTol_, int MaxSweeps_,
+            double LambdaTol_, int NEps_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;

@@ -57,10 +57,7 @@ class Hamiltonian
       // Get then Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
 
-      void set_size(int Size_)
-      {
-         Size = Size_;
-      }
+      void set_size(int Size_);
 
    private:
       InfiniteLattice Lattice;

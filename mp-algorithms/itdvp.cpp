@@ -24,6 +24,9 @@
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
+#include "common/statistics.h"
+
+std::complex<double> const I(0.0, 1.0);
 
 struct HEff2
 {
@@ -42,26 +45,43 @@ struct HEff2
    StateComponent const& F;
 };
 
-iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-             std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-             double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-             double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
+iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
+             std::complex<double> InitialTime_, std::complex<double> Timestep_,
+             Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+             bool Epsilon_, int Verbose_, double GMRESTol_, int MaxSweeps_,
+             double LambdaTol_, int NEps_)
+   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
+          Epsilon_, Verbose_),
      GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_)
 {
-   QShift = Psi_.qshift();
-   std::tie(Psi, LambdaR) = get_left_canonical(Psi_);
-
    // Initialize Psi and Ham.
+   Time = InitialTime;
+   HamMPO = Ham(InitialTime);
+
+   // Make sure that Psi and HamMPO have the same unit cell.
+   InfiniteWavefunctionLeft PsiCanonical = Psi_;
+   int UnitCellSize = statistics::lcm(PsiCanonical.size(), HamMPO.size());
+
+   if (PsiCanonical.size() != UnitCellSize)
+   {
+      std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
+      PsiCanonical = repeat(PsiCanonical, UnitCellSize / PsiCanonical.size());
+      Ham.set_size(UnitCellSize);
+      HamMPO = Ham(InitialTime);
+   }
+
+   QShift = PsiCanonical.qshift();
+   std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
+
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
 
-   H = Hamiltonian.begin();
+   H = HamMPO.begin();
 
-   BlockHamL = Initial_E(Hamiltonian, Psi_.Basis1());
+   BlockHamL = Initial_E(HamMPO, Psi_.Basis1());
    MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
    Rho = delta_shift(Rho, QShift);
-   InitialE = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
+   InitialE = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
    BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
@@ -82,10 +102,10 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham
 
    PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
 
-   BlockHamR = Initial_F(Hamiltonian, PsiR.Basis2());
+   BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
    Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(QShift));
-   SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, Hamiltonian, Rho, GMRESTol, Verbose-1);
+   SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
 
    U = delta_shift(U, adjoint(QShift));
    BlockHamR = prod(prod(U, BlockHamR), herm(U));
@@ -162,7 +182,7 @@ iTDVP::EvolveLambdaRRight(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, -Tau, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -180,7 +200,7 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, -Tau, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -195,6 +215,10 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveLeft(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.end();
+   --H;
+
    int Sweep = 0;
    double FidelityLoss = 1.0;
    double LambdaRDiff = 1.0;
@@ -211,7 +235,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
       Psi = PsiOld;
       C = Psi.end();
       --C;
-      H = Hamiltonian.end();
+      H = HamMPO.end();
       --H;
       Site = RightStop;
 
@@ -272,6 +296,9 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveRight(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.begin();
+
    int Sweep = 0;
    double FidelityLoss = 1.0;
    double LambdaRDiff = 1.0;
@@ -287,7 +314,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
       Psi = PsiOld;
       C = Psi.begin();
-      H = Hamiltonian.begin();
+      H = HamMPO.begin();
       Site = LeftStop;
 
       HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
@@ -347,17 +374,21 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 void
 iTDVP::Evolve()
 {
+   Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
+
    XYCalculated = false;
 
    std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
 
-   while(Gamma != Comp.Gamma.cend())
+   while (Gamma != Comp.Gamma.cend())
    {
       this->EvolveLeft((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
 
       this->EvolveRight((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
    }
 
@@ -368,6 +399,10 @@ iTDVP::Evolve()
 void
 iTDVP::CalculateEps()
 {
+   HamMPO = Ham(Time);
+   H = HamMPO.end();
+   --H;
+
    X = std::deque<StateComponent>();
    Y = std::deque<StateComponent>();
 
@@ -549,7 +584,7 @@ iTDVP::CalculateEpsN()
          if (SiteLocal == LeftStop)
          {
             CiLocal = Psi.end();
-            HLocal = Hamiltonian.end();
+            HLocal = HamMPO.end();
             XiLocal = X.end();
             SiteLocal = RightStop+1;
             ++NShifts;
@@ -575,7 +610,7 @@ iTDVP::CalculateEpsN()
 
    C = Psi.end();
    --C;
-   H = Hamiltonian.end();
+   H = HamMPO.end();
    --H;
    Site = RightStop;
 }
@@ -663,7 +698,7 @@ iTDVP::ExpandBonds()
       this->CalculateEps();
 
    C = Psi.begin();
-   H = Hamiltonian.begin();
+   H = HamMPO.begin();
    Site = LeftStop;
    HamLOld = HamL;
    HamL = std::deque<StateComponent>(1, BlockHamL);
@@ -678,7 +713,7 @@ iTDVP::ExpandBonds()
 
    C = Psi.end();
    --C;
-   H = Hamiltonian.end();
+   H = HamMPO.end();
    --H;
    Site = RightStop;
 

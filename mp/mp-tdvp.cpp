@@ -60,7 +60,6 @@ int main(int argc, char** argv)
       std::string CompositionStr = "secondorder";
       std::string Magnus = "2";
       std::string TimeVar = "t";
-      bool TimeDependent = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()

@@ -161,6 +161,15 @@ Hamiltonian::operator()(std::complex<double> t, std::complex<double> dt) const
    }
 }
 
+void
+Hamiltonian::set_size(int Size_)
+{
+   Size = Size_;
+
+   if (Size != 0 && TimeDependent == false)
+      HamMPO = repeat(HamMPO, Size / HamMPO.size());
+}
+
 TDVP::TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
            double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_)
@@ -178,6 +187,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
           Epsilon_, Verbose_)
 {
    // Initialize Psi and Ham.
+   Time = InitialTime;
    HamMPO = Ham(InitialTime);
 
    if (Verbose > 0)
@@ -774,6 +784,7 @@ TDVP::SweepRight2(std::complex<double> Tau)
 {
    HamMPO = Ham(Time, Tau);
    H = HamMPO.begin();
+   ++H;
 
    this->EvolveLeftmostSite2(Tau);
 
@@ -809,6 +820,10 @@ TDVP::Evolve2()
 void
 TDVP::CalculateEps()
 {
+   HamMPO = Ham(Time);
+   H = HamMPO.end();
+   --H;
+
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 

@@ -21,11 +21,8 @@
 #include "common/environment.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
-#include "common/statistics.h"
 #include "common/terminal.h"
 #include "interface/inittemp.h"
-#include "lattice/infinite-parser.h"
-#include "lattice/infinitelattice.h"
 #include "mp-algorithms/itdvp.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
@@ -64,6 +61,8 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
+      std::string Magnus = "2";
+      std::string TimeVar = "t";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -98,6 +97,8 @@ int main(int argc, char** argv)
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("neps,N", prog_opt::value(&NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
+         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -172,10 +173,6 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
-      // Hamiltonian.
-      InfiniteLattice Lattice;
-      BasicTriangularMPO HamMPO;
-
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -195,18 +192,7 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-
-      // Make sure that Psi and HamMPO have the same unit cell.
-      int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size());
-
-      if (Psi.size() != UnitCellSize)
-      {
-         std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
-         Psi = repeat(Psi, UnitCellSize / Psi.size());
-      }
-
-      HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
+      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar);
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -229,8 +215,8 @@ int main(int argc, char** argv)
       if (Eps2SqTol != std::numeric_limits<double>::infinity() || NEps > 2)
          Epsilon = true;
 
-      iTDVP itdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter,
-                  ErrTol, SInfo, Epsilon, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
+      iTDVP itdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol, SInfo,
+                  Epsilon, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
 
       if (SaveEvery == 0)
          SaveEvery = N;
