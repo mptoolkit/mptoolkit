@@ -74,7 +74,7 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumE
    }
    if (ShowRate)
    {
-      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob_sq(Value)))
+      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob(Value)))
                 << "    ";
    }
    if (ShowMagnitude)
@@ -136,15 +136,15 @@ int main(int argc, char** argv)
          ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
           "display the equivalent correlation length")
          ("rate", prog_opt::bool_switch(&ShowRate),
-          "display the rate function -2*log(real_part)")
+          "display the rate function -*log(real_part)")
          ("unitcell,u", prog_opt::value(&UnitCellSize),
           "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
-          "rotate the unit cell of psi2 this many sites to the left before calculating the overlap [default 0]")
+          "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
-          "reflect psi2 (gives parity eigenvalue)")
+          "reflect psi1 (gives parity eigenvalue)")
          ("coarsegrain1", prog_opt::value(&CoarseGrain1),
           "coarse-grain wavefunction 1 by this amount")
          ("coarsegrain2", prog_opt::value(&CoarseGrain2),
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
          ("string", prog_opt::value(&String),
           "use this product operator as a string operator for the overlap")
          ("conj", prog_opt::bool_switch(&Conj),
-          "complex conjugate psi2")
+          "complex conjugate psi1")
          ("q,quantumnumber", prog_opt::value(&Sector),
           "calculate the overlap only in this quantum number sector, "
           "can be used multiple times [default is to calculate all sectors]")
@@ -294,17 +294,12 @@ int main(int argc, char** argv)
          std::cout << "Rotating Psi1 right by" << Rotate << " sites\n";
       }
       Psi1.rotate_right(Rotate);
-
-      UnitCell Cell;
-      LatticeSite Site;
-
       if (Reflect)
       {
          if (Verbose)
             std::cout << "Reflecting psi1..." << std::endl;
          inplace_reflect(Psi1);
       }
-
       if (Conj)
       {
          if (Verbose)
@@ -312,6 +307,8 @@ int main(int argc, char** argv)
          inplace_conj(Psi1);
       }
 
+      UnitCell Cell;
+      LatticeSite Site;
       ProductMPO StringOp;
       if (vm.count("string"))
       {
@@ -421,6 +418,8 @@ int main(int argc, char** argv)
       std::vector<TransEigenInfo> EigenList;
       for (std::set<QuantumNumber>::const_iterator I = Sectors.begin(); I != Sectors.end(); ++I)
       {
+         if (Verbose >= 2)
+            std::cerr << "Evaluating sector " << (*I) << '\n';
          //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
          std::vector<std::complex<double>> Eigen;
          int Length;

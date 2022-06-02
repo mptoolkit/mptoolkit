@@ -309,7 +309,7 @@ UnitCell::operator_type
 UnitCell::local_operator(std::string const& Op, int Cell, int n) const
 {
    CHECK(0 <= n && n < int(Sites->size()))("Site index is out of range")(n)(Sites->size());
-   CHECK(this->local_operator_exists(Op, n));
+   CHECK(this->local_operator_exists(Op, n))(Op)(n);
    SiteOperator Operator = (*Sites)[n][Op];
    return this->map_local_operator(Operator, Cell, n);
 }

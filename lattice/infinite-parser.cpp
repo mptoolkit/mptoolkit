@@ -875,8 +875,8 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    return Result;
 }
 
-std::pair<InfiniteMPOElement, InfiniteLattice>
-ParseInfiniteOperatorAndLattice(std::string const& Str)
+std::pair<std::string, InfiniteLattice>
+ParseOperatorStringAndLattice(std::string const& Str)
 {
    std::string::const_iterator Delim = std::find(Str.begin(), Str.end(), ':');
    if (Delim == Str.end())
@@ -891,8 +891,15 @@ ParseInfiniteOperatorAndLattice(std::string const& Str)
    ++Delim;
    std::string Expr(Delim, Str.end());
 
-   InfiniteMPOElement Op = ParseInfiniteOperator(*Lattice, Expr);
-   return std::make_pair(Op, *Lattice);
+   return {Expr, *Lattice};
+}
+
+std::pair<InfiniteMPOElement, InfiniteLattice>
+ParseInfiniteOperatorAndLattice(std::string const& Str)
+{
+   std::pair<std::string, InfiniteLattice> OpLattice = ParseOperatorStringAndLattice(Str);
+   InfiniteMPOElement Op = ParseInfiniteOperator(OpLattice.second, OpLattice.first);
+   return {Op, OpLattice.second};
 }
 
 ProductMPO

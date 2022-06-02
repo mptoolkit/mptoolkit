@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "mpo/basic_triangular_mpo.h"
+#include "mp-algorithms/transfer.h"
 #include "wavefunction/mpwavefunction.h"
 #include "wavefunction/operator_actions.h"
 #include "common/environment.h"
@@ -245,13 +246,17 @@ void ShowAllComponents(std::vector<KMatrixPolyType> const& E, MatrixOperator Rho
 int main(int argc, char** argv)
 {
    omp::initialize();
-   std::string FName;
+   std::string Psi1Str;
    std::string OpStr;
+   std::string Psi2Str;
 
    int Power = 1;
    int Verbose = 0;
    int UnitCellSize = 0;
    int Degree = 0;
+   int Rotate = 0;
+   bool Reflect = false;
+   bool Conj = false;
    bool ShowRealPart = false;
    bool ShowImagPart = false;
    bool ShowMagnitude = false;
@@ -265,12 +270,14 @@ int main(int argc, char** argv)
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    double Tol = 1E-15;
    bool ShouldShowAllComponents = false;
+   std::string Sector;
 
    try
    {
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("quantumnumber,q", prog_opt::value(&Sector), "quantum number sector of the transfer matrix")
          ("power", prog_opt::value(&Power),
           FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
          ("moments", prog_opt::bool_switch(&CalculateMoments),
@@ -295,7 +302,13 @@ int main(int argc, char** argv)
           "scale the results to use this unit cell size [default wavefunction unit cell]")
          ("degree,d", prog_opt::value(&Degree),
           "force setting the degree of the MPO")
-         ("quiet,q", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("rotate", prog_opt::value(&Rotate),
+          "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
+         ("reflect", prog_opt::bool_switch(&Reflect),
+          "reflect psi1 (gives parity eigenvalue)")
+         ("conj", prog_opt::bool_switch(&Conj),
+          "complex conjugate psi1")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Linear solver convergence tolerance", Tol).c_str())
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
@@ -308,13 +321,15 @@ int main(int argc, char** argv)
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("psi", prog_opt::value<std::string>(&FName), "wavefunction")
+         ("psi1", prog_opt::value<std::string>(&Psi1Str), "wavefunction1")
          ("operator", prog_opt::value<std::string>(&OpStr), "operator")
+         ("psi2", prog_opt::value<std::string>(&Psi2Str), "wavefunction2")
          ;
 
       prog_opt::positional_options_description p;
-      p.add("psi", 1);
+      p.add("psi1", 1);
       p.add("operator", 1);
+      p.add("psi2", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -324,10 +339,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("psi") == 0)
+      if (vm.count("help") > 0 || vm.count("psi2") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " <psi1> <operator>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <operator> <psi2>\n";
          std::cerr << desc << '\n';
          return 1;
       }
@@ -361,18 +376,65 @@ int main(int argc, char** argv)
          CalculateMoments = true;
 
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
-      pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
-      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-      int WavefuncUnitCellSize = Psi.size();
+      pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::OpenPersistent(Psi2Str, CacheSize, true);
+      pvalue_ptr<MPWavefunction> Psi1Ptr = pheap::ImportHeap(Psi1Str);
+      InfiniteWavefunctionLeft Psi2 = Psi2Ptr->get<InfiniteWavefunctionLeft>();
+      InfiniteWavefunctionLeft Psi1 = Psi1Ptr->get<InfiniteWavefunctionLeft>();
+      auto q = QuantumNumber(Psi1.GetSymmetryList(), Sector);
 
-      if (!vm.count("operator"))
+
+      // Rotate as necessary.  Do this BEFORE determining the quantum number sectors!
+      if (Verbose)
       {
-         OpStr = PsiPtr->Attributes()["Hamiltonian"].get_or_default(std::string());
+         std::cout << "Rotating Psi1 right by" << Rotate << " sites\n";
+      }
+      Psi1.rotate_right(Rotate);
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi1..." << std::endl;
+         inplace_reflect(Psi1);
+      }
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi1..." << std::endl;
+         inplace_conj(Psi1);
+      }
+
+      // We require that the wafefunctions have the same quantum number per unit cell.  If this isn't the case,
+      // the transfer matrix eigenmatrices have a weird form that would require changing 'q' (sector) of the operator.
+      // In principle this is possible, but is beyond what delta_shift currently does.
+      if (Psi1.qshift() != Psi2.qshift())
+      {
+         std::cerr << "fatal: wavefunctions have a different qshift, which is not supported.\n";
+         return 1;
+      }
+
+      // Since the operator is a positional argument we need to include it.  But allow it to be empty, and
+      // that will take it to be the Psi2 Hamiltonian.  If that is empty, look at the psi1 Hamiltonian.
+      if (OpStr.empty())
+      {
+         OpStr = Psi2Ptr->Attributes()["Hamiltonian"].get_or_default(std::string());
+         if (OpStr.empty())
+         {
+            OpStr = Psi1Ptr->Attributes()["Hamiltonian"].get_or_default(std::string());
+         }
+         else
+         {
+            if (Verbose > 1)
+               std::cerr << "Taking operator from psi2 Hamiltonian attribute.\n";
+         }
          if (OpStr.empty())
          {
             std::cerr <<  basename(argv[0]) << ": fatal: no operator specified, and wavefunction "
                "attribute Hamiltonian does not exist or is empty.\n";
             return 1;
+         }
+         else
+         {
+            if (Verbose > 1)
+               std::cerr << "Taking operator from psi1 Hamiltonian attribute.\n";
          }
       }
 
@@ -381,43 +443,35 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
 
-      int Size = statistics::lcm(Psi.size(), Op.size());
+      int Size = statistics::lcm(Psi1.size(), Psi2.size(), Op.size());
 
       // TODO: a better approach would be to get SolveMPO to understand how to do
-      // a multiple unit-cell operator.
-      Psi = repeat(Psi, Size / Psi.size());
+      // a multiple unit-cell operator.  But actually that is difficult.
+      Psi1 = repeat(Psi1, Size / Psi1.size());
+      Psi2 = repeat(Psi2, Size / Psi2.size());
       Op = repeat(Op, Size / Op.size());
 
       // The default UnitCellSize for output is the wavefunction size
       if (UnitCellSize == 0)
-         UnitCellSize = Psi.size();
+         UnitCellSize = Psi1.size();
       double ScaleFactor = double(UnitCellSize) / double(Size);
 
       if (!Quiet)
       {
          print_preamble(std::cout, argc, argv);
-         if (!vm.count("operator"))
-         {
-            std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
-         }
+         std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
          std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
                    << (UnitCellSize == 1 ? " site\n" : " sites\n");
       }
 
-      // Make a LinearWavefunction in the symmetric orthogonality constraint
-      // TODO: actually this is left-orthogonal.  Which might be OK?
-      RealDiagonalOperator D;
-      LinearWavefunction Phi;
-      std::tie(Phi, D) = get_left_canonical(Psi);
+      std::complex<double> lambda;
+      MatrixOperator TLeft, TRight;
+      std::tie(lambda, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, q);
 
-      MatrixOperator Rho = D;
-      Rho = scalar_prod(Rho, herm(Rho));
-      Rho = delta_shift(Rho, Psi.qshift());
-
-      MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
+      TRight = delta_shift(TRight, Psi2.qshift());
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(Op))
+      if (ExtractLocalBasis(Psi1) != ExtractLocalBasis1(Op))
       {
          std::cerr << "fatal: operator is defined on a different local basis to the wavefunction.\n";
          return 1;
@@ -433,13 +487,16 @@ int main(int argc, char** argv)
 
       std::vector<Polynomial<std::complex<double> > > Moments;
 
+      LinearWavefunction Phi1 = get_left_canonical(Psi1).first;
+      LinearWavefunction Phi2 = get_left_canonical(Psi2).first;
+
       // first power
       std::vector<KMatrixPolyType> E;
-      SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
-      Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+      SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
+      Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
       if (ShouldShowAllComponents)
       {
-         ShowAllComponents(E, Rho);
+         ShowAllComponents(E, TRight);
       }
       // If we're not calculating the cumulants, then we can print the moments as we calculate them.
       // BUT, if we have Verbose > 0, then don't print anything until the end, so that it doesn't get
@@ -472,9 +529,9 @@ int main(int argc, char** argv)
          E = std::vector<KMatrixPolyType>();
 
          Op = OriginalOp * Op;
-         SolveMPO_Left(E, Phi, Psi.qshift(), Op, Identity, Rho, p < Power-1, Degree*(p+1),
+         SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, p < Power-1, Degree*(p+1),
                        Tol, UnityEpsilon, Verbose);
-         Moments.push_back(ExtractOverlap(E.back()[1.0], Rho));
+         Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
          // Force the degree of the MPO
          if (Degree != 0)
             Moments.back()[Degree*(p+1)] += 0.0;

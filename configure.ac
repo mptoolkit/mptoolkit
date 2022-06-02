@@ -46,7 +46,7 @@ if test "x$enable_debug" != "xyes" ; then
    fi
 fi
 
-dnl C++17 support
+dnl C++14 support
 AX_CXX_COMPILE_STDCXX_14(noext,mandatory)
 
 dnl we have C++14 as mandatory, but set it in config.h too

@@ -155,8 +155,8 @@ int main(int argc, char** argv)
 
       // Translation operators.
       Trans = I(0);
-      for (int i = 0; i < u-1; ++i)
-         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+      for (int i = 0; i < u-2; ++i)
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+2);
 
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);
 

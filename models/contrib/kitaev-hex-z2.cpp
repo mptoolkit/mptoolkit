@@ -2,9 +2,10 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/spin-kitaev-z3.cpp
+// models/contrib/kitaev-hex-z2.cpp
 //
 // Copyright (C) 2018 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -91,24 +92,26 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("SU(2) hexagonal lattice zigzag configuration");
-      OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
+      OpDescriptions.set_description("Z2 Kitaev honeycomb model");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_cell_operators()
-         ("W0"         , "Plaquette operator 0")
-         ("Trans"      , "Translation by one site (rotation by 2\u0071/w) in lattice short direction")
-         ("Ref"        , "Reflection in lattice short direction",
+         ("WY"         , "Wilson loop in the y direction")
+         ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
+         ("Ref"        , "reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
-         ("RyUnit"     , "Reflection of a single unit cell",
+         ("RyUnit"     , "reflection of a single unit cell",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
       OpDescriptions.add_operators()
-         ("H_x"        , "Horizontal Sx-Sx interaction")
-         ("H_y"        , "+60 degrees Sy-Sy interaction")
-         ("H_z"        , "-60 degrees Sz-Sz interaction")
+         ("H_x"        , "magnetic field in the x direction")
+         ("H_xx"       , "horizontal X-X interaction")
+         ("H_yy"       , "+60 degrees Y-Y interaction")
+         ("H_zz"       , "-60 degrees Z-Z interaction")
+         ("H_3"        , "three-spin interaction")
          ("Ty"         , "momentum operator in lattice short direction")
          ("TyPi"       , "translation by w sites in the Y direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
-         ("Ry"         , "Reflection in the Y direction",
+         ("Ry"         , "reflection in the Y direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
          ;
 
@@ -130,15 +133,74 @@ int main(int argc, char** argv)
       UnitCellOperator X(Cell, "X");
       UnitCellOperator Y(Cell, "Y");
       UnitCellOperator Z(Cell, "Z");
+      UnitCellOperator WY(Cell, "WY");
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
 
+      // Plaquette operators.  There are w of these.
+      for (int i = 0; i < u; i += 2)
+      {
+         UnitCellMPO W = Z(0)[i] * X(0)[(i+1)%u] * Y(0)[(i+2)%u]
+            * Z(1)[(i+3)%u] * X(1)[(i+2)%u] * Y(1)[(i+1)%u];
+         W.set_description("plaquette operator " + std::to_string(i/2));
+         std::string Name = "W" + std::to_string(i/2);
+         Lattice.GetUnitCell().assign_operator(Name, W);
+      }
+
+      // Wilson loop operator.
+      WY = I(0);
+
+      for (int i = 0; i < u; ++i)
+      {
+         WY = WY * X(0)[i];
+      }
+
+      // Magnetic field.
+      UnitCellMPO Hx;
+
+      for (int i = 0; i < u; ++i)
+      {
+         Hx += X(0)[i];
+      }
+
+      Lattice["H_x"] = sum_unit(Hx);
+
+      // Kitaev model interactions.
+      UnitCellMPO Hxx, Hyy, Hzz;
+
+      for (int i = 0; i < u; i += 2)
+      {
+         Hxx += X(0)[i] * X(1)[(i+1)%u];
+         Hyy += Y(0)[i] * Y(0)[(i+1)%u];
+         Hzz += Z(0)[i] * Z(0)[(i+u-1)%u];
+      }
+
+      Lattice["H_xx"] = sum_unit(Hxx);
+      Lattice["H_yy"] = sum_unit(Hyy);
+      Lattice["H_zz"] = sum_unit(Hzz);
+
+      // Three spin interaction term.
+      UnitCellMPO H3;
+
+      for (int i = 0; i < u; i += 2)
+      {
+         H3 += Y(0)[(i+1)%u] * X(1)[(i+1)%u] * Z(0)[i]
+             + X(0)[(i+1)%u] * Z(0)[(i+2)%u] * Y(0)[i]
+             + Z(0)[(i+1)%u] * Y(0)[(i+2)%u] * X(1)[(i+3)%u]
+             + Y(1)[(i+2)%u] * X(0)[(i+2)%u] * Z(1)[(i+3)%u]
+             + X(1)[(i+2)%u] * Z(1)[(i+1)%u] * Y(1)[(i+3)%u]
+             + Z(1)[(i+2)%u] * Y(1)[(i+1)%u] * X(0)[i];
+      }
+
+      Lattice["H_3"] = sum_unit(H3);
+
+      // Translation and relfection operators.
       Trans = I(0);
-      for (int i = 0; i < u-1; ++i)
-       {
-           //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
-           Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
-       }
+      for (int i = 0; i < u-2; ++i)
+      {
+         //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+2);
+      }
 
       if (!NoReflect)
       {
@@ -148,27 +210,6 @@ int main(int argc, char** argv)
             //R *= 0.5*( 0.25*inner(S[i],S[w-i-1]) + 1 );
             Ref = Ref(0) * Cell.swap_gate_no_sign(i, u-i-1);
          }
-      }
-
-
-      // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Hx, Hy, Hz;
-
-      // Plaquette operators.  There are w of these.
-      for (int i = 0; i < u; i += 2)
-      {
-         UnitCellMPO W = Z(0)[i] * X(0)[(i+1)%u] * Y(0)[(i+2)%u]
-            * Z(1)[(i+3)%u] * X(1)[(i+2)%u] * Y(1)[(i+1)%u];
-         W.set_description("Plaquette operator " + std::to_string(i/2));
-         std::string Name = "W" + std::to_string(i/2);
-         Lattice.GetUnitCell().assign_operator(Name, W);
-      }
-
-      for (int i = 0; i < u; i += 2)
-      {
-         Hx += inner(X(0)[i], X(1)[(i+1)%u]);
-         Hy += inner(Y(0)[i], Y(0)[(i+1)%u]);
-         Hz += inner(Z(0)[i], Z(0)[(i+u-1)%u]);
       }
 
       // Reflection.
@@ -201,11 +242,6 @@ int main(int argc, char** argv)
          }
          RyUnit = Ry;
       }
-
-      // The operators have a minus sign, following Kitaev convention
-      Lattice["H_x"] = -sum_unit(Hx);
-      Lattice["H_y"] = -sum_unit(Hy);
-      Lattice["H_z"] = -sum_unit(Hz);
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), u);

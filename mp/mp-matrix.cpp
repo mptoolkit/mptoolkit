@@ -71,8 +71,9 @@ Regularize(StateComponent const& M)
 void WriteMatrixFormatMATLAB(std::ostream& out, LinearAlgebra::Matrix<std::complex<double>> const& M,
                              bool Quiet = false)
 {
+   out << "complex( [\n";
    if (!Quiet)
-      out << "complex( \n% real part\n  [ ";
+      "% real part\n ";
    for (int i = 0; i < M.size1(); ++i)
    {
       if (i != 0)
@@ -87,9 +88,9 @@ void WriteMatrixFormatMATLAB(std::ostream& out, LinearAlgebra::Matrix<std::compl
       }
    }
    out << "  ],";
+   out << "[\n";
    if (!Quiet)
       out << "\n%imaginary part\n  ";
-   out << "[";
    for (int i = 0; i < M.size1(); ++i)
    {
       if (i != 0)
@@ -136,20 +137,20 @@ void WriteMPS_MATLAB(std::ostream& out, LinearWavefunction const& Psi, MatrixOpe
       if (!Quiet)
          out << "% site " << Site << "\n";
       //         out << "[\n";
-      out << "MPS(1," << (Site+1) << ") = cat(3, \n";
+      out << "MPS{1," << (Site+1) << "} = cat(3, ... \n";
       StateComponent A = Regularize(*I);
       for (int i = 0; i < A.size(); ++i)
       {
          if (!Quiet)
             out << "% site " << Site << "  basis state " << i << "\n";
          if (i != 0)
-            out << ",\n";
+            out << ", ...\n";
          if (A.Basis1().size() != 1 || A.Basis2().size() != 1)
          {
             throw std::runtime_error("mp-matrix: error: mps has non-trivial symmetries");
          }
          WriteMatrixFormatMATLAB(out, A[i](0,0), Quiet);
-         out << "\n";
+         //out << "\n";
       }
       if (!Quiet)
          out << "% end of site " << Site << "\n";
@@ -312,6 +313,8 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      Quiet = true;  // TODO: the matlab format doesn't work without this
 
       // Load the wavefunction
       pvalue_ptr<MPWavefunction> Psi

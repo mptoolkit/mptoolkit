@@ -46,6 +46,9 @@ typedef angle_map<ComplexPolyType> KComplexPolyType;
 // this represents an E matrix
 typedef angle_map<MatrixPolyType> KMatrixPolyType;
 
+// scale the matrices by a factor
+void
+ScalePoly(KMatrixPolyType& K, std::complex<double> x);
 
 MatrixPolyType
 delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift);

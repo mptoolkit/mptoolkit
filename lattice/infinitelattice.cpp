@@ -944,6 +944,7 @@ BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& 
    return sum_string_dot(adjoint(Op1_), String_, Op2_, Op1_.GetSiteList()->size());
 }
 
+/* **DEPRECATED**
 ProductMPO prod_unit(UnitCellMPO const& Op_)
 {
    return prod_unit_left_to_right(Op_.MPO(), Op_.GetSiteList()->size());
@@ -953,6 +954,7 @@ ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
 {
    return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
 }
+*/
 
 BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO const& Op, BasicFiniteMPO const& Pivot, /* BasicFiniteMPO const& JW2, */ int UnitCellSize)
 {
@@ -1069,7 +1071,7 @@ BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO 
 
 BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot, int UnitCellSize)
 {
-   return sum_partial(*Pivot.GetSiteList(), Op, 
-		      ExtendToCoverUnitCell(Pivot, UnitCellSize).MPO(), 
+   return sum_partial(*Pivot.GetSiteList(), Op,
+		      ExtendToCoverUnitCell(Pivot, UnitCellSize).MPO(),
 		      UnitCellSize);
 }
