@@ -24,6 +24,7 @@
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
+#include "lattice/infinitelattice.h"
 
 class Composition
 {
@@ -43,18 +44,47 @@ class Composition
 
 extern std::map<std::string, Composition> Compositions;
 
+// Class to handle time-dependent Hamiltonian operators.
+class Hamiltonian
+{
+   public:
+      Hamiltonian() {}
+
+      // If Size == 0, do not rescale Hamiltonian size.
+      Hamiltonian(std::string HamStr, int Size = 0,
+                  std::string Magnus = "2", std::string TimeVar = "t");
+
+      // Get then Hamiltonian MPO to evolve from t to t + dt.
+      BasicTriangularMPO operator()(std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
+
+      void set_size(int Size_)
+      {
+         Size = Size_;
+      }
+
+   private:
+      InfiniteLattice Lattice;
+      std::string HamOperator;
+      int Size;
+      std::string Magnus;
+      std::string TimeVar;
+      bool TimeDependent;
+      BasicTriangularMPO HamMPO;
+};
+
 class TDVP
 {
    public:
       TDVP() {}
 
-      TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
-           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, int Verbose_);
-
-      TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
+      TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
            double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_);
+
+      TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
+           std::complex<double> InitialTime_, std::complex<double> Timestep_,
+           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+           bool Epsilon_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;
@@ -118,14 +148,17 @@ class TDVP
       LinearWavefunction Psi;
       int Site;                          // The index of the iterator C.
       LinearWavefunction::iterator C;
-      BasicTriangularMPO Hamiltonian;
+      Hamiltonian Ham;
+      BasicTriangularMPO HamMPO;
       BasicTriangularMPO::const_iterator H;
       std::deque<StateComponent> HamL;
       std::deque<StateComponent> HamR;
-      int LeftStop;                      // The site indices where we stop iterations,
+      int LeftStop;                      // The site indices where we stop iterations.
       int RightStop;
 
-      std::complex<double> Timestep;     // The complex timestep in the form -i*dt.
+      std::complex<double> InitialTime;
+      std::complex<double> Timestep;
+      std::complex<double> Time;
       Composition Comp;                  // The symmetric composition scheme used to perform a timestep.
       int MaxIter;
       double ErrTol;

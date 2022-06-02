@@ -23,6 +23,10 @@
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
+#include "lattice/infinite-parser.h"
+#include "parser/parser.h"
+
+std::complex<double> const I(0.0, 1.0);
 
 struct HEff1
 {
@@ -98,24 +102,88 @@ Compositions = {
          0.1, 0.1})}
 };
 
-TDVP::TDVP(BasicTriangularMPO const& Ham_, std::complex<double> Timestep_,
-           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, int Verbose_)
-   : Hamiltonian(Ham_), Timestep(Timestep_), Comp(Comp_), MaxIter(MaxIter_),
-     ErrTol(ErrTol_), SInfo(SInfo_), Epsilon(Epsilon_), Verbose(Verbose_)
+Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
+                         std::string Magnus_, std::string TimeVar_)
+   : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_)
+{
+   std::tie(HamOperator, Lattice) = ParseOperatorStringAndLattice(HamStr);
+
+   // Attempt to convert the operator into an MPO.  If it works, then the
+   // Hamiltonian is time-independent. If it fails, assume it failed because
+   // the time variable isn't defined yet.  If there is some other error in the
+   // operator, we'll catch it later.
+   try
+   {
+      HamMPO = ParseTriangularOperator(Lattice, HamOperator);
+      if (Size != 0)
+         HamMPO = repeat(HamMPO, Size / HamMPO.size());
+      TimeDependent = false;
+   }
+   catch (Parser::ParserError& e)
+   {
+      //if (Verbose > 1)
+      //   std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent." << std::endl;
+      TimeDependent = true;
+   }
+   catch (...)
+   {
+      throw;
+   }
+}
+
+BasicTriangularMPO
+Hamiltonian::operator()(std::complex<double> t, std::complex<double> dt) const
+{
+   if (TimeDependent == false)
+      return HamMPO;
+   else
+   {
+      BasicTriangularMPO HamMPO_;
+
+      if (Magnus == "2")
+      {
+         std::complex<double> Time = t + 0.5*dt;
+         HamMPO_ = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, Time}});
+      }
+      else if (Magnus == "4")
+      {
+         std::complex<double> t1 = t + (0.5 - std::sqrt(3.0)/6.0) * dt;
+         std::complex<double> t2 = t + (0.5 + std::sqrt(3.0)/6.0) * dt;
+         BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
+         BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
+         HamMPO_ = 0.5 * (A1 + A2) + (1.0 / 12.0) * (A1*A2 - A2*A1);
+      }
+
+      if (Size != 0)
+         HamMPO_ = repeat(HamMPO_, Size / HamMPO_.size());
+
+      return HamMPO_;
+   }
+}
+
+TDVP::TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
+           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
+           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_)
+   : Ham(Ham_), InitialTime(InitialTime_), Timestep(Timestep_), Comp(Comp_),
+     MaxIter(MaxIter_), ErrTol(ErrTol_), SInfo(SInfo_), Epsilon(Epsilon_),
+     Verbose(Verbose_)
 {
 }
 
-TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_)
+TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
+           std::complex<double> InitialTime_, std::complex<double> Timestep_,
+           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+           bool Epsilon_, int Verbose_)
+   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
+          Epsilon_, Verbose_)
 {
    // Initialize Psi and Ham.
+   HamMPO = Ham(InitialTime);
+
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
-   H = Hamiltonian.begin();
-   HamL.push_back(Initial_E(Hamiltonian, Psi_.Basis1()));
+   H = HamMPO.begin();
+   HamL.push_back(Initial_E(HamMPO, Psi_.Basis1()));
    for (FiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
       if (Verbose > 1)
@@ -125,7 +193,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
       MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
       ++H;
    }
-   HamR.push_front(Initial_F(Hamiltonian, Psi_.Basis2()));
+   HamR.push_front(Initial_F(HamMPO, Psi_.Basis2()));
    Psi.set_back(prod(Psi.get_back(), Psi_.lambda_r()));
 
    // Initialize to the right-most site.
@@ -158,7 +226,7 @@ TDVP::EvolveCurrentSite(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -190,7 +258,7 @@ TDVP::IterateLeft(std::complex<double> Tau)
    double Err = ErrTol;
    MatrixOperator UD = U*D;
 
-   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, -Tau, Err);
+   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -231,7 +299,7 @@ TDVP::IterateRight(std::complex<double> Tau)
    double Err = ErrTol;
    MatrixOperator DVh = D*Vh;
 
-   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, -Tau, Err);
+   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -255,6 +323,10 @@ TDVP::IterateRight(std::complex<double> Tau)
 void
 TDVP::SweepLeft(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.end();
+   --H;
+
    while (Site > LeftStop)
    {
       this->EvolveCurrentSite(Tau);
@@ -267,6 +339,9 @@ TDVP::SweepLeft(std::complex<double> Tau)
 void
 TDVP::SweepRight(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.begin();
+
    this->EvolveCurrentSite(Tau);
 
    while (Site < RightStop)
@@ -339,6 +414,9 @@ TDVP::CalculateEps12()
 void
 TDVP::SweepRightFinal(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.begin();
+
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
 
@@ -353,7 +431,9 @@ TDVP::SweepRightFinal(std::complex<double> Tau)
 void
 TDVP::Evolve()
 {
+   Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
+
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
@@ -362,14 +442,17 @@ TDVP::Evolve()
    --GammaEnd;
 
    this->SweepLeft((*Gamma)*Timestep);
+   Time += (*Gamma)*Timestep;
    ++Gamma;
 
    while(Gamma != GammaEnd)
    {
       this->SweepRight((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
 
       this->SweepLeft((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
    }
 
@@ -377,6 +460,8 @@ TDVP::Evolve()
       this->SweepRightFinal((*Gamma)*Timestep);
    else
       this->SweepRight((*Gamma)*Timestep);
+
+   Time += (*Gamma)*Timestep;
 }
 
 void
@@ -449,6 +534,10 @@ TDVP::ExpandLeftBond()
 void
 TDVP::SweepLeftExpand(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.end();
+   --H;
+
    while (Site > LeftStop)
    {
       if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
@@ -463,7 +552,9 @@ TDVP::SweepLeftExpand(std::complex<double> Tau)
 void
 TDVP::EvolveExpand()
 {
+   Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
+
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
@@ -472,14 +563,17 @@ TDVP::EvolveExpand()
    --GammaEnd;
 
    this->SweepLeftExpand((*Gamma)*Timestep);
+   Time += (*Gamma)*Timestep;
    ++Gamma;
 
    while(Gamma != GammaEnd)
    {
       this->SweepRight((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
 
       this->SweepLeftExpand((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
    }
    
@@ -487,6 +581,8 @@ TDVP::EvolveExpand()
       this->SweepRightFinal((*Gamma)*Timestep);
    else
       this->SweepRight((*Gamma)*Timestep);
+
+   Time += (*Gamma)*Timestep;
 }
 
 void
@@ -509,7 +605,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*C).LocalBasis(), (*CPrev).LocalBasis()));
@@ -539,7 +635,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
    Iter = MaxIter;
    Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -569,7 +665,7 @@ TDVP::EvolveLeftmostSite2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -604,7 +700,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err);
 
    if (Verbose > 1)
    {
@@ -632,7 +728,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
    Iter = MaxIter;
    Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -663,6 +759,10 @@ TDVP::IterateRight2(std::complex<double> Tau)
 void
 TDVP::SweepLeft2(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.end();
+   --H;
+
    while (Site > LeftStop + 1)
       this->IterateLeft2(Tau);
 
@@ -672,6 +772,9 @@ TDVP::SweepLeft2(std::complex<double> Tau)
 void
 TDVP::SweepRight2(std::complex<double> Tau)
 {
+   HamMPO = Ham(Time, Tau);
+   H = HamMPO.begin();
+
    this->EvolveLeftmostSite2(Tau);
 
    while (Site < RightStop)
@@ -681,7 +784,9 @@ TDVP::SweepRight2(std::complex<double> Tau)
 void
 TDVP::Evolve2()
 {
+   Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
+
    TruncErrSum = 0.0;
 
    std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
@@ -689,9 +794,11 @@ TDVP::Evolve2()
    while(Gamma != Comp.Gamma.cend())
    {
       this->SweepLeft2((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
 
       this->SweepRight2((*Gamma)*Timestep);
+      Time += (*Gamma)*Timestep;
       ++Gamma;
    }
    
@@ -710,7 +817,7 @@ TDVP::CalculateEps()
    LinearWavefunction PsiLocal = Psi;
    LinearWavefunction::iterator CLocal = PsiLocal.end();
    --CLocal;
-   BasicTriangularMPO::const_iterator HLocal = Hamiltonian.end();
+   BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
    --HLocal;
    std::deque<StateComponent> HamLLocal = HamL;
    std::deque<StateComponent> HamRLocal = HamR;

@@ -23,8 +23,6 @@
 #include "common/prog_options.h"
 #include "common/terminal.h"
 #include "interface/inittemp.h"
-#include "lattice/infinite-parser.h"
-#include "lattice/infinitelattice.h"
 #include "mp-algorithms/tdvp.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
@@ -60,6 +58,9 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
+      std::string Magnus = "2";
+      std::string TimeVar = "t";
+      bool TimeDependent = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -88,6 +89,8 @@ int main(int argc, char** argv)
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
+         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -127,7 +130,13 @@ int main(int argc, char** argv)
       }
       if (Comp.Order == 0)
       {
-         std::cerr << "fatal: invalid composition" << std::endl;
+         std::cerr << "fatal: invalid composition." << std::endl;
+         return 1;
+      }
+
+      if (Magnus != "2" && Magnus != "4")
+      {
+         std::cerr << "fatal: invalid Magnus scheme." << std::endl;
          return 1;
       }
 
@@ -163,10 +172,6 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
-      // Hamiltonian.
-      InfiniteLattice Lattice;
-      BasicTriangularMPO HamMPO;
-
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -186,9 +191,7 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      if (HamMPO.size() < Psi.size())
-         HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
+      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar);
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -207,7 +210,7 @@ int main(int argc, char** argv)
       if (Eps2SqTol != std::numeric_limits<double>::infinity())
          Epsilon = true;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose);
+      TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;
