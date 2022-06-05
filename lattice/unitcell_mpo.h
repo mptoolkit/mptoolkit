@@ -170,6 +170,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::Qua
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y);
 UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y);
 
+UnitCellMPO commutator(UnitCellMPO const& x, UnitCellMPO const& y);
+
 // dot product - takes into account the multiplicity to rescale the result
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y);
 

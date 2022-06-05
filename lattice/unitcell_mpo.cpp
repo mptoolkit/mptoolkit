@@ -290,6 +290,11 @@ UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
                       xCopy.Commute()*yCopy.Commute(), xCopy.offset());
 }
 
+UnitCellMPO commutator(UnitCellMPO const& x, UnitCellMPO const& y)
+{
+   return prod(x,y) - prod(y,x);
+}
+
 UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
 {
    UnitCellMPO xCopy(x);
