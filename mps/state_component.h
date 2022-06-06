@@ -43,6 +43,13 @@ typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                             VectorBasis,
                             VectorBasis> MatrixOperator;
 
+ inline
+ MatrixOperator
+ commutator(MatrixOperator const& x, MatrixOperator const& y)
+ {
+    return x*y - y*x;
+ }
+
 // an operator that acts trivially in each subspace
 typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
                     VectorBasis,

@@ -625,7 +625,7 @@ struct binary_commutator<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
 
    InfiniteMPOElement operator()(BasicTriangularMPO const& x, BasicTriangularMPO const& y) const
    {
-      return InfiniteMPOElement(x*y - y*x);
+      return InfiniteMPOElement(commutator(x,y));
    }
 
    template <typename T, typename U>

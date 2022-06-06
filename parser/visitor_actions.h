@@ -520,7 +520,7 @@ struct binary_commutator : boost::static_visitor<element_type>
    template <typename T1, typename T2>
    element_type operator()(T1 const& x, T2 const& y) const
    {
-      return element_type(x*y - y*x);
+      return commutator(x,y);
    }
 };
 

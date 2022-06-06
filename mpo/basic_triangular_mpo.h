@@ -179,6 +179,14 @@ BasicTriangularMPO coarse_grain(BasicTriangularMPO const& x, int N);
 // compatibility of the operators.
 BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
 
+// Disjoint prod.  Ignores the internal identity operators on the diagonal.
+// Really only useful for commutators, since [A,B] = disjoint_prod(A,B) - disjoint_prod(B,A).
+// If the MPO's are not first order then this will still leave additional identity components on the diagonal.
+BasicTriangularMPO disjoint_prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q);
+
+// commutator x,y]
+BasicTriangularMPO commutator(BasicTriangularMPO const& x, BasicTriangularMPO const& y);
+
 // dot product - takes into account the multiplicity to rescale the result
 BasicTriangularMPO dot(BasicTriangularMPO const& x, BasicTriangularMPO const& y);
 
