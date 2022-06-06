@@ -378,7 +378,7 @@ int main(int argc, char** argv)
       {
          if (Verbose > 1)
          {
-            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.";
+            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.\n";
          }
          TimeDependent = true;
       }
