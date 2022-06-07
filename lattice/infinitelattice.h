@@ -278,4 +278,6 @@ BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& 
 // which is equivalent to sum_string(Sx, I, Sy)
 BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot, int UnitCellSize);
 
+BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot);
+
 #endif

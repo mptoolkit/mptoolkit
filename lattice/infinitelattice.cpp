@@ -1075,3 +1075,8 @@ BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& 
 		      ExtendToCoverUnitCell(Pivot, UnitCellSize).MPO(),
 		      UnitCellSize);
 }
+
+BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot)
+{
+   return sum_partial(Op, Pivot, Op.size());
+}
