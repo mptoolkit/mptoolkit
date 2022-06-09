@@ -56,7 +56,9 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   HamMPO = Ham(InitialTime);
+   //HamMPO = Ham(Time);
+   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   HamMPO = Ham(Time-dt, dt);
 
    // Make sure that Psi and HamMPO have the same unit cell.
    InfiniteWavefunctionLeft PsiCanonical = Psi_;
@@ -67,7 +69,9 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
       std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
       PsiCanonical = repeat(PsiCanonical, UnitCellSize / PsiCanonical.size());
       Ham.set_size(UnitCellSize);
-      HamMPO = Ham(InitialTime);
+      //HamMPO = Ham(Time);
+      std::complex<double> dt = Comp.Gamma.back()*Timestep;
+      HamMPO = Ham(Time-dt, dt);
    }
 
    QShift = PsiCanonical.qshift();
@@ -399,7 +403,9 @@ iTDVP::Evolve()
 void
 iTDVP::CalculateEps()
 {
-   HamMPO = Ham(Time);
+   //HamMPO = Ham(Time);
+   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   HamMPO = Ham(Time-dt, dt);
    H = HamMPO.end();
    --H;
 

@@ -140,7 +140,9 @@ Hamiltonian::operator()(std::complex<double> t, std::complex<double> dt) const
    {
       BasicTriangularMPO HamMPO_;
 
-      if (Magnus == "2")
+      if (dt == 0.0)
+         HamMPO_ = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t}});
+      else if (Magnus == "2")
       {
          std::complex<double> Time = t + 0.5*dt;
          HamMPO_ = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, Time}});
@@ -151,7 +153,7 @@ Hamiltonian::operator()(std::complex<double> t, std::complex<double> dt) const
          std::complex<double> t2 = t + (0.5 + std::sqrt(3.0)/6.0) * dt;
          BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
          BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
-         HamMPO_ = 0.5 * (A1 + A2) + (1.0 / 12.0) * (A1*A2 - A2*A1);
+         HamMPO_ = 0.5 * (A1 + A2) - I * dt * (std::sqrt(3.0) / 12.0) * commutator(A1, A2);
       }
 
       if (Size != 0)
@@ -188,7 +190,12 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   HamMPO = Ham(InitialTime);
+   // NB: The option with dt = 0 does not work with higher order Magnus
+   // expansions, since the commutators will cancel out and the MPO bond
+   // dimension will be smaller than during the evolution.
+   //HamMPO = Ham(Time);
+   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   HamMPO = Ham(Time-dt, dt);
 
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
@@ -820,7 +827,9 @@ TDVP::Evolve2()
 void
 TDVP::CalculateEps()
 {
-   HamMPO = Ham(Time);
+   //HamMPO = Ham(Time);
+   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   HamMPO = Ham(Time-dt, dt);
    H = HamMPO.end();
    --H;
 
