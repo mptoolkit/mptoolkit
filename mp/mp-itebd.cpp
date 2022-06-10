@@ -378,7 +378,7 @@ int main(int argc, char** argv)
       {
          if (Verbose > 1)
          {
-            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.";
+            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.\n";
          }
          TimeDependent = true;
       }
@@ -441,7 +441,7 @@ int main(int argc, char** argv)
                std::complex<double> t2 = InitialTime + (tstep + 0.5 + std::sqrt(3.0)/6.0)*Timestep;
                BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
                BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
-               HamMPO = 0.5 * (A1 + A2) + (1.0 / 12.0) * commutator(A1, A2);
+               HamMPO = 0.5 * (A1 + A2) - Timestep*std::complex<double>(0.0, 1.0)* (sqrt(3.0) / 12.0) * commutator(A1, A2);
             }
             else
             {

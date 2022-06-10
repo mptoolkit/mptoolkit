@@ -82,7 +82,7 @@ struct ElementAbs<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
 {
    InfiniteMPOElement operator()(complex c) const
    {
-      return std::norm(c);
+      return std::abs(c);
    }
 
    InfiniteMPOElement operator()(ZeroMPO const& c) const
