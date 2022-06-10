@@ -227,7 +227,7 @@ struct ElementAbs : boost::static_visitor<element_type>
 {
    element_type operator()(complex c) const
    {
-      return std::norm(c);
+      return std::abs(c);
    }
 
    template <typename T>
