@@ -987,7 +987,8 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
          }
 
          // Initial guess for linear solver
-         E[Col] = C;
+         if (E[Col].is_null())
+            E[Col] = C;
 
          //	 if (Col == 2)
          //	    TRACE(C);
@@ -1016,7 +1017,8 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 
    // solve for the first component
    SubProductLeftProject ProdL(Psi, QShift, Rho, Ident);
-   E[Col] = C;
+   if (E[Col].is_null())
+      E[Col] = C;
    LinearSolve(E[Col], ProdL, C, Tol, Verbose);
 
    // Make it Hermitian
@@ -1177,7 +1179,8 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
          }
 
          // Initial guess for linear solver
-         F[Row] = C;
+         if (F[Row].is_null())
+            F[Row] = C;
 
          LinearSolve(F[Row], OneMinusTransferRight(Diag, Psi, QShift), C, Tol, Verbose);
       }
@@ -1201,7 +1204,8 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
    // solve for the first component
    SubProductRightProject ProdR(Psi, QShift, Rho, Ident);
-   F[Row] = C;
+   if (F[Row].is_null())
+      F[Row] = C;
    LinearSolve(F[Row], ProdR, C, Tol, Verbose);
 
    // Make it Hermitian
