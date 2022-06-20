@@ -59,6 +59,11 @@ class Hamiltonian
 
       void set_size(int Size_);
 
+      bool is_time_dependent() const
+      {
+         return TimeDependent;
+      }
+
    private:
       InfiniteLattice Lattice;
       std::string HamOperator;
@@ -141,6 +146,11 @@ class TDVP
 
       // Calculate the error measures epsilon_1 and epsilon_2.
       void CalculateEps();
+
+      // Recalculate the left/right Hamiltonian environments: for
+      // time-dependent Hamiltonians.
+      void RecalculateLeftEnvironment();
+      void RecalculateRightEnvironment();
 
       LinearWavefunction Psi;
       int Site;                          // The index of the iterator C.
