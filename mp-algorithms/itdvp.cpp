@@ -56,7 +56,6 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   //HamMPO = Ham(Time);
    std::complex<double> dt = Comp.Gamma.back()*Timestep;
    HamMPO = Ham(Time-dt, dt);
 
@@ -69,7 +68,6 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
       std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
       PsiCanonical = repeat(PsiCanonical, UnitCellSize / PsiCanonical.size());
       Ham.set_size(UnitCellSize);
-      //HamMPO = Ham(Time);
       std::complex<double> dt = Comp.Gamma.back()*Timestep;
       HamMPO = Ham(Time-dt, dt);
    }
@@ -219,10 +217,6 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveLeft(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.end();
-   --H;
-
    int Sweep = 0;
    double FidelityLoss = 1.0;
    double LambdaRDiff = 1.0;
@@ -300,9 +294,6 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveRight(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.begin();
-
    int Sweep = 0;
    double FidelityLoss = 1.0;
    double LambdaRDiff = 1.0;
@@ -387,9 +378,18 @@ iTDVP::Evolve()
 
    while (Gamma != Comp.Gamma.cend())
    {
+      // If we have already updated the Hamiltonian before expanding the bonds,
+      // then we should not do it again.
+      if (!HamUpdated)
+         this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
+      else
+         HamUpdated = false;
+
       this->EvolveLeft((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
+
+      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
 
       this->EvolveRight((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
@@ -403,12 +403,6 @@ iTDVP::Evolve()
 void
 iTDVP::CalculateEps()
 {
-   //HamMPO = Ham(Time);
-   std::complex<double> dt = Comp.Gamma.back()*Timestep;
-   HamMPO = Ham(Time-dt, dt);
-   H = HamMPO.end();
-   --H;
-
    X = std::deque<StateComponent>();
    Y = std::deque<StateComponent>();
 
@@ -624,82 +618,115 @@ iTDVP::CalculateEpsN()
 void
 iTDVP::ExpandRightBond()
 {
-   // Take the truncated SVD of P_2 H|Psi>.
-   CMatSVD SL(scalar_prod(X.front(), herm(Y.front())));
-   TruncationInfo Info;
-   StatesInfo SInfoLocal = SInfo;
-   // Subtract the current bond dimension from the number of additional states to be added.
-   SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis2().total_dimension());
-   SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis2().total_dimension());
-   CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
-
-   // Construct new basis.
-   SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
-   // Construct a unitary to regularize the new basis.
-   MatrixOperator UReg = Regularize(NewBasis);
-
-   MaxStates = std::max(MaxStates, NewBasis.total_dimension());
-
-   // Add the new states to CExpand.
-   StateComponent CExpand = tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis);
-   CExpand = prod(CExpand, herm(UReg));
-
-   // Add a zero tensor of the same dimensions to C.
-   StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
-   *C = tensor_row_sum(*C, Z, NewBasis);
-   *C = prod(*C, herm(UReg));
-
-   if (Verbose > 1)
+   if ((*C).Basis2().total_dimension() < SInfo.MaxStates)
    {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " NewStates=" << Info.KeptStates()
-                << " TotalStates=" << NewBasis.total_dimension()
-                << std::endl;
-   }
+      // Take the truncated SVD of P_2 H|Psi>.
+      CMatSVD SL(scalar_prod(X.front(), herm(Y.front())));
+      TruncationInfo Info;
+      StatesInfo SInfoLocal = SInfo;
+      // Subtract the current bond dimension from the number of additional states to be added.
+      SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis2().total_dimension());
+      SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis2().total_dimension());
+      CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
-   // Move to next site, handling the rightmost site separately.
-   if (Site < RightStop)
+      MatrixOperator U, Vh;
+      RealDiagonalOperator D;
+      SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
+
+      // Construct new basis.
+      SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
+      // Construct a unitary to regularize the new basis.
+      MatrixOperator UReg = Regularize(NewBasis);
+
+      MaxStates = std::max(MaxStates, NewBasis.total_dimension());
+
+      // Add the new states to CExpand.
+      StateComponent CExpand = tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis);
+      CExpand = prod(CExpand, herm(UReg));
+
+      // Add a zero tensor of the same dimensions to C.
+      StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
+      *C = tensor_row_sum(*C, Z, NewBasis);
+      *C = prod(*C, herm(UReg));
+
+      if (Verbose > 1)
+      {
+         std::cout << "Timestep=" << TStep
+                   << " Site=" << Site
+                   << " NewStates=" << Info.KeptStates()
+                   << " TotalStates=" << NewBasis.total_dimension()
+                   << std::endl;
+      }
+
+      // Move to next site, handling the rightmost site separately.
+      if (Site < RightStop)
+      {
+         HamL.push_back(contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand));
+
+         HamLOld.pop_front();
+         ++C;
+         ++COld;
+      }
+      else
+      {
+         BlockHamL = contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand);
+         BlockHamL.back() -= E * BlockHamL.front();
+         HamL.front() = delta_shift(BlockHamL, QShift);
+
+         C = Psi.begin();
+         *C = delta_shift(*C, adjoint(QShift));
+
+         // Add zeros to LambdaR so the bonds match.
+         MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
+         LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
+         LambdaR = UReg * LambdaR;
+      }
+
+      ++Site;
+      ++H;
+      X.pop_front();
+      Y.pop_front();
+
+      // Add zeros to the current site so the left bond matches.
+      Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
+      *C = tensor_col_sum(*C, Z, NewBasis);
+      *C = prod(UReg, *C);
+   }
+   else // If we don't need to add any more states.
    {
-      HamL.push_back(contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand));
+      // Move to next site, handling the rightmost site separately.
+      if (Site < RightStop)
+      {
+         HamL.push_back(contract_from_left(*H, herm(*COld), HamLOld.front(), *COld));
 
-      HamLOld.pop_front();
-      ++C;
-      ++COld;
+         HamLOld.pop_front();
+         ++C;
+         ++COld;
+      }
+      else
+      {
+         BlockHamL = contract_from_left(*H, herm(*COld), HamLOld.front(), *COld);
+         BlockHamL.back() -= E * BlockHamL.front();
+         HamL.front() = delta_shift(BlockHamL, QShift);
+
+         C = Psi.begin();
+         *C = delta_shift(*C, adjoint(QShift));
+      }
+
+      ++Site;
+      ++H;
+      X.pop_front();
+      Y.pop_front();
    }
-   else
-   {
-      BlockHamL = contract_from_left(*H, herm(CExpand), HamLOld.front(), CExpand);
-      BlockHamL.back() -= E * BlockHamL.front();
-      HamL.front() = delta_shift(BlockHamL, QShift);
-
-      C = Psi.begin();
-      *C = delta_shift(*C, adjoint(QShift));
-
-      // Add zeros to LambdaR so the bonds match.
-      MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
-      LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
-      LambdaR = UReg * LambdaR;
-   }
-
-   ++Site;
-   ++H;
-   X.pop_front();
-   Y.pop_front();
-
-   // Add zeros to the current site so the left bond matches.
-   Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
-   *C = tensor_col_sum(*C, Z, NewBasis);
-   *C = prod(UReg, *C);
 }
 
 void
 iTDVP::ExpandBonds()
 {
+   if (!HamUpdated)
+      this->UpdateHamiltonianLeft(Time, Comp.Gamma.front()*Timestep);
+   HamUpdated = true;
+
    if (!XYCalculated)
       this->CalculateEps();
 
@@ -724,4 +751,104 @@ iTDVP::ExpandBonds()
    Site = RightStop;
 
    XYCalculated = false;
+}
+
+void
+iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
+{
+   if (Ham.is_time_dependent())
+   {
+      HamMPO = Ham(t, dt);
+      H = HamMPO.end();
+      --H;
+
+      if (Verbose > 1)
+         std::cout << "Recalculating Hamiltonian environments (left)..." << std::endl;
+
+      MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
+      Rho = delta_shift(Rho, QShift);
+
+      BlockHamL = Initial_E(HamMPO, Psi.Basis1());
+      BlockHamL.back() = HamL.front().back();
+
+      SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+      HamL = std::deque<StateComponent>(1, BlockHamL);
+      BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
+
+      Rho = delta_shift(Rho, adjoint(QShift));
+
+      BlockHamR = Initial_F(HamMPO, Psi.Basis2());
+      MatrixOperator Ident = BlockHamR.back();
+      BlockHamR.back() = Rho;
+      BlockHamR.front() = HamR.back().front();
+
+      SolveSimpleMPO_Right(BlockHamR, Psi, QShift, HamMPO, Ident, GMRESTol, Verbose-1);
+      HamR = std::deque<StateComponent>(1, BlockHamR);
+      BlockHamR = delta_shift(BlockHamR, QShift);
+
+      LinearWavefunction::iterator CLocal = Psi.begin();
+      BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
+      int SiteLocal = LeftStop;
+
+      while (SiteLocal < RightStop)
+      {
+         if (Verbose > 1)
+            std::cout << "Site " << SiteLocal << std::endl;
+         HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
+         ++HLocal, ++CLocal, ++SiteLocal;
+      }
+
+      X = std::deque<StateComponent>();
+      Y = std::deque<StateComponent>();
+      XYCalculated = false;
+   }
+}
+
+void
+iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
+{
+   if (Ham.is_time_dependent())
+   {
+      HamMPO = Ham(t, dt);
+      H = HamMPO.begin();
+
+      if (Verbose > 1)
+         std::cout << "Recalculating Hamiltonian environments (right)..." << std::endl;
+
+      MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
+
+      BlockHamL = Initial_E(HamMPO, Psi.Basis1());
+      MatrixOperator Ident = BlockHamL.front();
+      BlockHamL.front() = Rho;
+      BlockHamL.back() = HamL.front().back();
+
+      SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Ident, GMRESTol, Verbose-1);
+      HamL = std::deque<StateComponent>(1, BlockHamL);
+      BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
+
+      Rho = delta_shift(Rho, adjoint(QShift));
+
+      BlockHamR = Initial_F(HamMPO, Psi.Basis2());
+      BlockHamR.front() = HamR.back().front();
+
+      SolveSimpleMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+      HamR = std::deque<StateComponent>(1, BlockHamR);
+      BlockHamR = delta_shift(BlockHamR, QShift);
+
+      LinearWavefunction::iterator CLocal = Psi.end();
+      BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
+      int SiteLocal = RightStop + 1;
+
+      while (SiteLocal > LeftStop + 1)
+      {
+         --HLocal, --CLocal, --SiteLocal;
+         if (Verbose > 1)
+            std::cout << "Site " << SiteLocal << std::endl;
+         HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
+      }
+
+      X = std::deque<StateComponent>();
+      Y = std::deque<StateComponent>();
+      XYCalculated = false;
+   }
 }

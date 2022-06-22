@@ -336,13 +336,6 @@ TDVP::IterateRight(std::complex<double> Tau)
 void
 TDVP::SweepLeft(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.end();
-   --H;
-
-   if (Ham.is_time_dependent())
-      this->RecalculateLeftEnvironment();
-
    while (Site > LeftStop)
    {
       this->EvolveCurrentSite(Tau);
@@ -355,12 +348,6 @@ TDVP::SweepLeft(std::complex<double> Tau)
 void
 TDVP::SweepRight(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.begin();
-
-   if (Ham.is_time_dependent())
-      this->RecalculateRightEnvironment();
-
    this->EvolveCurrentSite(Tau);
 
    while (Site < RightStop)
@@ -433,12 +420,6 @@ TDVP::CalculateEps12()
 void
 TDVP::SweepRightFinal(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.begin();
-
-   if (Ham.is_time_dependent())
-      this->RecalculateRightEnvironment();
-
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
 
@@ -463,20 +444,25 @@ TDVP::Evolve()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
+   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
    this->SweepLeft((*Gamma)*Timestep);
    Time += (*Gamma)*Timestep;
    ++Gamma;
 
    while(Gamma != GammaEnd)
    {
+      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
       this->SweepRight((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
 
+      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
       this->SweepLeft((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
    }
+
+   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
 
    if (Epsilon)
       this->SweepRightFinal((*Gamma)*Timestep);
@@ -556,13 +542,6 @@ TDVP::ExpandLeftBond()
 void
 TDVP::SweepLeftExpand(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.end();
-   --H;
-
-   if (Ham.is_time_dependent())
-      this->RecalculateLeftEnvironment();
-
    while (Site > LeftStop)
    {
       if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
@@ -587,21 +566,26 @@ TDVP::EvolveExpand()
    std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
    --GammaEnd;
 
+   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
    this->SweepLeftExpand((*Gamma)*Timestep);
    Time += (*Gamma)*Timestep;
    ++Gamma;
 
-   while(Gamma != GammaEnd)
+   while (Gamma != GammaEnd)
    {
+      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
       this->SweepRight((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
 
+      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
       this->SweepLeftExpand((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
    }
    
+   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+
    if (Epsilon)
       this->SweepRightFinal((*Gamma)*Timestep);
    else
@@ -784,13 +768,6 @@ TDVP::IterateRight2(std::complex<double> Tau)
 void
 TDVP::SweepLeft2(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.end();
-   --H;
-
-   if (Ham.is_time_dependent())
-      this->RecalculateLeftEnvironment();
-
    while (Site > LeftStop + 1)
       this->IterateLeft2(Tau);
 
@@ -800,13 +777,6 @@ TDVP::SweepLeft2(std::complex<double> Tau)
 void
 TDVP::SweepRight2(std::complex<double> Tau)
 {
-   HamMPO = Ham(Time, Tau);
-   H = HamMPO.begin();
-   ++H;
-
-   if (Ham.is_time_dependent())
-      this->RecalculateRightEnvironment();
-
    this->EvolveLeftmostSite2(Tau);
 
    while (Site < RightStop)
@@ -825,9 +795,15 @@ TDVP::Evolve2()
 
    while(Gamma != Comp.Gamma.cend())
    {
+      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
+
       this->SweepLeft2((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
+
+      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+      ++H;
+      HamR.pop_front();
 
       this->SweepRight2((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
@@ -929,45 +905,58 @@ TDVP::CalculateEps()
 }
 
 void
-TDVP::RecalculateLeftEnvironment()
+TDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
 {
-   if (Verbose > 1)
-      std::cout << "Recalculating left Hamiltonian environment..." << std::endl;
-
-   HamL = std::deque<StateComponent>();
-   HamL.push_back(Initial_E(HamMPO, Psi.Basis1()));
-
-   LinearWavefunction::iterator CLocal = Psi.begin();
-   BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
-   int SiteLocal = LeftStop;
-
-   while (SiteLocal < RightStop)
+   if (Ham.is_time_dependent())
    {
+      HamMPO = Ham(t, dt);
+      H = HamMPO.end();
+      --H;
+
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
-      HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
-      ++HLocal, ++CLocal, ++SiteLocal;
+         std::cout << "Recalculating left Hamiltonian environment..." << std::endl;
+
+      HamL = std::deque<StateComponent>();
+      HamL.push_back(Initial_E(HamMPO, Psi.Basis1()));
+
+      LinearWavefunction::iterator CLocal = Psi.begin();
+      BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
+      int SiteLocal = LeftStop;
+
+      while (SiteLocal < RightStop)
+      {
+         if (Verbose > 1)
+            std::cout << "Site " << SiteLocal << std::endl;
+         HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
+         ++HLocal, ++CLocal, ++SiteLocal;
+      }
    }
 }
 
 void
-TDVP::RecalculateRightEnvironment()
+TDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
 {
-   if (Verbose > 1)
-      std::cout << "Recalculating right Hamiltonian environment..." << std::endl;
-
-   HamR = std::deque<StateComponent>();
-   HamR.push_front(Initial_F(HamMPO, Psi.Basis2()));
-
-   LinearWavefunction::iterator CLocal = Psi.end();
-   BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
-   int SiteLocal = RightStop + 1;
-
-   while (SiteLocal > LeftStop + 1)
+   if (Ham.is_time_dependent())
    {
-      --HLocal, --CLocal, --SiteLocal;
+      HamMPO = Ham(t, dt);
+      H = HamMPO.begin();
+
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
-      HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
+         std::cout << "Recalculating right Hamiltonian environment..." << std::endl;
+
+      HamR = std::deque<StateComponent>();
+      HamR.push_front(Initial_F(HamMPO, Psi.Basis2()));
+
+      LinearWavefunction::iterator CLocal = Psi.end();
+      BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
+      int SiteLocal = RightStop + 1;
+
+      while (SiteLocal > LeftStop + 1)
+      {
+         --HLocal, --CLocal, --SiteLocal;
+         if (Verbose > 1)
+            std::cout << "Site " << SiteLocal << std::endl;
+         HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
+      }
    }
 }

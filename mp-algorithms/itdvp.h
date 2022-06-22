@@ -71,6 +71,11 @@ class iTDVP : public TDVP
       // CalculateEps to generate X and Y)
       void ExpandBonds();
 
+      // Update the Hamiltonian if time-dependent, recalculating the left/right
+      // environments.
+      void UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt);
+      void UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt);
+
       MatrixOperator LambdaR;
       QuantumNumber QShift;
       std::deque<StateComponent> HamLOld;
@@ -91,6 +96,11 @@ class iTDVP : public TDVP
       // Flag to determine whether X and Y have been calculated for the current
       // timestep.
       bool XYCalculated = false;
+
+      // Flag for whether the time-dependent Hamiltonian has already been
+      // updated, for when the bonds are exanded before performing a left
+      // sweep.
+      bool HamUpdated = true;
 
       // Error measures epsilon_3^2 to epsilon_NEps^2.
       std::vector<double> EpsNSqSum;

@@ -147,10 +147,10 @@ class TDVP
       // Calculate the error measures epsilon_1 and epsilon_2.
       void CalculateEps();
 
-      // Recalculate the left/right Hamiltonian environments: for
-      // time-dependent Hamiltonians.
-      void RecalculateLeftEnvironment();
-      void RecalculateRightEnvironment();
+      // Update the Hamiltonian if time-dependent, recalculating the left/right
+      // environments.
+      void UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt);
+      void UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt);
 
       LinearWavefunction Psi;
       int Site;                          // The index of the iterator C.
