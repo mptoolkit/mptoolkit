@@ -258,7 +258,7 @@ int main(int argc, char** argv)
          ("product,p", prog_opt::value(&ProductOperators),
           "Construct matrix elements of a product operator -p file=operator")
          ("triangular,t", prog_opt::value(&TriangularOperators),
-          "Construct atrix elements of a triangular operator -t file=operator")
+          "Construct matrix elements of a triangular operator -t file=operator")
          ("finite,i", prog_opt::value(&FiniteOperators),
           "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
          ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
@@ -299,7 +299,7 @@ int main(int argc, char** argv)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> [-{p,t,f} <file>=<operator>] ... \n";
-         std::cerr << "This tool constructs the auxiliary space represenation of lattice operators,\n"
+         std::cerr << "This tool constructs the auxiliary space representation of lattice operators,\n"
                    << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";
          std::cerr << desc << '\n';
          return 1;
