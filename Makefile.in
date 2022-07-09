@@ -533,6 +533,9 @@ mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
 
+mp-matrix : write-matrix.o
+mp-aux-matrix : triangular_mpo_solver.o momentum_operations.o
+
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 
 
