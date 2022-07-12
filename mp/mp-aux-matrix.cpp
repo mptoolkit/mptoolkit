@@ -248,7 +248,7 @@ int main(int argc, char** argv)
       std::string WhichEigenvalues;
       bool MatrixMarket = false;
       double UnityEpsilon = DefaultEigenUnityEpsilon;
-      int Degree = 1;
+      int Degree = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
