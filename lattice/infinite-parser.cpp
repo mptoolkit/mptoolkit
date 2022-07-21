@@ -534,6 +534,79 @@ struct push_coarse_grain
    Function::ArgumentList const& Args;
 };
 
+self.Lattice, self.IdentifierStack, self.eval, self.Args
+
+struct eval_filegrid
+{
+   eval_filegrid(InfiniteLattice const& Lattice_,
+                 std::stack<std::string>& IdentifierStack_,
+                 std::stack<int>& NumParameterStack_
+                 std::stack<ElementType>& eval_,
+                 Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), IdentifierStack(IdentifierStack_), NumParameterStack(NumParameterStack_),
+        eval(eval_),Args(Args_)  {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      auto Filename = IdentifierStack.top();
+      IdentifierStack.pop();
+
+      int n = NumParam.top();
+      NumParam.pop();
+
+      std::vector<double> Coords(n);
+      for (int i = 0; i < n; ++i)
+      {
+         Data[i] = pop_real(eval);
+      }
+
+      if (n < 1)
+         throw ParserError::AtRange(ColorHighlight("filegrid:") + " must have at least one coordinate!", Start, End);
+      if (n > 3)
+         throw ParserError::AtRange(ColorHighlight("filegrid:") + " cannot have more than 3 coordinates!", Start, End);
+
+      std::map<double, string> WeightedValues;
+      if (n == 1)
+      {
+         int x1 = int(Data[0]);
+         ElementType X1 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x1), Args);
+         if (x1 == Data[0])
+         {
+            // parameter is an integer; no interpolation required
+            eval.push(X1);
+            return;
+         }
+         double xw = Data[0] - x1; // this is the weight of x1
+         X1 = boost::apply_visitor(binary_multiplication<ElementType>(), X1, xw));
+         ElementType X2 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x2), Args);
+         X2 = boost::apply_visitor(binary_multiplication<ElementType>(), X1, 1-xw));
+         ElementType X = boost::apply_visitor(binary_addition<ElementType>(), X1, X2);
+         eval.push(X);
+      }
+
+      if (n == 2)
+      {
+         int x1 = int(Data[0]);
+         int y1 = int(Data[1]);
+         ElementType X1Y1 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x1, y1), Args);
+         if (x1 == Data[0])
+         {
+            
+         }
+      }
+
+
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<std::string>& IdentifierStack;
+   std::stack<int>& NumParameterStack;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
+
+
 } // namespace ILP;
 
 using namespace ILP;
@@ -550,6 +623,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    typedef std::stack<binary_func_type>        BinaryFuncStackType;
    typedef std::stack<std::string>             FunctionStackType;
    typedef std::stack<std::string>             IdentifierStackType;
+   typedef std::stack<int>                     NumParameterStackType;
    typedef std::stack<Function::ParameterList> ParameterStackType;
    typedef symbols<complex>                    ArgumentType;
    typedef Function::ArgumentList              RawArgumentType;
@@ -562,6 +636,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                   UnaryFuncStackType& func_stack_,
                   BinaryFuncStackType& bin_func_stack_,
                   IdentifierStackType& IdentifierStack_,
+                  NumParameterStackType& NumParameterStack_,
                   FunctionStackType& Functions_,
                   ParameterStackType& Parameters_,
                   ArgumentType& Arguments_,
@@ -569,6 +644,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                          RawArgumentType const& Args_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
       IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
+      NumParameterStack(NumParameterStack_),
       ParameterStack(Parameters_), Arguments(Arguments_),
         Lattice(Lattice_), Args(Args_)
    {}
@@ -588,6 +664,10 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          // We re-use the IdentifierStack for quantum numbers, and rely on the grammar rules to
          // avoid chaos!
          quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
+            [push_identifier(self.IdentifierStack)];
+
+         // and similarly for a filename; pretend its an identifier.
+         filename = lexeme_d[*(anychar_p - chset<>(","))]
             [push_identifier(self.IdentifierStack)];
 
          named_parameter = eps_p(identifier >> '=')
@@ -693,6 +773,13 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             >> (num_cells
                 >> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
 
+         filegrid_expression = str_p("filegrid")
+            >> '('
+            >> filename >> ','
+            >> expression[init_num_param_stack(self.NumParameterStack)]
+            >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
+               [eval_filegrid(self.Lattice, self.IdentifierStack, self.NumParameterStack, self.eval, self.Args)];
+
          function_expression = eps_p(identifier >> '{')
             >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
             >> parameter_list[eval_function(self.Lattice,
@@ -783,7 +870,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          sum_unit_expression, sum_kink_expression, sum_k_expression,
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
-         sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression;
+         sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression,
+         filegrid_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };
@@ -792,6 +880,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
    IdentifierStackType& IdentifierStack;
+   NumParameterStackType& NumParameterStack;
    FunctionStackType& FunctionStack;
    ParameterStackType& ParameterStack;
    ArgumentType& Arguments;
