@@ -534,78 +534,31 @@ struct push_coarse_grain
    Function::ArgumentList const& Args;
 };
 
-self.Lattice, self.IdentifierStack, self.eval, self.Args
-
-struct eval_filegrid
+struct init_num_param_stack
 {
-   eval_filegrid(InfiniteLattice const& Lattice_,
-                 std::stack<std::string>& IdentifierStack_,
-                 std::stack<int>& NumParameterStack_
-                 std::stack<ElementType>& eval_,
-                 Function::ArgumentList const& Args_)
-      : Lattice(Lattice_), IdentifierStack(IdentifierStack_), NumParameterStack(NumParameterStack_),
-        eval(eval_),Args(Args_)  {}
+   init_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
 
    void operator()(char const* Start, char const* End) const
    {
-      auto Filename = IdentifierStack.top();
-      IdentifierStack.pop();
-
-      int n = NumParam.top();
-      NumParam.pop();
-
-      std::vector<double> Coords(n);
-      for (int i = 0; i < n; ++i)
-      {
-         Data[i] = pop_real(eval);
-      }
-
-      if (n < 1)
-         throw ParserError::AtRange(ColorHighlight("filegrid:") + " must have at least one coordinate!", Start, End);
-      if (n > 3)
-         throw ParserError::AtRange(ColorHighlight("filegrid:") + " cannot have more than 3 coordinates!", Start, End);
-
-      std::map<double, string> WeightedValues;
-      if (n == 1)
-      {
-         int x1 = int(Data[0]);
-         ElementType X1 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x1), Args);
-         if (x1 == Data[0])
-         {
-            // parameter is an integer; no interpolation required
-            eval.push(X1);
-            return;
-         }
-         double xw = Data[0] - x1; // this is the weight of x1
-         X1 = boost::apply_visitor(binary_multiplication<ElementType>(), X1, xw));
-         ElementType X2 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x2), Args);
-         X2 = boost::apply_visitor(binary_multiplication<ElementType>(), X1, 1-xw));
-         ElementType X = boost::apply_visitor(binary_addition<ElementType>(), X1, X2);
-         eval.push(X);
-      }
-
-      if (n == 2)
-      {
-         int x1 = int(Data[0]);
-         int y1 = int(Data[1]);
-         ElementType X1Y1 = ParseInfiniteOperator(Lattice, LookupFileGrid(Filename, x1, y1), Args);
-         if (x1 == Data[0])
-         {
-            
-         }
-      }
-
-
+      Stack.push(1);
    }
 
-   InfiniteLattice const& Lattice;
-   std::stack<std::string>& IdentifierStack;
-   std::stack<int>& NumParameterStack;
-   std::stack<ElementType>& eval;
-   Function::ArgumentList const& Args;
+   std::stack<int>& Stack;
 };
 
 
+struct increment_num_param_stack
+{
+   increment_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      CHECK(!Stack.empty());
+      ++Stack.top();
+   }
+
+   std::stack<int>& Stack;
+};
 
 } // namespace ILP;
 
@@ -636,8 +589,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                   UnaryFuncStackType& func_stack_,
                   BinaryFuncStackType& bin_func_stack_,
                   IdentifierStackType& IdentifierStack_,
-                  NumParameterStackType& NumParameterStack_,
                   FunctionStackType& Functions_,
+                  NumParameterStackType& NumParameterStack_,
                   ParameterStackType& Parameters_,
                   ArgumentType& Arguments_,
                          InfiniteLattice const& Lattice_,
@@ -777,8 +730,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             >> '('
             >> filename >> ','
             >> expression[init_num_param_stack(self.NumParameterStack)]
-            >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
-               [eval_filegrid(self.Lattice, self.IdentifierStack, self.NumParameterStack, self.eval, self.Args)];
+            >> (*(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
+               [eval_filegrid<ElementType, InfiniteLattice>(self.Lattice, self.IdentifierStack, self.NumParameterStack, self.eval, self.Args)];
 
          function_expression = eps_p(identifier >> '{')
             >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
@@ -867,7 +820,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
          operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
          parameter, named_parameter, parameter_list, expression_string,
-         sum_unit_expression, sum_kink_expression, sum_k_expression,
+         sum_unit_expression, sum_kink_expression, sum_k_expression, filename,
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
          sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression,
@@ -903,6 +856,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    InfiniteLatticeParser::UnaryFuncStackType  UnaryFuncStack;
    InfiniteLatticeParser::BinaryFuncStackType BinaryFuncStack;
    InfiniteLatticeParser::IdentifierStackType IdentStack;
+   InfiniteLatticeParser::NumParameterStackType NumParameterStack;
    InfiniteLatticeParser::ParameterStackType  ParamStack;
    InfiniteLatticeParser::FunctionStackType   FunctionStack;
    InfiniteLatticeParser::ArgumentType        Arguments;
@@ -931,7 +885,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    char const* end = beg + Str.size();
 
    InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
-                                FunctionStack, ParamStack,
+                                FunctionStack, NumParameterStack, ParamStack,
                                 Arguments, Lattice, Args);
    try
    {

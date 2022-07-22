@@ -773,6 +773,9 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
          quantumnumber = quantumnumber_t[push_identifier(self.IdentifierStack)];
 
+         filename = lexeme_d[*(anychar_p - chset<>(","))]
+            [push_identifier(self.IdentifierStack)];
+
          named_parameter_t = identifier_t >> '=' >> expression_t;
 
          named_parameter = eps_p(identifier >> '=')
@@ -980,7 +983,6 @@ struct UnitCellParser : public grammar<UnitCellParser>
             >> ')';
 
          unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
-         unary_function_t = unary_funcs_p >> '(' >> expression_t >> ')';
 
          unary_function =
             eps_p(unary_funcs_p >> '(')
@@ -1001,6 +1003,18 @@ struct UnitCellParser : public grammar<UnitCellParser>
             ('[' >> expression >> ',' >> expression >> ']')[invoke_binary<ElementType,
                                                             binary_commutator<ElementType> >(self.eval)];
 
+         filegrid_expression = str_p("filegrid")
+            >> '('
+            >> filename >> ','
+            >> expression[init_num_param_stack(self.NumParameterStack)]
+            >> (*(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
+               [eval_filegrid<ElementType, UnitCell>(self.Cell, self.IdentifierStack, self.NumParameterStack, self.eval)];
+
+         filegrid_expression_t = str_p("filegrid")
+            >> '('
+            >> filename >> ','
+            >> expression
+            >> *(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')';
 
          factor_t =
             imag_t
@@ -1018,6 +1032,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   swapb_site_expr_t
             |   swap_cell_expr_t
             |   swap_site_expr_t
+            |   filegrid_expression_t
             |   string_expression_t
             |   '(' >> expression_t >> ')'
             |   ('-' >> factor_t)
@@ -1041,6 +1056,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
             |   swapb_site_expr
             |   swap_cell_expr
             |   swap_site_expr
+            |   filegrid_expression
             |   string_expression
             |   '(' >> expression >> ')'
             |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
@@ -1102,7 +1118,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          local_function, local_c_function, local_operator, cell_function, cell_operator,
          local_arg, cell_c_function,
          operator_expression, fsup, randexpr,
-         expression_string,
+         expression_string, filename, filegrid_expression,
          string_expression,
          unary_function, binary_function,
          commutator_bracket,
@@ -1117,7 +1133,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          local_arg_t, cell_c_function_t,
          operator_expression_t, fsup_t, randexpr_t,
          expression_string_t,
-         string_expression_t,
+         string_expression_t, filegrid_expression_t,
          unary_function_t, binary_function_t,
          commutator_bracket_t,
          factor_t, pow_term_t, term_t, expression_t, num_cells_t, coarse_grain_expression_t;
@@ -1234,6 +1250,13 @@ ParseUnitCellOperator(UnitCell const& Cell, int NumCells, std::string const& Str
    complex x = boost::get<complex>(Result);
 
    return x*Cell["I"];
+}
+
+UnitCellElementType
+ParseOperator(UnitCell const& Cell, std::string const& Str,
+              Function::ArgumentList const& Args)
+{
+   return ParseUnitCellElement(Cell, 0, Str, Args);
 }
 
 std::complex<double>
