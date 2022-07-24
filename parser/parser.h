@@ -50,6 +50,7 @@
 #include <functional>
 #include <string>
 #include <complex>
+#include<boost/algorithm/string.hpp>
 
 namespace Parser
 {
@@ -304,6 +305,7 @@ struct eval_filegrid
    void operator()(char const* Start, char const* End) const
    {
       auto Filename = IdentifierStack.top();
+      boost::trim(Filename);
       IdentifierStack.pop();
 
       int n = NumParameterStack.top();
