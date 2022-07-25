@@ -32,6 +32,14 @@ InfiniteMPOElement
 ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
                       Function::ArgumentList const& Args = Function::ArgumentList());
 
+inline
+InfiniteMPOElement
+ParseOperator(InfiniteLattice const& Lattice, std::string const& Str,
+                      Function::ArgumentList const& Args = Function::ArgumentList())
+{
+   return ParseInfiniteOperator(Lattice, Str, Args);
+}
+
 std::pair<InfiniteMPOElement, InfiniteLattice>
 ParseInfiniteOperatorAndLattice(std::string const& Str);
 

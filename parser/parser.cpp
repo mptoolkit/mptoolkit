@@ -19,6 +19,7 @@
 
 #include "parser.h"
 #include "common/terminal.h"
+#include <fstream>
 
 namespace Parser
 {
@@ -218,6 +219,105 @@ ParserError::AssembleMessage()
    {
       Msg += '\n' + ColorHint("hint: ") + Hint;
    }
+}
+
+// LookupFileGrid
+std::map<std::string, std::vector<std::vector<std::vector<std::string>>>> FileGridCache;
+
+std::vector<std::string>
+SplitLineIntoStrings(std::string line)
+{
+   std::vector<std::string> Result;
+
+   std::string::const_iterator I = line.begin();
+   while (I != line.end())
+   {
+      if (std::isspace(*I))
+      {
+         ++I;
+         continue;
+      }
+
+      // we have a non-whitespace character.  This must be the start of a string.
+      std::string Word;
+      bool InQuote = false;
+      while (I != line.end() && (InQuote || !std::isspace(*I)))
+      {
+         // A quoted string?
+         if (*I == '"')
+         {
+            // skip over the quote
+            ++I;
+            // Toggle the InQuote flag
+            InQuote = !InQuote;
+            continue;
+         }
+
+         // An escape character? If so, treat the next character verbatim, even if it is whitespace or a quote.
+         // Unless it is at the end of the string, in which case we ignore it.
+         if (!InQuote && *I == '\\')
+         {
+            ++I;
+            if (I == line.end())
+               continue;
+         }
+         // add the character to the current word
+         Word += *I;
+         ++I;
+      }
+      Result.emplace_back(std::move(Word));
+   }
+   return Result;
+}
+
+void
+LoadFileGrid(std::string Filename)
+{
+   std::vector<std::vector<std::vector<std::string>>> Lines;
+   std::ifstream In(Filename);
+   if (!In.good())
+      throw ParserError("filegrid: file \"" + Filename + "\" does not exist!");
+   std::string line;
+   int z = 0;
+   Lines.push_back(std::vector<std::vector<std::string>>());
+   while (std::getline(In, line))
+   {
+      if (line == "")
+      {
+         // empty line = next block
+         ++z;
+         Lines.push_back(std::vector<std::vector<std::string>>());
+         continue;
+      }
+      Lines[z].emplace_back(SplitLineIntoStrings(line));
+   }
+   FileGridCache.emplace(Filename, std::move(Lines));
+}
+
+std::string LookupFileGrid(std::string Filename, int x, int y, int z)
+{
+   auto I = FileGridCache.find(Filename);
+   while (I == FileGridCache.end())
+   {
+      LoadFileGrid(Filename);
+      I = FileGridCache.find(Filename);
+   }
+
+   if (z < 0 || z >= I->second.size())
+   {
+      throw ParserError("filegrid: z coordinate " + std::to_string(z) + " is out of range [0," + std::to_string(I->second.size()) + "]");
+   }
+   if (x < 0 || x >= I->second[z].size())
+   {
+      throw ParserError("filegrid: x coordinate " + std::to_string(x) + " is out of range [0," + std::to_string(I->second[z].size()) + "]");
+   }
+   if (y < 0 || y >= I->second[z][x].size())
+   {
+      throw ParserError("filegrid: y coordinate " + std::to_string(y) + " is out of range [0," + std::to_string(I->second[z][x].size()) + "]");
+   }
+
+   // Note the order of indices, to match the order used in the FileGridCache
+   return I->second[z][x][y];
 }
 
 } // namespace Parser

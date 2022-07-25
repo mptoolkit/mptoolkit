@@ -31,6 +31,7 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
+#include "mp-algorithms/triangular_mpo_solver.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <fstream>
@@ -246,6 +247,8 @@ int main(int argc, char** argv)
       bool Radians = false;
       std::string WhichEigenvalues;
       bool MatrixMarket = false;
+      double UnityEpsilon = DefaultEigenUnityEpsilon;
+      int Degree = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -255,7 +258,7 @@ int main(int argc, char** argv)
          ("product,p", prog_opt::value(&ProductOperators),
           "Construct matrix elements of a product operator -p file=operator")
          ("triangular,t", prog_opt::value(&TriangularOperators),
-          "Construct atrix elements of a triangular operator -t file=operator (not yet implemented)")
+          "Construct matrix elements of a triangular operator -t file=operator")
          ("finite,i", prog_opt::value(&FiniteOperators),
           "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
          ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
@@ -273,6 +276,9 @@ int main(int argc, char** argv)
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          ("epsilon,e", prog_opt::value(&Epsilon), FormatDefault("ignore matrix elements smaller than this epsilon", Epsilon).c_str())
+         ("unityepsilon", prog_opt::value(&UnityEpsilon),
+          FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
+         ("degree", prog_opt::value(&Degree), FormatDefault("For triangular MPO's, write this degree component of the polynomial", 0).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -292,8 +298,8 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1 || vm.count("lattice") < 1)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> -p <file>=<operator> [...] \n";
-         std::cerr << "This tool constructs the auxiliary space represenation of lattice operators,\n"
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi> -l <lattice> [-{p,t,f} <file>=<operator>] ... \n";
+         std::cerr << "This tool constructs the auxiliary space representation of lattice operators,\n"
                    << "which are written to a file in a sparse-matrix format suitable for use in eg MATLAB.\n";
          std::cerr << desc << '\n';
          return 1;
@@ -577,6 +583,44 @@ int main(int argc, char** argv)
                WriteMatrixOperatorAsSparseStates(Out, M, Format, WhichStates, Epsilon, Polar, Radians);
          }
       }
+
+      for (unsigned i = 0; i < TriangularOpStr.size(); ++i)
+      {
+         std::string OpStr = TriangularOpStr[i];
+         std::string FileName = TriangularOpFile[i];
+
+         if (Verbose > 0)
+         {
+            std::cout << "Constructing operator " << OpStr << '\n';
+            std::cout << "Writing to file " << FileName << std::endl;
+         }
+
+         LinearWavefunction* Psi2 = &Psi1;
+
+         BasicTriangularMPO Op = ParseTriangularOperator(*Lattice, OpStr);
+         Op = repeat(Op, Psi1.size() / Op.size());
+
+         std::vector<KMatrixPolyType> E;
+         SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, Rho, true, 0, Tol, UnityEpsilon, Verbose);
+
+         MatrixOperator M = E.back()[1.0][Degree];
+
+         // write to file
+         std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);
+         if (!Out.good())
+         {
+            std::cerr << "mp-aux-matrix: failed to open file " << FileName << " for operator " << OpStr << '\n';
+         }
+         else
+         {
+            Out.precision(getenv_or_default("MP_PRECISION", 14));
+            if (WhichStates.empty())
+               WriteMatrixOperatorAsSparse(Out, M, Format, Epsilon, Polar, Radians);
+            else
+               WriteMatrixOperatorAsSparseStates(Out, M, Format, WhichStates, Epsilon, Polar, Radians);
+         }
+      }
+
 
       pheap::Shutdown();
    }
