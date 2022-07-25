@@ -779,6 +779,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   coarse_grain_expression
             |   sum_string_inner_expression
             |   sum_string_dot_expression
+            |   filegrid_expression
             |   commutator_bracket
             |   '(' >> expression >> ')'
             |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
