@@ -349,8 +349,10 @@ struct eval_filegrid
       if (xw < 1)
       {
          element_type X = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z), Args);
-         X = boost::apply_visitor(binary_multiplication<element_type>(), X, element_type(1-xw));
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, element_type(xw));
+         element_type Xw1(1-xw);
+         X = boost::apply_visitor(binary_multiplication<element_type>(), X, Xw1);
+         element_type Xw(xw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Xw);
          R = boost::apply_visitor(binary_addition<element_type>(), R, X);
       }
 
@@ -362,12 +364,16 @@ struct eval_filegrid
          if (xw < 1)
          {
             element_type XY = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z), Args);
-            XY = boost::apply_visitor(binary_multiplication<element_type>(), XY, element_type(1-xw));
-            Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, element_type(xw));
+            element_type Xw1(1-xw);
+            XY = boost::apply_visitor(binary_multiplication<element_type>(), XY, Xw1);
+            element_type Xw(xw);
+            Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Xw);
             Y = boost::apply_visitor(binary_addition<element_type>(), Y, XY);
          }
-         Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, element_type(1-yw));
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, element_type(yw));
+         element_type Yw1(1-yw);
+         Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Yw1);
+         element_type Yw(yw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Yw);
          R = boost::apply_visitor(binary_addition<element_type>(), R, Y);
       }
 
@@ -383,29 +389,37 @@ struct eval_filegrid
             {
                // nested interpolation in X,Y,Z directions
                element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
-               XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, element_type(1-xw));
-               Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, element_type(xw));
+               element_type Xw1(1-xw);
+               XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+               element_type Xw(xw);
+               Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
                Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
 
                element_type XYZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z+1), Args);
-               XYZ = boost::apply_visitor(binary_multiplication<element_type>(), XYZ, element_type(1-xw));
-               YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, element_type(xw));
+               XYZ = boost::apply_visitor(binary_multiplication<element_type>(), XYZ, Xw1);
+               YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Xw);
                YZ = boost::apply_visitor(binary_addition<element_type>(), YZ, XYZ);
             }
-            YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, element_type(1-yw));
-            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, element_type(yw));
+            element_type Yw1(1-yw);
+            YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Yw1);
+            element_type Yw(yw);
+            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Yw);
             Z = boost::apply_visitor(binary_addition<element_type>(), Z, YZ);
          }
          else if (xw < 1)
          {
             // nested interpolation in X,Z directions
             element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
-            XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, element_type(1-xw));
-            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, element_type(xw));
+            element_type Xw1(1-xw);
+            XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+            element_type Xw(xw);
+            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
             Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
          }
-         Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, element_type(1-zw));
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, element_type(zw));
+         element_type Zw1(1-zw);
+         Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Zw1);
+         element_type Zw(zw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Zw);
          R = boost::apply_visitor(binary_addition<element_type>(), R, Z);
       }
 
