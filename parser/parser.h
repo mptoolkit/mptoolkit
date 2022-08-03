@@ -584,6 +584,7 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
    binary_funcs()
    {
       this->add.operator()
+         ("pow", make_apply_binary_math<element_type>(binary_power<element_type>()))
          ("fmod", make_apply_binary_math<element_type>(binary_fmod<element_type>()))
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>()))
          ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))

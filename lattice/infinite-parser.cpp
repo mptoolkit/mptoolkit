@@ -485,8 +485,8 @@ struct push_sum_partial
 
       try
       {
-	 BasicTriangularMPO Op = ParseTriangularOperator(Lattice, std::string(Start, End), Args);
-         eval.push(sum_partial(Op, Lattice.GetUnitCell()["I"], Sites));
+	        BasicTriangularMPO Op = ParseTriangularOperator(Lattice, std::string(Start, End), Args);
+          eval.push(sum_partial(Op, Lattice.GetUnitCell()["I"], Sites));
       }
       catch (ParserError const& p)
       {
@@ -506,6 +506,50 @@ struct push_sum_partial
    std::stack<ElementType>& eval;
    Function::ArgumentList const& Args;
 };
+
+struct push_sum_partial3
+{
+   push_sum_partial3(InfiniteLattice const& Lattice_, std::stack<std::string>& IdentifierStack_,
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), IdentifierStack(IdentifierStack_), eval(eval_), Args(Args_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      int Sites = pop_int(eval);
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
+      }
+
+      std::string OperatorStr = IdentifierStack.top();
+      IdentifierStack.pop();
+
+      try
+      {
+	        BasicTriangularMPO Op = ParseTriangularOperator(Lattice, OperatorStr, Args);
+          eval.push(sum_partial(Op, ParseUnitCellOperator(Lattice.GetUnitCell(), Sites, std::string(Start, End), Args), Sites));
+      }
+      catch (ParserError const& p)
+      {
+         throw ParserError::AtPosition(p, Start);
+      }
+      catch (std::exception const& p)
+      {
+         throw ParserError::AtPosition(p, Start);
+      }
+      catch (...)
+      {
+         throw;
+      }
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<std::string>& IdentifierStack;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
 
 struct push_coarse_grain
 {
@@ -643,8 +687,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 
          sq_bracket_expr = '[' >> expression >> ']';
 
-         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
+         bracket_expression = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> bracket_expression >> ch_p(')')))];
+
+         expression_string = lexeme_d[+((anychar_p - chset<>("(),"))
+                                        | (ch_p('(') >> bracket_expression >> ch_p(')')))];
 
          num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
                       >> ((str_p("cells") >> '=' >> expression >> ',')
@@ -717,9 +764,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 
          sum_partial_expression = str_p("sum_partial")
             >> '('
-            >> num_cells
-            >> expression_string[push_sum_partial(self.Lattice, self.eval, self.Args)]
-            >> ')';
+            >> num_cells >>
+              ((eps_p(expression_string >> ')') >> expression_string[push_sum_partial(self.Lattice, self.eval, self.Args)] >> ')')
+              |
+              (expression_string[push_identifier(self.IdentifierStack)] >> ',' >>
+               expression_string[push_sum_partial3(self.Lattice, self.IdentifierStack, self.eval, self.Args)] >> ')'));
 
          coarse_grain_expression = str_p("coarse_grain")
             >> '('
@@ -820,7 +869,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
          binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
          operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-         parameter, named_parameter, parameter_list, expression_string,
+         parameter, named_parameter, parameter_list, expression_string, bracket_expression,
          sum_unit_expression, sum_kink_expression, sum_k_expression, filename,
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
