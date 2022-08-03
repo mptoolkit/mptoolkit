@@ -5,7 +5,7 @@
 // mp/mp-tdvp.cpp
 //
 // Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       bool TwoSite = false;
       bool Epsilon = false;
+      bool ForceExpand = false;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
@@ -201,6 +203,10 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
+      // If we are forcing bond dimension expansion, make sure it is turned on as well.
+      if (ForceExpand)
+         Expand = true;
+
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity() || TwoSite)
          std::cout << SInfo << std::endl;
 
@@ -209,7 +215,8 @@ int main(int argc, char** argv)
       if (Eps2SqTol != std::numeric_limits<double>::infinity())
          Epsilon = true;
 
-      TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose);
+      TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter,
+                ErrTol, SInfo, Epsilon, ForceExpand, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;

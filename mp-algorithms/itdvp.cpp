@@ -5,7 +5,7 @@
 // mp-algorithms/itdvp.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,10 +48,10 @@ struct HEff2
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
              std::complex<double> InitialTime_, std::complex<double> Timestep_,
              Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-             bool Epsilon_, int Verbose_, double GMRESTol_, int MaxSweeps_,
-             double LambdaTol_, int NEps_)
+             bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
+             int MaxSweeps_, double LambdaTol_, int NEps_)
    : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
-          Epsilon_, Verbose_),
+          Epsilon_, ForceExpand_, Verbose_),
      GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_)
 {
    // Initialize Psi and Ham.
@@ -629,7 +629,16 @@ iTDVP::ExpandRightBond()
       // Subtract the current bond dimension from the number of additional states to be added.
       SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis2().total_dimension());
       SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis2().total_dimension());
-      CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+
+      CMatSVD::const_iterator Cutoff;
+      if (ForceExpand)
+      {
+         Cutoff = SL.begin();
+         for (int i = 0; Cutoff != SL.end() && i < SInfoLocal.MaxStates; ++i)
+            ++Cutoff;
+      }
+      else
+         Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
       MatrixOperator U, Vh;
       RealDiagonalOperator D;

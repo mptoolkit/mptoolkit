@@ -58,6 +58,7 @@ int main(int argc, char** argv)
       int MaxSweeps = 10;
       bool Epsilon = false;
       int NEps = 2;
+      bool ForceExpand = false;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -96,6 +97,7 @@ int main(int argc, char** argv)
           FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("neps,N", prog_opt::value(&NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
+         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
@@ -206,6 +208,10 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
+      // If we are forcing bond dimension expansion, make sure it is turned on as well.
+      if (ForceExpand)
+         Expand = true;
+
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity())
          std::cout << SInfo << std::endl;
 
@@ -216,7 +222,7 @@ int main(int argc, char** argv)
          Epsilon = true;
 
       iTDVP itdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol, SInfo,
-                  Epsilon, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
+                  Epsilon, ForceExpand, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
 
       if (SaveEvery == 0)
          SaveEvery = N;

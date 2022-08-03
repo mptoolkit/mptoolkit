@@ -5,7 +5,7 @@
 // mp-algorithms/tdvp.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -174,19 +174,20 @@ Hamiltonian::set_size(int Size_)
 
 TDVP::TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_)
+           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, bool ForceExpand_,
+           int Verbose_)
    : Ham(Ham_), InitialTime(InitialTime_), Timestep(Timestep_), Comp(Comp_),
      MaxIter(MaxIter_), ErrTol(ErrTol_), SInfo(SInfo_), Epsilon(Epsilon_),
-     Verbose(Verbose_)
+     ForceExpand(ForceExpand_), Verbose(Verbose_)
 {
 }
 
 TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
            std::complex<double> InitialTime_, std::complex<double> Timestep_,
            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, int Verbose_)
+           bool Epsilon_, bool ForceExpand_, int Verbose_)
    : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
-          Epsilon_, Verbose_)
+          Epsilon_, ForceExpand_, Verbose_)
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
@@ -507,7 +508,16 @@ TDVP::ExpandLeftBond()
    // Subtract the current bond dimension from the number of additional states to be added.
    SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis1().total_dimension());
    SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis1().total_dimension());
-   CMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+
+   CMatSVD::const_iterator Cutoff;
+   if (ForceExpand)
+   {
+      Cutoff = SL.begin();
+      for (int i = 0; Cutoff != SL.end() && i < SInfoLocal.MaxStates; ++i)
+         ++Cutoff;
+   }
+   else
+      Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 

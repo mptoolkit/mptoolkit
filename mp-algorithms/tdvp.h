@@ -5,7 +5,7 @@
 // mp-algorithms/tdvp.h
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -81,12 +81,13 @@ class TDVP
 
       TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_);
+           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, bool ForceExpand_,
+           int Verbose_);
 
       TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
            std::complex<double> InitialTime_, std::complex<double> Timestep_,
            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, int Verbose_);
+           bool Epsilon_, bool ForceExpand_, int Verbose_);
 
       // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;
@@ -171,6 +172,7 @@ class TDVP
       double ErrTol;
       StatesInfo SInfo;
       bool Epsilon;
+      bool ForceExpand;
       int Verbose;
 
       int TStep = 0;
