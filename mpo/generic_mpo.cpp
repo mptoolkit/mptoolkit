@@ -437,7 +437,7 @@ GenericMPO coarse_grain(GenericMPO const& Op, int N)
       OperatorComponent c = local_tensor_prod(Op[i], Op[i+1]);
       for (int j = 2; j < N; ++j)
       {
-         c = local_tensor_prod(c, Op[j]);
+         c = local_tensor_prod(c, Op[i+j]);
       }
       Result.push_back(c);
    }
