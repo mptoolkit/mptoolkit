@@ -44,7 +44,7 @@ namespace prog_opt = boost::program_options;
 
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
-                 double& Amplitude,
+                 double& LogAmplitude,
                  std::vector<SimpleOperator> const& UEven,
                  StatesInfo const& SInfo,
                  int Verbose)
@@ -58,7 +58,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    #pragma omp parallel for shared(Psi, Lambda, UEven, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], Amplitude, UEven[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UEven[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << (i+1)
@@ -76,7 +76,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
 
 void DoOddSlice(std::deque<StateComponent>& Psi,
                 std::deque<RealDiagonalOperator>& Lambda,
-                double& Amplitude,
+                double& LogAmplitude,
                 QuantumNumber const& QShift,
                 std::vector<SimpleOperator> const& UOdd,
                 StatesInfo const& SInfo,
@@ -95,7 +95,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    #pragma omp parallel for shared(Psi, Lambda, UOdd, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], Amplitude, UOdd[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UOdd[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << i
@@ -421,7 +421,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       QuantumNumber QShift = Psi.qshift();
-      double Amplitude = Psi.amplitude();
+      double LogAmplitude = Psi.log_amplitude();
 
       std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
       std::deque<RealDiagonalOperator> Lambda;
@@ -479,18 +479,18 @@ int main(int argc, char** argv)
             {
                std::cout << "Merge slice\n";
             }
-            DoEvenSlice(PsiVec, Lambda, Amplitude, Gates.EvenContinuation, SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenContinuation, SInfo, Verbose);
          }
          else
          {
-            DoEvenSlice(PsiVec, Lambda, Amplitude, Gates.EvenU[0], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[0], SInfo, Verbose);
          }
 
-         DoOddSlice(PsiVec, Lambda, Amplitude, QShift, Gates.OddU[0], SInfo, Verbose);
-         for (int bi = 1; bi < OddU.size(); ++bi)
+         DoOddSlice(PsiVec, Lambda, LogAmplitude, QShift, Gates.OddU[0], SInfo, Verbose);
+         for (int bi = 1; bi < Gates.OddU.size(); ++bi)
          {
-            DoEvenSlice(PsiVec, Lambda, Amplitude, Gates.EvenU[bi], SInfo, Verbose);
-            DoOddSlice(PsiVec, Lambda, Amplitude, QShift, Gates.OddU[bi], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[bi], SInfo, Verbose);
+            DoOddSlice(PsiVec, Lambda, LogAmplitude, QShift, Gates.OddU[bi], SInfo, Verbose);
          }
 
          // do we do a continuation?
@@ -504,11 +504,8 @@ int main(int argc, char** argv)
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
             LinearWavefunction Psi;
-<<<<<<< HEAD
+            double ThisLogAmplitude = LogAmplitude;
             if (Gates.EvenU.size() > Gates.OddU.size())
-            double ThisAmplitude = Amplitude;
-            if (EvenU.size() > OddU.size())
->>>>>>> 2256d477 (Changed the iMPS amplitude to be real-valued.)
             {
                CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
                std::cout << "Doing final slice before saving wavefunction.\n";
@@ -516,11 +513,7 @@ int main(int argc, char** argv)
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
-<<<<<<< HEAD
-               DoEvenSlice(PsiVecSave, LambdaSave, Amplitude, Gates.EvenU.back(), SInfo, Verbose);
-=======
-               DoEvenSlice(PsiVecSave, LambdaSave, ThisAmplitude, EvenU.back(), SInfo, Verbose);
->>>>>>> e5dba81d0526b4c50b0902a661dc521088166a23
+               DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
@@ -530,10 +523,10 @@ int main(int argc, char** argv)
             std::cout << "Saving wavefunction\n";
             MPWavefunction Wavefunction;
             if (Normalize)
-               Amplitude = 1.0;
+               ThisLogAmplitude = 0.0;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, ThisAmplitude);
+            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, ThisLogAmplitude);
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();

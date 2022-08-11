@@ -48,9 +48,12 @@
 //
 // Version 3:
 //      double                     Amplitude
+// Version 4:
+//      remove 'Amplitude', replace by
+//      double                     LogAmplitude
 
 PStream::VersionTag
-InfiniteWavefunctionLeft::VersionT(3);
+InfiniteWavefunctionLeft::VersionT(4);
 
 extern double const ArnoldiTol = getenv_or_default("MP_ARNOLDI_TOL", 1E-15);
 
@@ -122,18 +125,18 @@ struct RightMultiply
 
 } // namespace
 
-InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_, double Amplitude_)
-   : QShift(QShift_), Amplitude(Amplitude_)
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber const& QShift_, double LogAmplitude_)
+   : QShift(QShift_), LogAmplitude(LogAmplitude_)
 {
 }
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
                                                   QuantumNumbers::QuantumNumber const& QShift_,
-                                                  double Amplitude,
+                                                  double LogAmplitude,
                                                   int Verbose)
 {
-   InfiniteWavefunctionLeft Result(QShift_, Amplitude);
+   InfiniteWavefunctionLeft Result(QShift_, LogAmplitude);
    Result.Initialize(Psi, Lambda, Verbose-1);
    return Result;
 }
@@ -141,16 +144,16 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
                                     QuantumNumbers::QuantumNumber const& QShift_,
-                                    double Amplitude,
+                                    double LogAmplitude,
                                     int Verbose)
 {
-   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, Amplitude, Verbose);
+   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, LogAmplitude, Verbose);
 }
 
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
                                     QuantumNumbers::QuantumNumber const& QShift,
-                                    double Amplitude,
+                                    double LogAmplitude,
                                     int Verbose)
 {
    LinearWavefunction PsiL = Psi;
@@ -332,7 +335,7 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperato
    PsiL.set_back(prod(PsiL.get_back(), I));
 #endif
 
-   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, Amplitude, Verbose-1);
+   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, LogAmplitude, Verbose-1);
 }
 
 void
@@ -407,20 +410,26 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       if (BaseVersion < 3)
          Psi.set_lambda(0, delta_shift(Psi.lambda_r(), Psi.qshift()));
 
-      if (Version >= 3)
+      if (Version == 3)
       {
-         // new in version 3
-         in >> Psi.Amplitude;
+         // new in version 3, but replaced by LogAmplitude in version 4
+         double Amplitude;
+         in >> Amplitude;
+         Psi.LogAmplitude = std::log(Amplitude);
+      }
+      else if (Version >= 4)
+      {
+         in >> Psi.LogAmplitude;
       }
       else
       {
          // prior to version 3, the amplitude is assumed to be always 1
-         Psi.Amplitude = 1.0;
+         Psi.LogAmplitude = 0.0;
       }
 
-      if (Version > 3)
+      if (Version > 4)
       {
-         PANIC("This program is too old to read this wavefunction, expected Version <= 2")(Version);
+         PANIC("This program is too old to read this wavefunction, expected Version <= 4")(Version);
       }
    }
 
@@ -460,7 +469,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionLeft c
    Psi.CanonicalWavefunctionBase::WriteStream(out);
 
    out << Psi.QShift;
-   out << Psi.Amplitude;
+   out << Psi.LogAmplitude;
 
    return out;
 }
@@ -724,7 +733,7 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
 
    Result.setBasis2(Psi.Basis2());
    Result.QShift = FinalQShift;
-   Result.Amplitude = std::pow(Psi.amplitude(), Count);
+   Result.LogAmplitude = Count * Psi.log_amplitude();
 
    return Result;
 }
@@ -775,10 +784,8 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
       std::cerr << "Converged.  TotalIterations=" << TotalIterations
                 << ", Tol=" << MyTol << '\n';
 
-   std::complex<double> Amplitude = std::conj(std::pow(x.amplitude(), Length/x.size())) *
-         std::pow(y.amplitude(), Length/y.size());
-
-   return std::make_tuple(Eta * Amplitude, Length, Init);
+   double LogAmplitude = x.log_amplitude() * (Length / x.size()) + y.log_amplitude() * (Length / y.size());
+   return std::make_tuple(Eta * std::exp(LogAmplitude), Length, Init);
 }
 
 #if 0
