@@ -51,7 +51,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    // A (Lambda) B C (Lambda) D E (Lambda) ...
    // If the number of sites is even, we replicate the last Lambda matrix, so that
    // we always have a final Lambda matrix at the end
-   double Amplitude = 1.0;  // this isn't used yet ...
+   double LogAmplitude = 0.0;  // this isn't used yet ...
    unsigned Sz = Psi.size();
    if (Sz%2 == 0)
    {
@@ -60,7 +60,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    int MaxStates = 0;
    for (unsigned i = 0; i < Sz-1; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], Amplitude, UEven[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UEven[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << (i+1)
@@ -88,7 +88,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    // The first (Lambda) matrix is unused; we remove it from the container.
    // If the number of sites is odd, we copy the last Lambda matrix so that we always have a
    // 1x1 identity lambda at the end
-   double Amplitude = 1.0;  // this isn't used yet ...
+   double LogAmplitude = 0.0;  // this isn't used yet ...
    unsigned Sz = Psi.size();
    if (Sz%2 == 1)
    {
@@ -98,7 +98,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    int MaxStates = 0;
    for (unsigned i = 1; i < Sz-1; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[(i-1)/2], Amplitude, UOdd[(i-1)/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[(i-1)/2], LogAmplitude, UOdd[(i-1)/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << i
