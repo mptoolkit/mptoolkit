@@ -506,7 +506,6 @@ int main(int argc, char** argv)
             LinearWavefunction Psi;
 <<<<<<< HEAD
             if (Gates.EvenU.size() > Gates.OddU.size())
-=======
             double ThisAmplitude = Amplitude;
             if (EvenU.size() > OddU.size())
 >>>>>>> 2256d477 (Changed the iMPS amplitude to be real-valued.)
@@ -521,7 +520,7 @@ int main(int argc, char** argv)
                DoEvenSlice(PsiVecSave, LambdaSave, Amplitude, Gates.EvenU.back(), SInfo, Verbose);
 =======
                DoEvenSlice(PsiVecSave, LambdaSave, ThisAmplitude, EvenU.back(), SInfo, Verbose);
->>>>>>> 2256d477 (Changed the iMPS amplitude to be real-valued.)
+>>>>>>> e5dba81d0526b4c50b0902a661dc521088166a23
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
