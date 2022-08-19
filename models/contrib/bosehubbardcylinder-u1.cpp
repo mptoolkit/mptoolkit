@@ -36,14 +36,17 @@ int main(int argc, char** argv)
       int MaxN = DefaultMaxN;
       int x = 0;
       int y = 4;
+      bool QLM = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("NumBosons,N", prog_opt::value(&MaxN),
-          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
+          FormatDefault("maximum number of bosons per site", MaxN).c_str())
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
+         ("qlm", prog_opt::bool_switch(&QLM),
+          "include terms for the mapping of the 2D QLM")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -69,10 +72,10 @@ int main(int argc, char** argv)
          ("H_Vx"   , "nearest-neighbour Coulomb repulsion in x-direction")
          ("H_Vy"   , "nearest-neighbour Coulomb repulsion in x-direction")
          ("H_V"    , "nearest-neighbour Coulomb repulsion")
-         ("H_delta", "QLM link potential", "x = 0, y even",
-         [&x, &y]()->bool{return x == 0 && y%2 == 0;})
-         ("H_eta"  , "QLM eta potential", "x = 0, y even",
-         [&x, &y]()->bool{return x == 0 && y%2 == 0;})
+         ("H_delta", "QLM link site potential", "x = 0, y even, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
+         ("H_eta"  , "QLM forbidden site potential", "x = 0, y even, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ;
       OpDescriptions.add_functions()
          ("H_Jx"   , "nearest-neighbor complex hopping in x-direction")
@@ -93,7 +96,7 @@ int main(int argc, char** argv)
       LatticeSite Site = BosonU1(MaxN);
       UnitCell Cell(repeat(Site, CellSize));
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2");
+      UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"), I(Cell, "I");
 
       // Define hopping terms and near-neighbour interactions.
       UnitCellMPO Jxm, Jxp, Jym, Jyp, Vx, Vy;
@@ -153,9 +156,9 @@ int main(int argc, char** argv)
 
       Lattice["H_U"] = sum_unit(U);
 
-      // Define QLM potentials.
-      if (x == 0 && y%2 == 0)
+      if (x == 0 && y%2 == 0 && QLM)
       {
+         // Define QLM potentials.
          UnitCellMPO H_delta, H_eta;
 
          for (int i = 0; i < CellSize/2; ++i)
@@ -166,6 +169,17 @@ int main(int argc, char** argv)
 
          Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
          Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
+
+         // Define Gauss' law operators.
+         // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.
+         UnitCellMPO G[CellSize/2];
+
+         for (int i = 0; i < CellSize/2; ++i)
+         {
+            G[i] = N(0)[2*i] + 0.5 * (N2(0)[2*i+1] + N2(0)[(2*i-1+CellSize)%CellSize] + N2(1)[2*i] + N2(-1)[0]) - 2.0 * I(0)[2*i];
+            G[i].set_description("Gauss' law operator for matter site " + std::to_string(2*i));
+            Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
+         }
       }
 
       // Information about the lattice
