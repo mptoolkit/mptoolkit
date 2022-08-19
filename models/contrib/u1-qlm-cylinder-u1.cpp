@@ -79,6 +79,9 @@ int main(int argc, char** argv)
          ("H_ty" , "nearest-neighbor hopping in x-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
+         ("H_a"  , "renormalisation term A")
+         ("H_b"  , "renormalisation term B")
+         ("H_c"  , "renormalisation term C (= -A)")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -107,10 +110,10 @@ int main(int argc, char** argv)
       UnitCell Cell2(repeat(join(AFCell, FCell), CellSize/12));
       UnitCell Cell = join(Cell1, Cell2);
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"),
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m;
+      UnitCellMPO tx, ty, m, a, b;
       // the XY configuration is special
       if (x == 0)
       {
@@ -125,6 +128,18 @@ int main(int argc, char** argv)
          }
          for (int i = 0; i < 3*y; i += 6)
             m += N(0)[i] - N(0)[i+3] - N(0)[i+3*y] + N(0)[i+3+3*y];
+         for (int i = 0; i < 3*y; i += 3)
+         {
+            a += N(0)[i]                    * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+            a += N(0)[i+3*y]                * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
+            b += (I(0)[i]-N(0)[i])          * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+            b += (-I(0)[i+3*y]-N(0)[i+3*y]) * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+            i += 3;
+            a += N(0)[i]                    * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+            a += N(0)[i+3*y]                * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
+            b += (-I(0)[i]-N(0)[i])         * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+            b += (I(0)[i+3*y]-N(0)[i+3*y])  * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
+         }
       }
       // TODO
 #if 0
@@ -145,6 +160,9 @@ int main(int argc, char** argv)
       Lattice["H_tx"] = sum_unit(tx);
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
+      Lattice["H_a"] = sum_unit(a);
+      Lattice["H_b"] = sum_unit(b);
+      Lattice["H_c"] = sum_unit(-a);
       Lattice["H_m"] = sum_unit(m);
 
       // Gauss' law operators.
