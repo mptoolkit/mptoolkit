@@ -5,7 +5,7 @@
 // mp/mp-tdvp.cpp
 //
 // Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@
 #include "common/prog_options.h"
 #include "common/terminal.h"
 #include "interface/inittemp.h"
-#include "lattice/infinite-parser.h"
-#include "lattice/infinitelattice.h"
 #include "mp-algorithms/tdvp.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
@@ -57,9 +55,12 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       bool TwoSite = false;
       bool Epsilon = false;
+      bool ForceExpand = false;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
+      std::string Magnus = "2";
+      std::string TimeVar = "t";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -87,7 +88,10 @@ int main(int argc, char** argv)
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
+         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -127,7 +131,13 @@ int main(int argc, char** argv)
       }
       if (Comp.Order == 0)
       {
-         std::cerr << "fatal: invalid composition" << std::endl;
+         std::cerr << "fatal: invalid composition." << std::endl;
+         return 1;
+      }
+
+      if (Magnus != "2" && Magnus != "4")
+      {
+         std::cerr << "fatal: invalid Magnus scheme." << std::endl;
          return 1;
       }
 
@@ -163,10 +173,6 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
-      // Hamiltonian.
-      InfiniteLattice Lattice;
-      BasicTriangularMPO HamMPO;
-
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -186,9 +192,7 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      if (HamMPO.size() < Psi.size())
-         HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
+      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar);
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -199,6 +203,10 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
+      // If we are forcing bond dimension expansion, make sure it is turned on as well.
+      if (ForceExpand)
+         Expand = true;
+
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity() || TwoSite)
          std::cout << SInfo << std::endl;
 
@@ -207,7 +215,8 @@ int main(int argc, char** argv)
       if (Eps2SqTol != std::numeric_limits<double>::infinity())
          Epsilon = true;
 
-      TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep, Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose);
+      TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter,
+                ErrTol, SInfo, Epsilon, ForceExpand, Verbose);
 
       if (SaveEvery == 0)
          SaveEvery = N;

@@ -23,9 +23,22 @@
 #include "lattice/infinitelattice.h"
 #include "mpo/infinite_mpo.h"
 
+// Parse an operator of the form lattice:operator, and return the
+// InfiniteLattice object and the operator as a string, without converting it into an MPO
+std::pair<std::string, InfiniteLattice>
+ParseOperatorStringAndLattice(std::string const& Str);
+
 InfiniteMPOElement
 ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
                       Function::ArgumentList const& Args = Function::ArgumentList());
+
+inline
+InfiniteMPOElement
+ParseOperator(InfiniteLattice const& Lattice, std::string const& Str,
+                      Function::ArgumentList const& Args = Function::ArgumentList())
+{
+   return ParseInfiniteOperator(Lattice, Str, Args);
+}
 
 std::pair<InfiniteMPOElement, InfiniteLattice>
 ParseInfiniteOperatorAndLattice(std::string const& Str);

@@ -171,6 +171,13 @@ ProductMPO string(BasicFiniteMPO const& Op);
 // = B(0)A(0) B(1)A(1) B(2)A(2) ...
 ProductMPO prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize);
 
+
+inline
+ProductMPO prod_unit(BasicFiniteMPO const& Op, int UnitCellSize)
+{
+   return prod_unit_left_to_right(Op, UnitCellSize);
+}
+
 // Constructs a ProductMPO as the infinite product of translations of Op.
 // Op.size() must be an integer multiple of UnitCellSize,
 // and the local basis of Op[i] must be the same as the local basis of Op[i%UnitCellSize]

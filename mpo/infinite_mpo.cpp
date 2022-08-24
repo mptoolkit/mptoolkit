@@ -204,6 +204,11 @@ InfiniteMPO operator*(InfiniteMPO const& x, InfiniteMPO const& y)
    return boost::apply_visitor(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());
 }
 
+InfiniteMPO commutator(InfiniteMPO const& x, InfiniteMPO const& y)
+{
+   return boost::apply_visitor(binary_commutator<InfiniteMPOElement>(), x.op(), y.op());
+}
+
 // dot product - takes into account the multiplicity to rescale the result
 InfiniteMPO dot(InfiniteMPO const& x, InfiniteMPO const& y)
 {

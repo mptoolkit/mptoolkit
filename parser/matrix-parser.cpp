@@ -23,6 +23,7 @@
 
 namespace Parser
 {
+
 template <>
 std::string name_of<MatrixOperator>(MatrixOperator const&)
 {

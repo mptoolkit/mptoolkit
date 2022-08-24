@@ -355,7 +355,7 @@ struct binary_commutator : boost::static_visitor<element_type>
    // [operator,operator]
    element_type operator()(MPOperator const& x, MPOperator const& y) const
    {
-      element_type Result = element_type(x*y - y*x);
+      element_type Result = element_type(commutator(x,y));
       return Result;
    }
 };

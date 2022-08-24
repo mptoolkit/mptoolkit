@@ -560,6 +560,13 @@ void show_projections(std::ostream& out, SiteOperator const& Op);
 std::vector<std::pair<SiteOperator, SiteOperator> >
 decompose_tensor_prod(SiteOperator const& S, SiteProductBasis const& SPBasis);
 
+inline
+SiteOperator
+commutator(SiteOperator const& x, SiteOperator const& y)
+{
+   return x*y - y*x;
+}
+
 #include "siteoperator.cc"
 
 #endif

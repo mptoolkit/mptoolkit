@@ -94,7 +94,7 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("Kitaev honeycomb model");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
-         ("WY"         , "Wilson loop in the Y direction")
+         ("WY"         , "Wilson loop in the y direction")
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
          ("Ref"        , "reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
@@ -172,9 +172,9 @@ int main(int argc, char** argv)
 
       for (int i = 0; i < u; i += 2)
       {
-         Hxx -= X(0)[i] * X(1)[(i+1)%u];
-         Hyy -= Y(0)[i] * Y(0)[(i+1)%u];
-         Hzz -= Z(0)[i] * Z(0)[(i+u-1)%u];
+         Hxx += X(0)[i] * X(1)[(i+1)%u];
+         Hyy += Y(0)[i] * Y(0)[(i+1)%u];
+         Hzz += Z(0)[i] * Z(0)[(i+u-1)%u];
       }
 
       Lattice["H_xx"] = sum_unit(Hxx);
@@ -198,10 +198,10 @@ int main(int argc, char** argv)
 
       // Translation and relfection operators.
       Trans = I(0);
-      for (int i = 0; i < u-1; ++i)
+      for (int i = 0; i < u-2; ++i)
       {
          //T *= 0.5*( 0.25*inner(S[i],S[i+1]) + 1 );
-         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+         Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+2);
       }
 
       if (!NoReflect)

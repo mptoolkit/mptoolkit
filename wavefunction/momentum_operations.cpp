@@ -20,6 +20,15 @@
 #include "momentum_operations.h"
 #include "operator_actions.h"
 
+void
+ScalePoly(KMatrixPolyType& K, std::complex<double> x)
+{
+   for (auto& k : K)
+   {
+      k.second *= x;
+   }
+}
+
 MatrixPolyType
 delta_shift(MatrixPolyType const& In, QuantumNumber const& QShift)
 {
@@ -97,6 +106,8 @@ MultiplyLeft(std::vector<MatrixPolyType> const& E,
 }
 #endif
 
+// Here the E-matrix is assumed to not require conjugation, so
+// the result is implented as inner_prod(E, Rho)
 ComplexPolyType
 ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho)
 {
@@ -104,7 +115,7 @@ ExtractOverlap(MatrixPolyType const& E, MatrixOperator const& Rho)
    for (auto const& x : E)
    {
       if (x.second.TransformsAs() == Rho.TransformsAs())
-	 Overlap[x.first] = inner_prod(x.second, Rho);
+	 Overlap[x.first] = inner_prod(Rho, x.second);
    }
    return Overlap;
 }

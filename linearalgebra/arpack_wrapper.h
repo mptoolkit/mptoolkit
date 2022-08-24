@@ -54,14 +54,14 @@ std::string ToStr(WhichEigenvalues);
 template <typename MultFunc>
 Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol = 1e-10,
-                  std::vector<std::complex<double> >* OutputVectors = NULL,
+                  std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0);
 
 // For backwards compatibility, target the eigenvalues with the largest magnitude if unspecified.
 template <typename MultFunc>
 Vector<std::complex<double> >
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
-                  std::vector<std::complex<double> >* OutputVectors = NULL,
+                  std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0)
 {
    return DiagonalizeARPACK(Mult, n, NumEigen, WhichEigenvalues::LargestMagnitude, tol,
@@ -77,10 +77,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
 
 void
 MatchEigenvectors(int n,
-                  Vector<std::complex<double> >& LeftValues,
-                  std::vector<std::complex<double> >& LeftVectors,
-                  Vector<std::complex<double> >& RightValues,
-                  std::vector<std::complex<double> >& RightVextors, double tol = 1e-10);
+                  Vector<std::complex<double>>& LeftValues,
+                  std::vector<std::complex<double>>& LeftVectors,
+                  Vector<std::complex<double>>& RightValues,
+                  std::vector<std::complex<double>>& RightVextors, double tol = 1e-10);
 
 } // namespace LinearAlgebra
 

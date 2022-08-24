@@ -190,7 +190,11 @@ class InfiniteLattice
    friend PStream::ipstream& operator>>(PStream::ipstream& in, InfiniteLattice& L);
 };
 
+// Constructs a zero triangular MPO
+BasicTriangularMPO make_zero(SiteListType const& SiteList);
+
 // Constucts a BasicTriangularMPO from the summation over unit cell translations of a finite MPO.
+// This is a special case of sum_kink() where the kink operator is the identity.
 // The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
 // integer multiple of SiteListType.size().
 // The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
@@ -204,6 +208,18 @@ BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op);
 
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op_)
+{
+   return prod_unit_left_to_right(Op_.MPO(), Op_.GetSiteList()->size());
+}
+
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
+{
+   return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
+}
+
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
 BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink,
                        BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
@@ -213,7 +229,8 @@ BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int 
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
 
 // sum_k
-
+// Consruct an operator at finite momentum.  This is a special case of sum_kink where the kink operator is
+// e^{ik} times the identity.
 BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
                        BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
 
@@ -237,23 +254,30 @@ BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String
                          int UnitCellSize,
                          QuantumNumbers::QuantumNumber q);
 
+// sum_string_dot
+// variant of sum_string where we take the (non-abelian) dot product between operators A and C.
 BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                              int UnitCellSize);
 
 BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
 
+// sum_string_inner
+// variant of sum_string where we take the (non-abelian) inner product between operators A and C.
 BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                                int UnitCellSize);
 
 BasicTriangularMPO sum_string_inner(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
 
-// Constructs a zero triangular MPO
-BasicTriangularMPO make_zero(SiteListType const& SiteList);
-
-ProductMPO prod_unit(UnitCellMPO const& Op_);
-
-ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize);
-
+// sum_partial
+// Constructs a new MPO that is all translations of partial sums of an existing triangular MPO.  Eg,
+// let M = sum_i M(i) be a triangular MPO, where M(j) means all terms that have support on sites up to j (inclusive).
+// Then sum_partial(M, P) is
+// sum_j (sum_{i < j} M(i)) P(j)
+//
+// Concrete example: sum_partial(sum_unit(Sx), Sy) is the two-dimensional sum_{i<j} Sx(i) Sy(j)
+// which is equivalent to sum_string(Sx, I, Sy)
 BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot, int UnitCellSize);
+
+BasicTriangularMPO sum_partial(BasicTriangularMPO const& Op, UnitCellMPO const& Pivot);
 
 #endif

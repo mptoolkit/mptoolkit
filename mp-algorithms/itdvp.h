@@ -5,7 +5,7 @@
 // mp-algorithms/itdvp.h
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,10 +29,11 @@ class iTDVP : public TDVP
    public:
       iTDVP() {}
 
-      iTDVP(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_,
-            std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-            double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-            double GMRESTol_, int MaxSweeps_, double LambdaTol_, int NEps_);
+      iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
+            std::complex<double> InitialTime_, std::complex<double> Timestep_,
+            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+            bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
+            int MaxSweeps_, double LambdaTol_, int NEps_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
@@ -70,7 +71,14 @@ class iTDVP : public TDVP
       // CalculateEps to generate X and Y)
       void ExpandBonds();
 
+      // Update the Hamiltonian if time-dependent, recalculating the left/right
+      // environments.
+      void UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt);
+      void UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt);
+
+      LinearWavefunction PsiOld;
       MatrixOperator LambdaR;
+      MatrixOperator LambdaROld;
       QuantumNumber QShift;
       std::deque<StateComponent> HamLOld;
       StateComponent BlockHamL;
@@ -90,6 +98,11 @@ class iTDVP : public TDVP
       // Flag to determine whether X and Y have been calculated for the current
       // timestep.
       bool XYCalculated = false;
+
+      // Flag for whether the time-dependent Hamiltonian has already been
+      // updated, for when the bonds are exanded before performing a left
+      // sweep.
+      bool HamUpdated = true;
 
       // Error measures epsilon_3^2 to epsilon_NEps^2.
       std::vector<double> EpsNSqSum;

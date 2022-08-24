@@ -162,4 +162,15 @@ operator-(Polynomial<CF> const& x, Polynomial<CF> const& y)
    return Result;
 }
 
+template <typename CF, typename Scalar>
+Polynomial<CF>&
+operator*=(Polynomial<CF>& Poly, Scalar x)
+{
+   for (auto& m : Poly)
+   {
+      m.second *= x;
+   }
+   return Poly;
+}
+
 #endif

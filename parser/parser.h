@@ -50,9 +50,20 @@
 #include <functional>
 #include <string>
 #include <complex>
+#include<boost/algorithm/string.hpp>
 
 namespace Parser
 {
+
+// LookupFileGrid
+// The filegrid(file, x, y, z) function reads values from a 3D array stored in a file.
+// The LookupFileGrid function is used to lookup elements in this array.
+
+void
+LoadFileGrid(std::string Filename);
+
+std::string
+LookupFileGrid(std::string Filename, int x, int y, int z);
 
 // returns a string of Size space characters
 std::string Spaces(int Size);
@@ -280,6 +291,148 @@ apply_unary_math<element_type, unary_math<F> > make_unary_math(F const& f)
    return apply_unary_math<element_type, unary_math<F> >(unary_math<F>(f));
 }
 
+template <typename element_type, typename LatticeType>
+struct eval_filegrid
+{
+   eval_filegrid(LatticeType const& Lattice_,
+                 std::stack<std::string>& IdentifierStack_,
+                 std::stack<int>& NumParameterStack_,
+                 std::stack<element_type>& eval_,
+                 Function::ArgumentList Args_ = Function::ArgumentList())
+      : Lattice(Lattice_), IdentifierStack(IdentifierStack_), NumParameterStack(NumParameterStack_),
+        eval(eval_),Args(Args_)  {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      auto Filename = IdentifierStack.top();
+      boost::trim(Filename);
+      IdentifierStack.pop();
+
+      int n = NumParameterStack.top();
+      NumParameterStack.pop();
+      if (n < 1)
+         throw ParserError::AtRange(ColorHighlight("filegrid:") + " must have at least one coordinate!", Start, End);
+      if (n > 3)
+         throw ParserError::AtRange(ColorHighlight("filegrid:") + " cannot have more than 3 coordinates!", Start, End);
+
+      // We represent the coordinates as the lowest numeric index, and its weight from 0..1.
+      // The linear interpolation is f(x)*xw + f(x+1)*(1-xw), where x is the coordinate and xw is the weight.
+      int x = 0, y = 0, z = 0;
+      double xw = 1, yw = 1, zw = 1;
+
+      double d = pop_real(eval); --n;
+      x = int(d);
+      xw = 1+x-d;
+      if (n > 0)
+      {
+         y = x;
+         yw = xw;
+         d = pop_real(eval); --n;
+         x = int(d);
+         xw = 1+x-d;
+         if (n > 0)
+         {
+            z = y;
+            zw = yw;
+            y = x;
+            yw = xw;
+            d = pop_real(eval); --n;
+            x = int(d);
+            xw = 1+x-d;
+         }
+      }
+      CHECK_EQUAL(n,0);
+
+      element_type R = ParseOperator(Lattice, LookupFileGrid(Filename, x, y, z), Args);
+
+      // Linear interpolation in the X direction.  R = f(x)*xw + f(x+1)*(1-xw)
+      if (xw < 1)
+      {
+         element_type X = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z), Args);
+         element_type Xw1(1-xw);
+         X = boost::apply_visitor(binary_multiplication<element_type>(), X, Xw1);
+         element_type Xw(xw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Xw);
+         R = boost::apply_visitor(binary_addition<element_type>(), R, X);
+      }
+
+      // Linear interpolation in the Y direction.  R = f(y)*yw + f(y+1)*(1-yw)
+      if (yw < 1)
+      {
+         element_type Y = ParseOperator(Lattice, LookupFileGrid(Filename, x, y+1, z), Args);
+         // Do we need a nested linear interpolation?  If so, Y = f(x,y+1)*xw + f(x+1,y+1)*(1-xw)
+         if (xw < 1)
+         {
+            element_type XY = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z), Args);
+            element_type Xw1(1-xw);
+            XY = boost::apply_visitor(binary_multiplication<element_type>(), XY, Xw1);
+            element_type Xw(xw);
+            Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Xw);
+            Y = boost::apply_visitor(binary_addition<element_type>(), Y, XY);
+         }
+         element_type Yw1(1-yw);
+         Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Yw1);
+         element_type Yw(yw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Yw);
+         R = boost::apply_visitor(binary_addition<element_type>(), R, Y);
+      }
+
+      // Linear interpolation in the Z direction.  R = f(z)*zw + f(z+1)*(1-zw)
+      if (zw < 1)
+      {
+         element_type Z = ParseOperator(Lattice, LookupFileGrid(Filename, x, y, z+1), Args);
+         if (yw < 1)
+         {
+            // nested interpolation in Y,Z directions
+            element_type YZ = ParseOperator(Lattice, LookupFileGrid(Filename, x, y+1, z+1), Args);
+            if (xw < 1)
+            {
+               // nested interpolation in X,Y,Z directions
+               element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
+               element_type Xw1(1-xw);
+               XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+               element_type Xw(xw);
+               Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
+               Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
+
+               element_type XYZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z+1), Args);
+               XYZ = boost::apply_visitor(binary_multiplication<element_type>(), XYZ, Xw1);
+               YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Xw);
+               YZ = boost::apply_visitor(binary_addition<element_type>(), YZ, XYZ);
+            }
+            element_type Yw1(1-yw);
+            YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Yw1);
+            element_type Yw(yw);
+            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Yw);
+            Z = boost::apply_visitor(binary_addition<element_type>(), Z, YZ);
+         }
+         else if (xw < 1)
+         {
+            // nested interpolation in X,Z directions
+            element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
+            element_type Xw1(1-xw);
+            XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+            element_type Xw(xw);
+            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
+            Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
+         }
+         element_type Zw1(1-zw);
+         Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Zw1);
+         element_type Zw(zw);
+         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Zw);
+         R = boost::apply_visitor(binary_addition<element_type>(), R, Z);
+      }
+
+      eval.push(R);
+   }
+
+   LatticeType const& Lattice;
+   std::stack<std::string>& IdentifierStack;
+   std::stack<int>& NumParameterStack;
+   std::stack<element_type>& eval;
+   Function::ArgumentList Args;
+};
+
 //
 // pre-defined symbols
 //
@@ -431,6 +584,7 @@ struct binary_funcs : symbols<boost::function<element_type(element_type, element
    binary_funcs()
    {
       this->add.operator()
+         ("pow", make_apply_binary_math<element_type>(binary_power<element_type>()))
          ("fmod", make_apply_binary_math<element_type>(binary_fmod<element_type>()))
          ("dot", make_apply_binary_math<element_type>(binary_dot_product<element_type>()))
          ("inner", make_apply_binary_math<element_type>(binary_inner_product<element_type>()))

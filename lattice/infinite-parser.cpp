@@ -485,8 +485,8 @@ struct push_sum_partial
 
       try
       {
-	 BasicTriangularMPO Op = ParseTriangularOperator(Lattice, std::string(Start, End), Args);
-         eval.push(sum_partial(Op, Lattice.GetUnitCell()["I"], Sites));
+	        BasicTriangularMPO Op = ParseTriangularOperator(Lattice, std::string(Start, End), Args);
+          eval.push(sum_partial(Op, Lattice.GetUnitCell()["I"], Sites));
       }
       catch (ParserError const& p)
       {
@@ -506,6 +506,50 @@ struct push_sum_partial
    std::stack<ElementType>& eval;
    Function::ArgumentList const& Args;
 };
+
+struct push_sum_partial3
+{
+   push_sum_partial3(InfiniteLattice const& Lattice_, std::stack<std::string>& IdentifierStack_,
+                 std::stack<ElementType>& eval_, Function::ArgumentList const& Args_)
+      : Lattice(Lattice_), IdentifierStack(IdentifierStack_), eval(eval_), Args(Args_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      int Sites = pop_int(eval);
+      if (Sites % Lattice.GetUnitCell().size() != 0)
+      {
+         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+                                    Start, End);
+      }
+
+      std::string OperatorStr = IdentifierStack.top();
+      IdentifierStack.pop();
+
+      try
+      {
+	        BasicTriangularMPO Op = ParseTriangularOperator(Lattice, OperatorStr, Args);
+          eval.push(sum_partial(Op, ParseUnitCellOperator(Lattice.GetUnitCell(), Sites, std::string(Start, End), Args), Sites));
+      }
+      catch (ParserError const& p)
+      {
+         throw ParserError::AtPosition(p, Start);
+      }
+      catch (std::exception const& p)
+      {
+         throw ParserError::AtPosition(p, Start);
+      }
+      catch (...)
+      {
+         throw;
+      }
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<std::string>& IdentifierStack;
+   std::stack<ElementType>& eval;
+   Function::ArgumentList const& Args;
+};
+
 
 struct push_coarse_grain
 {
@@ -534,6 +578,32 @@ struct push_coarse_grain
    Function::ArgumentList const& Args;
 };
 
+struct init_num_param_stack
+{
+   init_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      Stack.push(1);
+   }
+
+   std::stack<int>& Stack;
+};
+
+
+struct increment_num_param_stack
+{
+   increment_num_param_stack(std::stack<int>& Stack_) : Stack(Stack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      CHECK(!Stack.empty());
+      ++Stack.top();
+   }
+
+   std::stack<int>& Stack;
+};
+
 } // namespace ILP;
 
 using namespace ILP;
@@ -550,6 +620,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    typedef std::stack<binary_func_type>        BinaryFuncStackType;
    typedef std::stack<std::string>             FunctionStackType;
    typedef std::stack<std::string>             IdentifierStackType;
+   typedef std::stack<int>                     NumParameterStackType;
    typedef std::stack<Function::ParameterList> ParameterStackType;
    typedef symbols<complex>                    ArgumentType;
    typedef Function::ArgumentList              RawArgumentType;
@@ -563,12 +634,14 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                   BinaryFuncStackType& bin_func_stack_,
                   IdentifierStackType& IdentifierStack_,
                   FunctionStackType& Functions_,
+                  NumParameterStackType& NumParameterStack_,
                   ParameterStackType& Parameters_,
                   ArgumentType& Arguments_,
                          InfiniteLattice const& Lattice_,
                          RawArgumentType const& Args_)
       : eval(eval_), func_stack(func_stack_), bin_func_stack(bin_func_stack_),
       IdentifierStack(IdentifierStack_), FunctionStack(Functions_),
+      NumParameterStack(NumParameterStack_),
       ParameterStack(Parameters_), Arguments(Arguments_),
         Lattice(Lattice_), Args(Args_)
    {}
@@ -588,6 +661,10 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          // We re-use the IdentifierStack for quantum numbers, and rely on the grammar rules to
          // avoid chaos!
          quantumnumber = lexeme_d[*(anychar_p - chset<>("()"))]
+            [push_identifier(self.IdentifierStack)];
+
+         // and similarly for a filename; pretend its an identifier.
+         filename = lexeme_d[*(anychar_p - chset<>(","))]
             [push_identifier(self.IdentifierStack)];
 
          named_parameter = eps_p(identifier >> '=')
@@ -610,8 +687,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 
          sq_bracket_expr = '[' >> expression >> ']';
 
-         expression_string = lexeme_d[+((anychar_p - chset<>("()"))
-                                        | (ch_p('(') >> expression_string >> ch_p(')')))];
+         bracket_expression = lexeme_d[+((anychar_p - chset<>("()"))
+                                        | (ch_p('(') >> bracket_expression >> ch_p(')')))];
+
+         expression_string = lexeme_d[+((anychar_p - chset<>("(),"))
+                                        | (ch_p('(') >> bracket_expression >> ch_p(')')))];
 
          num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
                       >> ((str_p("cells") >> '=' >> expression >> ',')
@@ -684,14 +764,23 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 
          sum_partial_expression = str_p("sum_partial")
             >> '('
-            >> num_cells
-            >> expression_string[push_sum_partial(self.Lattice, self.eval, self.Args)]
-            >> ')';
+            >> num_cells >>
+              ((eps_p(expression_string >> ')') >> expression_string[push_sum_partial(self.Lattice, self.eval, self.Args)] >> ')')
+              |
+              (expression_string[push_identifier(self.IdentifierStack)] >> ',' >>
+               expression_string[push_sum_partial3(self.Lattice, self.IdentifierStack, self.eval, self.Args)] >> ')'));
 
          coarse_grain_expression = str_p("coarse_grain")
             >> '('
             >> (num_cells
                 >> expression >> ')')[push_coarse_grain(self.Lattice, self.eval, self.Args)];
+
+         filegrid_expression = str_p("filegrid")
+            >> '('
+            >> filename >> ','
+            >> expression[init_num_param_stack(self.NumParameterStack)]
+            >> (*(',' >> expression[increment_num_param_stack(self.NumParameterStack)]) >> ')')
+               [eval_filegrid<ElementType, InfiniteLattice>(self.Lattice, self.IdentifierStack, self.NumParameterStack, self.eval, self.Args)];
 
          function_expression = eps_p(identifier >> '{')
             >> identifier[push_function(self.FunctionStack, self.ParameterStack)]
@@ -739,6 +828,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   coarse_grain_expression
             |   sum_string_inner_expression
             |   sum_string_dot_expression
+            |   filegrid_expression
             |   commutator_bracket
             |   '(' >> expression >> ')'
             |   ('-' >> factor)[do_negate<ElementType>(self.eval)]
@@ -779,11 +869,12 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
       rule<ScannerT> expression, term, factor, real, imag, operator_literal, unary_function,
          binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
          operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
-         parameter, named_parameter, parameter_list, expression_string,
-         sum_unit_expression, sum_kink_expression, sum_k_expression,
+         parameter, named_parameter, parameter_list, expression_string, bracket_expression,
+         sum_unit_expression, sum_kink_expression, sum_k_expression, filename,
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
-         sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression;
+         sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression,
+         filegrid_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };
@@ -792,6 +883,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    std::stack<unary_func_type>& func_stack;
    std::stack<binary_func_type>& bin_func_stack;
    IdentifierStackType& IdentifierStack;
+   NumParameterStackType& NumParameterStack;
    FunctionStackType& FunctionStack;
    ParameterStackType& ParameterStack;
    ArgumentType& Arguments;
@@ -814,6 +906,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    InfiniteLatticeParser::UnaryFuncStackType  UnaryFuncStack;
    InfiniteLatticeParser::BinaryFuncStackType BinaryFuncStack;
    InfiniteLatticeParser::IdentifierStackType IdentStack;
+   InfiniteLatticeParser::NumParameterStackType NumParameterStack;
    InfiniteLatticeParser::ParameterStackType  ParamStack;
    InfiniteLatticeParser::FunctionStackType   FunctionStack;
    InfiniteLatticeParser::ArgumentType        Arguments;
@@ -842,7 +935,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    char const* end = beg + Str.size();
 
    InfiniteLatticeParser Parser(ElemStack, UnaryFuncStack, BinaryFuncStack, IdentStack,
-                                FunctionStack, ParamStack,
+                                FunctionStack, NumParameterStack, ParamStack,
                                 Arguments, Lattice, Args);
    try
    {
@@ -875,8 +968,8 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
    return Result;
 }
 
-std::pair<InfiniteMPOElement, InfiniteLattice>
-ParseInfiniteOperatorAndLattice(std::string const& Str)
+std::pair<std::string, InfiniteLattice>
+ParseOperatorStringAndLattice(std::string const& Str)
 {
    std::string::const_iterator Delim = std::find(Str.begin(), Str.end(), ':');
    if (Delim == Str.end())
@@ -891,8 +984,15 @@ ParseInfiniteOperatorAndLattice(std::string const& Str)
    ++Delim;
    std::string Expr(Delim, Str.end());
 
-   InfiniteMPOElement Op = ParseInfiniteOperator(*Lattice, Expr);
-   return std::make_pair(Op, *Lattice);
+   return {Expr, *Lattice};
+}
+
+std::pair<InfiniteMPOElement, InfiniteLattice>
+ParseInfiniteOperatorAndLattice(std::string const& Str)
+{
+   std::pair<std::string, InfiniteLattice> OpLattice = ParseOperatorStringAndLattice(Str);
+   InfiniteMPOElement Op = ParseInfiniteOperator(OpLattice.second, OpLattice.first);
+   return {Op, OpLattice.second};
 }
 
 ProductMPO

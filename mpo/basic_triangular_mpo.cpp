@@ -526,6 +526,7 @@ BasicTriangularMPO operator+(BasicTriangularMPO const& x, BasicTriangularMPO con
       int x_cols = x[Here].Basis2().size();
       int y_cols = y[Here].Basis2().size();
 
+      // TODO: this should throw an exception so that if it comes from the parser then we can give a sensible error message
       CHECK(norm_frob(x[Here](0,0) - y[Here](0,0)) < 1E-10)(x[Here](0,0))(y[Here](0,0));
       CHECK(norm_frob(x[Here](x_rows-1, x_cols-1) - y[Here](y_rows-1, y_cols-1)) < 1E-10)
             (x[Here](x_rows-1, x_cols-1))(y[Here](y_rows-1, y_cols-1));
@@ -692,6 +693,123 @@ BasicTriangularMPO prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y
    }
    optimize(Result);
    return Result;
+}
+
+BasicTriangularMPO disjoint_prod(BasicTriangularMPO const& x, BasicTriangularMPO const& y, QuantumNumbers::QuantumNumber const& q)
+{
+   // Implementation of the 'disjoint product', after Daniel Parker
+   // This really only works for first degree MPO's.  Avoid constructing 'internal' operators on the diagonal
+   // arising from the product of the last element of x with the first element of y, and the first element of x
+   // with the last element of y.  This is the usual product, but we remove (well, not set any matrix elements
+   // leaving them as zero) the relevant rows and cokumns, and rely on optimization to remoe them.
+   // This might have problems for MPOs that are not regular, but fingers crossed.
+   if (x.size() != y.size())
+   {
+      int NewSize = statistics::lcm(x.size(), y.size());
+      return disjoint_prod(repeat(x, NewSize/x.size()), repeat(y, NewSize/y.size()), q);
+   }
+
+   PRECONDITION(is_transform_target(y.TransformsAs(), x.TransformsAs(), q))(x.TransformsAs())(y.TransformsAs())(q)
+      (x.Basis())(x.Basis().front());
+   PRECONDITION_EQUAL(x.size(), y.size());
+
+   typedef Tensor::ProductBasis<BasisList, BasisList> PBasisType;
+
+   BasicTriangularMPO Result(x.size());
+
+   // The basis that wraps around gets the final element projected onto component q only
+   PBasisType ProjectedBasis = PBasisType::MakeTriangularProjected(x.front().Basis1(), y.front().Basis1(), q);
+
+   // loop over the unit cell
+   for (int Here = 0; Here < x.size(); ++Here)
+   {
+      Tensor::ProductBasis<BasisList, BasisList> B1 = (Here == 0) ? ProjectedBasis : PBasisType(x[Here].Basis1(), y[Here].Basis1());
+      Tensor::ProductBasis<BasisList, BasisList> B2 = (Here == x.size()-1) ? ProjectedBasis : PBasisType(x[Here].Basis2(), y[Here].Basis2());
+
+      OperatorComponent Op(x[Here].LocalBasis1(), y[Here].LocalBasis2(), B1.Basis(), B2.Basis());
+
+      for (OperatorComponent::const_iterator I1 = iterate(x[Here].data()); I1; ++I1)
+      {
+         for (OperatorComponent::const_inner_iterator I2 = iterate(I1); I2; ++I2)
+         {
+
+            for (OperatorComponent::const_iterator J1 = iterate(y[Here].data()); J1; ++J1)
+            {
+               // skip the internal components with an identity in both
+               if (I2.index1() == 0 && J1.index() == y.Basis1().size()-1)
+                  continue;
+               if (I2.index1() == x.Basis1().size()-1 && J1.index() == 0)
+                  continue;
+
+               for (OperatorComponent::const_inner_iterator J2 = iterate(J1); J2; ++J2)
+               {
+                  // skip the internal components with an identity in both
+                  if (I2.index2() == 0 && J2.index2() == y.Basis2().size())
+                     continue;
+                  if (I2.index2() == x.Basis2().size() && J2.index2() == 0)
+                     continue;
+
+                  ProductBasis<BasisList, BasisList>::const_iterator B1End = B1.end(I2.index1(), J2.index1());
+                  ProductBasis<BasisList, BasisList>::const_iterator B2End = B2.end(I2.index2(), J2.index2());
+
+                  ProductBasis<BasisList, BasisList>::const_iterator B1Iter = B1.begin(I2.index1(), J2.index1());
+
+                  while (B1Iter != B1End)
+                  {
+                     ProductBasis<BasisList, BasisList>::const_iterator B2Iter = B2.begin(I2.index2(), J2.index2());
+                     while (B2Iter != B2End)
+                     {
+                        SimpleRedOperator ToInsert(x[Here].LocalBasis1(), y[Here].LocalBasis2());
+
+                        // iterate over components of the reducible operators *I1 and *I2
+                        for (SimpleRedOperator::const_iterator IComponent = I2->begin(); IComponent != I2->end(); ++IComponent)
+                        {
+                           for (SimpleRedOperator::const_iterator JComponent = J2->begin(); JComponent != J2->end(); ++JComponent)
+                           {
+
+                              QuantumNumbers::QuantumNumberList ql = transform_targets(IComponent->TransformsAs(),
+                                                                                       JComponent->TransformsAs());
+
+                              for (QuantumNumbers::QuantumNumberList::const_iterator q = ql.begin(); q != ql.end(); ++q)
+                              {
+                                 if (is_transform_target(B2[*B2Iter], *q, B1[*B1Iter]))
+                                 {
+                                    SimpleOperator Next =
+                                       tensor_coefficient(B1, B2,
+                                                          IComponent->TransformsAs(), JComponent->TransformsAs(), *q,
+                                                          I2.index1(), J2.index1(), *B1Iter,
+                                                          I2.index2(), J2.index2(), *B2Iter) *
+                                       prod(*IComponent, *JComponent, *q);
+                                    if (!is_zero(Next.data()))
+                                       ToInsert += Next;
+
+                                 }
+                              }
+                           }
+                        }
+
+                        if (!ToInsert.empty())
+                           Op.data()(*B1Iter, *B2Iter) = ToInsert;
+
+                        ++B2Iter;
+                     }
+                     ++B1Iter;
+                  }
+               }
+            }
+         }
+      }
+
+      Result[Here] = Op;
+   }
+   optimize(Result);
+   return Result;
+}
+
+BasicTriangularMPO commutator(BasicTriangularMPO const& x, BasicTriangularMPO const& y)
+{
+   QuantumNumbers::QuantumNumber Ident(x.GetSymmetryList());
+   return disjoint_prod(x,y,Ident) - disjoint_prod(y,x,Ident);
 }
 
 BasicTriangularMPO

@@ -81,6 +81,7 @@ int main(int argc, char** argv)
       {
          RandSeed = randutil::crypto_rand();
       }
+      randutil::seed(RandSeed);
 
       pheap::Initialize(FName, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 

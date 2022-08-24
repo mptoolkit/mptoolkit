@@ -17,23 +17,15 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "wavefunction/mpwavefunction.h"
-#include "mps/packunpack.h"
+#include "mp-algorithms/write-matrix.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
-#include "tensor/tensor_eigen.h"
-#include "tensor/regularize.h"
-#include "lattice/unitcell.h"
-#include "lattice/infinite-parser.h"
-#include "linearalgebra/arpack_wrapper.h"
-#include <boost/algorithm/string/predicate.hpp>
-#include <fstream>
 #include "common/formatting.h"
-#include <tuple>
+#include <fstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,227 +39,6 @@ bool FileExists(std::string const& Name)
    struct stat buf;
    return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
 }
-
-MatrixOperator
-Regularize(MatrixOperator const& M)
-{
-   MatrixOperator U = Regularize(M.Basis1());
-   MatrixOperator V = Regularize(M.Basis2());
-   return U * M * herm(V);
-}
-
-StateComponent
-Regularize(StateComponent const& M)
-{
-   MatrixOperator U = Regularize(M.Basis1());
-   MatrixOperator V = Regularize(M.Basis2());
-   return prod(U, prod(M, herm(V)));
-}
-
-//
-// MATLAB output format
-//
-
-void WriteMatrixFormatMATLAB(std::ostream& out, LinearAlgebra::Matrix<std::complex<double>> const& M,
-                             bool Quiet = false)
-{
-   if (!Quiet)
-      out << "complex( \n% real part\n  [ ";
-   for (int i = 0; i < M.size1(); ++i)
-   {
-      if (i != 0)
-      {
-         out << ";\n    ";
-      }
-      for (int j = 0; j < M.size2(); ++j)
-      {
-         if (j != 0)
-            out << " ";
-         out << M(i,j).real();
-      }
-   }
-   out << "  ],";
-   if (!Quiet)
-      out << "\n%imaginary part\n  ";
-   out << "[";
-   for (int i = 0; i < M.size1(); ++i)
-   {
-      if (i != 0)
-      {
-         out << ";\n    ";
-      }
-      for (int j = 0; j < M.size2(); ++j)
-      {
-         if (j != 0)
-            out << " ";
-         out << M(i,j).imag();
-      }
-   }
-   out << "  ] )";
-}
-
-void WriteRealMatrixFormatMATLAB(std::ostream& out, LinearAlgebra::Matrix<std::complex<double>> const& M,
-                                 bool quiet = false)
-{
-   out << "[ ";
-   for (int i = 0; i < M.size1(); ++i)
-   {
-      if (i != 0)
-      {
-         out << ";\n    ";
-      }
-      for (int j = 0; j < M.size2(); ++j)
-      {
-         if (j != 0)
-            out << " ";
-         out << M(i,j).real();
-      }
-   }
-   out << "  ]";
-}
-
-void WriteMPS_MATLAB(std::ostream& out, LinearWavefunction const& Psi, MatrixOperator const& Rho, bool Quiet = false)
-{
-   LinearWavefunction::const_iterator I = Psi.begin();
-   int Site = 0;
-   out << "MPS = cell(1," << Psi.size() << ");\n";
-   while (I != Psi.end())
-   {
-      if (!Quiet)
-         out << "% site " << Site << "\n";
-      //         out << "[\n";
-      out << "MPS(1," << (Site+1) << ") = cat(3, \n";
-      StateComponent A = Regularize(*I);
-      for (int i = 0; i < A.size(); ++i)
-      {
-         if (!Quiet)
-            out << "% site " << Site << "  basis state " << i << "\n";
-         if (i != 0)
-            out << ",\n";
-         if (A.Basis1().size() != 1 || A.Basis2().size() != 1)
-         {
-            throw std::runtime_error("mp-matrix: error: mps has non-trivial symmetries");
-         }
-         WriteMatrixFormatMATLAB(out, A[i](0,0), Quiet);
-         out << "\n";
-      }
-      if (!Quiet)
-         out << "% end of site " << Site << "\n";
-      out << ");\n";
-
-      ++I;
-      ++Site;
-   }
-   out << "\n";
-   if (!Quiet)
-      out << "% end of MPS\n";
-
-   if (!Quiet)
-      out << "\n% density matrix\n";
-   out << "RHO = ";
-   WriteRealMatrixFormatMATLAB(out, Rho(0,0), Quiet);
-   out << ";\n";
-   if (!Quiet)
-      out << "% end of density matrix\n";
-}
-
-//
-// Python output format
-//
-
-void WriteMatrixFormatPython(std::ostream& out, LinearAlgebra::Matrix<std::complex<double>> const& M,
-                             std::string Prefix = "", bool Quiet = false)
-{
-   out << "np.array([[";
-   for (int i = 0; i < M.size1(); ++i)
-   {
-      if (i != 0)
-      {
-         out << "],\n" << Prefix << " [";
-      }
-      for (int j = 0; j < M.size2(); ++j)
-      {
-         if (j != 0)
-            out << ", ";
-         out << M(i,j).real() << '+' << M(i,j).imag() << 'j';
-      }
-   }
-   out << "]\n" << Prefix << "])";
-}
-
-void WriteRealMatrixFormatPython(std::ostream& out, LinearAlgebra::Matrix<std::complex<double>> const& M,
-                                 std::string Prefix = "", bool quiet = false)
-{
-   out << "np.array([[";
-   for (int i = 0; i < M.size1(); ++i)
-   {
-      if (i != 0)
-      {
-         out << "],\n" << Prefix << " [";
-      }
-      for (int j = 0; j < M.size2(); ++j)
-      {
-         if (j != 0)
-            out << ", ";
-         out << M(i,j).real();
-      }
-   }
-   out << "]\n" << Prefix << "])";
-}
-
-void WriteMPS_Python(std::ostream& out, LinearWavefunction const& Psi, MatrixOperator const& Rho, bool Quiet = false)
-{
-   LinearWavefunction::const_iterator I = Psi.begin();
-   int Site = 0;
-   out <<"import numpy as np\n";
-   out << "MPS = [\n";
-   while (I != Psi.end())
-   {
-      if (!Quiet)
-         out << "# site " << Site << "\n";
-      out << " np.array([";
-      StateComponent A = Regularize(*I);
-      for (int i = 0; i < A.size(); ++i)
-      {
-         if (!Quiet)
-            out << "  # site " << Site << "  basis state " << i << "\n";
-         if (i != 0)
-            out << " ,\n";
-         if (A.Basis1().size() != 1 || A.Basis2().size() != 1)
-         {
-            throw std::runtime_error("mp-matrix: error: mps has non-trivial symmetries");
-         }
-         out << "  ";
-         WriteMatrixFormatPython(out, A[i](0,0), "  ", Quiet);
-         out << "\n";
-      }
-      if (!Quiet)
-         out << "# end of site " << Site << "\n";
-      out << "])\n";
-
-      ++I;
-      ++Site;
-      if (I != Psi.end())
-      {
-         out << ",\n";
-      }
-   }
-   out << "]\n";
-   if (!Quiet)
-      out << "# end of MPS\n";
-
-   if (!Quiet)
-      out << "\n# density matrix\n";
-   out << "RHO = ";
-   WriteRealMatrixFormatPython(out, Rho(0,0), "", Quiet);
-   out << "\n";
-   if (!Quiet)
-      out << "# end of density matrix\n";
-}
-
-//
-//
-//
 
 int main(int argc, char** argv)
 {
@@ -313,6 +84,8 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
+      Quiet = true;  // TODO: the matlab format doesn't work without this
+
       // Load the wavefunction
       pvalue_ptr<MPWavefunction> Psi
          = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
@@ -323,7 +96,7 @@ int main(int argc, char** argv)
       LinearWavefunction PsiL;
       RealDiagonalOperator D;
       std::tie(PsiL, D) = get_left_canonical(InfPsi);
-      MatrixOperator Rho = Regularize(D);
+      MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
       if (Rho.size1() != 1 || Rho.size2() != 1)
       {

@@ -134,6 +134,8 @@ InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y, QuantumNumbers::Qua
 InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y);
 InfiniteMPO operator*(InfiniteMPO const& x, InfiniteMPO const& y);
 
+InfiniteMPO commutator(InfiniteMPO const& x, InfiniteMPO const& y);
+
 // dot product - takes into account the multiplicity to rescale the result
 InfiniteMPO dot(InfiniteMPO const& x, InfiniteMPO const& y);
 
