@@ -93,92 +93,90 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
    }
    else
    {
+      // arpack parameters
+      int ido = 0;  // first call
+      char bmat = 'I'; // standard eigenvalue problem
+      std::string w = ToStr(which);
+      int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
+      std::vector<std::complex<double> > resid(n);  // residual
+      ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
+      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
+      int const ldv = n;
+      ARPACK::iparam_t iparam;
+      iparam.ishift = 1;      // exact shifts
+      iparam.mxiter = 10000;  // maximum number of arnoldi iterations (restarts?)
+      iparam.mode = 1;  // ordinary eigenvalue problem
+      ARPACK::zn_ipntr_t ipntr;
+      std::vector<std::complex<double> > workd(3*n);
+      int const lworkl = 3*ncv*ncv + 5*ncv;
+      std::vector<std::complex<double> > workl(lworkl);
+      std::vector<double> rwork(ncv);
+      int info = 0;  // no initial residual
 
-   // arpack parameters
-   int ido = 0;  // first call
-   char bmat = 'I'; // standard eigenvalue problem
-   std::string w = ToStr(which);
-   int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-   std::vector<std::complex<double> > resid(n);  // residual
-   ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-   std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
-   int const ldv = n;
-   ARPACK::iparam_t iparam;
-   iparam.ishift = 1;      // exact shifts
-   iparam.mxiter = 10000;  // maximum number of arnoldi iterations (restarts?)
-   iparam.mode = 1;  // ordinary eigenvalue problem
-   ARPACK::zn_ipntr_t ipntr;
-   std::vector<std::complex<double> > workd(3*n);
-   int const lworkl = 3*ncv*ncv + 5*ncv;
-   std::vector<std::complex<double> > workl(lworkl);
-   std::vector<double> rwork(ncv);
-   int info = 0;  // no initial residual
-
-   if (Verbose >= 1)
-   {
-      std::cerr << "Starting ARPACK";
-   }
-
-   int NumMultiplies = 0;
-
-   ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
-                  &v[0], ldv, &iparam, &ipntr, &workd[0],
-                  &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)(info)(n)(nev)(ncv);
-
-   while (ido != 99)
-   {
-      if (ido == -1 || ido == 1)
+      if (Verbose >= 1)
       {
-         if (Verbose >= 2)
-            std::cerr << '.';
-         Mult(&workd[ipntr.x], &workd[ipntr.y]);
-         ++NumMultiplies;
+         std::cerr << "Starting ARPACK";
       }
-      else
-      {
-         PANIC("unexpected reverse communication operation.")(ido);
-      }
+
+      int NumMultiplies = 0;
 
       ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
-      CHECK(info >= 0)(info);
-   }
+      CHECK(info >= 0)(info)(n)(nev)(ncv);
 
-   if (Verbose >= 1)
-   {
-      std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
-   }
+      while (ido != 99)
+      {
+         if (ido == -1 || ido == 1)
+         {
+            if (Verbose >= 2)
+               std::cerr << '.';
+            Mult(&workd[ipntr.x], &workd[ipntr.y]);
+            ++NumMultiplies;
+         }
+         else
+         {
+            PANIC("unexpected reverse communication operation.")(ido);
+         }
 
-   // get the eigenvalues
-   bool rvec = OutputVectors != NULL; // should we calculate eigenvectors?
-   char howmny = 'A';
-   std::vector<int> select(ncv);
-   std::vector<std::complex<double> > d(nev+1);
-   std::vector<std::complex<double> > z(OutputVectors ? n*(nev+1) : 1); // output array
-   int ldz = n;
-   std::complex<double> sigma;   // not referenced
-   std::vector<std::complex<double> > workev(2*ncv);
-   ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                  bmat, n, w.c_str(), nev, tol, &resid[0], ncv, &v[0], ldv,
-                  &iparam, &ipntr, &workd[0],
-                  &workl[0], lworkl, &rwork[0], &info);
-   CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
+         ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
+                        &v[0], ldv, &iparam, &ipntr, &workd[0],
+                        &workl[0], lworkl, &rwork[0], &info);
+         CHECK(info >= 0)(info);
+      }
 
-   Result = LinearAlgebra::Vector<std::complex<double> >(nev);
-   for (int i = 0; i < nev; ++i)
-   {
-      Result[i] = d[i];
-   }
+      if (Verbose >= 1)
+      {
+         std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
+      }
 
-   // eigenvectors
-   if (OutputVectors)
-   {
-      OutputVectors->empty();
-      std::swap(z, *OutputVectors);
-   }
+      // get the eigenvalues
+      bool rvec = OutputVectors != NULL; // should we calculate eigenvectors?
+      char howmny = 'A';
+      std::vector<int> select(ncv);
+      std::vector<std::complex<double> > d(nev+1);
+      std::vector<std::complex<double> > z(OutputVectors ? n*(nev+1) : 1); // output array
+      int ldz = n;
+      std::complex<double> sigma;   // not referenced
+      std::vector<std::complex<double> > workev(2*ncv);
+      ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
+                     bmat, n, w.c_str(), nev, tol, &resid[0], ncv, &v[0], ldv,
+                     &iparam, &ipntr, &workd[0],
+                     &workl[0], lworkl, &rwork[0], &info);
+      CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
 
+      Result = LinearAlgebra::Vector<std::complex<double> >(nev);
+      for (int i = 0; i < nev; ++i)
+      {
+         Result[i] = d[i];
+      }
+
+      // eigenvectors
+      if (OutputVectors)
+      {
+         OutputVectors->empty();
+         std::swap(z, *OutputVectors);
+      }
    }
 
    if (Sort)
