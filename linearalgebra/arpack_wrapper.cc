@@ -44,7 +44,7 @@ inline std::string ToStr(WhichEigenvalues w)
 
 
 template <typename MultFunc>
-Vector<std::complex<double> >
+Vector<std::complex<double>>
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol,
                   std::vector<std::complex<double>>* OutputVectors,
                   int ncv, bool Sort, int Verbose)
@@ -84,7 +84,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       Result = LinearAlgebra::Diagonalize(Mat, LV, RV);
       if (OutputVectors)
       {
-         (*OutputVectors) = std::vector<std::complex<double> >(n*n);
+         (*OutputVectors) = std::vector<std::complex<double>>(n*n);
          for (int k =0; k < n; ++k)
          {
             LinearAlgebra::make_vec(&(*OutputVectors)[n*k], n) = RV(k, LinearAlgebra::all);
@@ -167,7 +167,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
 
       if (Verbose >= 1)
       {
-         std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
+         std::cerr << "Finished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << std::endl;
       }
 
       // get the eigenvalues
@@ -211,7 +211,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
                std::swap(Result[i], Result[j]);
                if (OutputVectors)
                {
-                  std::vector<std::complex<double> > Temp(&(*OutputVectors)[n*i],
+                  std::vector<std::complex<double>> Temp(&(*OutputVectors)[n*i],
                                                           &(*OutputVectors)[n*i]+n);
                   LinearAlgebra::fast_copy(&(*OutputVectors)[n*j],
                                            &(*OutputVectors)[n*j]+n,

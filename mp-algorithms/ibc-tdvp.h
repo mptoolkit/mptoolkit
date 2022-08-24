@@ -5,7 +5,7 @@
 // mp-algorithms/ibc-tdvp.h
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,11 +29,12 @@ class IBC_TDVP : public TDVP
    public:
       IBC_TDVP() {}
 
-      IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
-               std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-               double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-               double GMRESTol_, double FidTol_, double LambdaTol_,
-               bool UCExpand_ = false, int NExpand_ = 0, int Comoving_ = 0);
+      IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_,
+               std::complex<double> InitialTime_, std::complex<double> Timestep_,
+               Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+               bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
+               double FidTol_, double LambdaTol_, bool UCExpand_ = false,
+               int NExpand_ = 0, int Comoving_ = 0);
 
       IBCWavefunction Wavefunction() const;
 
@@ -85,6 +86,7 @@ class IBC_TDVP : public TDVP
 
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
+      BasicTriangularMPO HamiltonianWindow;
       BasicTriangularMPO HamiltonianLeft;
       BasicTriangularMPO HamiltonianRight;
       std::deque<StateComponent> HamLeftUC;

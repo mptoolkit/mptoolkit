@@ -52,14 +52,14 @@ std::string ToStr(WhichEigenvalues);
 // For generic problems, WhichEigenvalues must be one of
 // LargestMagnitude, SmallestMagnitude, LargestReal, SmallestReal, LargestImag, SmallestImag
 template <typename MultFunc>
-Vector<std::complex<double> >
+Vector<std::complex<double>>
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol = 1e-10,
                   std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0);
 
 // For backwards compatibility, target the eigenvalues with the largest magnitude if unspecified.
 template <typename MultFunc>
-Vector<std::complex<double> >
+Vector<std::complex<double>>
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
                   std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0)

@@ -5,7 +5,7 @@
 // mp-algorithms/ibc-tdvp.cpp
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,15 +24,20 @@
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
 
-IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
-                   std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-                   double ErrTol_, StatesInfo SInfo_, bool Epsilon_, int Verbose_,
-                   double GMRESTol_, double FidTol_, double LambdaTol_,
-                   bool UCExpand_, int NExpand_, int Comoving_)
-   : TDVP(Ham_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_, Epsilon_, Verbose_),
+IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_,
+                   std::complex<double> InitialTime_, std::complex<double> Timestep_,
+                   Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
+                   bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
+                   double FidTol_, double LambdaTol_, bool UCExpand_,
+                   int NExpand_, int Comoving_)
+   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_,
+          SInfo_, Epsilon_, ForceExpand_, Verbose_),
    GMRESTol(GMRESTol_), FidTol(FidTol_), LambdaTol(LambdaTol_),
    UCExpand(UCExpand_), NExpand(NExpand_), Comoving(Comoving_)
 {
+   // We do not (currently) support time dependent Hamiltonians.
+   CHECK(Ham.is_time_dependent() == false);
+
    PsiLeft = Psi_.Left;
    PsiRight = Psi_.Right;
    WindowLeftSites = Psi_.WindowLeftSites;
@@ -42,8 +47,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
 
    // Set left/right Hamiltonian sizes to match the unit cell sizes.
-   HamiltonianLeft = Hamiltonian;
-   HamiltonianRight = Hamiltonian;
+   HamiltonianLeft = Ham();
+   HamiltonianRight = Ham();
 
    if (HamiltonianLeft.size() < PsiLeft.size())
       HamiltonianLeft = repeat(HamiltonianLeft, PsiLeft.size() / HamiltonianLeft.size());
@@ -152,7 +157,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       MatrixOperator Lambda = Psi_.Window.lambda_r();
       Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
 
-      Hamiltonian = BasicTriangularMPO();
+      HamiltonianWindow = BasicTriangularMPO();
 
       if (UCExpand)
       {
@@ -192,13 +197,12 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
       // left/right boundaries.
       int WindowSizeWholeUCs = Psi.size() - WindowRightSites - WindowLeftSites;
 
-      if (Hamiltonian.size() < WindowSizeWholeUCs)
-         Hamiltonian = repeat(Hamiltonian, WindowSizeWholeUCs / Hamiltonian.size());
+      HamiltonianWindow = repeat(Ham(), WindowSizeWholeUCs / Ham().size());
 
       // Now add the "left over" terms to Hamiltonian from partially
       // incorporating unit cells from the left/right boundaries.
       std::vector<OperatorComponent> HamiltonianNew;
-      HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+      HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
 
       for (int i = 0; i < WindowLeftSites; ++i)
       {
@@ -212,9 +216,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, BasicTriangularMPO const& Ham_,
          ++HRight;
       }
 
-      Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+      HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
-      H = Hamiltonian.begin();
+      H = HamiltonianWindow.begin();
 
       // Construct the left Hamiltonian environments for the window.
       while (C != Psi.end())
@@ -299,9 +303,9 @@ IBC_TDVP::ExpandWindowLeftUC()
 
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
-   HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
    HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianLeft.data().begin(), HamiltonianLeft.data().end());
-   Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
    // Add the unit cell to the Hamiltonian environment.
    HamL.pop_front();
@@ -309,7 +313,7 @@ IBC_TDVP::ExpandWindowLeftUC()
 
    // Reset iterators to previous location.
    C = Psi.begin();
-   H = Hamiltonian.begin();
+   H = HamiltonianWindow.begin();
    for (int i = Offset; i < Site; ++i)
       ++C, ++H;
 
@@ -337,8 +341,8 @@ IBC_TDVP::ExpandWindowRightUC()
    // Add the unit cell to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
    HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianRight.data().begin(), HamiltonianRight.data().end());
-   HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
-   Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
+   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
    // Add the unit cell to the Hamiltonian environment.
    HamR.pop_back();
@@ -346,7 +350,7 @@ IBC_TDVP::ExpandWindowRightUC()
 
    // Reset iterators to previous location.
    C = Psi.end();
-   H = Hamiltonian.end();
+   H = HamiltonianWindow.end();
    for (int i = RightStop; i >= Site; --i)
       --C, --H;
 
@@ -372,16 +376,16 @@ IBC_TDVP::ExpandWindowLeftSite()
 
    // Add the site's operator to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
-   HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
+   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
    HamiltonianNew.insert(HamiltonianNew.begin(), *HLeft);
-   Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
    // Add the site to the Hamiltonian environment.
    HamL.push_front(*HamLeft);
 
    // Reset iterators to previous location.
    C = Psi.begin();
-   H = Hamiltonian.begin();
+   H = HamiltonianWindow.begin();
    for (int i = Offset; i < Site; ++i)
       ++C, ++H;
 
@@ -416,15 +420,15 @@ IBC_TDVP::ExpandWindowRightSite()
    // Add the site's operator to the Hamiltonian.
    std::vector<OperatorComponent> HamiltonianNew;
    HamiltonianNew.insert(HamiltonianNew.begin(), *HRight);
-   HamiltonianNew.insert(HamiltonianNew.begin(), Hamiltonian.data().begin(), Hamiltonian.data().end());
-   Hamiltonian = BasicTriangularMPO(HamiltonianNew);
+   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
+   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
    // Add the site to the Hamiltonian environment.
    HamR.push_back(*HamRight);
 
    // Reset iterators to previous location.
    C = Psi.end();
-   H = Hamiltonian.end();
+   H = HamiltonianWindow.end();
    for (int i = RightStop; i >= Site; --i)
       --C, --H;
 

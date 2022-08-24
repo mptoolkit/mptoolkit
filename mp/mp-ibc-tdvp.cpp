@@ -5,7 +5,7 @@
 // mp/mp-ibc-tdvp.cpp
 //
 // Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ int main(int argc, char** argv)
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       bool TwoSite = false;
       bool Epsilon = false;
+      bool ForceExpand = false;
       bool UCExpand = false;
       int NExpand = 0;
       int Comoving = 0;
@@ -102,6 +103,7 @@ int main(int argc, char** argv)
          ("n-expand", prog_opt::value(&NExpand), "Expand the window manually every n timesteps")
          ("comoving", prog_opt::value(&Comoving), "Use a comoving window of fixed width of the specified number of sites")
          ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -177,10 +179,6 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
-      // Hamiltonian.
-      InfiniteLattice Lattice;
-      BasicTriangularMPO HamMPO;
-
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -200,7 +198,7 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
+      Hamiltonian Ham(HamStr);
 
       std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
@@ -211,6 +209,10 @@ int main(int argc, char** argv)
       SInfo.TruncationCutoff = TruncCutoff;
       SInfo.EigenvalueCutoff = EigenCutoff;
 
+      // If we are forcing bond dimension expansion, make sure it is turned on as well.
+      if (ForceExpand)
+         Expand = true;
+
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity() || TwoSite)
          std::cout << SInfo << std::endl;
 
@@ -219,9 +221,9 @@ int main(int argc, char** argv)
       if (Eps2SqTol != std::numeric_limits<double>::infinity())
          Epsilon = true;
 
-      IBC_TDVP tdvp(Psi, HamMPO, std::complex<double>(0.0, -1.0)*Timestep,
-                    Comp, MaxIter, ErrTol, SInfo, Epsilon, Verbose, GMRESTol,
-                    FidTol, LambdaTol, UCExpand, NExpand, Comoving);
+      IBC_TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol,
+                    SInfo, Epsilon, ForceExpand, Verbose, GMRESTol, FidTol,
+                    LambdaTol, UCExpand, NExpand, Comoving);
 
       if (SaveEvery == 0)
          SaveEvery = N;
