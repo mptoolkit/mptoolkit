@@ -331,11 +331,11 @@ contract_from_left(OperatorComponent const& M,
 {
    PRECONDITION_EQUAL(M.LocalBasis1(), A.base().LocalBasis());
    PRECONDITION_EQUAL(M.LocalBasis2(), B.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
+   PRECONDITION_EQUAL(M.Basis1(), E.LocalBasis());
    //   DEBUG_PRECONDITION_EQUAL(qshift(A.base().Basis1(), QShiftA), E.Basis1());
    //   DEBUG_PRECONDITION_EQUAL(E.Basis2(), delta_shift(B.Basis1(), QShiftB));
-   DEBUG_PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
-   DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
+   PRECONDITION_EQUAL(A.base().Basis1(), E.Basis1());
+   PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
 
    // firstly, assemble the required H matrix descriptors
    JMatrixRefList JList;
