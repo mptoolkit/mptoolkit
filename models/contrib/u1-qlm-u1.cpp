@@ -85,9 +85,8 @@ int main(int argc, char** argv)
 
       UnitCellMPO t, m;
 
-      // We use a minus sign for the second term to account for the fermionic anticommutation relations.
-      t += Sp(0)[1] * dot(CH(0)[0], C(0)[2]) - Sm(0)[1] * dot(C(0)[0], CH(0)[2]);
-      t += Sp(0)[3] * dot(CH(0)[2], C(1)[0]) - Sm(0)[3] * dot(C(0)[2], CH(1)[0]);
+      t += Sp(0)[1] * dot(CH(0)[0], C(0)[2]) + Sm(0)[1] * dot(CH(0)[2], C(0)[0]);
+      t += Sp(0)[3] * dot(CH(0)[2], C(1)[0]) + Sm(0)[3] * dot(CH(1)[0], C(0)[2]);
 
       m += N(0)[0] - N(0)[2];
 
