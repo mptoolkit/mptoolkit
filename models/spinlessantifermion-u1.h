@@ -3,7 +3,8 @@
 
 inline
 LatticeSite SpinlessAntifermionU1(std::string const& Sym1 = "N",
-                              std::string const& ParityOp = "P")
+                                  std::string const& ParityOp = "P",
+                                  bool Bosonic = false)
 {
    SymmetryList Symmetry(Sym1+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
@@ -24,7 +25,8 @@ LatticeSite SpinlessAntifermionU1(std::string const& Sym1 = "N",
       ("N"       , "number operator")
       ;
 
-   LatticeCommute Fermionic = ParityOp == "P" ? LatticeCommute::Fermionic : LatticeCommute(ParityOp);
+   LatticeCommute Fermionic = ParityOp == "P" ? (Bosonic ? LatticeCommute::Bosonic : LatticeCommute::Fermionic)
+                                              : LatticeCommute(ParityOp);
 
    CH = SiteOperator(Basis, QN(1), Fermionic);
    C = SiteOperator(Basis, QN(-1), Fermionic);

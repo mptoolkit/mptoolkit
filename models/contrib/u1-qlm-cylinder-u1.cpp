@@ -54,6 +54,7 @@ int main(int argc, char** argv)
       int x = 0;
       int y = 4;
       half_int Spin = 0.5;
+      bool Bosonic = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -61,6 +62,7 @@ int main(int argc, char** argv)
          //(",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str()) TODO: twisted boundaries
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
+         ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -79,9 +81,8 @@ int main(int argc, char** argv)
          ("H_ty" , "nearest-neighbor hopping in x-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
-         ("H_a"  , "renormalisation term A")
-         ("H_b"  , "renormalisation term B")
-         ("H_c"  , "renormalisation term C (= -A)")
+         ("H_flux"     , "electric flux")
+         ("H_stag_flux", "staggered electric flux")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -101,8 +102,8 @@ int main(int argc, char** argv)
 
       int CellSize = x == 0 ? 6*y : 6*x;
 
-      LatticeSite FSite = SpinlessFermionU1();
-      LatticeSite AFSite = SpinlessAntifermionU1();
+      LatticeSite FSite = SpinlessFermionU1("N", "P", Bosonic);
+      LatticeSite AFSite = SpinlessAntifermionU1("N", "P", Bosonic);
       LatticeSite SSite = SpinSite(Spin);
       UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite, SSite);
       UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite, SSite);
@@ -113,32 +114,23 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m, a, b;
+      UnitCellMPO tx, ty, m, flux, stag_flux;
       // the XY configuration is special
       if (x == 0)
       {
          for (int i = 0; i < 3*y; i += 3)
          {
-            // We use a minus sign for the second term to account for the fermionic anticommutation relations.
-            tx += Sp(0)[i+1] * dot(CH(0)[i], C(0)[i+3*y]) - Sm(0)[i+1] * dot(C(0)[i], CH(0)[i+3*y]);
-            tx += Sp(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i]) - Sm(0)[i+1+3*y] * dot(C(0)[i+3*y], CH(1)[i]);
-            ty += Sp(0)[i+2] * dot(CH(0)[i], C(0)[(i+3)%(3*y)]) - Sm(0)[i+2] * dot(C(0)[i], CH(0)[(i+3)%(3*y)]);
+            tx += Sp(0)[i+1]     * dot(CH(0)[i],     C(0)[i+3*y])           + Sm(0)[i+1]     * dot(CH(0)[i+3*y], C(0)[i]);
+            tx += Sp(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i])               + Sm(0)[i+1+3*y] * dot(CH(1)[i], C(0)[i+3*y]);
+            ty += Sp(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Sm(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
             // This term is intentionally negative.
-            ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) - Sm(0)[i+2+3*y] * dot(C(0)[i+3*y], CH(0)[(i+3)%(3*y)+3*y]);
+            ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Sm(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
+            flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
          }
          for (int i = 0; i < 3*y; i += 6)
-            m += N(0)[i] - N(0)[i+3] - N(0)[i+3*y] + N(0)[i+3+3*y];
-         for (int i = 0; i < 3*y; i += 3)
          {
-            a += N(0)[i]                    * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
-            a += N(0)[i+3*y]                * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
-            b += (I(0)[i]-N(0)[i])          * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
-            b += (-I(0)[i+3*y]-N(0)[i+3*y]) * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
-            i += 3;
-            a += N(0)[i]                    * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
-            a += N(0)[i+3*y]                * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
-            b += (-I(0)[i]-N(0)[i])         * (Sz(0)[i+1] - Sz(-1)[i+1+3*y] + Sz(0)[i+2] - Sz(0)[(i-1+3*y)%(3*y)]);
-            b += (I(0)[i+3*y]-N(0)[i+3*y])  * (Sz(0)[i+1+3*y] - Sz(0)[i+1] + Sz(0)[i+2+3*y] - Sz(0)[(i-1+3*y)%(3*y)+3*y]);
+            m += N(0)[i] - N(0)[i+3] - N(0)[i+3*y] + N(0)[i+3+3*y];
+            stag_flux += 4.0*I(0)[i+1] - Sz(0)[i+1] - Sz(0)[i+2] + Sz(0)[i+4] + Sz(0)[i+5] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y] - Sz(0)[i+4+3*y] - Sz(0)[i+5+3*y];
          }
       }
       // TODO
@@ -160,10 +152,9 @@ int main(int argc, char** argv)
       Lattice["H_tx"] = sum_unit(tx);
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
-      Lattice["H_a"] = sum_unit(a);
-      Lattice["H_b"] = sum_unit(b);
-      Lattice["H_c"] = sum_unit(-a);
       Lattice["H_m"] = sum_unit(m);
+      Lattice["H_flux"] = sum_unit(flux);
+      Lattice["H_stag_flux"] = sum_unit(stag_flux);
 
       // Gauss' law operators.
       UnitCellMPO G[2*y];
