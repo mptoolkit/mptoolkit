@@ -48,5 +48,13 @@ overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
    LinearAlgebra::Vector<std::complex<double>> RightEigen =
       LinearAlgebra::DiagonalizeARPACK(Func, n, NumEigen, Tol, nullptr, ncv, true, Verbose);
 
+	// Scale the eigenvalues by the amplitude
+	double LogAmplitude = x.log_amplitude() * (Length/x.size()) + y.log_amplitude() * (Length/y.size());
+
+	for (auto& e : RightEigen)
+	{
+		e *= std::exp(LogAmplitude);
+	}
+
    return std::make_tuple(std::vector<std::complex<double>>(RightEigen.begin(), RightEigen.end()), Length);
 }

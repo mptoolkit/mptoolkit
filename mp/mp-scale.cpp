@@ -86,16 +86,13 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionLeft>())
       {
-	 std::complex<double> y = x / std::abs(x);
-	 if (std::abs(y-x) > 1e-10)
-	 {
-	    std::cout << "warning: phase factor for infinite wavefunction was normalized from " <<
-	       format_complex(x) << " to " << format_complex(y) << "\n";
-	 }
-	 std::pair<LinearWavefunction, RealDiagonalOperator> p = get_left_canonical(Psi->get<InfiniteWavefunctionLeft>());
-	 (*p.first.begin()) *= y;
-	 *Psi.mutate() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(p.first, p.second,
-									   Psi->get<InfiniteWavefunctionLeft>().qshift());
+         std::complex<double> Phase = x / std::abs(x);
+         double Amplitude = std::abs(x);
+         double PsiLogAmplitude = Psi->get<InfiniteWavefunctionLeft>().log_amplitude();
+         std::pair<LinearWavefunction, RealDiagonalOperator> p = get_left_canonical(Psi->get<InfiniteWavefunctionLeft>());
+         (*p.first.begin()) *= Phase;
+         *Psi.mutate() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(p.first, p.second,
+         							   Psi->get<InfiniteWavefunctionLeft>().qshift(), PsiLogAmplitude + std::log(Amplitude));
       }
       else
       {

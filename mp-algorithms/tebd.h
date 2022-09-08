@@ -51,6 +51,6 @@ extern std::map<std::string, LTSDecomposition> Decompositions;
 
 TruncationInfo
 DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
-       SimpleOperator const& U, StatesInfo const& SInfo);
+       double& LogAmplitude, SimpleOperator const& U, StatesInfo const& SInfo);
 
 #endif
