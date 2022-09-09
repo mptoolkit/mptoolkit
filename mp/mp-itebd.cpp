@@ -321,7 +321,7 @@ int main(int argc, char** argv)
       }
 
       // Allow both timestep and betastep.  the timestep is stored as the 'real' time.  The time evolution
-      // operator is -1.0i * Timestep * H
+      // operator is -1i * Timestep * H = -izH where the complex time is z = t - i \beta
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
