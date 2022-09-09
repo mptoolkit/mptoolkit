@@ -172,22 +172,16 @@ Hamiltonian::set_size(int Size_)
       HamMPO = repeat(HamMPO, Size / HamMPO.size());
 }
 
-TDVP::TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
-           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, bool ForceExpand_,
-           int Verbose_)
-   : Ham(Ham_), InitialTime(InitialTime_), Timestep(Timestep_), Comp(Comp_),
-     MaxIter(MaxIter_), ErrTol(ErrTol_), SInfo(SInfo_), Epsilon(Epsilon_),
-     ForceExpand(ForceExpand_), Verbose(Verbose_)
+TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
+   : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
+     Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
+     SInfo(Settings_.SInfo), Epsilon(Settings_.Epsilon),
+     ForceExpand(Settings_.ForceExpand), Verbose(Settings_.Verbose)
 {
 }
 
-TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
-           std::complex<double> InitialTime_, std::complex<double> Timestep_,
-           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, bool ForceExpand_, int Verbose_)
-   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
-          Epsilon_, ForceExpand_, Verbose_)
+TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, TDVPSettings const& Settings_)
+   : TDVP(Ham_, Settings_)
 {
    // Initialize Psi and Ham.
    Time = InitialTime;

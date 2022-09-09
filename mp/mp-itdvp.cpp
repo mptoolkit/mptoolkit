@@ -45,25 +45,18 @@ int main(int argc, char** argv)
       std::string TimestepStr;
       int N = 1;
       int SaveEvery = 1;
-      int MaxIter = 20;
-      double ErrTol = 1e-16;
-      double GMRESTol = 1e-13;
-      int MinStates = 1;
-      int MaxStates = 100000;
-      double TruncCutoff = 0;
-      double EigenCutoff = 1e-16;
       bool Expand = false;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
-      double LambdaTol = 1e-16;
-      int MaxSweeps = 10;
-      bool Epsilon = false;
-      int NEps = 2;
-      bool ForceExpand = false;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
       std::string Magnus = "2";
       std::string TimeVar = "t";
+
+      iTDVPSettings Settings;
+      Settings.SInfo.MinStates = 1;
+      Settings.SInfo.TruncationCutoff = 0;
+      Settings.SInfo.EigenvalueCutoff = 1e-16;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -75,29 +68,29 @@ int main(int argc, char** argv)
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
 	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
-         ("maxiter", prog_opt::value(&MaxIter),
-          FormatDefault("Maximum number of Lanczos iterations per step", MaxIter).c_str())
-         ("errtol", prog_opt::value(&ErrTol),
-          FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
-         ("gmrestol", prog_opt::value(&GMRESTol),
-          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
-         ("min-states", prog_opt::value(&MinStates),
-          FormatDefault("Minimum number of states to keep", MinStates).c_str())
-         ("states,m", prog_opt::value(&MaxStates),
-          FormatDefault("Maximum number of states", MaxStates).c_str())
-         ("trunc,r", prog_opt::value(&TruncCutoff),
-          FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
-          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("maxiter", prog_opt::value(&Settings.MaxIter),
+          FormatDefault("Maximum number of Lanczos iterations per step", Settings.MaxIter).c_str())
+         ("errtol", prog_opt::value(&Settings.ErrTol),
+          FormatDefault("Error tolerance for the Lanczos evolution", Settings.ErrTol).c_str())
+         ("gmrestol", prog_opt::value(&Settings.GMRESTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
+         ("min-states", prog_opt::value(&Settings.SInfo.MinStates),
+          FormatDefault("Minimum number of states to keep", Settings.SInfo.MinStates).c_str())
+         ("states,m", prog_opt::value(&Settings.SInfo.MaxStates),
+          FormatDefault("Maximum number of states", Settings.SInfo.MaxStates).c_str())
+         ("trunc,r", prog_opt::value(&Settings.SInfo.TruncationCutoff),
+          FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", Settings.SInfo.EigenvalueCutoff).c_str())
          ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
-         ("lambdatol,l", prog_opt::value(&LambdaTol),
-          FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", LambdaTol).c_str())
-         ("max-sweeps", prog_opt::value(&MaxSweeps),
-          FormatDefault("Maximum number of sweeps", MaxSweeps).c_str())
-         ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
-         ("neps,N", prog_opt::value(&NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
-         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [use with caution!]")
+         ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
+          FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", Settings.LambdaTol).c_str())
+         ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),
+          FormatDefault("Maximum number of sweeps", Settings.MaxSweeps).c_str())
+         ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("neps,N", prog_opt::value(&Settings.NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
+         ("force-expand", prog_opt::bool_switch(&Settings.ForceExpand), "Force bond dimension expansion [use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
@@ -131,14 +124,15 @@ int main(int argc, char** argv)
       std::cout << "Wavefunction: " << InputFile << std::endl;
       std::cout << "Composition: " << CompositionStr << std::endl;
 
+      Settings.Verbose = Verbose;
+
       // Load the composition scheme.
-      Composition Comp;
       for (auto const& c : Compositions)
       {
          if (c.first == CompositionStr)
-            Comp = c.second;
+            Settings.Comp = c.second;
       }
-      if (Comp.Order == 0)
+      if (Settings.Comp.Order == 0)
       {
          std::cerr << "fatal: invalid composition" << std::endl;
          return 1;
@@ -175,6 +169,9 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
+      Settings.InitialTime = InitialTime;
+      Settings.Timestep = Timestep;
+
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -196,55 +193,45 @@ int main(int argc, char** argv)
 
       Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar);
 
-      std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
-      std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
+      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
+      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
 
-      std::cout << "Maximum number of sweeps: " << MaxSweeps << std::endl;
-      std::cout << "Error tolerance for LambdaR: " << LambdaTol << std::endl;
-
-      StatesInfo SInfo;
-      SInfo.MinStates = MinStates;
-      SInfo.MaxStates = MaxStates;
-      SInfo.TruncationCutoff = TruncCutoff;
-      SInfo.EigenvalueCutoff = EigenCutoff;
+      std::cout << "Maximum number of sweeps: " << Settings.MaxSweeps << std::endl;
+      std::cout << "Error tolerance for LambdaR: " << Settings.LambdaTol << std::endl;
 
       // If we are forcing bond dimension expansion, make sure it is turned on as well.
-      if (ForceExpand)
+      if (Settings.ForceExpand)
          Expand = true;
 
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity())
-         std::cout << SInfo << std::endl;
+         std::cout << Settings.SInfo << std::endl;
 
       // Make sure calculation of Eps2Sq is turned on if we are using it to
       // determine whether to expand the bonds, or if we are calculating EpsNSq
       // for N > 2.
-      if (Eps2SqTol != std::numeric_limits<double>::infinity() || NEps > 2)
-         Epsilon = true;
+      if (Eps2SqTol != std::numeric_limits<double>::infinity() || Settings.NEps > 2)
+         Settings.Epsilon = true;
 
-      iTDVP itdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol, SInfo,
-                  Epsilon, ForceExpand, Verbose, GMRESTol, MaxSweeps, LambdaTol, NEps);
+      iTDVP itdvp(Psi, Ham, Settings);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       // Calculate initial values of epsilon.
-      if (Epsilon)
+      if (Settings.Epsilon)
          itdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " MaxStates=" << itdvp.MaxStates
                 << " E=" << std::real(itdvp.InitialE);
-
-      if (Epsilon)
+      if (Settings.Epsilon)
       {
          std::cout << " Eps1SqSum=" << itdvp.Eps1SqSum
                    << " Eps2SqSum=" << itdvp.Eps2SqSum;
-
-         for (int i = 0; i < NEps-2; ++i)
+         for (int i = 0; i < Settings.NEps-2; ++i)
             std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
       }
-
       std::cout << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
@@ -264,16 +251,13 @@ int main(int argc, char** argv)
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << " MaxStates=" << itdvp.MaxStates
                    << " E=" << std::real(itdvp.E);
-
-         if (Epsilon)
+         if (Settings.Epsilon)
          {
             std::cout << " Eps1SqSum=" << itdvp.Eps1SqSum
                       << " Eps2SqSum=" << itdvp.Eps2SqSum;
-
-            for (int i = 0; i < NEps-2; ++i)
+            for (int i = 0; i < Settings.NEps-2; ++i)
                std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
          }
-
          std::cout << std::endl;
 
          // Save the wavefunction.
