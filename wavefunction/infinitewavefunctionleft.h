@@ -207,27 +207,27 @@ overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
 std::tuple<std::complex<double>, int, StateComponent>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
         InfiniteWavefunctionLeft const& y,
-        QuantumNumbers::QuantumNumber const& Sector,
+        QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true,
         int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 std::tuple<std::complex<double>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y,
-	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version calculates n eigenvalues
 std::tuple<std::vector<std::complex<double>>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y, int n,
-	       QuantumNumbers::QuantumNumber const& Sector, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 inline
 std::tuple<std::complex<double>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y,
-	       QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude, int Iter, double Tol, int Verbose)
 {
-	auto r = overlap_arpack(x, StringOp, y, 1, Sector, Iter, Tol, Verbose);
+	auto r = overlap_arpack(x, StringOp, y, 1, Sector, UseAmplitude, Iter, Tol, Verbose);
    return std::make_tuple(std::get<0>(r)[0], std::get<1>(r));  // Could be improved with C++17
 }
 
