@@ -75,6 +75,11 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       double log_amplitude() const { return LogAmplitude; }
 
+      // Scale the wavefunction by the complex number x.  This has the effect of adding
+      // log(x).real() to the log_amplitude, and rotating the first matrix of the unit cell by
+      // x / |x|
+      void scale(std::complex<double> x);
+
       // Rotates the wavefunction to the left, by taking the left-most site
       // and moving it to the right
       void rotate_left(int Count);
@@ -133,6 +138,9 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       friend InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi,
                                                       SymmetryList const& NewSL);
 };
+
+// Multiplication by a scalar does the same as psi.scale(x)
+InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x);
 
 class InfiniteWavefunctionRight;
 

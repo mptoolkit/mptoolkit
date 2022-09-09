@@ -136,6 +136,7 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
                                                   double LogAmplitude,
                                                   int Verbose)
 {
+   std::cerr << "warning: ConstructFromOrthogonal might not be reliable!\n";
    InfiniteWavefunctionLeft Result(QShift_, LogAmplitude);
    Result.Initialize(Psi, Lambda, Verbose-1);
    return Result;
@@ -351,6 +352,7 @@ InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOpera
    MatrixOperator M = right_orthogonalize(Psi, Lambda, Verbose-1);
    // normalize
    M *= 1.0 / norm_frob(M);
+
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
@@ -500,6 +502,25 @@ get_right_canonical(InfiniteWavefunctionLeft const& Psi)
    }
 
    return std::make_tuple(U, D, Result);
+}
+
+void InfiniteWavefunctionLeft::scale(std::complex<double> x)
+{
+   double Amplitude = std::abs(x);
+   x = x / Amplitude;  // x is now the phase
+   LogAmplitude += std::log(Amplitude);
+   // Because the components have value semantics we can't directly load() the pvalue_ptr
+   // and then mutate it, because pvalue_handle's are immutable - we would end up referring
+   // do a different object.
+   pvalue_ptr<StateComponent> s = this->base_begin_()->load();
+   *s.mutate() *= x;
+   *this->base_begin_() = s;
+}
+
+InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x)
+{
+   psi.scale(x);
+   return psi;
 }
 
 void
