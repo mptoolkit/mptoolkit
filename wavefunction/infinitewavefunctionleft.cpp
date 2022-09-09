@@ -927,6 +927,8 @@ expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
    }
    //TRACE(m-n);
    MatrixOperator X = MatrixOperator::make_identity(I->Basis1());
+   CHECK_EQUAL(i->Basis1().size(), 1);
+   CHECK(is_scalar(i->Basis1()[0]));
    StateComponent E(i->Basis1(), X.Basis1(), X.Basis2());
    E[0] = X;
    while (n < m)
@@ -988,6 +990,3 @@ fine_grain(InfiniteWavefunctionLeft const& x, int N, std::vector<BasisList> cons
 
 )
 #endif
-
-
-

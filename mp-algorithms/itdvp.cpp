@@ -45,14 +45,10 @@ struct HEff2
    StateComponent const& F;
 };
 
-iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
-             std::complex<double> InitialTime_, std::complex<double> Timestep_,
-             Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-             bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
-             int MaxSweeps_, double LambdaTol_, int NEps_)
-   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_, SInfo_,
-          Epsilon_, ForceExpand_, Verbose_),
-     GMRESTol(GMRESTol_), MaxSweeps(MaxSweeps_), LambdaTol(LambdaTol_), NEps(NEps_)
+iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDVPSettings Settings_)
+   : TDVP(Ham_, Settings_),
+     GMRESTol(Settings_.GMRESTol), MaxSweeps(Settings_.MaxSweeps),
+     LambdaTol(Settings_.LambdaTol), NEps(Settings_.NEps)
 {
    // Initialize Psi and Ham.
    Time = InitialTime;

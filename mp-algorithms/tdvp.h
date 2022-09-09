@@ -74,20 +74,27 @@ class Hamiltonian
       BasicTriangularMPO HamMPO;
 };
 
+struct TDVPSettings
+{
+   std::complex<double> InitialTime;
+   std::complex<double> Timestep;
+   Composition Comp;
+   int MaxIter = 20;
+   double ErrTol = 1e-16;
+   StatesInfo SInfo;
+   bool Epsilon = false;
+   bool ForceExpand = false;
+   int Verbose = 0;
+};
+
 class TDVP
 {
    public:
       TDVP() {}
 
-      TDVP(Hamiltonian const& Ham_, std::complex<double> InitialTime_,
-           std::complex<double> Timestep_, Composition Comp_, int MaxIter_,
-           double ErrTol_, StatesInfo SInfo_, bool Epsilon_, bool ForceExpand_,
-           int Verbose_);
+      TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_);
 
-      TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
-           std::complex<double> InitialTime_, std::complex<double> Timestep_,
-           Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-           bool Epsilon_, bool ForceExpand_, int Verbose_);
+      TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, TDVPSettings const& Settings_);
 
       // Return the current wavefunction in left-canonical form.
       FiniteWavefunctionLeft Wavefunction() const;

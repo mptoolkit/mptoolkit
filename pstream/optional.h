@@ -33,7 +33,7 @@ namespace PStream
 template <int format, typename T>
 opstreambuf<format>& operator<<(opstreambuf<format>& out, boost::optional<T> const& x)
 {
-   bool b = x;
+   bool b = bool(x);
    out << b;
    if (b)
       out << (*x);

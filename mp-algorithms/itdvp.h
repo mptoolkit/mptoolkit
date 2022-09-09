@@ -24,16 +24,20 @@
 #include "tdvp.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 
+struct iTDVPSettings : TDVPSettings
+{
+   double GMRESTol = 1e-13;
+   double LambdaTol = 1e-16;
+   int MaxSweeps = 10;
+   int NEps = 2;
+};
+
 class iTDVP : public TDVP
 {
    public:
       iTDVP() {}
 
-      iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_,
-            std::complex<double> InitialTime_, std::complex<double> Timestep_,
-            Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-            bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
-            int MaxSweeps_, double LambdaTol_, int NEps_);
+      iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDVPSettings Settings_);
 
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
