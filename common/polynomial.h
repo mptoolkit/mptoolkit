@@ -18,10 +18,10 @@
 // ENDHEADER
 
 // A simple polynomial class over a templated coefficient field.
-// The domain is not specified in this class, so we don't actually
-// define the function call operator.  Rather, this class defines
+// The domain is not specified in this class, rather, this class defines
 // an abstract polynomial of the form
 // sum_i a_i X^i, where X is some abstract symbol.
+// There are templated functions to evaluate the polynomial and its derivatives.
 //
 // Addition and subtraction are defined, as addition of the coefficients
 // of each degree.
@@ -31,6 +31,7 @@
 
 #include <map>
 #include <ostream>
+#include <cmath>
 
 template <typename CoefficientField>
 class Polynomial
@@ -64,6 +65,22 @@ class Polynomial
       coefficient_type& operator[](int n) { return data_[n]; }
 
       coefficient_type operator[](int n) const { return this->coefficient(n); }
+
+      // evaluate the polynomial at point x.  Returns sum_n coefficient(n) * pow(x,n)
+      template <typename T>
+      auto evaluate(T const& x) const -> decltype(coefficient_type() * x);
+
+      // equivalent to evaluate()
+      template <typename T>
+      auto operator()(T const& x) const -> decltype(coefficient_type() * x);
+
+      // evalutes the first derivative
+      template <typename T>
+      auto derivative(T const& x) const -> decltype(coefficient_type() * x);
+
+      // evaluates the n'th derivative.  n must be non-negative.
+      template <typename T>
+      auto derivative(T const& x, int n) const -> decltype(coefficient_type() * x);
 
       bool empty() const { return data_.empty(); }
       int degree() const;
@@ -104,6 +121,71 @@ CF Polynomial<CF>::coefficient(int n) const
    if (I == data_.end())
       return coefficient_type();
    return I->second;
+}
+
+template <typename CF>
+template <typename T>
+auto
+Polynomial<CF>::evaluate(T const& x) const -> decltype(CF() * x)
+{
+   using std::pow;
+   const_iterator i = this->begin();
+   if (i == this->end())
+   {
+      return decltype(coefficient_type() * x){};
+   }
+   auto v = i->second * pow(x, i->first);
+   ++i;
+   while (i != this->end())
+   {
+      v += i->second * pow(x, i->first);
+      ++i;
+   }
+   return v;
+}
+
+template <typename CF>
+template <typename T>
+auto
+Polynomial<CF>::operator()(T const& x) const -> decltype(CF() * x)
+{
+   return this->evaluate(x);
+}
+
+// returns the first r terms of n!, i.e. n! / (n-r)!
+inline
+double factorial_r(int n, int r)
+{
+   double v = 1;
+   for (int i = n; i > n-r; --i)
+   {
+      v *= i;
+   }
+   return v;
+}
+
+template <typename CF>
+template <typename T>
+auto
+Polynomial<CF>::derivative(T const& x, int n) const -> decltype(CF() * x)
+{
+   using std::pow;
+   const_iterator i = this->begin();
+   // find the first non-zero component
+   while (i != this->end() && i->first < n)
+      ++i;
+   if (i == this->end())
+   {
+      return decltype(coefficient_type() * x){};
+   }
+   auto v = i->second * pow(x, i->first - n) * factorial_r(i->first, n);
+   ++i;
+   while (i != this->end())
+   {
+      v += i->second * pow(x, i->first - n) * factorial_r(i->first, n);
+      ++i;
+   }
+   return v;
 }
 
 template <typename CF>
