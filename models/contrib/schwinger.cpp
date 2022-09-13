@@ -99,8 +99,8 @@ int main(int argc, char** argv)
 
       Lattice["H_E"] = sum_partial(2 * pow(sum_unit(Nf(0)),2),I)
          + 2 * sum_partial(sum_unit(Nf(0)),N(0)[0])
-         + sum_unit(pow(N(0)[0],2))  // the pow here is redundant since N(0)[0] is a projector, but it is technically there
-         + pow(sum_unit(Nf(0)),2);
+         + sum_unit(pow(N(0)[0],2));  // the pow here is redundant since N(0)[0] is a projector, but it is technically there
+         //+ pow(sum_unit(Nf(0)),2);
 
       Lattice.func("H_l")("l") = "l*2*(2 * sum_partial(sum_unit(Nf(0)),I) + sum_unit(2*Np(0)[0] - Np(0)[1]))";
 
