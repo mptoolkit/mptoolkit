@@ -53,6 +53,7 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
          ("H_c"   , "Fermion hopping")
          ("H_m"   , "Fermion mass")
+         ("H_ms"  , "Fermion mass, using 2*sum(phi^\\dagger phi)")
 		   ("H_E"   , "Electric field (zero background)")
          ;
 
@@ -95,7 +96,8 @@ int main(int argc, char** argv)
             + dot(C(0)[1], CH(1)[0])
          );
 
-      Lattice["H_m"] = sum_unit(Np(0)[0]);
+      Lattice["H_m"] = 2*sum_unit(Np(0));
+      Lattice["H_ms"] = 2*sum_unit(Np(0) - I(0));
 
       Lattice["H_E"] = sum_partial(2 * pow(sum_unit(Nf(0)),2),I)
          + 2 * sum_partial(sum_unit(Nf(0)),N(0)[0])
