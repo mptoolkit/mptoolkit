@@ -189,6 +189,14 @@ Polynomial<CF>::derivative(T const& x, int n) const -> decltype(CF() * x)
 }
 
 template <typename CF>
+template <typename T>
+auto
+Polynomial<CF>::derivative(T const& x) const -> decltype(CF() * x)
+{
+   return this->derivative(x, 1);
+}
+
+template <typename CF>
 std::ostream&
 operator<<(std::ostream& out, Polynomial<CF> const& x)
 {

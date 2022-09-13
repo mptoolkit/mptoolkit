@@ -84,10 +84,11 @@ struct FisherInfo
    double ImagDiff;
    int tag; // tag is initialized to zero and can be used by callers, eg to
    // identify specific fisher lines
+   double DerivMod;
 
    FisherInfo() : Status(Empty), tag(-1) {}
-   FisherInfo(std::complex<double> zm_, double Real_, double ImagDiff_)
-      : Status(Zero), zm(zm_), Real(Real_), ImagDiff(ImagDiff_), tag(NumTags++) {}
+   FisherInfo(std::complex<double> zm_, double Real_, double ImagDiff_, double DerivMod_)
+      : Status(Zero), zm(zm_), Real(Real_), ImagDiff(ImagDiff_), DerivMod(DerivMod_), tag(NumTags++) {}
    explicit FisherInfo(bool b) : Status(NoZero), tag(-1) {}
 
    bool HasZero() const { if (Status == Empty) {std::cerr << "fatal: Fisher info is not intialized.\n"; std::abort(); } return Status == Zero; }
@@ -136,7 +137,7 @@ ProbeLine(int T0, int B0, int T1, int B1)
    // This could be an accident though, if there is no DQPT but the polynomials
    // happen to cross at some accuracy epsilon.  So the seond criteria is that
    // there should be a finite discontinuity in imaginary part.
-   double const ImagEps = 0.05;
+   double const ImagEps = 0.06;
    // The rate function along the line from 0 to zl as x goes from 0 to 1 is
    // f0(x*zl) - f1((x-1.0)*zl)
    auto ratediff = [f0,f1,zlm](double x) { return f0(x*zlm) - f1((x-1.0)*zlm); };
@@ -151,14 +152,14 @@ ProbeLine(int T0, int B0, int T1, int B1)
    std::cout << "f1(z1) is " << f1(0.0) << " f0(z1) is " << f0(zl) << '\n';
    #endif
 
-   if (r0 * r1 > 0.0)
+   if (r0 * r1 >= 0.0)
       return FisherInfo(false);
 
    // we have a candidate.  Do a binary search for the location
    double x0 = 0.0;
    double x1 = 1.0;
    double x = 0.5*(x0+x1);
-   while (std::abs(f0(x*zlm).real() - f1((x-1.0)*zlm).real()) > eps * std::abs(f0(x*zlm).real()))
+   while (x1-x0 > eps)
    {
       if (r0 * ratediff(x).real() > 0)
          x0 = x;
@@ -183,7 +184,8 @@ ProbeLine(int T0, int B0, int T1, int B1)
    std::cout << "f1 is " << f1((x-1.0)*zlm) << '\n';
    #endif
 
-   return FisherInfo(z0m + x*zlm, f0(x*zlm).real(), normalize_angle(ratediff(x).imag()));
+   return FisherInfo(z0m + x*zlm, f0(x*zlm).real(), normalize_angle(ratediff(x).imag()),
+      std::abs(f0.derivative(x*zlm)));
 }
 
 // This function walks the HorizBonds and VertBonds arrays of fisher discoontinuities
@@ -398,8 +400,17 @@ void ShowWalkFisherLine(int T, int B, Direction d, int tag)
       }
 
       std::cout << T << ' ' << B << ' ' << d << ' ';
-      std::cout << -f.zm.real() << ' ' << -f.zm.imag() << ' ' << f.Real << ' ' << f.ImagDiff
-         << ' ' << tag << '\n';
+      if (d == Direction::Up || d == Direction::Left)
+      {
+         std::cout << -f.zm.real() << ' ' << -f.zm.imag() << ' ' << f.Real << ' ' << -f.ImagDiff
+            << ' ' << f.DerivMod << ' ' << tag << '\n';
+      }
+      else
+      {
+         std::cout << -f.zm.real() << ' ' << -f.zm.imag() << ' ' << f.Real << ' ' << f.ImagDiff
+            << ' ' << f.DerivMod << ' ' << tag << '\n';
+      }
+
       #if 0
       if (std::abs(f.zm.real()) < 1E-8)
       {
