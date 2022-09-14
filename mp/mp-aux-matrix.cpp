@@ -249,6 +249,7 @@ int main(int argc, char** argv)
       bool MatrixMarket = false;
       double UnityEpsilon = DefaultEigenUnityEpsilon;
       int Degree = 0;
+      bool Density = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -263,9 +264,10 @@ int main(int argc, char** argv)
           "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
          ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
          ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
+         ("density", prog_opt::bool_switch(&Density), "Display the density matrix")
          ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
          ("restrict", prog_opt::value(&WhichEigenvalues), "Use only this set of eigenvalues of the density matrix [list of indices]")
-         ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+         ("force", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
          ("matrixmarket", prog_opt::bool_switch(&MatrixMarket), "Use Matrix Market output format")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
@@ -475,6 +477,24 @@ int main(int argc, char** argv)
                WriteMatrixOperatorAsSparse(Out, Rho, Format, Epsilon, Polar, Radians);
             else
                WriteMatrixOperatorAsSparseStates(Out, Rho, Format, WhichStates, Epsilon, Polar, Radians);
+         }
+      }
+
+      // Display the density matrix
+      if (Density)
+      {
+         std::cout << "#n    #q        #Eigenvalue\n";
+         int n = 1;
+         for (auto const& e : WhichStates)
+         {
+            LinearAlgebra::const_inner_iterator<MatrixOperator>::type J
+               = iterate_at(Rho.cdata(), e.first, e.first);
+            if (J)
+            {
+               double evalue = (*J)(e.second, e.second).real();
+               std::cout << std::left << std::setw(5) << n << ' ' << std::setw(9) << Rho.Basis1()[e.first] << ' ' << evalue << '\n';
+            }
+            ++n;
          }
       }
 
