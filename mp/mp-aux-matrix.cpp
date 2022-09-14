@@ -250,6 +250,7 @@ int main(int argc, char** argv)
       double UnityEpsilon = DefaultEigenUnityEpsilon;
       int Degree = 0;
       bool Density = false;
+      int Component = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -281,6 +282,7 @@ int main(int argc, char** argv)
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("degree", prog_opt::value(&Degree), FormatDefault("For triangular MPO's, write this degree component of the polynomial", 0).c_str())
+         ("component", prog_opt::value(&Component), FormatDefault("Write this component of the MPO", 0).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -623,7 +625,15 @@ int main(int argc, char** argv)
          std::vector<KMatrixPolyType> E;
          SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, Rho, true, 0, Tol, UnityEpsilon, Verbose);
 
-         MatrixOperator M = E.back()[1.0][Degree];
+         if (!vm.count("component"))
+            Component = E.size()-1;
+
+         if (Component < 0 || Component > E.size()-1)
+         {
+            std::cerr << "fatal: component of the MPO is out of range [0," << (E.size()-1) << "]\n";
+            return 1;
+         }
+         MatrixOperator M = E[Component][1.0][Degree];
 
          // write to file
          std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);
