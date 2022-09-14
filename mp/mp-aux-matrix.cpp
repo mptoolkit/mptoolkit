@@ -432,7 +432,7 @@ int main(int argc, char** argv)
             }
          }
          std::sort(EValues.begin(), EValues.end(), [](std::tuple<int,int,double> const& x, std::tuple<int,int,double> const& y)
-                   { return std::get<2>(x) < std::get<2>(y); });
+                   { return std::get<2>(x) > std::get<2>(y); });
 
          if (WhichEigenvalues.empty())
          {
