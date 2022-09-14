@@ -48,7 +48,8 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen, bool ShowRealPart, bool ShowImagPart,
+void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen,
+                 bool ShowRealPart, bool ShowImagPart,
                  bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
@@ -74,7 +75,8 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumE
    }
    if (ShowRate)
    {
-      std::cout << std::setw(20) << (-std::log(LinearAlgebra::norm_frob(Value)))
+      // NOTE: we don't negate the log term here
+      std::cout << std::setw(20) << (std::log(LinearAlgebra::norm_frob(Value)))
                 << "    ";
    }
    if (ShowMagnitude)
@@ -114,6 +116,7 @@ int main(int argc, char** argv)
       int CoarseGrain1 = 1;
       int CoarseGrain2 = 1;
       int NumEigen = 1; // number of eigenvalues to calculate
+      bool Scale = false; // scale the overlap by 1 / sqrt(<psi1|psi1> <psi2|psi2>)
       std::string String;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -136,9 +139,10 @@ int main(int argc, char** argv)
          ("corr,x", prog_opt::bool_switch(&ShowCorrLength),
           "display the equivalent correlation length")
          ("rate", prog_opt::bool_switch(&ShowRate),
-          "display the rate function -*log(real_part)")
+          "display the rate function log(magnitude) (no minus sign!)")
          ("unitcell,u", prog_opt::value(&UnitCellSize),
           "scale the results to use this unit cell size [default wavefunction unit cell]")
+         ("scale", prog_opt::bool_switch(&Scale), "scale the results by the wavefunction norms 1/sqrt(<psi1|psi1><psi2|psi2>)")
          ("tempfile", prog_opt::bool_switch(&UseTempFile),
           "a temporary data file for workspace (path set by environment MP_BINPATH)")
          ("rotate", prog_opt::value(&Rotate),
@@ -393,6 +397,12 @@ int main(int argc, char** argv)
          {
             std::cout << "#actual size of wavefunction is " << Size << '\n';
          }
+         std::cout << "#psi1 log amplitude per unit cell size is "
+            << Psi1.log_amplitude() * (double(UnitCellSize)/Psi2.size()) << '\n';
+         std::cout << "#psi2 log amplitude per unit cell size is "
+            << Psi2.log_amplitude() * (double(UnitCellSize)/Psi2.size()) << '\n';
+         if (Scale)
+            std::cout << "#overlap will be scaled by 1/amplitude\n";
          std::cout << "#sector     ";
          if (NumEigen > 1)
             std::cout << "#n     ";
@@ -423,7 +433,7 @@ int main(int argc, char** argv)
          //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
          std::vector<std::complex<double>> Eigen;
          int Length;
-         std::tie(Eigen, Length) = overlap_arpack(Psi1, StringOp, Psi2, NumEigen, *I, Iter, Tol, Verbose);
+         std::tie(Eigen, Length) = overlap_arpack(Psi1, StringOp, Psi2, NumEigen, *I, !Scale, Iter, Tol, Verbose);
          ScaleFactor = double(UnitCellSize) / double(Length);
 
          if (Sort)
@@ -439,8 +449,8 @@ int main(int argc, char** argv)
             int n = 0;
             for (auto const& e : Eigen)
             {
-               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude,
-                           ShowArgument, ShowRadians, ScaleFactor);
+               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart,
+                  ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
             }
 
          }
@@ -451,8 +461,8 @@ int main(int argc, char** argv)
          std::sort(EigenList.begin(), EigenList.end());
          for (auto const& e : EigenList)
          {
-            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument,
-                        ShowRadians, ScaleFactor);
+            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart,
+               ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
          }
       }
 

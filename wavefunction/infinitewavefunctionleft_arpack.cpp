@@ -26,7 +26,7 @@
 std::tuple<std::vector<std::complex<double>>, int>
 overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y, int NumEigen,
-	       QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude, int Iter, double Tol, int Verbose)
 {
 
    int Length = statistics::lcm(x.size(), y.size(), StringOp.size());
@@ -47,6 +47,14 @@ overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 
    LinearAlgebra::Vector<std::complex<double>> RightEigen =
       LinearAlgebra::DiagonalizeARPACK(Func, n, NumEigen, Tol, nullptr, ncv, true, Verbose);
+
+	// Scale the eigenvalues by the amplitude
+	if (UseAmplitude)
+	{
+		double LogAmplitude = x.log_amplitude() * (Length/x.size()) + y.log_amplitude() * (Length/y.size());
+		for (auto& e : RightEigen)
+			e *= std::exp(LogAmplitude);
+	}
 
    return std::make_tuple(std::vector<std::complex<double>>(RightEigen.begin(), RightEigen.end()), Length);
 }

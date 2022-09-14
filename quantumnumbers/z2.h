@@ -37,8 +37,8 @@ class Z2
       typedef StaticQuantumNumberFactory<Z2> FactoryType;
 
       Z2() : x(1) {}
-      Z2(int x_) : x(x_) { DEBUG_PRECONDITION(x_ == -1 || x_ == 1)(x_); }
-      explicit Z2(int const* InIter) : x(*InIter) { DEBUG_PRECONDITION(x == -1 || x == 1)(x); }
+      Z2(int x_) : x(x_) { PRECONDITION(x_ == -1 || x_ == 1)(x_); }
+      explicit Z2(int const* InIter) : x(*InIter) { PRECONDITION(x == -1 || x == 1)(x); } // TODO: this should throw an exception
       explicit Z2( std::string const& s);
 
       std::string ToString() const;

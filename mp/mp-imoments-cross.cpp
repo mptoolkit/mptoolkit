@@ -17,6 +17,24 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+//
+// Consistency of mp-ioverlap and mp-imoments.
+//
+// Given a Hamiltonian H, we can calculate the Loschmidt echo
+// r(z) = (1/N) ln <psi|exp[zH]|psi> = (1/N) ln <psi_0 | psi_t>
+// This is simply the log of the largest magnitude transfer matrix eigenvalue
+// between psi_0 and psi_t.
+// Note that we didn't put a minus sign in the definition of r(z), although
+// this is commonly done.
+//
+// The derivatives of r(z) with respect to z are
+// d^n r(z) / d z^n = n^th cumulant c_n of <psi_0 | H^n | psi_t>
+//
+// Given these cumulants we can expand r(z) as
+// r(z_0 + z) = r(z_0) + \sum_n c_n z^n / n!
+//
+// where we define z = -(beta + it) is the complex time
+
 #include "mpo/basic_triangular_mpo.h"
 #include "mp-algorithms/transfer.h"
 #include "wavefunction/mpwavefunction.h"
