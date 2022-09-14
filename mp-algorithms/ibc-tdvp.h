@@ -24,17 +24,22 @@
 #include "tdvp.h"
 #include "wavefunction/ibc.h"
 
+struct IBC_TDVPSettings : TDVPSettings
+{
+   double GMRESTol = 1e-13;
+   double FidTol = 1e-12;
+   double LambdaTol = 1e-12;
+   bool UCExpand = false;
+   int NExpand = 0;
+   int Comoving = 0;
+};
+
 class IBC_TDVP : public TDVP
 {
    public:
       IBC_TDVP() {}
 
-      IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_,
-               std::complex<double> InitialTime_, std::complex<double> Timestep_,
-               Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-               bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
-               double FidTol_, double LambdaTol_, bool UCExpand_ = false,
-               int NExpand_ = 0, int Comoving_ = 0);
+      IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_);
 
       IBCWavefunction Wavefunction() const;
 

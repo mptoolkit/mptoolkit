@@ -48,25 +48,17 @@ int main(int argc, char** argv)
       int N = 1;
       int SaveEvery = 1;
       int MaxIter = 20;
-      double ErrTol = 1e-16;
-      double GMRESTol = 1e-13;
-      double FidTol = 1e-12;
-      double LambdaTol = 1e-12;
-      int MinStates = 1;
-      int MaxStates = 100000;
-      double TruncCutoff = 0;
-      double EigenCutoff = 1e-16;
       bool Expand = false;
       double Eps2SqTol = std::numeric_limits<double>::infinity();
       bool TwoSite = false;
-      bool Epsilon = false;
-      bool ForceExpand = false;
-      bool UCExpand = false;
-      int NExpand = 0;
-      int Comoving = 0;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
+
+      IBC_TDVPSettings Settings;
+      Settings.SInfo.MinStates = 1;
+      Settings.SInfo.TruncationCutoff = 0;
+      Settings.SInfo.EigenvalueCutoff = 1e-16;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -78,32 +70,32 @@ int main(int argc, char** argv)
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
 	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
-         ("maxiter", prog_opt::value(&MaxIter),
-          FormatDefault("Maximum number of Lanczos iterations per step", MaxIter).c_str())
-         ("errtol", prog_opt::value(&ErrTol),
-          FormatDefault("Error tolerance for the Lanczos evolution", ErrTol).c_str())
-         ("gmrestol", prog_opt::value(&GMRESTol),
-          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
-         ("min-states", prog_opt::value(&MinStates),
-          FormatDefault("Minimum number of states to keep", MinStates).c_str())
-         ("states,m", prog_opt::value(&MaxStates),
-          FormatDefault("Maximum number of states", MaxStates).c_str())
-         ("trunc,r", prog_opt::value(&TruncCutoff),
-          FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
-         ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
-          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("maxiter", prog_opt::value(&Settings.MaxIter),
+          FormatDefault("Maximum number of Lanczos iterations per step", Settings.MaxIter).c_str())
+         ("errtol", prog_opt::value(&Settings.ErrTol),
+          FormatDefault("Error tolerance for the Lanczos evolution", Settings.ErrTol).c_str())
+         ("gmrestol", prog_opt::value(&Settings.GMRESTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
+         ("min-states", prog_opt::value(&Settings.SInfo.MinStates),
+          FormatDefault("Minimum number of states to keep", Settings.SInfo.MinStates).c_str())
+         ("states,m", prog_opt::value(&Settings.SInfo.MaxStates),
+          FormatDefault("Maximum number of states", Settings.SInfo.MaxStates).c_str())
+         ("trunc,r", prog_opt::value(&Settings.SInfo.TruncationCutoff),
+          FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", Settings.SInfo.EigenvalueCutoff).c_str())
          ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
          ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value [1TDVP only]")
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
-         ("fidtol,f", prog_opt::value(&FidTol),
-          FormatDefault("Tolerance in the boundary fidelity for expanding the window", FidTol).c_str())
-         ("lambdatol,l", prog_opt::value(&LambdaTol),
-          FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", LambdaTol).c_str())
-         ("uc-expand", prog_opt::bool_switch(&UCExpand), "Expand the window by whole unit cells rather than single sites")
-         ("n-expand", prog_opt::value(&NExpand), "Expand the window manually every n timesteps")
-         ("comoving", prog_opt::value(&Comoving), "Use a comoving window of fixed width of the specified number of sites")
-         ("epsilon", prog_opt::bool_switch(&Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
-         ("force-expand", prog_opt::bool_switch(&ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
+         ("fidtol,f", prog_opt::value(&Settings.FidTol),
+          FormatDefault("Tolerance in the boundary fidelity for expanding the window", Settings.FidTol).c_str())
+         ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
+          FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", Settings.LambdaTol).c_str())
+         ("uc-expand", prog_opt::bool_switch(&Settings.UCExpand), "Expand the window by whole unit cells rather than single sites")
+         ("n-expand", prog_opt::value(&Settings.NExpand), "Expand the window manually every n timesteps")
+         ("comoving", prog_opt::value(&Settings.Comoving), "Use a comoving window of fixed width of the specified number of sites")
+         ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
+         ("force-expand", prog_opt::bool_switch(&Settings.ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -135,14 +127,15 @@ int main(int argc, char** argv)
       std::cout << "Wavefunction: " << InputFile << std::endl;
       std::cout << "Composition: " << CompositionStr << std::endl;
 
+      Settings.Verbose = Verbose;
+
       // Load the composition scheme.
-      Composition Comp;
       for (auto const& c : Compositions)
       {
          if (c.first == CompositionStr)
-            Comp = c.second;
+            Settings.Comp = c.second;
       }
-      if (Comp.Order == 0)
+      if (Settings.Comp.Order == 0)
       {
          std::cerr << "fatal: invalid composition" << std::endl;
          return 1;
@@ -179,6 +172,9 @@ int main(int argc, char** argv)
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
+      Settings.InitialTime = InitialTime;
+      Settings.Timestep = Timestep;
+
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
       if (HamStr.empty())
@@ -200,36 +196,28 @@ int main(int argc, char** argv)
 
       Hamiltonian Ham(HamStr);
 
-      std::cout << "Maximum number of Lanczos iterations: " << MaxIter << std::endl;
-      std::cout << "Error tolerance for the Lanczos evolution: " << ErrTol << std::endl;
-
-      StatesInfo SInfo;
-      SInfo.MinStates = MinStates;
-      SInfo.MaxStates = MaxStates;
-      SInfo.TruncationCutoff = TruncCutoff;
-      SInfo.EigenvalueCutoff = EigenCutoff;
+      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
+      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
 
       // If we are forcing bond dimension expansion, make sure it is turned on as well.
-      if (ForceExpand)
+      if (Settings.ForceExpand)
          Expand = true;
 
       if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity() || TwoSite)
-         std::cout << SInfo << std::endl;
+         std::cout << Settings.SInfo << std::endl;
 
       // Make sure calculation of Eps2Sq is turned on if we are using it to
       // determine whether to expand the bonds.
       if (Eps2SqTol != std::numeric_limits<double>::infinity())
-         Epsilon = true;
+         Settings.Epsilon = true;
 
-      IBC_TDVP tdvp(Psi, Ham, InitialTime, Timestep, Comp, MaxIter, ErrTol,
-                    SInfo, Epsilon, ForceExpand, Verbose, GMRESTol, FidTol,
-                    LambdaTol, UCExpand, NExpand, Comoving);
+      IBC_TDVP tdvp(Psi, Ham, Settings);
 
       if (SaveEvery == 0)
          SaveEvery = N;
 
       // Calculate initial values of epsilon_1 and epsilon_2.
-      if (Epsilon)
+      if (Settings.Epsilon)
          tdvp.CalculateEps();
 
       std::cout << "Timestep=" << 0
@@ -237,11 +225,9 @@ int main(int argc, char** argv)
                 << " WindowSize=" << tdvp.Psi.size()
                 << " MaxStates=" << tdvp.MaxStates
                 << " E=" << std::real(tdvp.Energy());
-
-      if (Epsilon)
+      if (Settings.Epsilon)
          std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
                    << " Eps2SqSum=" << tdvp.Eps2SqSum;
-
       std::cout << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
@@ -267,14 +253,11 @@ int main(int argc, char** argv)
                    << " WindowSize=" << tdvp.Psi.size()
                    << " MaxStates=" << tdvp.MaxStates
                    << " E=" << std::real(tdvp.Energy());
-
          if (TwoSite)
             std::cout << " TruncErrSum=" << tdvp.TruncErrSum;
-
-         if (Epsilon)
+         if (Settings.Epsilon)
             std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum;
-
          std::cout << std::endl;
 
          // Save the wavefunction.

@@ -24,16 +24,10 @@
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
 
-IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_,
-                   std::complex<double> InitialTime_, std::complex<double> Timestep_,
-                   Composition Comp_, int MaxIter_, double ErrTol_, StatesInfo SInfo_,
-                   bool Epsilon_, bool ForceExpand_, int Verbose_, double GMRESTol_,
-                   double FidTol_, double LambdaTol_, bool UCExpand_,
-                   int NExpand_, int Comoving_)
-   : TDVP(Ham_, InitialTime_, Timestep_, Comp_, MaxIter_, ErrTol_,
-          SInfo_, Epsilon_, ForceExpand_, Verbose_),
-   GMRESTol(GMRESTol_), FidTol(FidTol_), LambdaTol(LambdaTol_),
-   UCExpand(UCExpand_), NExpand(NExpand_), Comoving(Comoving_)
+IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
+   : TDVP(Ham_, Settings_),
+   GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), LambdaTol(Settings_.LambdaTol),
+   UCExpand(Settings_.UCExpand), NExpand(Settings_.NExpand), Comoving(Settings_.Comoving)
 {
    // We do not (currently) support time dependent Hamiltonians.
    CHECK(Ham.is_time_dependent() == false);
