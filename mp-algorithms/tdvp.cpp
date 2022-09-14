@@ -175,8 +175,8 @@ Hamiltonian::set_size(int Size_)
 TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
    : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
      Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
-     SInfo(Settings_.SInfo), Epsilon(Settings_.Epsilon),
-     ForceExpand(Settings_.ForceExpand), Verbose(Settings_.Verbose)
+     SInfo(Settings_.SInfo), Epsilon(Settings_.Epsilon), ForceExpand(Settings_.ForceExpand),
+     Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
 {
 }
 
@@ -234,7 +234,7 @@ TDVP::EvolveCurrentSite(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -I*Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, -I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -266,7 +266,7 @@ TDVP::IterateLeft(std::complex<double> Tau)
    double Err = ErrTol;
    MatrixOperator UD = U*D;
 
-   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err);
+   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -307,7 +307,7 @@ TDVP::IterateRight(std::complex<double> Tau)
    double Err = ErrTol;
    MatrixOperator DVh = D*Vh;
 
-   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err);
+   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -618,7 +618,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err, LogAmplitude);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*C).LocalBasis(), (*CPrev).LocalBasis()));
@@ -648,7 +648,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
    Iter = MaxIter;
    Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -678,7 +678,7 @@ TDVP::EvolveLeftmostSite2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err, LogAmplitude);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
@@ -713,7 +713,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err);
+   *C = LanczosExponential(*C, HEff1(HamL.back(), *H, HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -741,7 +741,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
    Iter = MaxIter;
    Err = ErrTol;
 
-   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err);
+   C2 = LanczosExponential(C2, HEff1(HamL.back(), H2, HamR.front()), Iter, -I*Tau, Err, LogAmplitude);
 
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));

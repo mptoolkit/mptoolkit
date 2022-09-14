@@ -69,6 +69,8 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    }
 
    QShift = PsiCanonical.qshift();
+   LogAmplitude = PsiCanonical.log_amplitude();
+
    std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
 
    if (Verbose > 0)
@@ -125,7 +127,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 InfiniteWavefunctionLeft
 iTDVP::Wavefunction() const
 {
-   return InfiniteWavefunctionLeft::Construct(Psi, QShift);
+   return InfiniteWavefunctionLeft::Construct(Psi, QShift, Normalize ? 0.0 : LogAmplitude);
 }
 
 void
@@ -180,7 +182,7 @@ iTDVP::EvolveLambdaRRight(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, I*Tau, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(BlockHamL, HamR.back()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -198,7 +200,7 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
    int Iter = MaxIter;
    double Err = ErrTol;
 
-   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, I*Tau, Err);
+   LambdaR = LanczosExponential(LambdaR, HEff2(HamL.front(), BlockHamR), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -220,6 +222,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
    PsiOld = Psi;
    LambdaROld = LambdaR;
    std::deque<StateComponent> HamLOld = HamL;
+   double LogAmplitudeOld = LogAmplitude;
 
    do {
       ++Sweep;
@@ -239,6 +242,8 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
       if (Sweep > 1)
          this->EvolveLambdaRRight(Tau);
+
+      LogAmplitude = LogAmplitudeOld;
 
       *C = prod(*C, LambdaR);
 
@@ -298,6 +303,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
    PsiOld = Psi;
    LambdaROld = LambdaR;
    std::deque<StateComponent> HamROld = HamR;
+   double LogAmplitudeOld = LogAmplitude;
 
    do {
       ++Sweep;
@@ -315,6 +321,8 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
       if (Sweep > 1)
          this->EvolveLambdaRLeft(Tau);
+
+      LogAmplitude = LogAmplitudeOld;
 
       *C = prod(LambdaR, *C);
 

@@ -52,6 +52,8 @@ int main(int argc, char** argv)
       std::string CompositionStr = "secondorder";
       std::string Magnus = "2";
       std::string TimeVar = "t";
+      bool Normalize = false;
+      bool NoNormalize = false;
 
       iTDVPSettings Settings;
       Settings.SInfo.MinStates = 1;
@@ -94,6 +96,8 @@ int main(int argc, char** argv)
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
+         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -166,6 +170,17 @@ int main(int argc, char** argv)
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
+
+      if (Timestep.imag() == 0.0)
+         Normalize = true;
+      if (NoNormalize)
+         Normalize = false;
+      Settings.Normalize = Normalize;
+
+      if (Normalize)
+         std::cout << "Normalizing wavefunction." << std::endl;
+      else
+         std::cout << "Not normalizing wavefunction." << std::endl;
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
