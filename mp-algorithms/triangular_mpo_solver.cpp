@@ -358,6 +358,19 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
    return E;
 }
 
+// Calculate the quantum number squared opertor
+MatrixOperator GetQSquared(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity)
+{
+   VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
+   MatrixOperator Q(b, b);
+   for (int i = 0; i < b.size(); ++i)
+   {
+      Q(i,i) = casimir(b[i],0) * LeftIdentity(i,i);
+   }
+   // Orthogonalize Q against the identity
+   Q -= inner_prod(Q, RightIdentity) * LeftIdentity;
+   return Q*Q;
+}
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator
@@ -429,6 +442,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       if (Verbose > 0)
       {
          std::cerr << "Solving column " << (Col+1) << " of " << Dim << '\n';
+      }
+
+      if (Col == 5)
+      {
+         std::cerr << "Hacking column 5...\n";
+         // The complication is that we need to multiply by the prefactor of the electric field term.
+         // We could calculate what this is from column 3 (prefactor * 2 * Nf)
+         double l = 0.1;
+         // These variants do exactly the same thing.  Neither is exactly correct,
+         // presumably because there are other terms, eg column 6
+         //EMatK[Col][1.0][0] = (0.5 / l) * EMatK[3][1.0][0] * EMatK[3][1.0][0];
+         EMatK[Col][1.0][0] = l * 2.0 * GetQSquared(LeftIdentity, RightIdentity);;
+         continue;
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
