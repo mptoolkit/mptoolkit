@@ -145,10 +145,10 @@ InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
                                                   QuantumNumbers::QuantumNumber const& QShift_,
-                                                  MatrixOperator& Vh,
+                                                  MatrixOperator& Vh, double LogAmplitude,
                                                   int Verbose)
 {
-   InfiniteWavefunctionLeft Result(QShift_);
+   InfiniteWavefunctionLeft Result(QShift_, LogAmplitude);
    Vh = Result.Initialize(Psi, Lambda, Verbose-1);
    return Result;
 }

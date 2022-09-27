@@ -55,7 +55,7 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
                                                        MatrixOperator const& Lambda,
                                                        QuantumNumbers::QuantumNumber const& QShift_,
-                                                       MatrixOperator& Vh,
+                                                       MatrixOperator& Vh, double LogAmplitude = 0.0,
                                                        int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction
