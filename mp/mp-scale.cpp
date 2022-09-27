@@ -42,8 +42,11 @@ int main(int argc, char** argv)
       int Verbose = 0;
       std::string PsiStr;
       std::string Expression;
+      int UnitCell = 0;
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
+         ("unitcell,u", prog_opt::value(&UnitCell), "For iMPS, interpret the scaling factor as per this unit cell size")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
          ("help", "show this help message")
          ;
 
@@ -82,20 +85,26 @@ int main(int argc, char** argv)
 
       if (Psi->is<FiniteWavefunctionLeft>())
       {
+         if (vm.count("unitcell"))
+         {
+            std::cerr << basename(argv[0]) << ": error: <unitcell> option is not valid for finite wavefunctions.\n";
+            return 1;
+         }
          Psi.mutate()->get<FiniteWavefunctionLeft>() *= x;
       }
       else if (Psi->is<InfiniteWavefunctionLeft>())
       {
-	 std::complex<double> y = x / std::abs(x);
-	 if (std::abs(y-x) > 1e-10)
-	 {
-	    std::cout << "warning: phase factor for infinite wavefunction was normalized from " <<
-	       format_complex(x) << " to " << format_complex(y) << "\n";
-	 }
-	 std::pair<LinearWavefunction, RealDiagonalOperator> p = get_left_canonical(Psi->get<InfiniteWavefunctionLeft>());
-	 (*p.first.begin()) *= y;
-	 *Psi.mutate() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(p.first, p.second,
-									   Psi->get<InfiniteWavefunctionLeft>().qshift());
+         if (vm.count("unitcell"))
+         {
+            int u = Psi->get<InfiniteWavefunctionLeft>().size();
+            x = std::pow(x, double(u) / double(UnitCell));
+            if (Verbose > 0)
+            {
+               std::cout << "Rescaling to unit cell " << UnitCell << " with scaling factor "
+                  << format_complex(x) << '\n';
+            }
+         }
+         Psi.mutate()->get<InfiniteWavefunctionLeft>() *= x;
       }
       else
       {

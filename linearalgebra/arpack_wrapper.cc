@@ -67,6 +67,8 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       // 2014-04-01: n-2 because we require NCV-NEV >= 2, and NCV <= N.
       // There is a (harmless?) bug here in that if we only want n-1 eigenvalues
       // then we'll actually get all n of them.
+      // 2022-02-17: this bug isn't actually harmless - it means that the caller can get
+      // more elements in the array than expected.  Truncate the eigenvalue array if we get more than expected.
       if (Verbose >= 1)
       {
          std::cerr << "Constructing matrix for direct diagonalization\n";
@@ -90,6 +92,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
             LinearAlgebra::make_vec(&(*OutputVectors)[n*k], n) = RV(k, LinearAlgebra::all);
          }
       }
+      // If we are using LAPACK for the diaginalization then we might have more eigenvalues than we need.  In order to ensure
+      // that we get the right eigenvalues, we must sort them, even if the caller doesn't require it.
+      Sort = true;
    }
    else
    {
@@ -98,9 +103,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       char bmat = 'I'; // standard eigenvalue problem
       std::string w = ToStr(which);
       int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-      std::vector<std::complex<double>> resid(n);  // residual
+      std::vector<std::complex<double> > resid(n);  // residual
       ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-      std::vector<std::complex<double>> v(n*ncv);   // arnoldi vectors
+      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
       int const ldv = n;
       ARPACK::iparam_t iparam;
       iparam.ishift = 1;      // exact shifts
@@ -221,6 +226,15 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
             }
          }
       }
+   }
+
+   // If we ended up with more eigenvalues than we wanted, resize the arrays.
+   if (Result.size() > NumEigen)
+   {
+      LinearAlgebra::Vector<std::complex<double>> R2 = Result[LinearAlgebra::range(0,NumEigen)];
+      std::swap(Result, R2);
+      if (OutputVectors)
+         OutputVectors->resize(n*NumEigen);
    }
 
    // restore the ARPACK debug log level before returning

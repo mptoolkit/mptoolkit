@@ -5,7 +5,7 @@
 // mp-algorithms/lanczos-exponential-new.h
 //
 // Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@
 template <typename VectorType, typename MultiplyFunctor>
 VectorType LanczosExponential(VectorType const& x,
                               MultiplyFunctor MatVecMultiply, int& Iterations,
-                              std::complex<double> const& Theta, double& ErrTol)
+                              std::complex<double> const& Theta, double& ErrTol,
+                              double& LogAmplitude)
 {
    typedef std::complex<double> complex;
 
@@ -82,7 +83,18 @@ VectorType LanczosExponential(VectorType const& x,
    }
 
    // Normalize Out.
-   Out *= 1.0/norm_frob(Out);
+   double Norm = norm_frob(Out);
+   LogAmplitude += std::log(Norm);
+   Out *= 1.0 / Norm;
 
    return Out;
+}
+
+template <typename VectorType, typename MultiplyFunctor>
+VectorType LanczosExponential(VectorType const& x,
+                              MultiplyFunctor MatVecMultiply, int& Iterations,
+                              std::complex<double> const& Theta, double& ErrTol)
+{
+   double LogAmplitude = 0.0;
+   return LanczosExponential(x, MatVecMultiply, Iterations, Theta, ErrTol, LogAmplitude);
 }

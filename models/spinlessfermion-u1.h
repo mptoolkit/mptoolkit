@@ -9,7 +9,7 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
    SymmetryList Symmetry(Sym1+":U(1)");
    QuantumNumbers::QNConstructor<QuantumNumbers::U1> QN(Symmetry);
    SiteBasis Basis(Symmetry);
-   SiteOperator CH, C, P, R, N, I;
+   SiteOperator CH, C, P, R, N, Nf, Np, I;
    LatticeSite Site("U(1) Fermion");
 
    Basis.push_back("empty", QN(0));
@@ -22,8 +22,13 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
       ("P"       , "fermion parity")
       ("C"       , "annihilation fermion")
       ("CH"      , "creation fermion")
-      ("N"       , "number operator")
+      ("N"       , "number operator = CH*C")
+      ("Nf"      , "number of fermions")
+      ("Np"      , "number of particles")
       ;
+
+   // For a fermion site, the N, Nf and Np operators are the same.  They are included here for
+   // completeness and symmetry with an antifermion, where these operators are all different.
 
    LatticeCommute Fermionic = ParityOp == "P" ? (Bosonic ? LatticeCommute::Bosonic : LatticeCommute::Fermionic)
                                               : LatticeCommute(ParityOp);
@@ -33,6 +38,8 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
    P = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    R = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    N = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
+   Nf = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
+   Np = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
    I = SiteOperator(Basis, QN(0), LatticeCommute::Bosonic);
 
    // annihilate fermion
@@ -52,6 +59,9 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
    // particle number
    N("single", "single") = 1;
 
+   Nf = N;
+   Np = N;
+
    // identity
    I("empty",  "empty")  = 1;
    I("single", "single") = 1;
@@ -59,6 +69,8 @@ LatticeSite SpinlessFermionU1(std::string const& Sym1 = "N",
    Site["I"] = I;
    Site[ParityOp] = P;
    Site["N"] = N;
+   Site["Nf"] = Nf;
+   Site["Np"] = Np;
    Site["R"] = R;
    Site["CH"] = CH;
    Site["C"] = C;

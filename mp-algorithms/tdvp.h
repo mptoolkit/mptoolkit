@@ -84,6 +84,7 @@ struct TDVPSettings
    StatesInfo SInfo;
    bool Epsilon = false;
    bool ForceExpand = false;
+   bool Normalize = true;
    int Verbose = 0;
 };
 
@@ -180,6 +181,7 @@ class TDVP
       StatesInfo SInfo;
       bool Epsilon;
       bool ForceExpand;
+      bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
 
       int TStep = 0;
@@ -195,6 +197,9 @@ class TDVP
 
       // Cumulative truncation error (2TDVP only).
       double TruncErrSum;
+
+      // The logarithm of the norm of the state.
+      double LogAmplitude = 0.0;
 };
 
 #endif

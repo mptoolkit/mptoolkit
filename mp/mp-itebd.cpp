@@ -44,6 +44,7 @@ namespace prog_opt = boost::program_options;
 
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
+                 double& LogAmplitude,
                  std::vector<SimpleOperator> const& UEven,
                  StatesInfo const& SInfo,
                  int Verbose)
@@ -57,7 +58,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    #pragma omp parallel for shared(Psi, Lambda, UEven, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UEven[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UEven[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << (i+1)
@@ -75,6 +76,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
 
 void DoOddSlice(std::deque<StateComponent>& Psi,
                 std::deque<RealDiagonalOperator>& Lambda,
+                double& LogAmplitude,
                 QuantumNumber const& QShift,
                 std::vector<SimpleOperator> const& UOdd,
                 StatesInfo const& SInfo,
@@ -93,7 +95,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    #pragma omp parallel for shared(Psi, Lambda, UOdd, SInfo)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], UOdd[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UOdd[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << i
@@ -213,6 +215,8 @@ int main(int argc, char** argv)
       std::string HamStr;
       int MinStates = 1;
       int States = 100000;
+      bool Normalize = false;
+      bool NoNormalize = false;
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
@@ -244,8 +248,9 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
-         ("coarsegrain", prog_opt::value(&Coarsegrain),
-          "coarse-grain N-to-1 sites")
+         ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
+         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -315,12 +320,20 @@ int main(int argc, char** argv)
             InitialTime.imag(-std::stod(B));
       }
 
-      // Allow both timestep and betastep.
+      // Allow both timestep and betastep.  the timestep is stored as the 'real' time.  The time evolution
+      // operator is -1i * Timestep * H = -izH where the complex time is z = t - i \beta
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
       if (!BetastepStr.empty())
-         Timestep += std::complex<double>(0.0,-1.0)* ParseNumber(BetastepStr);
+         Timestep += std::complex<double>(0.0,-1.0) * ParseNumber(BetastepStr);
+
+      if (Timestep.imag() == 0.0)
+         Normalize = true;
+      if (NoNormalize)
+         Normalize = false;
+
+      TRACE(Timestep)(Normalize);
 
       if (OutputDigits == 0)
       {
@@ -408,6 +421,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       QuantumNumber QShift = Psi.qshift();
+      double LogAmplitude = Psi.log_amplitude();
 
       std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
       std::deque<RealDiagonalOperator> Lambda;
@@ -465,18 +479,18 @@ int main(int argc, char** argv)
             {
                std::cout << "Merge slice\n";
             }
-            DoEvenSlice(PsiVec, Lambda, Gates.EvenContinuation, SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenContinuation, SInfo, Verbose);
          }
          else
          {
-            DoEvenSlice(PsiVec, Lambda, Gates.EvenU[0], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[0], SInfo, Verbose);
          }
 
-         DoOddSlice(PsiVec, Lambda, QShift, Gates.OddU[0], SInfo, Verbose);
+         DoOddSlice(PsiVec, Lambda, LogAmplitude, QShift, Gates.OddU[0], SInfo, Verbose);
          for (int bi = 1; bi < Gates.OddU.size(); ++bi)
          {
-            DoEvenSlice(PsiVec, Lambda, Gates.EvenU[bi], SInfo, Verbose);
-            DoOddSlice(PsiVec, Lambda, QShift, Gates.OddU[bi], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[bi], SInfo, Verbose);
+            DoOddSlice(PsiVec, Lambda, LogAmplitude, QShift, Gates.OddU[bi], SInfo, Verbose);
          }
 
          // do we do a continuation?
@@ -490,6 +504,7 @@ int main(int argc, char** argv)
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
             LinearWavefunction Psi;
+            double ThisLogAmplitude = LogAmplitude;
             if (Gates.EvenU.size() > Gates.OddU.size())
             {
                CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
@@ -498,7 +513,7 @@ int main(int argc, char** argv)
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
-               DoEvenSlice(PsiVecSave, LambdaSave, Gates.EvenU.back(), SInfo, Verbose);
+               DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
@@ -507,9 +522,11 @@ int main(int argc, char** argv)
             // save the wavefunction
             std::cout << "Saving wavefunction\n";
             MPWavefunction Wavefunction;
+            if (Normalize)
+               ThisLogAmplitude = 0.0;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift);
+            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, ThisLogAmplitude);
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();
