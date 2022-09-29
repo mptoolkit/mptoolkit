@@ -450,6 +450,8 @@ class IrredTensor
       MatrixType& data() { return Data_; }
       MatrixType const& data() const { return Data_; }
 
+      MatrixType const& cdata() const { return Data_; }
+
       QuantumNumber const& TransformsAs() const { return Trans_; }
 
       QuantumNumber const& qn1(size_type i) const { return Basis1_[i]; }
