@@ -835,3 +835,8 @@ log_norm_frob_sq(BasicFiniteMPO const& Op)
 {
    return 0;
 }
+
+BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op)
+{
+   return BasicFiniteMPO(gauge_flip(GenericMPO(Op)));
+}

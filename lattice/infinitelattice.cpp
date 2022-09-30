@@ -1014,7 +1014,7 @@ BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO 
       for (unsigned n = 0; n < SplitPivot.size(); ++n)
       {
          if (i != 0 || n != 0)
-	    JoinBasis(Basis1, SplitPivot[n][i].Basis1());
+            JoinBasis(Basis1, SplitPivot[n][i].Basis1());
          JoinBasis(Basis2, SplitPivot[n][i].Basis2());
       }
 
@@ -1029,26 +1029,26 @@ BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO 
       OperatorComponent C(Op[i%Op.size()].LocalBasis1(), Op[i%Op.size()].LocalBasis2(), Basis1, Basis2);
 
       int r = 0, c = 0;
-      // Teh triangular MPO goes in the top left
+      // The triangular MPO goes in the top left
       SetComponents(C, Op[i%Op.size()], r, c);
       r += Op[i%Op.size()].Basis1().size();
       c += Op[i%Op.size()].Basis2().size();
 
       // at the first entry, move back a row.
       if (i == 0)
-	 --r;
+	     --r;
 
       // Now the pivot operator
       for (unsigned n = 0; n < SplitPivot.size(); ++n)
       {
-	 SetComponents(C, SplitPivot[n][i], r, c);
+         SetComponents(C, SplitPivot[n][i], r, c);
          r += SplitPivot[n][i].Basis1().size();
-	 c += SplitPivot[n][i].Basis2().size();
+         c += SplitPivot[n][i].Basis2().size();
       }
 
       // At the last entry, move back a column
       if (i == int(UnitCellSize)-1)
-	 --c;
+	     --c;
 
       // Finally, the identity in the bottom right
       SetComponents(C, Ident[i%SiteList.size()], r, c);

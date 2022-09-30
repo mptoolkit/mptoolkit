@@ -286,3 +286,8 @@ ProductMPO translate_right(std::vector<BasisList> const& LocalBasis)
    }
    return Result;
 }
+
+ProductMPO gauge_flip(ProductMPO const& Op)
+{
+   return ProductMPO(gauge_flip(Op.data()));
+}
