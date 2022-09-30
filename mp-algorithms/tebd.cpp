@@ -218,11 +218,12 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
        SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
+   Tensor::ProductBasis<BasisList, BasisList> PB(A.LocalBasis(), B.LocalBasis()));
    RealDiagonalOperator LambdaSave = Lambda;
-   StateComponent C = local_tensor_prod(A,B);
+   StateComponent C = local_tensor_prod(A,B, PB);
    StateComponent Cu = local_prod(U, C);
    StateComponent X = Cu * Lambda;
-   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
+   AMatSVD SL(X, PB);
    TruncationInfo Info;
    AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
                                                                SInfo, Info);
@@ -232,8 +233,19 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
    LogAmplitude += std::log(a);
    Lambda *= 1.0 / a;
 
+   // todo: we can avoid the diagonal inversion here by constructing
+   // +---A----
+   // |   |
+   // |   |
+   // |   | |
+   // +---Cu---
+   // which is the left-orthogonal form of B.  This works because if you
+   // imagine doing an SVD of Cu directly (without multiplying on the right by Lambda),
+   // then both U and V are, in principle, left-orthogonalized.  The contraction over the
+   // first part is the basis transformataion from this left A matrix to the basis
+   // in which we are going to do the contraction.  This is the 'Hastings trick'.
+   // StateComponent B = contract_local_tensor_prod_left(herm(A), Cu, PB);
    StateComponent G = B * InvertDiagonal(LambdaSave, 1E-8);
-
    B = Lambda*G;
 
    CHECK_EQUAL(A.Basis2(), B.Basis1());

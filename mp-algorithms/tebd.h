@@ -49,6 +49,18 @@ class LTSDecomposition
 
 extern std::map<std::string, LTSDecomposition> Decompositions;
 
+// Do a TEBD iteration.
+//
+// Input is A, B, Lambda
+// A,B are in left-canonical form
+// Lambda01 Gamma1 Lambda12 Gamma2 Lambda23
+// A = Lambda01 Gamma1
+// B = Lambda12 Gamma2
+// Lambda = Lambda23
+//
+// On exit, A and B are in left canonical form,
+// final Lambda' = Lambda12
+//
 TruncationInfo
 DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
        double& LogAmplitude, SimpleOperator const& U, StatesInfo const& SInfo);
