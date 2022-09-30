@@ -39,7 +39,6 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      std::string OpStr;
       std::string InputFile;
       std::string OutputFile;
       bool Force = false;
@@ -77,7 +76,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi2") < 1)
       {
          print_copyright(std::cerr, "tools", "mp-irepeat");
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
 
          return 1;

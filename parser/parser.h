@@ -544,6 +544,16 @@ struct unary_funcs : symbols<boost::function<element_type(element_type)> >
    }
 };
 
+template <typename element_type>
+struct unary_funcs_mpo : unary_funcs<element_type>
+{
+   unary_funcs_mpo()
+   {
+      this->add.operator()
+      ("gauge_flip", make_apply_unary_math<element_type>(element_gauge_flip<element_type>()))
+      ;
+   }
+};
 //
 // binary functions
 //

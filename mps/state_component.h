@@ -582,6 +582,20 @@ StateComponent local_prod(SimpleOperator const& x, StateComponent const& A);
 // This is a coarse-graining operation
 StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B);
 
+StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B,
+   Tensor::ProductBasis<BasisList, BasisList> const& PB);
+
+// does a partial contraction over a coarse-grained state without
+// first decomposing it.  This is the contraction
+// +---A-----
+// |   |
+// |   | |
+// +---LLL---
+// which is equivalent to decomposing L (eg via an SVD) and contracting A.
+StateComponent
+contract_local_tensor_prod_left(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+   StateComponent L, Tensor::ProductBasis<BasisList, BasisList> const& PB);
+
 // Calculates the 'reyni product' A * B
 // This is the component Result'[s] = A[s] \otimes B[s]
 // corresponds to the wavefunction where the amplitude of some state

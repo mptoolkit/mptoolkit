@@ -792,3 +792,35 @@ void optimize(GenericMPO& Op)
       Op.front() = Op.front() * T;
    }
 }
+
+BasisList ReverseBasis(BasisList const& B)
+{
+   std::vector<QuantumNumbers::QuantumNumber> BasisRev(B.begin(), B.end());
+   std::reverse(BasisRev.begin(), BasisRev.end());
+   std::transform(BasisRev.begin(), BasisRev.end(), BasisRev.begin(), [](auto x) { return adjoint(x); });
+   return BasisList(B.GetSymmetryList(), BasisRev.begin(), BasisRev.end());
+}
+
+GenericMPO gauge_flip(GenericMPO const& Op)
+{
+   GenericMPO Result(Op.size());
+   BasisList B1 = ReverseBasis(Op.Basis1());
+   int i = 0;
+   for (auto const& x : Op)
+   {
+      BasisList B2 = ReverseBasis(x.Basis2());
+      OperatorComponent RevOp(x.LocalBasis1(), x.LocalBasis2(), B2, B1);
+      for (OperatorComponent::const_iterator I = iterate(x); I; ++I)
+      {
+         for (OperatorComponent::const_inner_iterator J = iterate(I); J; ++J)
+         {
+            RevOp(B2.size()-J.index2()-1, B1.size()-J.index1()-1) = *J;
+         }
+      }
+      Result[i] = RevOp;
+      B1 = B2;
+      ++i;
+   }
+   Result.debug_check_structure();
+   return Result;
+}
