@@ -77,19 +77,29 @@ int main(int argc, char** argv)
 
       // On the 2-site unit cell, S^a[0] is the S sites, S^a[1] is the T sites
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+      UnitCellOperator Tp(Cell, "Tp"), Tm(Cell, "Tm"), Tz(Cell, "Tz");
+
+      // Unit cell operators S and T
+      Sp(0) = Sp(0)[0];
+      Sm(0) = Sm(0)[0];
+      Sz(0) = Sz(0)[0];
+
+      Tp(0) = Sp(0)[1];
+      Tm(0) = Sm(0)[1];
+      Tz(0) = Sz(0)[1];
 
       InfiniteLattice Lattice(&Cell);
 
-      Lattice["H_Sz"] = sum_unit(Sz(0)[0]*Sz(1)[0]);
-      Lattice["H_St"] = 0.5 * sum_unit(Sp(0)[0]*Sm(1)[0] + Sm(0)[0]*Sp(1)[0]);
+      Lattice["H_Sz"] = sum_unit(Sz(0)*Sz(1));
+      Lattice["H_St"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
       Lattice["H_S"]  = Lattice["H_Sz"] + Lattice["H_St"];
 
-      Lattice["H_Tz"] = sum_unit(Sz(0)[1]*Sz(1)[1]);
-      Lattice["H_Tt"] = 0.5 * sum_unit(Sp(0)[1]*Sm(1)[1] + Sm(0)[1]*Sp(1)[1]);
+      Lattice["H_Tz"] = sum_unit(Tz(0)*Tz(1));
+      Lattice["H_Tt"] = 0.5 * sum_unit(Tp(0)*Tm(1) + Tm(0)*Tp(1));
       Lattice["H_T"]  = Lattice["H_Tz"] + Lattice["H_Tt"];
 
-      Lattice["H_ST"] = sum_unit( ( Sz(0)[0]*Sz(1)[0] + 0.5 * (Sp(0)[0]*Sm(1)[0] + Sm(0)[0]*Sp(1)[0]) )
-                              * ( Sz(0)[1]*Sz(1)[1] + 0.5 * (Sp(0)[1]*Sm(1)[1] + Sm(0)[1]*Sp(1)[1]) ) );
+      Lattice["H_ST"] = sum_unit( ( Sz(0)*Sz(1) + 0.5 * (Sp(0)*Sm(1) + Sm(0)*Sp(1)) )
+                                 *( Tz(0)*Tz(1) + 0.5 * (Tp(0)*Tm(1) + Tm(0)*Tp(1)) ) );
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
