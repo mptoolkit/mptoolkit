@@ -436,6 +436,10 @@ CoerceSymmetryList(QuantumNumberList const& b, SymmetryList const& sl)
    return Result;
 }
 
+QuantumNumberList adjoint(QuantumNumberList ql);
+
+std::set<QuantumNumber> adjoint(std::set<QuantumNumber> const& ql);
+
 #if 0
 // returns a quantum number with the name numbers, but a different symmetry list.
 // The only allowed differences in the symmetry list are different names,

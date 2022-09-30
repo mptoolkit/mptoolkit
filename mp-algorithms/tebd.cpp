@@ -218,7 +218,7 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
        SimpleOperator const& U, StatesInfo const& SInfo)
 {
    // simple algorithm with matrix inversion
-   Tensor::ProductBasis<BasisList, BasisList> PB(A.LocalBasis(), B.LocalBasis()));
+   Tensor::ProductBasis<BasisList, BasisList> PB(A.LocalBasis(), B.LocalBasis());
    RealDiagonalOperator LambdaSave = Lambda;
    StateComponent C = local_tensor_prod(A,B, PB);
    StateComponent Cu = local_prod(U, C);
