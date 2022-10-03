@@ -358,7 +358,7 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
    return E;
 }
 
-// Calculate the quantum number squared opertor
+// Calculate the quantum number squared operator
 MatrixOperator GetQSquared(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity)
 {
    VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
@@ -367,9 +367,36 @@ MatrixOperator GetQSquared(MatrixOperator LeftIdentity, MatrixOperator const& Ri
    {
       Q(i,i) = casimir(b[i],0) * LeftIdentity(i,i);
    }
-   // Orthogonalize Q against the identity
-   Q -= inner_prod(Q, RightIdentity) * LeftIdentity;
-   return Q*Q;
+   TRACE(inner_prod(Q, RightIdentity));
+   //TRACE("sub 2*factor^2 from the final result");
+   std::complex<double> Factor = inner_prod(Q, RightIdentity);
+   TRACE(Factor);
+   TRACE(Q);
+   //Q -= Factor*2.0*LeftIdentity;
+   MatrixOperator Q2 = Q*Q;
+   Q2 -= 2.0 * Factor * Q;
+   TRACE(Q2);
+   return Q2;
+}
+
+MatrixOperator GetQSquaredRight(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity)
+{
+   VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
+   MatrixOperator Q(b, b);
+   for (int i = 0; i < b.size(); ++i)
+   {
+      Q(i,i) = casimir(b[i],0) * LeftIdentity(i,i);
+   }
+   TRACE(inner_prod(Q, RightIdentity));
+   //TRACE("sub 2*factor^2 from the final result");
+   std::complex<double> Factor = inner_prod(Q, RightIdentity);
+   TRACE(Factor);
+   TRACE(Q);
+   //Q -= Factor*2.0*LeftIdentity;
+   MatrixOperator Q2 = Q*Q;
+   //2 -= 2.0 * Factor * Q;
+   TRACE(Q2);
+   return Q2;
 }
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
@@ -449,11 +476,12 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          std::cerr << "Hacking column 5...\n";
          // The complication is that we need to multiply by the prefactor of the electric field term.
          // We could calculate what this is from column 3 (prefactor * 2 * Nf)
-         double l = 0.1;
+         double l = getenv_or_default("MPE", 1.0);
+         TRACE(l);
          // These variants do exactly the same thing.  Neither is exactly correct,
          // presumably because there are other terms, eg column 6
          //EMatK[Col][1.0][0] = (0.5 / l) * EMatK[3][1.0][0] * EMatK[3][1.0][0];
-         EMatK[Col][1.0][0] = l * 2.0 * GetQSquared(LeftIdentity, RightIdentity);;
+         EMatK[Col][1.0][0] = l * 2.0 * GetQSquared(LeftIdentity, RightIdentity);
          continue;
       }
 
@@ -1006,10 +1034,16 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 
          // non-zero diagonal element.  The only case that we support here is
          // an operator with spectral radius strictly < 1
-         if (Classification.is_unitary())
+         // if (Classification.is_unitary())
+         // {
+         //    std::cerr << "SolveSimpleMPO_Left: Unitary operator on the diagonal is not supported!\n";
+         //    PANIC("Fatal: unitary")(Col);
+         // }
+
+         if (Col == 5)
          {
-            std::cerr << "SolveSimpleMPO_Left: Unitary operator on the diagonal is not supported!\n";
-            PANIC("Fatal: unitary")(Col);
+            E[Col] = 2.0 * GetQSquared(Ident, Rho);
+            continue;
          }
 
          // Initial guess for linear solver
@@ -1168,13 +1202,24 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
 
+         if (Row == 6 || Row == 5)
+         {
+            F[Row] = C*0.0;
+            continue;
+         }
+         else if (Row == 4)
+         {
+            F[Row] = 2.0 * GetQSquaredRight(Ident, Rho);
+            continue;
+         }
+
          // non-zero diagonal element.  The only case that we support here is
          // an operator with spectral radius strictly < 1
-         if (Classification.is_unitary())
-         {
-            std::cerr << "SolveSimpleMPO_Right: Unitary operator on the diagonal is not supported!\n";
-            PANIC("Fatal: unitary")(Row);
-         }
+         // if (Classification.is_unitary())
+         // {
+         //    std::cerr << "SolveSimpleMPO_Right: Unitary operator on the diagonal is not supported!\n";
+         //    PANIC("Fatal: unitary")(Row);
+         // }
 
          // Initial guess for linear solver
          if (F[Row].is_null())
