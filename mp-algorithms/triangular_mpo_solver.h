@@ -45,6 +45,10 @@ double const DefaultEigenUnityEpsilon = 1E-12;
 // default tolerance for eigensolver and linear solver.  This is also a bit small in some cases.
 double const DefaultTol = 1E-14;
 
+extern bool HackSchwinger_E;
+extern bool HackSchwinger_F;
+extern double HackSchwinger_Field;
+
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
 // The LeftIdentity and RightIdentity are the right and left eigenmatrices of the

@@ -87,7 +87,7 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
       m=m+10;
       if (Verbose > 1)
       {
-	 std::cerr << "Refinement step, increasing m to " << m << '\n';
+         std::cerr << "Refinement step, increasing m to " << m << '\n';
       }
 
       //      TRACE("Refinement step")(iter);
@@ -112,8 +112,8 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
 
       if (Verbose > 1)
       {
-	 double Resid = norm_frob(F(x) - Rhs) / normb;
-	 std::cerr << "Residual after refinement step = " << Resid << '\n';
+         double Resid = norm_frob(F(x) - Rhs) / normb;
+         std::cerr << "Residual after refinement step = " << Resid << '\n';
       }
    }
 
@@ -358,56 +358,33 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
    return E;
 }
 
-// Calculate the quantum number squared operator
-MatrixOperator GetQSquared(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity)
+// Returns the expectation value of the first casimir operator of the basis,
+// optionally at some power
+std::complex<double>
+GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
 {
    VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
    MatrixOperator Q(b, b);
    for (int i = 0; i < b.size(); ++i)
    {
-      Q(i,i) = casimir(b[i],0) * LeftIdentity(i,i);
+      Q(i,i) = std::pow(casimir(b[i],0), Power) * LeftIdentity(i,i);
    }
-   TRACE(inner_prod(Q, RightIdentity));
-   //TRACE("sub 2*factor^2 from the final result");
-   std::complex<double> Factor = inner_prod(Q, RightIdentity);
-   TRACE(Factor);
-   TRACE(Q);
-   //Q -= Factor*2.0*LeftIdentity;
-   MatrixOperator Q2 = Q*Q;
-   Q2 -= 2.0 * Factor * Q;
-   TRACE(Q2);
-   return Q2;
-}
-
-MatrixOperator GetQSquaredRight(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity)
-{
-   VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
-   MatrixOperator Q(b, b);
-   for (int i = 0; i < b.size(); ++i)
-   {
-      Q(i,i) = casimir(b[i],0) * LeftIdentity(i,i);
-   }
-   TRACE(inner_prod(Q, RightIdentity));
-   //TRACE("sub 2*factor^2 from the final result");
-   std::complex<double> Factor = inner_prod(Q, RightIdentity);
-   TRACE(Factor);
-   TRACE(Q);
-   //Q -= Factor*2.0*LeftIdentity;
-   MatrixOperator Q2 = Q*Q;
-   //2 -= 2.0 * Factor * Q;
-   TRACE(Q2);
-   return Q2;
+   return inner_prod(Q, RightIdentity);
 }
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator
+
+bool HackSchwinger_E = true;
+bool HackSchwinger_F = false;
+double HackSchwinger_Field = getenv_or_default("MPE", 1.0);
 
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
               BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
-	      int Degree, double Tol,
+              int Degree, double Tol,
               double UnityEpsilon, int Verbose)
 {
    CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
@@ -471,20 +448,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          std::cerr << "Solving column " << (Col+1) << " of " << Dim << '\n';
       }
 
-      if (Col == 5)
-      {
-         std::cerr << "Hacking column 5...\n";
-         // The complication is that we need to multiply by the prefactor of the electric field term.
-         // We could calculate what this is from column 3 (prefactor * 2 * Nf)
-         double l = getenv_or_default("MPE", 1.0);
-         TRACE(l);
-         // These variants do exactly the same thing.  Neither is exactly correct,
-         // presumably because there are other terms, eg column 6
-         //EMatK[Col][1.0][0] = (0.5 / l) * EMatK[3][1.0][0] * EMatK[3][1.0][0];
-         EMatK[Col][1.0][0] = l * 2.0 * GetQSquared(LeftIdentity, RightIdentity);
-         continue;
-      }
-
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
 
@@ -544,15 +507,15 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             // We need initial guess vectors in the correct symmetry sector
             UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
 
-	    DEBUG_TRACE(norm_frob(UnitMatrixLeft));
-	    double lnorm = norm_frob(UnitMatrixLeft);
-	    //UnitMatrixLeft *= 1.0 / lnorm;
-	    //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
-	    //	    UnitMatrixLeft *= 2.0; // adding this brings in spurious components
-            std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
-                                                                  InjectLeftQShift(Diag, Psi, QShift),
-                                                                  Tol, Verbose);
-	    //UnitMatrixLeft *= lnorm;
+            DEBUG_TRACE(norm_frob(UnitMatrixLeft));
+            double lnorm = norm_frob(UnitMatrixLeft);
+            //UnitMatrixLeft *= 1.0 / lnorm;
+            //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
+            //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
+               std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
+                                                                     InjectLeftQShift(Diag, Psi, QShift),
+                                                                     Tol, Verbose);
+            //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
                std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
@@ -565,41 +528,41 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
                // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
                UnitMatrixRight = UnitMatrixLeft;
-	       UnitMatrixRight = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
-	       //UnitMatrixRight *= 1.0 / norm_frob(UnitMatrixRight);
-	       DEBUG_TRACE(norm_frob(UnitMatrixRight));
-	       double ddd = norm_frob(UnitMatrixRight);
-	       //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
+               UnitMatrixRight = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
+               //UnitMatrixRight *= 1.0 / norm_frob(UnitMatrixRight);
+               DEBUG_TRACE(norm_frob(UnitMatrixRight));
+               double ddd = norm_frob(UnitMatrixRight);
+               //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
                                                                      InjectRightQShift(Diag, Psi,
                                                                                        QShift),
                                                                      Tol, Verbose);
-	       //UnitMatrixRight *= 3.141;
+               //UnitMatrixRight *= 3.141;
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
 
                CHECK(norm_frob(EtaL-EtaR) < UnityEpsilon)("Left and right eigenvalues do not agree!")(EtaL)(EtaR);
                // we already determined that the norm is sufficiently close to 1, but
                // fine-tune normalization, which also guarantees that we ultimately set
-	       // HasEigenvalue1 below
+               // HasEigenvalue1 below
                Factor = EtaL / norm_frob(EtaL);
 
-	       //UnitMatrixRight *= 100;
+               //UnitMatrixRight *= 100;
 
                // normalize the left/right eigenvector pair
                //              UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
 
-	       //	       TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
+               //          TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
 
 
                UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
-	       CHECK(norm_frob(inner_prod(UnitMatrixLeft, UnitMatrixRight) - 1.0) < 1E-12);
+               CHECK(norm_frob(inner_prod(UnitMatrixLeft, UnitMatrixRight) - 1.0) < 1E-12);
                DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
 
-	       //TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
+               //TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
 
-	       //	       TRACE(inner_prod(UnitMatrixLeft, LeftIdentity) / norm_frob(UnitMatrixLeft));
-	       //TRACE(inner_prod(UnitMatrixRight, RightIdentity) / norm_frob(UnitMatrixRight));
+               //          TRACE(inner_prod(UnitMatrixLeft, LeftIdentity) / norm_frob(UnitMatrixLeft));
+               //TRACE(inner_prod(UnitMatrixRight, RightIdentity) / norm_frob(UnitMatrixRight));
 
             }
             else if (std::abs(norm_frob(EtaL) - 1.0) < UnityEpsilon*100)
@@ -673,6 +636,22 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          EMatK[Col] = E;
       }
 
+      if (HackSchwinger_E)
+      {
+         if (Col == 3 || Col == 4 || Col == 6)
+         {
+            std::cerr << "Hacking column 3/4/6...\n";
+            double l = HackSchwinger_Field;
+            EMatK[Col][1.0][0] += -l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+         }
+         if (Col == 5)
+         {
+            std::cerr << "Hacking column 5...\n";
+            double l = HackSchwinger_Field;
+            EMatK[Col][1.0][0] += l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
+         }
+      }
+
    }
 }
 
@@ -685,7 +664,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                     LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                     BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
                     MatrixOperator const& RightIdentity, std::complex<double> lambda, bool NeedFinalMatrix,
-	                 int Degree, double Tol,
+                    int Degree, double Tol,
                     double UnityEpsilon, int Verbose)
 {
    CHECK_EQUAL(RightIdentity.Basis1(), Psi1.Basis1());
@@ -818,11 +797,11 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
             double lnorm = norm_frob(UnitMatrixLeft);
             //UnitMatrixLeft *= 1.0 / lnorm;
             //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
-            //	    UnitMatrixLeft *= 2.0; // adding this brings in spurious components
+            //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
             std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
                                                                   InjectLeftQShift(Psi1, QShift, Diag, Psi2, Scale),
                                                                   Tol, Verbose);
-	         //UnitMatrixLeft *= lnorm;
+            //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
                std::cerr << "Eigenvalue of unitary operator is " << EtaL << std::endl;
@@ -857,7 +836,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                // normalize the left/right eigenvector pair
                //              UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
 
-               //	       TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
+               //          TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
 
 
                UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
@@ -866,7 +845,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
 
                //TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
 
-               //	       TRACE(inner_prod(UnitMatrixLeft, LeftIdentity) / norm_frob(UnitMatrixLeft));
+               //          TRACE(inner_prod(UnitMatrixLeft, LeftIdentity) / norm_frob(UnitMatrixLeft));
                //TRACE(inner_prod(UnitMatrixRight, RightIdentity) / norm_frob(UnitMatrixRight));
 
             }
@@ -1040,18 +1019,12 @@ SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
          //    PANIC("Fatal: unitary")(Col);
          // }
 
-         if (Col == 5)
-         {
-            E[Col] = 2.0 * GetQSquared(Ident, Rho);
-            continue;
-         }
-
          // Initial guess for linear solver
          if (E[Col].is_null())
             E[Col] = C;
 
-         //	 if (Col == 2)
-         //	    TRACE(C);
+         //    if (Col == 2)
+         //       TRACE(C);
 
          LinearSolve(E[Col], OneMinusTransferLeft_Ortho(Psi, QShift, Diag, Psi, Ident, Rho, false), C, Tol, Verbose);
          //LinearSolve(E[Col], OneMinusTransferLeft(Diag, Psi, QShift), C, Ident, Rho, Tol, Verbose);
@@ -1201,17 +1174,6 @@ SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
-
-         if (Row == 6 || Row == 5)
-         {
-            F[Row] = C*0.0;
-            continue;
-         }
-         else if (Row == 4)
-         {
-            F[Row] = 2.0 * GetQSquaredRight(Ident, Rho);
-            continue;
-         }
 
          // non-zero diagonal element.  The only case that we support here is
          // an operator with spectral radius strictly < 1
