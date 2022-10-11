@@ -23,6 +23,8 @@
 #include "mp-algorithms/gmres.h"
 #include "common/environment.h"
 
+#include "tensor/tensor_eigen.h"
+
 // maximum number of iterations used in GMRES.  In some cases of slow convergence
 // it is necessary to increase this.
 int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
@@ -143,7 +145,8 @@ FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)
 }
 
 KComplexPolyType
-DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
+DecomposeParallelParts(KMatrixPolyType& C, //std::vector<MatrixOperator> BoundaryE,
+                       std::complex<double> Factor,
                        MatrixOperator const& UnitMatrixLeft,
                        MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree)
 {
@@ -236,7 +239,7 @@ DecomposeParallelParts(KMatrixPolyType& C, std::complex<double> Factor,
 }
 
 KMatrixPolyType
-DecomposePerpendicularParts(KMatrixPolyType& C,
+DecomposePerpendicularParts(KMatrixPolyType& C, //std::vector<MatrixOperator> BoundaryE,
                             BasicFiniteMPO const& Diag,
                             MatrixOperator const& UnitMatrixLeft,
                             MatrixOperator const& UnitMatrixRight,
@@ -358,10 +361,8 @@ SolveZeroDiagonal(KMatrixPolyType const& C)
    return E;
 }
 
-// Returns the expectation value of the first casimir operator of the basis,
-// optionally at some power
-std::complex<double>
-GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
+MatrixOperator
+GetQ(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
 {
    VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
    MatrixOperator Q(b, b);
@@ -369,7 +370,15 @@ GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& R
    {
       Q(i,i) = std::pow(casimir(b[i],0), Power) * LeftIdentity(i,i);
    }
-   return inner_prod(Q, RightIdentity);
+   return Q;
+}
+
+// Returns the expectation value of the first casimir operator of the basis,
+// optionally at some power
+std::complex<double>
+GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
+{
+   return inner_prod(GetQ(LeftIdentity, RightIdentity, Power), RightIdentity);
 }
 
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
@@ -382,7 +391,9 @@ double HackSchwinger_Field = getenv_or_default("MPE", 1.0);
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+              BasicTriangularMPO const& Op,
+              //std::vector<MatrixOperator> BoundaryE,
+              MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
               int Degree, double Tol,
               double UnityEpsilon, int Verbose)
@@ -450,6 +461,52 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
+
+      if (HackSchwinger_E)
+      {
+         if (Col == 3)
+         {
+            std::cerr << "Hacking column 3...\n";
+            TRACE(GetQuantumNumberExpectation(LeftIdentity, RightIdentity));
+            double l = HackSchwinger_Field;
+            TRACE(l);
+            TRACE(C[1.0]);
+            TRACE(inner_prod(RightIdentity, C[1.0][0]));
+            C[1.0][0] -= 1.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+
+            TRACE(C[1.0]);
+            TRACE(inner_prod(RightIdentity, C[1.0][0]));
+         }
+         if (Col == 4)
+         {
+            std::cerr << "Hacking column 4...\n";
+            double l = HackSchwinger_Field;
+            TRACE(GetQuantumNumberExpectation(LeftIdentity, RightIdentity));
+            C[1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
+         }
+      }
+
+
+      if (HackSchwinger_F && Col == 7)
+      {
+         TRACE("Hacking C");
+         double l = HackSchwinger_Field;
+
+         TRACE(C[1.0]);
+         TRACE(inner_prod(C[1.0][0], RightIdentity));
+         TRACE(inner_prod(C[1.0][1], RightIdentity));
+         TRACE(inner_prod(C[1.0][2], RightIdentity));
+
+//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
+
+         // This part leads to a diverging quadratic part
+         //C[1.0] += 200000.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * EMatK[3][1.0];
+
+//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+
+//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+      }
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -590,7 +647,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
             if (Verbose > 0)
                std::cerr << "Decomposing parts parallel to the unit matrix\n";
-            EParallel = DecomposeParallelParts(C, Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon, Degree);
+            EParallel = DecomposeParallelParts(C, /*BoundaryE[Col],*/ Factor, UnitMatrixLeft, UnitMatrixRight, UnityEpsilon, Degree);
          }
          else
          {
@@ -611,7 +668,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight,
+            E = DecomposePerpendicularParts(C, /*BoundaryE[Col],*/ Diag, UnitMatrixLeft, UnitMatrixRight,
                                             Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
@@ -636,21 +693,45 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          EMatK[Col] = E;
       }
 
-      if (HackSchwinger_E)
+      if (false && HackSchwinger_E)
       {
-         if (Col == 3 || Col == 4 || Col == 6)
+         if (Col == 3)
          {
-            std::cerr << "Hacking column 3/4/6...\n";
+            std::cerr << "Hacking column 3...\n";
             double l = HackSchwinger_Field;
             EMatK[Col][1.0][0] += -l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
          }
-         if (Col == 5)
+         if (Col == 4)
          {
-            std::cerr << "Hacking column 5...\n";
+            std::cerr << "Hacking column 4...\n";
             double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
+            EMatK[Col][1.0][1] += l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
          }
       }
+
+      // if (HackSchwinger_F)
+      // {
+      //    if (Col == 3 || Col == 4)
+      //    {
+      //       std::cerr << "Hacking column 3/4...\n";
+      //       // this version seems OK, it gives matrix elements that are integer
+      //       double l = HackSchwinger_Field;
+      //       EMatK[Col][1.0][1] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+      //    }
+      //    if (Col == 1)
+      //    {
+      //       std::cerr << "Hacking column 1...\n";
+      //       TRACE(EMatK[Col][1.0]);
+      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+      //    }
+      //    if (Col == 2)
+      //    {
+      //       std::cerr << "Hacking column 2...\n";
+      //       double l = HackSchwinger_Field;
+      //       TRACE(EMatK[Col][1.0]);
+      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+      //    }
+      // }
 
    }
 }

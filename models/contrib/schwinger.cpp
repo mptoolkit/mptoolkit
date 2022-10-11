@@ -55,6 +55,7 @@ int main(int argc, char** argv)
          ("H_m"   , "Fermion mass")
          ("H_ms"  , "Fermion mass, using 2*sum(phi^\\dagger phi)")
 		   ("H_E"   , "Electric field (zero background)")
+         ("H_Esym", "Electric field (symmetric form)")
          ;
 
       OpDescriptions.add_cell_operators()
@@ -103,6 +104,12 @@ int main(int argc, char** argv)
          + 2 * sum_partial(sum_unit(Nf(0)),N(0)[0])
          + sum_unit(pow(N(0)[0],2));  // the pow here is redundant since N(0)[0] is a projector, but it is technically there
          //+ pow(sum_unit(Nf(0)),2);
+
+      // Symmeterized version of H_E
+      Lattice["H_Esym"] = sum_string(-Nf(0), I(0)[0], 2*I(0)[0], I(0)[0], Nf(0))
+         + sum_string(-Nf(0), I(0)[0], Nf(0)[1])
+         + sum_string(-Nf(0) - N(0)[0], I(0)[0], Nf(0))
+         + sum_unit(-Nf(0)[0]*Nf(0)[1]);
 
       Lattice.func("H_l")("l") = "l*2*(2 * sum_partial(sum_unit(Nf(0)),I) + sum_unit(2*Np(0)[0] - Np(0)[1]))";
 
