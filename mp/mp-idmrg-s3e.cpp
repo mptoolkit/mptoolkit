@@ -746,6 +746,8 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
    }
    SaveLeftHamiltonian = contract_from_left(*H, herm(L), LeftHamiltonian.back(), L);
    this->CheckConsistency();
+
+   //TRACE(SaveLeftHamiltonian);
 }
 
 void

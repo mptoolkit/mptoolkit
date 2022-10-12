@@ -462,52 +462,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
 
-      if (HackSchwinger_E)
-      {
-         if (Col == 3)
-         {
-            std::cerr << "Hacking column 3...\n";
-            TRACE(GetQuantumNumberExpectation(LeftIdentity, RightIdentity));
-            double l = HackSchwinger_Field;
-            TRACE(l);
-            TRACE(C[1.0]);
-            TRACE(inner_prod(RightIdentity, C[1.0][0]));
-            C[1.0][0] -= 1.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-
-            TRACE(C[1.0]);
-            TRACE(inner_prod(RightIdentity, C[1.0][0]));
-         }
-         if (Col == 4)
-         {
-            std::cerr << "Hacking column 4...\n";
-            double l = HackSchwinger_Field;
-            TRACE(GetQuantumNumberExpectation(LeftIdentity, RightIdentity));
-            C[1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
-         }
-      }
-
-
-      if (HackSchwinger_F && Col == 7)
-      {
-         TRACE("Hacking C");
-         double l = HackSchwinger_Field;
-
-         TRACE(C[1.0]);
-         TRACE(inner_prod(C[1.0][0], RightIdentity));
-         TRACE(inner_prod(C[1.0][1], RightIdentity));
-         TRACE(inner_prod(C[1.0][2], RightIdentity));
-
-//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
-
-         // This part leads to a diverging quadratic part
-         //C[1.0] += 200000.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * EMatK[3][1.0];
-
-//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-
-//         C[1.0][0] -= 2.0*l*GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      }
-
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
@@ -693,19 +647,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          EMatK[Col] = E;
       }
 
-      if (false && HackSchwinger_E)
+      if (HackSchwinger_E)
       {
          if (Col == 3)
          {
             std::cerr << "Hacking column 3...\n";
             double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += -l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            EMatK[Col][1.0][0] += l *  GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
          }
-         if (Col == 4)
+         if (Col == 5)
          {
-            std::cerr << "Hacking column 4...\n";
+            std::cerr << "Hacking column 5...\n";
             double l = HackSchwinger_Field;
-            EMatK[Col][1.0][1] += l * 2.0 * GetQuantumNumberExpectation(LeftIdentity, RightIdentity, 2) * LeftIdentity;
+            EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
          }
       }
 
