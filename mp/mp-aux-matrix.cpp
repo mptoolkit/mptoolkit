@@ -249,6 +249,8 @@ int main(int argc, char** argv)
       bool MatrixMarket = false;
       double UnityEpsilon = DefaultEigenUnityEpsilon;
       int Degree = 0;
+      bool Density = false;
+      int Component = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -263,9 +265,10 @@ int main(int argc, char** argv)
           "Construct matrix elements of a finite operator -f file=operator (not yet implemented)")
          ("sector,s", prog_opt::value(&QSector), "select a different quantum number sector [don't use this unless you know what you are doing]")
          ("rho", prog_opt::value(&RhoFile), "Construct the density matrix --rho <filename>")
+         ("density", prog_opt::bool_switch(&Density), "Display the density matrix")
          ("partition", prog_opt::value(&Partition), "Partition of the wavefunction cell,site (not yet implemented)")
          ("restrict", prog_opt::value(&WhichEigenvalues), "Use only this set of eigenvalues of the density matrix [list of indices]")
-         ("force,f", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
+         ("force", prog_opt::bool_switch(&Force), "Overwrite files if they already exist")
          ("matrixmarket", prog_opt::bool_switch(&MatrixMarket), "Use Matrix Market output format")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
@@ -279,6 +282,7 @@ int main(int argc, char** argv)
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("degree", prog_opt::value(&Degree), FormatDefault("For triangular MPO's, write this degree component of the polynomial", 0).c_str())
+         ("component", prog_opt::value(&Component), FormatDefault("Write this component of the MPO", 0).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity")
          ;
 
@@ -432,7 +436,7 @@ int main(int argc, char** argv)
             }
          }
          std::sort(EValues.begin(), EValues.end(), [](std::tuple<int,int,double> const& x, std::tuple<int,int,double> const& y)
-                   { return std::get<2>(x) < std::get<2>(y); });
+                   { return std::get<2>(x) > std::get<2>(y); });
 
          if (WhichEigenvalues.empty())
          {
@@ -475,6 +479,24 @@ int main(int argc, char** argv)
                WriteMatrixOperatorAsSparse(Out, Rho, Format, Epsilon, Polar, Radians);
             else
                WriteMatrixOperatorAsSparseStates(Out, Rho, Format, WhichStates, Epsilon, Polar, Radians);
+         }
+      }
+
+      // Display the density matrix
+      if (Density)
+      {
+         std::cout << "#n    #q        #Eigenvalue\n";
+         int n = 1;
+         for (auto const& e : WhichStates)
+         {
+            LinearAlgebra::const_inner_iterator<MatrixOperator>::type J
+               = iterate_at(Rho.cdata(), e.first, e.first);
+            if (J)
+            {
+               double evalue = (*J)(e.second, e.second).real();
+               std::cout << std::left << std::setw(5) << n << ' ' << std::setw(9) << Rho.Basis1()[e.first] << ' ' << evalue << '\n';
+            }
+            ++n;
          }
       }
 
@@ -603,7 +625,15 @@ int main(int argc, char** argv)
          std::vector<KMatrixPolyType> E;
          SolveMPO_Left(E, Psi1, InfPsi.qshift(), Op, Identity, Rho, true, 0, Tol, UnityEpsilon, Verbose);
 
-         MatrixOperator M = E.back()[1.0][Degree];
+         if (!vm.count("component"))
+            Component = E.size()-1;
+
+         if (Component < 0 || Component > E.size()-1)
+         {
+            std::cerr << "fatal: component of the MPO is out of range [0," << (E.size()-1) << "]\n";
+            return 1;
+         }
+         MatrixOperator M = E[Component][1.0][Degree];
 
          // write to file
          std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);

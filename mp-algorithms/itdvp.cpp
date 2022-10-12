@@ -771,98 +771,98 @@ iTDVP::ExpandBonds()
 void
 iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
 {
-   if (Ham.is_time_dependent())
+   if (!Ham.is_time_dependent())
+      return;
+
+   HamMPO = Ham(t, dt);
+   H = HamMPO.end();
+   --H;
+
+   if (Verbose > 1)
+      std::cout << "Recalculating Hamiltonian environments (left)..." << std::endl;
+
+   MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
+   Rho = delta_shift(Rho, QShift);
+
+   BlockHamL = Initial_E(HamMPO, Psi.Basis1());
+   BlockHamL.back() = HamL.front().back();
+
+   SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   HamL = std::deque<StateComponent>(1, BlockHamL);
+   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
+
+   MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
+   RhoOld = delta_shift(RhoOld, adjoint(QShift));
+
+   BlockHamR = Initial_F(HamMPO, PsiOld.Basis2());
+   BlockHamR.front() = HamR.back().front();
+
+   SolveSimpleMPO_Right(BlockHamR, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
+   HamR = std::deque<StateComponent>(1, BlockHamR);
+   BlockHamR = delta_shift(BlockHamR, QShift);
+
+   LinearWavefunction::iterator CLocal = Psi.begin();
+   BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
+   int SiteLocal = LeftStop;
+
+   while (SiteLocal < RightStop)
    {
-      HamMPO = Ham(t, dt);
-      H = HamMPO.end();
-      --H;
-
       if (Verbose > 1)
-         std::cout << "Recalculating Hamiltonian environments (left)..." << std::endl;
-
-      MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
-      Rho = delta_shift(Rho, QShift);
-
-      BlockHamL = Initial_E(HamMPO, Psi.Basis1());
-      BlockHamL.back() = HamL.front().back();
-
-      SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
-      HamL = std::deque<StateComponent>(1, BlockHamL);
-      BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
-
-      MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
-      RhoOld = delta_shift(RhoOld, adjoint(QShift));
-
-      BlockHamR = Initial_F(HamMPO, PsiOld.Basis2());
-      BlockHamR.front() = HamR.back().front();
-
-      SolveSimpleMPO_Right(BlockHamR, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
-      HamR = std::deque<StateComponent>(1, BlockHamR);
-      BlockHamR = delta_shift(BlockHamR, QShift);
-
-      LinearWavefunction::iterator CLocal = Psi.begin();
-      BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
-      int SiteLocal = LeftStop;
-
-      while (SiteLocal < RightStop)
-      {
-         if (Verbose > 1)
-            std::cout << "Site " << SiteLocal << std::endl;
-         HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
-         ++HLocal, ++CLocal, ++SiteLocal;
-      }
-
-      X = std::deque<StateComponent>();
-      Y = std::deque<StateComponent>();
-      XYCalculated = false;
+         std::cout << "Site " << SiteLocal << std::endl;
+      HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
+      ++HLocal, ++CLocal, ++SiteLocal;
    }
+
+   X = std::deque<StateComponent>();
+   Y = std::deque<StateComponent>();
+   XYCalculated = false;
 }
 
 void
 iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
 {
-   if (Ham.is_time_dependent())
+   if (!Ham.is_time_dependent())
+      return;
+
+   HamMPO = Ham(t, dt);
+   H = HamMPO.begin();
+
+   if (Verbose > 1)
+      std::cout << "Recalculating Hamiltonian environments (right)..." << std::endl;
+
+   MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
+   RhoOld = delta_shift(RhoOld, QShift);
+
+   BlockHamL = Initial_E(HamMPO, PsiOld.Basis1());
+   BlockHamL.back() = HamL.front().back();
+
+   SolveSimpleMPO_Left(BlockHamL, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
+   HamL = std::deque<StateComponent>(1, BlockHamL);
+   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
+
+   MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
+   Rho = delta_shift(Rho, adjoint(QShift));
+
+   BlockHamR = Initial_F(HamMPO, Psi.Basis2());
+   BlockHamR.front() = HamR.back().front();
+
+   SolveSimpleMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   HamR = std::deque<StateComponent>(1, BlockHamR);
+   BlockHamR = delta_shift(BlockHamR, QShift);
+
+   LinearWavefunction::iterator CLocal = Psi.end();
+   BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
+   int SiteLocal = RightStop + 1;
+
+   while (SiteLocal > LeftStop + 1)
    {
-      HamMPO = Ham(t, dt);
-      H = HamMPO.begin();
-
+      --HLocal, --CLocal, --SiteLocal;
       if (Verbose > 1)
-         std::cout << "Recalculating Hamiltonian environments (right)..." << std::endl;
-
-      MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
-      RhoOld = delta_shift(RhoOld, QShift);
-
-      BlockHamL = Initial_E(HamMPO, PsiOld.Basis1());
-      //BlockHamL.back() = HamL.front().back();
-
-      SolveSimpleMPO_Left(BlockHamL, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
-      HamL = std::deque<StateComponent>(1, BlockHamL);
-      BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
-
-      MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
-      Rho = delta_shift(Rho, adjoint(QShift));
-
-      BlockHamR = Initial_F(HamMPO, Psi.Basis2());
-      BlockHamR.front() = HamR.back().front();
-
-      SolveSimpleMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
-      HamR = std::deque<StateComponent>(1, BlockHamR);
-      BlockHamR = delta_shift(BlockHamR, QShift);
-
-      LinearWavefunction::iterator CLocal = Psi.end();
-      BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
-      int SiteLocal = RightStop + 1;
-
-      while (SiteLocal > LeftStop + 1)
-      {
-         --HLocal, --CLocal, --SiteLocal;
-         if (Verbose > 1)
-            std::cout << "Site " << SiteLocal << std::endl;
-         HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
-      }
-
-      X = std::deque<StateComponent>();
-      Y = std::deque<StateComponent>();
-      XYCalculated = false;
+         std::cout << "Site " << SiteLocal << std::endl;
+      HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
    }
+
+   X = std::deque<StateComponent>();
+   Y = std::deque<StateComponent>();
+   XYCalculated = false;
 }

@@ -731,6 +731,7 @@ iDMRG::UpdateRightBlock(double HMix)
 void
 iDMRG::SaveLeftBlock(StatesInfo const& States)
 {
+   //TRACE(LeftHamiltonian.back());
    // When we save the block, we need to end up with
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);

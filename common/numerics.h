@@ -339,7 +339,7 @@ using ::herm;
 //
 
 template <typename T>
-struct is_norm_2_smaller_than : public std::unary_function<bool, T>
+struct is_norm_2_smaller_than
 {
    double value;
    is_norm_2_smaller_than(double v) : value(v) {}
