@@ -911,56 +911,56 @@ TDVP::CalculateEps()
 void
 TDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
 {
-   if (Ham.is_time_dependent())
+   if (!Ham.is_time_dependent())
+      return;
+
+   HamMPO = Ham(t, dt);
+   H = HamMPO.end();
+   --H;
+
+   if (Verbose > 1)
+      std::cout << "Recalculating left Hamiltonian environment..." << std::endl;
+
+   HamL = std::deque<StateComponent>();
+   HamL.push_back(Initial_E(HamMPO, Psi.Basis1()));
+
+   LinearWavefunction::iterator CLocal = Psi.begin();
+   BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
+   int SiteLocal = LeftStop;
+
+   while (SiteLocal < RightStop)
    {
-      HamMPO = Ham(t, dt);
-      H = HamMPO.end();
-      --H;
-
       if (Verbose > 1)
-         std::cout << "Recalculating left Hamiltonian environment..." << std::endl;
-
-      HamL = std::deque<StateComponent>();
-      HamL.push_back(Initial_E(HamMPO, Psi.Basis1()));
-
-      LinearWavefunction::iterator CLocal = Psi.begin();
-      BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
-      int SiteLocal = LeftStop;
-
-      while (SiteLocal < RightStop)
-      {
-         if (Verbose > 1)
-            std::cout << "Site " << SiteLocal << std::endl;
-         HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
-         ++HLocal, ++CLocal, ++SiteLocal;
-      }
+         std::cout << "Site " << SiteLocal << std::endl;
+      HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
+      ++HLocal, ++CLocal, ++SiteLocal;
    }
 }
 
 void
 TDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
 {
-   if (Ham.is_time_dependent())
+   if (!Ham.is_time_dependent())
+      return;
+
+   HamMPO = Ham(t, dt);
+   H = HamMPO.begin();
+
+   if (Verbose > 1)
+      std::cout << "Recalculating right Hamiltonian environment..." << std::endl;
+
+   HamR = std::deque<StateComponent>();
+   HamR.push_front(Initial_F(HamMPO, Psi.Basis2()));
+
+   LinearWavefunction::iterator CLocal = Psi.end();
+   BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
+   int SiteLocal = RightStop + 1;
+
+   while (SiteLocal > LeftStop + 1)
    {
-      HamMPO = Ham(t, dt);
-      H = HamMPO.begin();
-
+      --HLocal, --CLocal, --SiteLocal;
       if (Verbose > 1)
-         std::cout << "Recalculating right Hamiltonian environment..." << std::endl;
-
-      HamR = std::deque<StateComponent>();
-      HamR.push_front(Initial_F(HamMPO, Psi.Basis2()));
-
-      LinearWavefunction::iterator CLocal = Psi.end();
-      BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
-      int SiteLocal = RightStop + 1;
-
-      while (SiteLocal > LeftStop + 1)
-      {
-         --HLocal, --CLocal, --SiteLocal;
-         if (Verbose > 1)
-            std::cout << "Site " << SiteLocal << std::endl;
-         HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
-      }
+         std::cout << "Site " << SiteLocal << std::endl;
+      HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
    }
 }
