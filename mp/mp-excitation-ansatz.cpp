@@ -319,40 +319,8 @@ struct HEff
    std::deque<MatrixOperator>
    operator()(std::deque<MatrixOperator> const& XDeque) const
    {
-      // Construct the "B"-matrices corresponding to the input "X"-matrices.
-      std::deque<StateComponent> BDeque;
-      auto NL = NullLeftDeque.begin();
-      auto X = XDeque.begin();
-      while (NL != NullLeftDeque.end())
-      {
-         BDeque.push_back(prod(*NL, *X));
-         ++NL, ++X;
-      }
-
-      // Construct the "triangular" MPS unit cell.
-      LinearWavefunction PsiTri;
-
-      if (PsiLeft.size() == 1)
-         PsiTri.push_back(BDeque.back());
-      else
-      {
-         auto CL = PsiLinearLeft.begin();
-         auto CR = PsiLinearRight.begin();
-         auto B = BDeque.begin();
-         SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
-         PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
-         ++CL, ++CR, ++B;
-         for (int i = 1; i < PsiLeft.size()-1; ++i)
-         {
-            StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-            SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
-            SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-            PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
-            ++CL, ++CR, ++B;
-         }
-         SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
-         PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
-      }
+      std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
+      LinearWavefunction PsiTri = this->ConstructPsiTri(BDeque);
 
       // Calcaulate the terms in the triangular E and F matrices where there is
       // one B-matrix on the top.
@@ -371,7 +339,7 @@ struct HEff
       // B-matrices are on the same site.
       std::deque<MatrixOperator> Result;
       auto B = BDeque.begin();
-      NL = NullLeftDeque.begin();
+      auto NL = NullLeftDeque.begin();
       auto O = HamMPO.begin();
       auto BHL = BlockHamLDeque.begin();
       auto BHR = BlockHamRDeque.begin();
@@ -504,7 +472,28 @@ struct HEff
    std::complex<double>
    Ty(std::deque<MatrixOperator> const& XDeque) const
    {
-      // Construct the "B"-matrices corresponding to the input "X"-matrices.
+      std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
+      LinearWavefunction PsiTri = this->ConstructPsiTri(BDeque);
+
+      MatrixOperator E, F;
+      SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                           PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+      SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                            PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+
+      E *= ExpIK;
+      F *= ExpIK;
+
+      std::complex<double> Ty = inner_prod(inject_left(TyL, PsiTri, StringOp, PsiTri), TyR)
+                              + inner_prod(inject_left(E, PsiLinearRight, StringOp, PsiTri), TyR)
+                              + inner_prod(inject_left(TyL, PsiLinearLeft, StringOp, PsiTri), F);
+      return Ty;
+   }
+
+   // Construct the "B"-matrices corresponding to the input "X"-matrices.
+   std::deque<StateComponent>
+   ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const
+   {
       std::deque<StateComponent> BDeque;
       auto NL = NullLeftDeque.begin();
       auto X = XDeque.begin();
@@ -514,7 +503,13 @@ struct HEff
          ++NL, ++X;
       }
 
-      // Construct the "triangular" MPS unit cell.
+      return BDeque;
+   }
+
+   // Construct the "triangular" MPS unit cell.
+   LinearWavefunction
+   ConstructPsiTri(std::deque<StateComponent> const& BDeque) const
+   {
       LinearWavefunction PsiTri;
 
       if (PsiLeft.size() == 1)
@@ -539,24 +534,12 @@ struct HEff
          PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
       }
 
-      MatrixOperator E, F;
-      SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
-      SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                            PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
-
-      E *= ExpIK;
-      F *= ExpIK;
-
-      std::complex<double> Ty = inner_prod(inject_left(TyL, PsiTri, StringOp, PsiTri), TyR)
-                              + inner_prod(inject_left(E, PsiLinearRight, StringOp, PsiTri), TyR)
-                              + inner_prod(inject_left(TyL, PsiLinearLeft, StringOp, PsiTri), F);
-      return Ty;
+      return PsiTri;
    }
 
    // This function is unused.
    std::deque<MatrixOperator>
-   InitialGuess()
+   InitialGuess() const
    {
       std::deque<MatrixOperator> Result;
       auto NL = NullLeftDeque.begin();
@@ -573,7 +556,7 @@ struct HEff
    }
 
    std::deque<PackMatrixOperator>
-   PackInitialize()
+   PackInitialize() const
    {
       std::deque<PackMatrixOperator> Result;
       auto NL = NullLeftDeque.begin();
