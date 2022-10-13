@@ -576,6 +576,24 @@ struct HEff
       ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
    }
 
+   EAWavefunction
+   ConstructEAWavefunction(std::deque<MatrixOperator> XDeque)
+   {
+      std::vector<WavefunctionSectionLeft> WindowVec;
+      auto NL = NullLeftDeque.begin();
+      auto X = XDeque.begin();
+      while (NL != NullLeftDeque.end())
+      {
+         LinearWavefunction Psi;
+         Psi.push_back(*NL);
+         WindowVec.push_back(WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), *X, Verbose-1));
+         ++NL, ++X;
+      }
+
+      // TODO: Do we need to update PsiLeft/PsiRight?
+      return EAWavefunction(PsiLeft, WindowVec, PsiRight, ExpIK);
+   }
+
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionLeft PsiRight;
    BasicTriangularMPO HamMPO;
@@ -825,6 +843,18 @@ int main(int argc, char** argv)
             }
             std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;
          }
+
+         int Index = (NumEigen-1) * PackH.size();
+         EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+
+         MPWavefunction Wavefunction;
+         Wavefunction.Wavefunction() = std::move(PsiEA);
+         Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+         Wavefunction.SetDefaultAttributes();
+         Wavefunction.Attributes()["Prefix"] = InputFileLeft;
+         std::string FName = InputFileLeft + ".k";
+         *InPsiLeft.mutate() = std::move(Wavefunction);
+         pheap::ExportHeap(FName, InPsiLeft);
       }
    }
    catch (prog_opt::error& e)
