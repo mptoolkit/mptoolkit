@@ -144,6 +144,17 @@ delta_shift(KMatrixPolyType const& In, QuantumNumber const& QShift)
    return Result;
 }
 
+std::vector<MatrixPolyType>
+delta_shift(std::vector<MatrixPolyType> const& In, QuantumNumber const& QShift)
+{
+   std::vector<MatrixPolyType> Result(In);
+   for (std::vector<MatrixPolyType>::iterator I = Result.begin(); I != Result.end(); ++I)
+   {
+      *I = delta_shift(*I, QShift);
+   }
+   return Result;
+}
+
 std::vector<KMatrixPolyType>
 delta_shift(std::vector<KMatrixPolyType> const& In, QuantumNumber const& QShift)
 {
@@ -153,6 +164,21 @@ delta_shift(std::vector<KMatrixPolyType> const& In, QuantumNumber const& QShift)
       *I = delta_shift(*I, QShift);
    }
    return Result;
+}
+
+void
+add_triple_prod(MatrixPolyType& Result, std::complex<double> Factor,
+                HermitianProxy<MatrixOperator> const& x,
+                MatrixPolyType const& E,
+                MatrixOperator const& y,
+                QuantumNumber const& qxy,
+                QuantumNumber const& qEp)
+{
+   // loop over degrees of the polynomial
+   for (MatrixPolyType::const_iterator D = E.begin(); D != E.end(); ++D)
+   {
+      Result[D->first] += Factor * triple_prod(x, D->second, y, qxy, qEp);
+   }
 }
 
 void
@@ -166,11 +192,7 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
    // loop over momenta
    for (KMatrixPolyType::const_iterator K = E.begin(); K != E.end(); ++K)
    {
-      // loop over degrees of the polynomial
-      for (MatrixPolyType::const_iterator D = K->second.begin(); D != K->second.end(); ++D)
-      {
-         Result[K->first][D->first] += Factor * triple_prod(x, D->second, y, qxy, qEp);
-      }
+      add_triple_prod(Result[K->first], Factor, x, K->second, y, qxy, qEp);
    }
 }
 
@@ -192,53 +214,6 @@ contract_from_left(OperatorComponent const& M,
       // second index in M
       for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
       {
-         // Iterate over the irreducible components of M(I,J)
-         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
-         {
-            // *k is an irreducible operator.  Iterate over the components of this operator
-            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
-            {
-               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
-                       S = iterate(R); S; ++S)
-               {
-                  add_triple_prod(Result[J.index2()], *S,
-                                  herm(A.base()[S.index1()]),
-                                  E[J.index1()],
-                                  B[S.index2()],
-                                  k->TransformsAs(),
-                                  M.Basis2()[J.index2()]);
-               }
-            }
-         }
-      }
-   }
-   return Result;
-}
-
-std::vector<KMatrixPolyType>
-contract_from_left(OperatorComponent const& M,
-                   HermitianProxy<StateComponent> const& A,
-                   std::vector<KMatrixPolyType> const& E,
-                   StateComponent const& B,
-                   std::vector<int> const& OutMask,
-                   std::vector<int> const& InMask)
-{
-   std::vector<KMatrixPolyType> Result(M.Basis2().size());
-
-   // Iterate over the components in M, first index
-   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M); I; ++I)
-   {
-      // skip over masked components
-      if (!InMask[I.index()])
-         continue;
-
-      // second index in M
-      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
-      {
-         // skip over masked components
-         if (!OutMask[J.index2()])
-            continue;
-
          // Iterate over the irreducible components of M(I,J)
          for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
          {
@@ -291,6 +266,36 @@ inject_left(std::vector<KMatrixPolyType> const& In,
    return Result;
 }
 
+std::vector<MatrixPolyType>
+inject_left_mask(std::vector<MatrixPolyType> const& In,
+                 LinearWavefunction const& Psi1,
+                 QuantumNumber const& QShift,
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int> > const& Mask)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+   //   PRECONDITION_EQUAL(Op.Basis1().size(), In.size());
+
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
+   std::vector<std::vector<int>>::const_iterator MaskIter = Mask.begin();
+
+   std::vector<MatrixPolyType> E;
+   std::vector<MatrixPolyType> Result(In);
+
+   while (OpIter != Op.end())
+   {
+      std::swap(E, Result);
+      Result = contract_from_left(*OpIter, herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
+
+      ++I1; ++I2; ++OpIter; ++MaskIter;
+   }
+   return delta_shift(Result, QShift);
+}
+
 std::vector<KMatrixPolyType>
 inject_left_mask(std::vector<KMatrixPolyType> const& In,
                  LinearWavefunction const& Psi1,
@@ -306,7 +311,7 @@ inject_left_mask(std::vector<KMatrixPolyType> const& In,
    LinearWavefunction::const_iterator I1 = Psi1.begin();
    LinearWavefunction::const_iterator I2 = Psi2.begin();
    GenericMPO::const_iterator OpIter = Op.begin();
-   std::vector<std::vector<int> >::const_iterator MaskIter = Mask.begin();
+   std::vector<std::vector<int>>::const_iterator MaskIter = Mask.begin();
 
    std::vector<KMatrixPolyType> E;
    std::vector<KMatrixPolyType> Result(In);
@@ -314,8 +319,6 @@ inject_left_mask(std::vector<KMatrixPolyType> const& In,
    while (OpIter != Op.end())
    {
       std::swap(E, Result);
-      //      std::vector<KMatrixPolyType>(OpIter->Basis2().size()).swap(Result);
-
       Result = contract_from_left(*OpIter, herm(*I1), E, *I2, *(MaskIter+1), *MaskIter);
 
       ++I1; ++I2; ++OpIter; ++MaskIter;

@@ -20,55 +20,31 @@
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
 
-MatrixOperator
-GetQ(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
-{
-   VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
-   MatrixOperator Q(b, b);
-   for (int i = 0; i < b.size(); ++i)
-   {
-      Q(i,i) = std::pow(casimir(b[i],0), Power) * LeftIdentity(i,i);
-   }
-   return Q;
-}
-
-// Returns the expectation value of the first casimir operator of the basis,
-// optionally at some power
-std::complex<double>
-GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
-{
-   return inner_prod(GetQ(LeftIdentity, RightIdentity, Power), RightIdentity);
-}
-
-// Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
-// We currently assume there is only one eigenvalue 1 of the transfer operator
-
-bool HackSchwinger_E = true;
-bool HackSchwinger_F = false;
-double HackSchwinger_Field = getenv_or_default("MPE", 1.0);
-
 void
-SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
-              LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              BasicTriangularMPO const& Op,
-              //std::vector<MatrixOperator> BoundaryE,
-              MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
-              int Degree, double Tol,
-              double UnityEpsilon, int Verbose)
+SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
+                    LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                    BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+                    MatrixOperator const& RightIdentity, std::complex<double> lambda, bool NeedFinalMatrix,
+                    int Degree, double Tol,
+                    double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis1(), Psi1.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis2(), Psi2.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis1(), Psi1.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis2(), Psi2.Basis1());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
+
+   // lambda is the leading eigenvalue of the transfer matrix.  We solve the MPO with respect to
+   // <Psi1|Op|Psi2> / <Psi1|Psi2>.  This amounts to dividing through by lambda every time we contract over a unit cell.
+   // Or equivalently, scale everything by Scale ( = 1 / lambda).
+   std::complex<double> Scale = 1.0 / lambda;
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMatK.reserve(Dim);
 
    if (Verbose > 0)
-      std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveMPO_Left_Cross: dimension is " << Dim << std::endl;
 
    if (EMatK.empty())
    {
@@ -119,7 +95,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
-      KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
+      KMatrixPolyType C = inject_left_mask(EMatK, Psi1, QShift, Op.data(), Psi2, mask_column(Op, Col))[Col];
+      ScalePoly(C, Scale);
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -182,9 +159,9 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             //UnitMatrixLeft *= 1.0 / lnorm;
             //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
             //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
-               std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
-                                                                     InjectLeftQShift(Diag, Psi, QShift),
-                                                                     Tol, Verbose);
+            std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
+                                                                  InjectLeftQShift(Psi1, QShift, Diag, Psi2, Scale),
+                                                                  Tol, Verbose);
             //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
@@ -204,10 +181,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                double ddd = norm_frob(UnitMatrixRight);
                //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
-                                                                     InjectRightQShift(Diag, Psi,
-                                                                                       QShift),
+                                                                     InjectRightQShift(Psi1, QShift, Diag, Psi2, Scale),
                                                                      Tol, Verbose);
-               //UnitMatrixRight *= 3.141;
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
 
@@ -281,8 +256,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            E = DecomposePerpendicularParts(C, /*BoundaryE[Col],*/ Diag, UnitMatrixLeft, UnitMatrixRight,
-                                            Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight,
+                                            Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -305,46 +280,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
          //DEBUG_TRACE(E[1.0]);
          EMatK[Col] = E;
       }
-
-      if (HackSchwinger_E)
-      {
-         if (Col == 3)
-         {
-            std::cerr << "Hacking column 3...\n";
-            double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += l *  GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-         }
-         if (Col == 5)
-         {
-            std::cerr << "Hacking column 5...\n";
-            double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-         }
-      }
-
-      // if (HackSchwinger_F)
-      // {
-      //    if (Col == 3 || Col == 4)
-      //    {
-      //       std::cerr << "Hacking column 3/4...\n";
-      //       // this version seems OK, it gives matrix elements that are integer
-      //       double l = HackSchwinger_Field;
-      //       EMatK[Col][1.0][1] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      //    if (Col == 1)
-      //    {
-      //       std::cerr << "Hacking column 1...\n";
-      //       TRACE(EMatK[Col][1.0]);
-      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      //    if (Col == 2)
-      //    {
-      //       std::cerr << "Hacking column 2...\n";
-      //       double l = HackSchwinger_Field;
-      //       TRACE(EMatK[Col][1.0]);
-      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      // }
 
    }
 }
