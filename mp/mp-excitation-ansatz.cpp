@@ -51,6 +51,8 @@ int main(int argc, char** argv)
       QuantumNumbers::QuantumNumber Q;
       std::string String;
       ProductMPO StringOp;
+      std::string OutputPrefix;
+      int OutputDigits = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -72,6 +74,7 @@ int main(int argc, char** argv)
          // "The quantum number sector for the excitation [default identity]")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
+         ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
@@ -138,6 +141,8 @@ int main(int argc, char** argv)
 
       double KStep = (KMax-KMin)/(KNum-1);
 
+      OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+
       // Initialize the effective Hamiltonian.
       HEff H;
       if (vm.count("psi2"))
@@ -198,17 +203,22 @@ int main(int argc, char** argv)
             std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;
          }
 
-         int Index = (NumEigen-1) * PackH.size();
-         EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+         // Save wavefunction.
+         if (OutputPrefix != "")
+         {
+            int Index = (NumEigen-1) * PackH.size();
+            EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
 
-         MPWavefunction Wavefunction;
-         Wavefunction.Wavefunction() = std::move(PsiEA);
-         Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
-         Wavefunction.SetDefaultAttributes();
-         Wavefunction.Attributes()["Prefix"] = InputFileLeft;
-         std::string FName = InputFileLeft + ".k";
-         *InPsiLeft.mutate() = std::move(Wavefunction);
-         pheap::ExportHeap(FName, InPsiLeft);
+            MPWavefunction Wavefunction;
+            Wavefunction.Wavefunction() = std::move(PsiEA);
+            Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+            Wavefunction.SetDefaultAttributes();
+            Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+            std::string FName = OutputPrefix + ".k" + formatting::format_digits(k, OutputDigits);
+
+            pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
+            pheap::ExportHeap(FName, PsiPtr);
+         }
       }
    }
    catch (prog_opt::error& e)
