@@ -172,7 +172,7 @@ SolveFirstOrderMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
 
    if (!classify(Op(0,0), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Right: fatal: MPO(0,0) must be the identity operator.\n";
+      std::cerr << "SolveFirstOrderMPO_Right: fatal: MPO(0,0) must be the identity operator.\n";
       PANIC("Fatal");
    }
 

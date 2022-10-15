@@ -145,30 +145,43 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
 
 // Decompose the perpendicular parts at momentum K
 MatrixPolyType
-DecomposePerpendicularParts(MatrixPolyType const& C, std::complex<double> K,
-                           BasicFiniteMPO const& Diag,
-                           MatrixOperator const& UnitMatrixLeft,
-                           MatrixOperator const& UnitMatrixRight,
-                           LinearWavefunction const& Psi1,
-                           LinearWavefunction const& Psi2,
-                           QuantumNumber const& QShift,
-                           std::complex<double> Scale,
-                           bool HasEigenvalue1,
-                           double Tol,
-                           int Verbose);
+DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
+                               BasicFiniteMPO const& Diag,
+                               MatrixOperator const& UnitMatrixLeft,
+                               MatrixOperator const& UnitMatrixRight,
+                               LinearWavefunction const& Psi1,
+                               LinearWavefunction const& Psi2,
+                               QuantumNumber const& QShift,
+                               std::complex<double> Scale,
+                               bool HasEigenvalue1,
+                               double Tol,
+                               int Verbose);
 
 KMatrixPolyType
-DecomposePerpendicularParts(KMatrixPolyType const& C,
-                            BasicFiniteMPO const& Diag,
-                            MatrixOperator const& UnitMatrixLeft,
-                            MatrixOperator const& UnitMatrixRight,
-                            LinearWavefunction const& Psi1,
-                            LinearWavefunction const& Psi2,
-                            QuantumNumber const& QShift,
-                            std::complex<double> Scale,
-                            bool HasEigenvalue1,
-                            double Tol,
-                            int Verbose);
+DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
+                                BasicFiniteMPO const& Diag,
+                                MatrixOperator const& UnitMatrixLeft,
+                                MatrixOperator const& UnitMatrixRight,
+                                LinearWavefunction const& Psi1,
+                                LinearWavefunction const& Psi2,
+                                QuantumNumber const& QShift,
+                                std::complex<double> Scale,
+                                bool HasEigenvalue1,
+                                double Tol,
+                                int Verbose);
+
+MatrixPolyType
+DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K,
+                                 BasicFiniteMPO const& Diag,
+                                 MatrixOperator const& UnitMatrixLeft,
+                                 MatrixOperator const& UnitMatrixRight,
+                                 LinearWavefunction const& Psi1,
+                                 LinearWavefunction const& Psi2,
+                                 QuantumNumber const& QShift,
+                                 std::complex<double> Scale,
+                                 bool HasEigenvalue1,
+                                 double Tol,
+                                 int Verbose);
 
 // Solve the components for the case where the diagonal operator is zero
 KMatrixPolyType

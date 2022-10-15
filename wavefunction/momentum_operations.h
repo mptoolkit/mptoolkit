@@ -116,6 +116,14 @@ add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
                 QuantumNumber const& qxy,
                 QuantumNumber const& qEp);
 
+void
+add_triple_prod(MatrixPolyType& Result, std::complex<double> Factor,
+            MatrixOperator const& x,
+            MatrixPolyType const& E,
+            HermitianProxy<MatrixOperator> const& y,
+            QuantumNumber const& qxy,
+            QuantumNumber const& qEp);
+
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
                    HermitianProxy<StateComponent> const& A,
@@ -124,12 +132,21 @@ contract_from_left(OperatorComponent const& M,
 
 template <typename EType>
 std::vector<EType>
-contract_from_left(OperatorComponent const& M,
-                   HermitianProxy<StateComponent> const& A,
-                   std::vector<EType> const& E,
-                   StateComponent const& B,
-                   std::vector<int> const& OutMask,
-                   std::vector<int> const& InMask);
+contract_from_left_mask(OperatorComponent const& M,
+                        HermitianProxy<StateComponent> const& A,
+                        std::vector<EType> const& E,
+                        StateComponent const& B,
+                        std::vector<int> const& OutMask,
+                        std::vector<int> const& InMask);
+
+template <typename EType>
+std::vector<EType>
+contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
+                        StateComponent const& A,
+                        std::vector<EType> const& F,
+                        HermitianProxy<StateComponent> const& B,
+                        std::vector<int> const& OutMask,
+                        std::vector<int> const& InMask);
 
 std::vector<KMatrixPolyType>
 inject_left(std::vector<KMatrixPolyType> const& In,
@@ -145,6 +162,14 @@ inject_left_mask(std::vector<MatrixPolyType> const& In,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int>> const& Mask);
 
+std::vector<MatrixPolyType>
+inject_right_mask(std::vector<MatrixPolyType> const& In,
+                 LinearWavefunction const& Psi1,
+                 QuantumNumber const& QShift,
+                 GenericMPO const& Op,
+                 LinearWavefunction const& Psi2,
+                 std::vector<std::vector<int>> const& Mask);
+
 std::vector<KMatrixPolyType>
 inject_left_mask(std::vector<KMatrixPolyType> const& In,
                  LinearWavefunction const& Psi1,
@@ -153,14 +178,21 @@ inject_left_mask(std::vector<KMatrixPolyType> const& In,
                  LinearWavefunction const& Psi2,
                  std::vector<std::vector<int>> const& Mask);
 
+// We don't need the KMatrixPolyType version of inject_right_mask, since we don't have a
+// full momentum-dependent version of SolveMPO_Right
+
+//
+// implementation
+//
+
 template <typename EType>
 std::vector<EType>
-contract_from_left(OperatorComponent const& M,
-                  HermitianProxy<StateComponent> const& A,
-                  std::vector<EType> const& E,
-                  StateComponent const& B,
-                  std::vector<int> const& OutMask,
-                  std::vector<int> const& InMask)
+contract_from_left_mask(OperatorComponent const& M,
+                        HermitianProxy<StateComponent> const& A,
+                        std::vector<EType> const& E,
+                        StateComponent const& B,
+                        std::vector<int> const& OutMask,
+                        std::vector<int> const& InMask)
 {
   std::vector<EType> Result(M.Basis2().size());
 
@@ -199,6 +231,60 @@ contract_from_left(OperatorComponent const& M,
      }
   }
   return Result;
+}
+
+template <typename FType>
+std::vector<FType>
+contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
+                        StateComponent const& A,
+                        std::vector<FType> const& F,
+                        HermitianProxy<StateComponent> const& B,
+                        std::vector<int> const& OutMask,
+                        std::vector<int> const& InMask)
+{
+   PRECONDITION_EQUAL(M.base().LocalBasis1(), A.LocalBasis());
+   PRECONDITION_EQUAL(M.base().LocalBasis2(), B.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.base().Basis2(), F.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(A.Basis2(), F.Basis1());
+   DEBUG_PRECONDITION_EQUAL(F.Basis2(), B.base().Basis2());
+
+  std::vector<FType> Result(M.base().Basis2().size());
+
+   // Iterate over the components in M, first index
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   {
+      // skip over masked components
+      if (!OutMask[I.index()])
+         continue;
+
+      // second index in M
+      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      {
+         // skip over masked components
+         if (!InMask[J.index2()])
+            continue;
+
+         // Iterate over the irreducible components of M(I,J)
+         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
+         {
+            // *k is an irreducible operator.  Iterate over the components of this operator
+            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            {
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+                       S = iterate(R); S; ++S)
+               {
+                  add_triple_prod(Result[J.index1()], *S,
+                                  A[S.index1()],
+                                  F[J.index2()],
+                                  herm(B.base()[S.index2()]),
+                                  k->TransformsAs(),
+                                  M.base().Basis1()[J.index1()]);
+               }
+            }
+         }
+      }
+   }
+   return Result;
 }
 
 #endif

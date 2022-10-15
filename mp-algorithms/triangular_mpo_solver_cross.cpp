@@ -256,7 +256,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            E = DecomposePerpendicularParts(C, Diag, UnitMatrixLeft, UnitMatrixRight,
+            E = DecomposePerpendicularPartsLeft(C, Diag, UnitMatrixLeft, UnitMatrixRight,
                                             Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
