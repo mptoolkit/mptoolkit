@@ -244,11 +244,8 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
 {
    PRECONDITION_EQUAL(M.base().LocalBasis1(), A.LocalBasis());
    PRECONDITION_EQUAL(M.base().LocalBasis2(), B.base().LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(M.base().Basis2(), F.LocalBasis());
-   DEBUG_PRECONDITION_EQUAL(A.Basis2(), F.Basis1());
-   DEBUG_PRECONDITION_EQUAL(F.Basis2(), B.base().Basis2());
 
-  std::vector<FType> Result(M.base().Basis2().size());
+  std::vector<FType> Result(M.base().Basis1().size());
 
    // Iterate over the components in M, first index
    for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)

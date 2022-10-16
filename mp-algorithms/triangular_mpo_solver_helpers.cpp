@@ -52,19 +52,19 @@ long Binomial(int n, int k)
 }
 
 // Given a matrix polynomial C, extract the components proportional to the
-// UnitMatrixLeft into a c-number polynomial
+// Rho into a c-number polynomial
 ComplexPolyType
 FindParallelParts(MatrixPolyType& C,
-                  MatrixOperator const& UnitMatrixLeft,
-                  MatrixOperator const& UnitMatrixRight, int MaxDegree)
+                  MatrixOperator const& Identity,
+                  MatrixOperator const& Rho, int MaxDegree)
 {
    ComplexPolyType CParallel;
    // iterate over components of the polynomial
    for (MatrixPolyType::iterator I = C.begin(); I != C.end(); ++I)
    {
       // Orthogonalize against the identity
-      std::complex<double> Overlap = inner_prod(I->second, UnitMatrixRight);
-      I->second -= std::conj(Overlap)*UnitMatrixLeft;
+      std::complex<double> Overlap = inner_prod(I->second, Rho);
+      I->second -= std::conj(Overlap)*Identity;
 
       // **comparison** we always want to add here to get the degree of the polynomial correct.
       // This is the important one
@@ -115,19 +115,20 @@ UpdateParallelParts(ComplexPolyType const& CParallel, std::complex<double> Momen
 // Extract the parallel parts of C, and return the corresponding E
 ComplexPolyType
 DecomposeParallelParts(MatrixPolyType& C,
-                       MatrixOperator const& UnitMatrixLeft,
-                       MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree)
+                       MatrixOperator const& Identity,
+                       MatrixOperator const& Rho, double UnityEpsilon, int Degree)
 {
-   ComplexPolyType CParallel = FindParallelParts(C, UnitMatrixLeft, UnitMatrixRight, Degree);
+   ComplexPolyType CParallel = FindParallelParts(C, Identity, Rho, Degree);
    return UpdateParallelParts(CParallel);
 }
 
-// Extract the parallel parts of C, and return the corresponding E, with momentum
+// Extract the parallel parts of C, and return the corresponding E, with momentum.
+// The Identity and Rho matrices can be any left/right eigenpair.
 KComplexPolyType
 DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
                                    std::complex<double> Factor,
-                                   MatrixOperator const& UnitMatrixLeft,
-                                   MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree)
+                                   MatrixOperator const& Identity,
+                                   MatrixOperator const& Rho, double UnityEpsilon, int Degree)
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
@@ -138,7 +139,7 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
    for (KMatrixPolyType::iterator Ck = C.begin(); Ck != C.end(); ++Ck) // sum over momenta
    {
       std::complex<double> K = Ck->first;
-      ComplexPolyType CParallel = FindParallelParts(Ck->second, UnitMatrixLeft, UnitMatrixRight, Degree);
+      ComplexPolyType CParallel = FindParallelParts(Ck->second, Identity, Rho, Degree);
 
       // Is this the same momentum as our unit operator?
       if (norm_frob(K - Factor) < UnityEpsilon*10)
@@ -171,8 +172,8 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
 MatrixPolyType
 DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                            BasicFiniteMPO const& Diag,
-                           MatrixOperator const& UnitMatrixLeft,
-                           MatrixOperator const& UnitMatrixRight,
+                           MatrixOperator const& Identity,
+                           MatrixOperator const& Rho,
                            LinearWavefunction const& Psi1,
                            LinearWavefunction const& Psi2,
                            QuantumNumber const& QShift,
@@ -181,7 +182,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                            double Tol,
                            int Verbose)
 {
-   // UnitMatrixLeft and UnitMatrixRight are only used if HasEigenvalue1 is true
+   // Identity and Rho are only used if HasEigenvalue1 is true
    // Components perpendicular to the identity satisfy equation (24)
    MatrixPolyType E;
 
@@ -201,12 +202,12 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
 
       // orthogonalize Rhs against the identity again, which is a kind of
       // DGKS correction
-      if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
+      if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
       {
-         DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be small");
-         Rhs -= std::conj(inner_prod(Rhs, UnitMatrixRight)) * UnitMatrixLeft;
-         DEBUG_TRACE(inner_prod(Rhs, UnitMatrixRight))("should be zero");
-         DEBUG_TRACE(inner_prod(Rhs, UnitMatrixLeft));
+         DEBUG_TRACE(inner_prod(Rhs, Rho))("should be small");
+         Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
+         DEBUG_TRACE(inner_prod(Rhs, Rho))("should be zero");
+         DEBUG_TRACE(inner_prod(Rhs, Identity));
       }
 
       double RhsNorm2 = norm_frob_sq(Rhs);
@@ -219,29 +220,29 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          E[m] = std::sqrt(RhsNorm2) *
             MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
          // Orthogonalize the initial guess -- this is important for the numerical stability
-         if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixRight.TransformsAs())
+         if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
-            E[m] -= std::conj(inner_prod(E[m], UnitMatrixRight)) * UnitMatrixLeft;
-            DEBUG_TRACE("should be zero")(inner_prod(E[K][m], UnitMatrixRight));
+            E[m] -= std::conj(inner_prod(E[m], Rho)) * Identity;
+            DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
          }
 
          LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     UnitMatrixLeft, UnitMatrixRight, Scale, HasEigenvalue1),
+                     Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
 
-         DEBUG_TRACE(K)(m)(norm_frob(E[K][m]))(inner_prod(E[K][m], UnitMatrixRight));
+         DEBUG_TRACE(m)(norm_frob(E[m]))(inner_prod(E[m], Rho));
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
-         if (HasEigenvalue1 && E[m].TransformsAs() == UnitMatrixRight.TransformsAs())
+         if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {
-            std::complex<double> z = inner_prod(E[m], UnitMatrixRight);
+            std::complex<double> z = inner_prod(E[m], Rho);
             DEBUG_TRACE(z);
             if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };
-            E[m] -= std::conj(z) * UnitMatrixLeft;
-            DEBUG_TRACE(inner_prod(E[K][m], UnitMatrixRight))("should be zero");
+            E[m] -= std::conj(z) * Identity;
+            DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
          }
       }
    }
@@ -251,8 +252,8 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
 KMatrixPolyType
 DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                             BasicFiniteMPO const& Diag,
-                            MatrixOperator const& UnitMatrixLeft,
-                            MatrixOperator const& UnitMatrixRight,
+                            MatrixOperator const& Identity,
+                            MatrixOperator const& Rho,
                             LinearWavefunction const& Psi1,
                             LinearWavefunction const& Psi2,
                             QuantumNumber const& QShift,
@@ -261,24 +262,24 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                             double Tol,
                             int Verbose)
 {
-   // UnitMatrixLeft and UnitMatrixRight are only used if HasEigenvalue1 is true
+   // Identity and Rho are only used if HasEigenvalue1 is true
    // Components perpendicular to the identity satisfy equation (24)
    KMatrixPolyType E;
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
-      E[K] = DecomposePerpendicularPartsLeft(I->second, I->first, Diag, UnitMatrixLeft, UnitMatrixRight,
+      E[K] = DecomposePerpendicularPartsLeft(I->second, I->first, Diag, Identity, Rho,
                   Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
    }
    return E;
 }
 
-// On entry, UnitMatrixRight ~ Identity, InitMatrixLeft ~ Rho
+// On entry, Rho ~ Identity, InitMatrixLeft ~ Rho
 MatrixPolyType
 DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K,
                                  BasicFiniteMPO const& Diag,
-                                 MatrixOperator const& UnitMatrixLeft,
-                                 MatrixOperator const& UnitMatrixRight,
+                                 MatrixOperator const& Identity,
+                                 MatrixOperator const& Rho,
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
@@ -287,7 +288,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  double Tol,
                                  int Verbose)
 {
-   // UnitMatrixLeft and UnitMatrixRight are only used if HasEigenvalue1 is true
+   // Identity and Rho are only used if HasEigenvalue1 is true
    // Components perpendicular to the identity satisfy equation (24)
    MatrixPolyType F;
 
@@ -307,9 +308,9 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
 
       // orthogonalize Rhs against the identity again, which is a kind of
       // DGKS correction
-      if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixLeft.TransformsAs())
+      if (HasEigenvalue1 && Rhs.TransformsAs() == Identity.TransformsAs())
       {
-         Rhs -= std::conj(inner_prod(Rhs, UnitMatrixLeft)) * UnitMatrixRight;
+         Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
       }
 
       double RhsNorm2 = norm_frob_sq(Rhs);
@@ -322,26 +323,26 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
          F[m] = std::sqrt(RhsNorm2) *
             MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
          // Orthogonalize the initial guess -- this is important for the numerical stability
-         if (HasEigenvalue1 && Rhs.TransformsAs() == UnitMatrixLeft.TransformsAs())
+         if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
-            F[m] -= std::conj(inner_prod(F[m], UnitMatrixLeft)) * UnitMatrixRight;
+            F[m] -= std::conj(inner_prod(F[m], Rho)) * Identity;
          }
 
          LinearSolve(F[m], OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     UnitMatrixLeft, UnitMatrixRight, Scale, HasEigenvalue1),
+                     Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
 
-         DEBUG_TRACE(K)(m)(norm_frob(E[K][m]))(inner_prod(E[K][m], UnitMatrixRight));
+         DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
-         if (HasEigenvalue1 && F[m].TransformsAs() == UnitMatrixLeft.TransformsAs())
+         if (HasEigenvalue1 && F[m].TransformsAs() == Rho.TransformsAs())
          {
-            std::complex<double> z = inner_prod(F[m], UnitMatrixLeft);
+            std::complex<double> z = inner_prod(F[m], Rho);
             if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };
-            F[m] -= std::conj(z) * UnitMatrixRight;
+            F[m] -= std::conj(z) * Identity;
          }
       }
    }
@@ -362,7 +363,6 @@ SolveZeroDiagonal(MatrixPolyType const& C, std::complex<double> K)
    {
       if (C.has_term(i))
       {
-         DEBUG_CHECK(!I->second[i].is_null());
          E[i] = std::conj(K) * C[i];
       }
       for (int j = i+1; j <= MaxDegree; ++j)

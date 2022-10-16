@@ -122,9 +122,7 @@ FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)
 // Given a matrix polynomial C, extract the components proportional to the
 // UnitMatrixLeft into a c-number polynomial
 ComplexPolyType
-FindParallelParts(MatrixPolyType& C,
-                  MatrixOperator const& UnitMatrixLeft,
-                  MatrixOperator const& UnitMatrixRight, int MaxDegree);
+FindParallelParts(MatrixPolyType& C, MatrixOperator const& Identity, MatrixOperator const& Rho, int MaxDegree);
 
 // Update the components of the E polynomial, given CParallel
 ComplexPolyType
@@ -133,17 +131,19 @@ UpdateParallelParts(ComplexPolyType const& CParallel, std::complex<double> Momen
 // Extract the parallel parts of C, and return the corresponding E
 ComplexPolyType
 DecomposeParallelParts(MatrixPolyType& C,
-                       MatrixOperator const& UnitMatrixLeft,
-                       MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree);
+                       MatrixOperator const& Identity,
+                       MatrixOperator const& Rho, double UnityEpsilon, int Degree);
 
-// Extract the parallel parts of C, and return the corresponding E, with momentum
+// Extract the parallel parts of C, and return the corresponding E, with momentum.
+// The Identity and Rho matrices can be any left/right eigenpair.
 KComplexPolyType
 DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
                                    std::complex<double> Factor,
-                                   MatrixOperator const& UnitMatrixLeft,
-                                   MatrixOperator const& UnitMatrixRight, double UnityEpsilon, int Degree);
+                                   MatrixOperator const& Identity,
+                                   MatrixOperator const& Rho, double UnityEpsilon, int Degree);
 
 // Decompose the perpendicular parts at momentum K
+// The Identity and Rho matrices can be any left/right eigenpair.
 MatrixPolyType
 DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                                BasicFiniteMPO const& Diag,
@@ -170,11 +170,13 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                                 double Tol,
                                 int Verbose);
 
+// Decompose components perpendicular to the identity, in the right basis.
+// Identity and Rho can be any right/left eigenpair
 MatrixPolyType
 DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K,
                                  BasicFiniteMPO const& Diag,
-                                 MatrixOperator const& UnitMatrixLeft,
-                                 MatrixOperator const& UnitMatrixRight,
+                                 MatrixOperator const& Identity,
+                                 MatrixOperator const& Rho,
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,

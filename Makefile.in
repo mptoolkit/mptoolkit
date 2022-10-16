@@ -119,7 +119,8 @@ pstreamobj = pstream.o pfilestream.o
 linearalgebraobj = eigen.o
 
 mpoobj = operator_component.o generic_mpo.o basic_finite_mpo.o basic_triangular_mpo.o product_mpo.o infinite_mpo.o \
-         f-optim.o e-optim.o operator-diagonal.o
+         f-optim.o e-optim.o operator-diagonal.o schwinger_hack.o
+
 mpsobj = state_component.o density.o
 
 wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunctionleft.o \

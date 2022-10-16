@@ -1301,7 +1301,7 @@ int main(int argc, char** argv)
       {
          std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          MatrixOperator Rho = delta_shift(scalar_prod(R, herm(R)), QShift);
-         InitialEnergy = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO,
+         InitialEnergy = SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO,
                                              Rho, GMRESTol, Verbose);
          std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
 
@@ -1356,8 +1356,8 @@ int main(int argc, char** argv)
          // We obtained Rho from the left side, so we need to delta shift to the right basis
          Rho = delta_shift(Rho, adjoint(QShift));
 
-         std::complex<double> Energy = SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, HamMPO,
-                                                            Rho, GMRESTol, Verbose);
+         std::complex<double> Energy = SolveHamiltonianMPO_Right(BlockHamR, PsiR, QShift, HamMPO,
+                                                                 Rho, GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
 
          //TRACE(norm_frob(delta_shift(MatrixOperator(R),QShift) - triple_prod(U,L,herm(U))));

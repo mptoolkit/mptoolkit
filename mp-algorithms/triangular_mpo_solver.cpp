@@ -19,33 +19,7 @@
 
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
-
-MatrixOperator
-GetQ(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
-{
-   VectorBasis b = LeftIdentity.Basis1();  // Basis1() and Basis2() are the same here
-   MatrixOperator Q(b, b);
-   for (int i = 0; i < b.size(); ++i)
-   {
-      Q(i,i) = std::pow(casimir(b[i],0), Power) * LeftIdentity(i,i);
-   }
-   return Q;
-}
-
-// Returns the expectation value of the first casimir operator of the basis,
-// optionally at some power
-std::complex<double>
-GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1)
-{
-   return inner_prod(GetQ(LeftIdentity, RightIdentity, Power), RightIdentity);
-}
-
-// Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
-// We currently assume there is only one eigenvalue 1 of the transfer operator
-
-bool HackSchwinger_E = true;
-bool HackSchwinger_F = false;
-double HackSchwinger_Field = getenv_or_default("MPE", 1.0);
+#include "schwinger_hack.h"
 
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
@@ -308,43 +282,46 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
       if (HackSchwinger_E)
       {
-         if (Col == 3)
+         if (GaugeFlip)
          {
-            std::cerr << "Hacking column 3...\n";
-            double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += l *  GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            if (false && Col == 7-4)
+            {
+               std::cerr << "Hacking gauge flip column " << Col << "...\n";
+               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
+            if (false && Col == 7-5)
+            {
+               std::cerr << "Hacking gauge flip column " << Col << "...\n";
+               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
+            if (Col == 7-6)
+            {
+               std::cerr << "Hacking gauge flip column " << Col << "...\n";
+               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
          }
-         if (Col == 5)
+         else
          {
-            std::cerr << "Hacking column 5...\n";
-            double l = HackSchwinger_Field;
-            EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            if (Col == 3)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMatK[Col][1.0][0] += l *  GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
+            if (Col == 5)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
+            if (Col == 6)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+            }
          }
       }
-
-      // if (HackSchwinger_F)
-      // {
-      //    if (Col == 3 || Col == 4)
-      //    {
-      //       std::cerr << "Hacking column 3/4...\n";
-      //       // this version seems OK, it gives matrix elements that are integer
-      //       double l = HackSchwinger_Field;
-      //       EMatK[Col][1.0][1] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      //    if (Col == 1)
-      //    {
-      //       std::cerr << "Hacking column 1...\n";
-      //       TRACE(EMatK[Col][1.0]);
-      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      //    if (Col == 2)
-      //    {
-      //       std::cerr << "Hacking column 2...\n";
-      //       double l = HackSchwinger_Field;
-      //       TRACE(EMatK[Col][1.0]);
-      //       //EMatK[Col][1.0][0] -= GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
-      //    }
-      // }
 
    }
 }

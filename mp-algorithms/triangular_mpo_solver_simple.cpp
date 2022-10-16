@@ -25,20 +25,21 @@
 
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
+#include "schwinger_hack.h"
 
 void
 SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
                     LinearWavefunction const& Psi, QuantumNumber const& QShift,
                     BasicTriangularMPO const& Op,
-                    MatrixOperator const& LeftIdentity,
-                    MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
+                    MatrixOperator const& Identity,
+                    MatrixOperator const& Rho, bool NeedFinalMatrix,
                     int Degree, double Tol,
                     double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -60,7 +61,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    if (EMat[0].empty())
    {
       // Initialize the first E matrix.  These are operators acting in the Basis1()
-      EMat[0] = MatrixPolyType(LeftIdentity);
+      EMat[0] = MatrixPolyType(Identity);
    }
 
    int StartCol = 1;
@@ -70,7 +71,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    {
       if (Verbose > 0)
       {
-         std::cerr << "Solving column " << (Col) << " of [0:" << Dim << "]\n";
+         std::cerr << "Solving column " << (Col) << " of [0:" << (Dim-1) << "]\n";
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
@@ -106,7 +107,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
             //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
             if (Verbose > 0)
                std::cerr << "Decomposing parts parallel to the unit matrix\n";
-            EParallel = DecomposeParallelParts(C, LeftIdentity, RightIdentity, UnityEpsilon, Degree);
+            EParallel = DecomposeParallelParts(C, Identity, Rho, UnityEpsilon, Degree);
          }
 
          // Now the remaining components, which is anything that is not proportional
@@ -119,7 +120,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            E = DecomposePerpendicularPartsLeft(C, 1.0, Diag, LeftIdentity, RightIdentity,
+            E = DecomposePerpendicularPartsLeft(C, 1.0, Diag, Identity, Rho,
                                                 Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
@@ -131,12 +132,45 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
          for (ComplexPolyType::const_iterator J = EParallel.begin(); J != EParallel.end(); ++J)
          {
             // Conj here because this comes from an overlap(x, RightUnitMatrix)
-            E[J->first] += std::conj(J->second) * LeftIdentity;
+            E[J->first] += std::conj(J->second) * Identity;
          }
 
          // Finally, set the E matrix element at this column
          //DEBUG_TRACE(E[1.0]);
          EMat[Col] = E;
+      }
+
+      if (HackSchwinger_E)
+      {
+         if (GaugeFlip)
+         {
+            if (Col == 1)
+            {
+               std::cerr << "Hacking gauge flip column " << Col << "...\n";
+               EMat[Col][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+         }
+         else
+         {
+            if (Col == 3)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMat[Col][0] += l *  GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Col == 5)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMat[Col][0] += l * GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Col == 6)
+            {
+               std::cerr << "Hacking column " << Col << "...\n";
+               double l = HackSchwinger_Field;
+               EMat[Col][0] += l * GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+         }
       }
    }
 }
@@ -145,15 +179,15 @@ void
 SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                      LinearWavefunction const& Psi, QuantumNumber const& QShift,
                      BasicTriangularMPO const& Op,
-                     MatrixOperator const& LeftIdentity,
-                     MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
+                     MatrixOperator const& Identity,
+                     MatrixOperator const& Rho, bool NeedFinalMatrix,
                      int Degree, double Tol,
                      double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -172,7 +206,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 
    // Initialize the first F matrix.  These are operators acting in the Basis1()
    if (FMat[Row].empty())
-      FMat[Row] = MatrixPolyType(RightIdentity);
+      FMat[Row] = MatrixPolyType(Identity);
 
    for (Row = Dim-2; Row >= 0; --Row)
    {
@@ -183,6 +217,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       MatrixPolyType C = inject_right_mask(FMat, Psi, QShift, Op.data(), Psi, mask_row(Op, Row))[Row];
+      //MatrixPolyType C = inject_right(FMat, Psi, QShift, Op.data(), Psi)[Row];
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Row, Row);
@@ -214,7 +249,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 
             if (Verbose > 0)
                std::cerr << "Decomposing parts parallel to the unit matrix\n";
-            FParallel = DecomposeParallelParts(C, RightIdentity, LeftIdentity, UnityEpsilon, Degree);
+            FParallel = DecomposeParallelParts(C, Identity, Rho, UnityEpsilon, Degree);
          }
 
          // Now the remaining components, which is anything that is not proportional
@@ -227,7 +262,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            F = DecomposePerpendicularPartsRight(C, 1.0, Diag, LeftIdentity, RightIdentity,
+            F = DecomposePerpendicularPartsRight(C, 1.0, Diag, Identity, Rho,
                                                  Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
@@ -239,12 +274,193 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
          for (ComplexPolyType::const_iterator J = FParallel.begin(); J != FParallel.end(); ++J)
          {
             // Conj here because this comes from an overlap(x, LeftUnitMatrix)
-            F[J->first] += std::conj(J->second) * RightIdentity;
+            F[J->first] += std::conj(J->second) * Identity;
          }
 
          // Finally, set the E matrix element at this column
          //DEBUG_TRACE(E[1.0]);
          FMat[Row] = F;
       }
+      if (HackSchwinger_F)
+      {
+         if (GaugeFlip)
+         {
+            TRACE(Row)(FMat[Row]);
+            // Rows 5 and 4 sum together to give Nf
+            if (Row == 5)
+            {
+               // this affects degree 1 of row 4
+               std::cerr << "Hacking gauge flip row " << Row << "...\n";
+               double l = HackSchwinger_Field;
+               //FMat[Row][0] -= 1e18*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Row == 4)
+            {
+               // This affects the degree 1 component of row 3, so we shouldn't do
+               // anything here
+               // std::cerr << "Hacking gauge flip row " << Row << "...\n";
+               // double l = HackSchwinger_Field;
+               // FMat[Row][0] -= l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Row == 3)
+            {
+               std::cerr << "Hacking gauge flip row " << Row << "...\n";
+               double l = HackSchwinger_Field;
+               //FMat[Row][0] -= 1e12*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Row == 2)
+            {
+               std::cerr << "Hacking gauge flip row " << Row << "...\n";
+               double l = HackSchwinger_Field;
+               //FMat[Row][0] -= 1e8*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+            if (Row == 1)
+            {
+               std::cerr << "Hacking gauge flip row " << Row << "...\n";
+               double l = HackSchwinger_Field;
+               //FMat[Row][0] -= 1e4*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+            }
+         }
+         else
+         {
+            if (Row == 4)
+            {
+               // Row 4 needs a quantum number offset
+               std::cerr << "Hacking row " << Row << "...\n";
+               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               DEBUG_TRACE(FMat[Row]);
+            }
+            if (false && Row == 5)
+            {
+               std::cerr << "Hacking row " << Row << "...\n";
+               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               DEBUG_TRACE(FMat[Row]);
+            }
+            if (Row == 6)
+            {
+               // This one indeed works, it makes row 6 equal to the quantum number
+               std::cerr << "Hacking row " << Row << "...\n";
+               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               DEBUG_TRACE(FMat[Row]);
+            }
+         }
+      }
    }
+   // for (int i = 0; i < FMat.size(); ++i)
+   // {
+   //    TRACE(i)(FMat[i]);
+   // }
+}
+
+std::complex<double>
+SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+   MatrixOperator const& Rho, double Tol, int Verbose)
+{
+   if (E.is_null())
+      E = Initial_E(Op, Psi.Basis1());
+   std::vector<MatrixPolyType> EMat(E.size());
+   for (int i = 0; i < E.size(); ++i)
+   {
+      if (!E[i].is_null())
+         EMat[i][0] = E[i];
+   }
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+   SolveSimpleMPO_Left(EMat, Psi, QShift, Op, E.front(), Rho, true, 0, Tol, UnityEpsilon, Verbose);
+   for (int i = 0; i < E.size(); ++i)
+   {
+      E[i] = EMat[i].coefficient(0);
+   }
+   std::complex<double> Energy = inner_prod(Rho, EMat.back()[1]);
+   // Check that the linear part of the Hamiltonian is a constant
+   MatrixOperator Remainder = EMat.back()[1] - Energy*E.front();
+   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
+   {
+      std::cerr << "SolveHamiltonianMPO_Left: warning: Hamiltonian has diverging matrix elements.\n";
+      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
+      DEBUG_TRACE(Remainder);
+      DEBUG_TRACE(norm_frob(Remainder));
+      DEBUG_TRACE(inner_prod(Rho, Remainder));
+      //std::abort();
+   }
+   if (EMat.back().degree() > 1)
+   {
+      for (int d = 2; d <= EMat.back().degree(); ++d)
+      {
+         if (norm_frob(EMat.back().coefficient(d)) > Tol * norm_frob(Energy))
+         {
+            std::cerr << "SolveHamiltonianMPO_Left: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(EMat.back().coefficient(d)) << '\n';
+            std::abort();
+         }
+      }
+   }
+   return Energy;
+}
+
+std::complex<double>
+SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+   BasicTriangularMPO const& Op, double Tol, int Verbose)
+{
+   LinearWavefunction PsiLinear;
+   RealDiagonalOperator Lambda;
+   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
+   MatrixOperator Rho = Lambda*Lambda;
+   return SolveHamiltonianMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+}
+
+std::complex<double>
+SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
+   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+   MatrixOperator const& Rho, double Tol, int Verbose)
+{
+   if (F.is_null())
+      F = Initial_F(Op, Psi.Basis1());
+   std::vector<MatrixPolyType> FMat(F.size());
+   for (int i = 0; i < F.size(); ++i)
+   {
+      if (!F[i].is_null())
+         FMat[i][0] = F[i];
+   }
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+   SolveSimpleMPO_Right(FMat, Psi, QShift, Op, F.back(), Rho, true, 0, Tol, UnityEpsilon, Verbose);
+   for (int i = 0; i < F.size(); ++i)
+   {
+      F[i] = FMat[i].coefficient(0);
+   }
+   std::complex<double> Energy = inner_prod(Rho, FMat.front()[1]);
+   // Check that the linear part of the Hamiltonian is a constant
+   MatrixOperator Remainder = FMat.front()[1] - Energy*F.back();
+   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
+   {
+      std::cerr << "SolveHamiltonianMPO_Right: warning: Hamiltonian has diverging matrix elements.\n";
+      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
+      DEBUG_TRACE(Remainder);
+      DEBUG_TRACE(norm_frob(Remainder));
+      DEBUG_TRACE(inner_prod(Rho, Remainder));
+      //std::abort();
+   }
+   if (FMat.front().degree() > 1)
+   {
+      for (int d = 2; d <= FMat.front().degree(); ++d)
+      {
+         if (norm_frob(FMat.front().coefficient(d)) > Tol * norm_frob(Energy))
+         {
+            std::cerr << "SolveHamiltonianMPO_Right: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(FMat.front().coefficient(d)) << '\n';
+            TRACE(inner_prod(Rho,FMat.front().coefficient(d)));
+            std::abort();
+         }
+      }
+   }
+   return Energy;
+}
+
+std::complex<double>
+SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
+   BasicTriangularMPO const& Op, double Tol, int Verbose)
+{
+   LinearWavefunction PsiLinear;
+   RealDiagonalOperator Lambda;
+   std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
+   MatrixOperator Rho = Lambda*Lambda;
+   return SolveHamiltonianMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
