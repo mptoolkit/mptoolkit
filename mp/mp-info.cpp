@@ -89,7 +89,7 @@ void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
       out << "Quantum number per unit cell (right) = " << Psi.Right.qshift() << '\n';
    }
 
-   out << "Window size = " << Psi.WindowVec.front().size() << '\n';
+   out << "Window size = " << Psi.window_size() << '\n';
    out << "ExpIK = " << Psi.ExpIK << '\n';
    out << std::endl;
 }

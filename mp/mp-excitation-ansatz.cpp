@@ -57,12 +57,9 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax,k", prog_opt::value(&KMax),
-          FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin),
-          FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
-         ("knum", prog_opt::value(&KNum),
-          "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
+         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
           FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
          ("tol", prog_opt::value(&Tol),
@@ -75,8 +72,7 @@ int main(int argc, char** argv)
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "Increase verbosity (can be used more than once)")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -214,7 +210,8 @@ int main(int argc, char** argv)
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();
             Wavefunction.Attributes()["Prefix"] = OutputPrefix;
-            std::string FName = OutputPrefix + ".k" + formatting::format_digits(k, OutputDigits);
+            // Use the value of k relative to the lattice unit cell.
+            std::string FName = OutputPrefix + ".k" + formatting::format_digits(KMin + KStep*n, OutputDigits);
 
             pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
             pheap::ExportHeap(FName, PsiPtr);
