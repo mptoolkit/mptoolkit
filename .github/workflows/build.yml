@@ -13,14 +13,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    name: Install dependencies
-        run: |
-          sudo apt-get -y update
-          sudo apt-get -y install libboost-dev
+    - name: Install dependencies
+      run: |
+       sudo apt-get -y update
+       sudo apt-get -y install libboost-dev
     - name: configure
       run: ./configure
     - name: make
       run: make
     - name: make models
       run: make models
-
