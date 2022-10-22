@@ -21,27 +21,30 @@
 #include "triangular_mpo_solver_helpers.h"
 
 void
-SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
-              LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              BasicTriangularMPO const& Op,
-              //std::vector<MatrixOperator> BoundaryE,
-              MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
-              int Degree, double Tol,
-              double UnityEpsilon, int Verbose)
+SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
+                    LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                    BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
+                    MatrixOperator const& RightIdentity, std::complex<double> lambda, bool NeedFinalMatrix,
+                    int Degree, double Tol,
+                    double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(LeftIdentity.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis1(), Psi1.Basis1());
+   CHECK_EQUAL(RightIdentity.Basis2(), Psi2.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis1(), Psi1.Basis1());
+   CHECK_EQUAL(LeftIdentity.Basis2(), Psi2.Basis1());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
+
+   // lambda is the leading eigenvalue of the transfer matrix.  We solve the MPO with respect to
+   // <Psi1|Op|Psi2> / <Psi1|Psi2>.  This amounts to dividing through by lambda every time we contract over a unit cell.
+   // Or equivalently, scale everything by Scale ( = 1 / lambda).
+   std::complex<double> Scale = 1.0 / lambda;
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMatK.reserve(Dim);
 
    if (Verbose > 0)
-      std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveMPO_Left_Cross: dimension is " << Dim << std::endl;
 
    if (EMatK.empty())
    {
@@ -92,7 +95,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
       }
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
-      KMatrixPolyType C = inject_left_mask(EMatK, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
+      KMatrixPolyType C = inject_left_mask(EMatK, Psi1, QShift, Op.data(), Psi2, mask_column(Op, Col))[Col];
+      ScalePoly(C, Scale);
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -155,9 +159,9 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             //UnitMatrixLeft *= 1.0 / lnorm;
             //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
             //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
-               std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
-                                                                     InjectLeftQShift(Diag, Psi, QShift),
-                                                                     Tol, Verbose);
+            std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
+                                                                  InjectLeftQShift(Psi1, QShift, Diag, Psi2, Scale),
+                                                                  Tol, Verbose);
             //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
@@ -177,10 +181,8 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                double ddd = norm_frob(UnitMatrixRight);
                //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
-                                                                     InjectRightQShift(Diag, Psi,
-                                                                                       QShift),
+                                                                     InjectRightQShift(Psi1, QShift, Diag, Psi2, Scale),
                                                                      Tol, Verbose);
-               //UnitMatrixRight *= 3.141;
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
 
@@ -255,7 +257,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, Diag, UnitMatrixLeft, UnitMatrixRight,
-                                            Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                            Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {

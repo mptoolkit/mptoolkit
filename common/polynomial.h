@@ -263,4 +263,26 @@ operator*=(Polynomial<CF>& Poly, Scalar x)
    return Poly;
 }
 
+template <typename CF, typename Scalar>
+Polynomial<CF>
+operator*(Polynomial<CF> Poly, Scalar x)
+{
+   for (auto& m : Poly)
+   {
+      m.second = m.second * x;
+   }
+   return Poly;
+}
+
+template <typename CF, typename Scalar>
+Polynomial<CF>
+operator*(Scalar x, Polynomial<CF> Poly)
+{
+   for (auto& m : Poly)
+   {
+      m.second = x * m.second;
+   }
+   return Poly;
+}
+
 #endif

@@ -507,7 +507,7 @@ mp-itebd : tebd.o number-parser.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
-mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
+mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunctionleft.o
@@ -515,15 +515,15 @@ mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o rando
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-expectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o finitewavefunctionleft.o
-mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o
+mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver_cross.o
 mp-imoments-cross : transfer.o packunpack.o
-mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o
+mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o triangular_mpo_solver_helpers.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
-mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o
+mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o triangular_mpo_solver_helpers.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
 mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
@@ -534,7 +534,7 @@ mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
 
 mp-matrix : write-matrix.o
-mp-aux-matrix : triangular_mpo_solver.o momentum_operations.o
+mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
 
 mp-ireorder-symmetry : infinitewavefunctionleft.o
 
