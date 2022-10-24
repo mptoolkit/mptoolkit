@@ -34,4 +34,7 @@ MatrixOperator GetQ(MatrixOperator LeftIdentity, MatrixOperator const& RightIden
 std::complex<double>
 GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1);
 
+std::complex<double>
+GetBGField(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity);
+
 #endif
