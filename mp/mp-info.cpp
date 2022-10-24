@@ -42,24 +42,46 @@ std::vector<int> Partition;
 
 void ShowBasicInfo(InfiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
-   out << "Wavefunction is an InfiniteWavefunction in the left canonical basis.\n";
+   out << "Infinite wavefunction in the left canonical basis.\n";
    out << "Symmetry list = " << Psi.GetSymmetryList() << '\n';
    out << "Unit cell size = " << Psi.size() << '\n';
    out << "Quantum number per unit cell = " << Psi.qshift() << '\n';
    out << "Log amplitude per unit cell = " << formatting::format_complex(Psi.log_amplitude()) << '\n';
    out << "Number of states = " << Psi.Basis1().total_dimension() << '\n';
-   out << std::endl;
+}
+
+void ShowBasicInfo(InfiniteWavefunctionRight const& Psi, std::ostream& out)
+{
+   out << "Infinite wavefunction in the right canonical basis.\n";
+   out << "Symmetry list = " << Psi.GetSymmetryList() << '\n';
+   out << "Unit cell size = " << Psi.size() << '\n';
+   out << "Quantum number per unit cell = " << Psi.qshift() << '\n';
+   //out << "Log amplitude per unit cell = " << formatting::format_complex(Psi.log_amplitude()) << '\n';
+   out << "Number of states = " << Psi.Basis1().total_dimension() << '\n';
+
 }
 
 void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
 {
-   out << "Wavefunction is an Infinite Boundary Condition wavefunction in the left/left/right canonical basis.\n";
+   out << "Infinite Boundary Condition wavefunction in the left/left/right orthogonal basis.\n";
    out << "Symmetry list = " << Psi.Window.GetSymmetryList() << '\n';
+
+   std::string lw = Psi.LeftWindowFile();
+   if (lw.empty())
+      out << "Left semi-infinite strip is stored directly.\n";
+   else
+      out << "Left semi-infinite strip is stored in the file \"" << lw << "\"\n";
    out << "Left semi-infinite strip unit cell size = " << Psi.Left.size() << '\n';
    if (!Psi.Left.empty())
    {
       out << "Quantum number per unit cell (left) = " << Psi.Left.qshift() << '\n';
    }
+
+   std::string rw = Psi.RightWindowFile();
+   if (rw.empty())
+      out << "Right semi-infinite strip is stored directly.\n";
+   else
+      out << "Right semi-infinite strip is stored in the file \"" << rw << "\"\n";
    out << "Right semi-infinite strip unit cell size = " << Psi.Right.size() << '\n';
    if (!Psi.Right.empty())
    {
@@ -70,17 +92,15 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    out << "Offset of first site of the window = " << Psi.window_offset() << '\n';
 
    out << "Number of states (left edge of window) = " << Psi.Window.Basis1().total_dimension() << '\n';
-   out << std::endl;
 }
 
 void ShowBasicInfo(FiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
-   out << "Wavefunction is a FiniteWavefunction in the left canonical basis.\n";
+   out << "Finite wavefunction in the left canonical basis.\n";
    out << "Symmetry list = " << Psi.GetSymmetryList() << '\n';
    out << "Length = " << Psi.size() << '\n';
    out << "Quantum number = " << Psi.TransformsAs() << '\n';
    out << "Norm = " << norm_2(Psi) << '\n';
-   out << std::endl;
 }
 
 void ShowStateInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
@@ -199,12 +219,43 @@ struct ShowWavefunctionBasicInfo : public boost::static_visitor<void>
 struct ShowWavefunction : public boost::static_visitor<void>
 {
    void operator()(InfiniteWavefunctionLeft const& Psi) const;
+   void operator()(InfiniteWavefunctionRight const& Psi) const;
    void operator()(IBCWavefunction const& Psi) const;
    void operator()(FiniteWavefunctionLeft const& Psi) const;
 };
 
 void
 ShowWavefunction::operator()(InfiniteWavefunctionLeft const& Psi) const
+{
+   std::sort(Partition.begin(), Partition.end());
+   if (Partition.empty())
+   {
+      // all partitions
+      for (int i = 0; i <= Psi.size(); ++i)
+         Partition.push_back(i);
+   }
+
+   if (ShowStates)
+      ShowStateInfo(Psi, std::cout);
+
+   if (ShowBasis)
+      ShowBasisInfo(Psi, std::cout);
+
+   if (ShowEntropy)
+      ShowEntropyInfo(Psi, std::cout);
+
+   if (ShowDensity)
+      ShowDM(Psi, std::cout);
+
+   if (ShowCasimir)
+      ShowCasimirInfo(Psi, std::cout);
+
+   if (ShowLocalBasis)
+      ShowLocalBasisInfo(Psi, std::cout);
+}
+
+void
+ShowWavefunction::operator()(InfiniteWavefunctionRight const& Psi) const
 {
    std::sort(Partition.begin(), Partition.end());
    if (Partition.empty())
@@ -374,7 +425,7 @@ int main(int argc, char** argv)
       if (ShowBasic)
       {
          boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
-	 std::cout << "File format version " << Psi->version() << '\n';
+         std::cout << "File format version " << Psi->version() << "\n\n";
 
          std::cout << "Attributes:\n" << Psi->Attributes();
 
