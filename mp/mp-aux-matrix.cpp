@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "mp-algorithms/schwinger_hack.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -397,8 +398,10 @@ int main(int argc, char** argv)
       }
 
       // Load the wavefunction
-      pvalue_ptr<MPWavefunction> Psi
-         = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+      pvalue_ptr<MPWavefunction> Psi = pheap::OpenPersistent(PsiStr, mp_pheap::CacheSize(), true);
+
+      // Schwinger hack
+      SetSchwingerFieldFromAttributes(Psi->Attributes());
 
       InfiniteWavefunctionLeft InfPsi = Psi->get<InfiniteWavefunctionLeft>();
 

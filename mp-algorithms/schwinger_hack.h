@@ -21,20 +21,21 @@
 #define MPTOOLKIT_MP_ALGORITHMS_SCHWINGER_HACK_H
 
 #include "triangular_mpo_solver.h"
+#include "interface/attributes.h"
 
 extern bool HackSchwinger_E;
 extern bool HackSchwinger_F;
 extern double HackSchwinger_Field;
+extern double HackSchwinger_Bg;
 extern bool GaugeFlip;
 
-MatrixOperator GetQ(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1);
+void SetSchwingerFieldFromAttributes(AttributeList const& A);
+
+MatrixOperator SchwingerBoundaryMatrix(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1);
 
 // Returns the expectation value of the first casimir operator of the basis,
 // optionally at some power
 std::complex<double>
-GetQuantumNumberExpectation(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1);
-
-std::complex<double>
-GetBGField(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity);
+GetSchwingerBoundaryCorrection(MatrixOperator LeftIdentity, MatrixOperator const& RightIdentity, int Power = 1);
 
 #endif

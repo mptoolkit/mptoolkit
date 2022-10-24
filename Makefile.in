@@ -517,7 +517,7 @@ mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-expectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o finitewavefunctionleft.o
 mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver_cross.o
 mp-imoments-cross : transfer.o packunpack.o
-mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o
+mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o triangular_mpo_solver_helpers.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o

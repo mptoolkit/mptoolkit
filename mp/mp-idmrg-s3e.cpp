@@ -88,6 +88,7 @@
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "mp-algorithms/eigensolver.h"
+#include "mp-algorithms/schwinger_hack.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -1103,6 +1104,9 @@ int main(int argc, char** argv)
          UR = MatrixOperator::make_identity(R.Basis2());
          QShift = StartingWavefunction.qshift();
       }
+
+      // Schwinger hack
+      SetSchwingerFieldFromAttributes(Wavefunction.Attributes());
 
       // Hamiltonian
       InfiniteLattice Lattice;

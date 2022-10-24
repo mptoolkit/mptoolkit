@@ -35,6 +35,7 @@
 #include "common/prog_opt_accum.h"
 #include <boost/algorithm/string.hpp>
 #include "common/openmp.h"
+#include "mp-algorithms/schwinger_hack.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -364,6 +365,9 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(FName, CacheSize, true);
       InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
       int WavefuncUnitCellSize = Psi.size();
+
+      // Schwinger hack
+      SetSchwingerFieldFromAttributes(PsiPtr->Attributes());
 
       if (!vm.count("operator"))
       {

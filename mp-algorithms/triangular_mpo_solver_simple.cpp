@@ -147,7 +147,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
             if (Col == 1)
             {
                std::cerr << "Hacking gauge flip column " << Col << "...\n";
-               EMat[Col][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               EMat[Col][0] += GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
          }
          else
@@ -156,19 +156,19 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMat[Col][0] += l *  GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               EMat[Col][0] += l *  GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Col == 5)
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMat[Col][0] += l * GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               EMat[Col][0] += l * GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Col == 6)
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMat[Col][0] += l * GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               EMat[Col][0] += l * GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
          }
       }
@@ -292,7 +292,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                // this affects degree 1 of row 4
                std::cerr << "Hacking gauge flip row " << Row << "...\n";
                double l = HackSchwinger_Field;
-               //FMat[Row][0] -= 1e18*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               //FMat[Row][0] -= 1e18*l*GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Row == 4)
             {
@@ -300,25 +300,25 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                // anything here
                // std::cerr << "Hacking gauge flip row " << Row << "...\n";
                // double l = HackSchwinger_Field;
-               // FMat[Row][0] -= l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               // FMat[Row][0] -= l*GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Row == 3)
             {
                std::cerr << "Hacking gauge flip row " << Row << "...\n";
                double l = HackSchwinger_Field;
-               //FMat[Row][0] -= 1e12*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               //FMat[Row][0] -= 1e12*l*GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Row == 2)
             {
                std::cerr << "Hacking gauge flip row " << Row << "...\n";
                double l = HackSchwinger_Field;
-               //FMat[Row][0] -= 1e8*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               //FMat[Row][0] -= 1e8*l*GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
             if (Row == 1)
             {
                std::cerr << "Hacking gauge flip row " << Row << "...\n";
                double l = HackSchwinger_Field;
-               //FMat[Row][0] -= 1e4*l*GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               //FMat[Row][0] -= 1e4*l*GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
             }
          }
          else
@@ -327,20 +327,20 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
             {
                // Row 4 needs a quantum number offset
                std::cerr << "Hacking row " << Row << "...\n";
-               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               FMat[Row][0] += GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
                DEBUG_TRACE(FMat[Row]);
             }
             if (false && Row == 5)
             {
                std::cerr << "Hacking row " << Row << "...\n";
-               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               FMat[Row][0] += GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
                DEBUG_TRACE(FMat[Row]);
             }
             if (Row == 6)
             {
                // This one indeed works, it makes row 6 equal to the quantum number
                std::cerr << "Hacking row " << Row << "...\n";
-               FMat[Row][0] += GetQuantumNumberExpectation(Identity, Rho) * Identity;
+               FMat[Row][0] += GetSchwingerBoundaryCorrection(Identity, Rho) * Identity;
                DEBUG_TRACE(FMat[Row]);
             }
          }
@@ -387,7 +387,7 @@ SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    {
       for (int d = 2; d <= EMat.back().degree(); ++d)
       {
-         if (norm_frob(EMat.back().coefficient(d)) > Tol * norm_frob(Energy))
+         if (norm_frob(EMat.back().coefficient(d)) > Tol * 1000 * norm_frob(Energy))
          {
             std::cerr << "SolveHamiltonianMPO_Left: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(EMat.back().coefficient(d)) << '\n';
             std::abort();
@@ -443,7 +443,7 @@ SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    {
       for (int d = 2; d <= FMat.front().degree(); ++d)
       {
-         if (norm_frob(FMat.front().coefficient(d)) > Tol * norm_frob(Energy))
+         if (norm_frob(FMat.front().coefficient(d)) > Tol * 1000 * norm_frob(Energy))
          {
             std::cerr << "SolveHamiltonianMPO_Right: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(FMat.front().coefficient(d)) << '\n';
             TRACE(inner_prod(Rho,FMat.front().coefficient(d)));

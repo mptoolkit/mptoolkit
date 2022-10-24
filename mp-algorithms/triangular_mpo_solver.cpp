@@ -287,17 +287,17 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             if (false && Col == 7-4)
             {
                std::cerr << "Hacking gauge flip column " << Col << "...\n";
-               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
             if (false && Col == 7-5)
             {
                std::cerr << "Hacking gauge flip column " << Col << "...\n";
-               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
             if (Col == 7-6)
             {
                std::cerr << "Hacking gauge flip column " << Col << "...\n";
-               EMatK[Col][1.0][0] += GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
          }
          else
@@ -306,19 +306,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMatK[Col][1.0][0] += l *  GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += l *  GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
             if (Col == 5)
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += l * GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
             if (Col == 6)
             {
                std::cerr << "Hacking column " << Col << "...\n";
                double l = HackSchwinger_Field;
-               EMatK[Col][1.0][0] += l * GetQuantumNumberExpectation(LeftIdentity, RightIdentity) * LeftIdentity;
+               EMatK[Col][1.0][0] += l * GetSchwingerBoundaryCorrection(LeftIdentity, RightIdentity) * LeftIdentity;
             }
          }
       }
