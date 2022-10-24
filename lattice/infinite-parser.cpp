@@ -740,26 +740,26 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          sum_kink_expression = str_p("sum_kink")
             >> '('
             >> num_cells
-            >> expression_string[push_sum_kink(self.Lattice, self.eval, self.Args)]
+            >> bracket_expression[push_sum_kink(self.Lattice, self.eval, self.Args)]
             >> ')';
 
          sum_k_expression = str_p("sum_k")
             >> '('
             >> num_cells
             >> expression >> ','
-            >> expression_string[push_sum_k(self.Lattice, self.eval, self.Args)]
+            >> bracket_expression[push_sum_k(self.Lattice, self.eval, self.Args)]
             >> ')';
 
          sum_string_inner_expression = str_p("sum_string_inner")
             >> '('
             >> num_cells
-            >> expression_string[push_sum_string_inner(self.Lattice, self.eval, self.Args)]
+            >> bracket_expression[push_sum_string_inner(self.Lattice, self.eval, self.Args)]
             >> ')';
 
          sum_string_dot_expression = str_p("sum_string_dot")
             >> '('
             >> num_cells
-            >> expression_string[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
+            >> bracket_expression[push_sum_string_dot(self.Lattice, self.eval, self.Args)]
             >> ')';
 
          sum_partial_expression = str_p("sum_partial")
