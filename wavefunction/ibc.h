@@ -136,7 +136,6 @@ class IBCWavefunction
 
       void SetDefaultAttributes(AttributeList& A) const;
 
-
       static std::string const Type;
 
       static PStream::VersionTag VersionT;

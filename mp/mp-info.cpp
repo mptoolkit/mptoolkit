@@ -58,7 +58,6 @@ void ShowBasicInfo(InfiniteWavefunctionRight const& Psi, std::ostream& out)
    out << "Quantum number per unit cell = " << Psi.qshift() << '\n';
    //out << "Log amplitude per unit cell = " << formatting::format_complex(Psi.log_amplitude()) << '\n';
    out << "Number of states = " << Psi.Basis1().total_dimension() << '\n';
-
 }
 
 void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)

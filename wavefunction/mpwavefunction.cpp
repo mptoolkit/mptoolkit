@@ -52,7 +52,7 @@
 // AttributeList
 // HistoryLog
 //
-// Version 6:
+// Version 7:
 // boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
 // AttributeList
 // HistoryLog

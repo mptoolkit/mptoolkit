@@ -37,7 +37,7 @@
 typedef boost::variant<InfiniteWavefunctionLeft,
 		       IBCWavefunction,
 		       FiniteWavefunctionLeft,
-				 InfiniteWavefunctionRight> WavefunctionTypes;
+		       InfiniteWavefunctionRight> WavefunctionTypes;
 
 class InvalidWavefunction : public std::runtime_error
 {
