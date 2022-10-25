@@ -270,7 +270,7 @@ contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
                for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
                        S = iterate(R); S; ++S)
                {
-                  add_triple_prod(Result[J.index1()], *S,
+                  add_triple_prod(Result[J.index1()], herm(*S),
                                   A[S.index1()],
                                   F[J.index2()],
                                   herm(B.base()[S.index2()]),
