@@ -129,6 +129,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // Conjugate the wavefunction in-place
       friend void inplace_conj(InfiniteWavefunctionLeft& Psi);
 
+      friend void inplace_dual(InfiniteWavefunctionLeft& Psi, bool SwapLocalBasis);
+
       friend void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift);
 
       friend InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
@@ -240,6 +242,10 @@ inject_left(MatrixOperator const& m,
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionLeft& Psi);
+
+// Duality transformation on the quantum numbers.  If SwapLocalBasis then reverse the order of the
+// local local Hilbert space.
+void inplace_dual(InfiniteWavefunctionLeft& Psi, bool SwapLocalBasis);
 
 // Conjugate a wavefunction in place
 void inplace_conj(InfiniteWavefunctionLeft& Psi);

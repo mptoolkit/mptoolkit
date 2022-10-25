@@ -110,6 +110,37 @@ StateComponent reflect(StateComponent const& S)
    return Result;
 }
 
+MatrixOperator dual(MatrixOperator const& M)
+{
+   MatrixOperator Result(adjoint(M.Basis1()), adjoint(M.Basis2()), adjoint(M.TransformsAs()));
+   for (MatrixOperator::const_iterator I = iterate(M); I; ++I)
+   {
+      for (MatrixOperator::const_inner_iterator J = iterate(I); J; ++J)
+      {
+         Result(J.index1(), J.index2()) = *J;
+      }
+   }
+   return Result;
+}
+
+StateComponent dual(StateComponent const& S, bool SwapLocalBasis)
+{
+   if (SwapLocalBasis)
+   {
+      PANIC("Not yet implemented");
+   }
+
+   StateComponent Result(adjoint(S.LocalBasis()), adjoint(S.Basis1()), adjoint(S.Basis2()));
+   int n=0;
+   for (StateComponent::const_iterator I = S.begin(); I != S.end(); ++I)
+   {
+      Result[n++] = dual(*I);
+   }
+   return Result;
+
+}
+
+
 namespace LinearAlgebra
 {
 

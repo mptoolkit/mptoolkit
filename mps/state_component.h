@@ -423,6 +423,10 @@ BasicStateComponent<T> operator*(std::complex<double> y, BasicStateComponent<T> 
 // auxiliary basis into the adjoint.
 StateComponent reflect(StateComponent const& S);
 
+// A dual transformation on the quantum numbers.  if SwapLocalBasis then reverse the order of states
+// in the local Hilbert space.
+StateComponent dual(StateComponent const& S, bool SwapLocalBasis);
+
 // does Result' = sum_{s,t} M(s,t) * A^s * herm(B^t)
 // Result' transforms the same way as M.
 MatrixOperator operator_prod(SimpleOperator const& M,

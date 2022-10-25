@@ -113,6 +113,7 @@ int main(int argc, char** argv)
       bool Reflect = false;
       bool Conj = false;
       bool Print = false;
+      bool Dual = false;
       int CoarseGrain1 = 1;
       int CoarseGrain2 = 1;
       int NumEigen = 1; // number of eigenvalues to calculate
@@ -149,6 +150,7 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi1 (gives parity eigenvalue)")
+         ("dual", prog_opt::value(&Dual), "Apply duality transformation on the quantum numbers")
          ("coarsegrain1", prog_opt::value(&CoarseGrain1),
           "coarse-grain wavefunction 1 by this amount")
          ("coarsegrain2", prog_opt::value(&CoarseGrain2),
@@ -309,6 +311,12 @@ int main(int argc, char** argv)
          if (Verbose)
             std::cout << "Conjugating psi1..." << std::endl;
          inplace_conj(Psi1);
+      }
+      if (Dual)
+      {
+         if (Verbose)
+            std::cout << "Quantum number dual on psi1..." << std::endl;
+         inplace_dual(Psi1, false);
       }
 
       UnitCell Cell;

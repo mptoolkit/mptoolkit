@@ -666,6 +666,14 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi)
    }
 }
 
+void inplace_dual(InfiniteWavefunctionLeft& Psi, bool SwapLocalBasis)
+{
+   for (InfiniteWavefunctionLeft::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = dual(*I, SwapLocalBasis);
+   }
+}
+
 void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift)
 {
    Psi.setBasis1(delta_shift(Psi.Basis1(), Shift));
