@@ -523,7 +523,7 @@ mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o 
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
-mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o
+mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o triangular_mpo_solver_helpers.o
 mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
 mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o

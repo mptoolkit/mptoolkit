@@ -451,7 +451,8 @@ SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
          }
       }
    }
-   return Energy;
+   // Everything here is in the Hermitian representation, so the actual energy is the conjugate
+   return std::conj(Energy);
 }
 
 std::complex<double>

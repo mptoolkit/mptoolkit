@@ -129,6 +129,11 @@ class IBCWavefunction
 
       int window_offset() const { return WindowOffset; }
 
+      // Return the filename of the left/right windows.  If this is empty then the
+      // wavefunctions are stored directly in this object
+      std::string LeftWindowFile() const { return WavefunctionLeftFile; }
+      std::string RightWindowFile() const { return WavefunctionRightFile; }
+
       void SetDefaultAttributes(AttributeList& A) const;
 
       static std::string const Type;
@@ -150,6 +155,10 @@ class IBCWavefunction
 
       int WindowOffset;  // site index of the first site of the Window
 
+      // We can optionally save the left and right semi-infinite wavefunctions on disc by reference to a file.
+      // If these strings are non-empty then the Left and Right components are not saved when this wavefunction
+      // is streamed to disc.
+      std::string WavefunctionLeftFile, WavefunctionRightFile;
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;

@@ -25,6 +25,7 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "common/formatting.h"
+#include "tensor/regularize.h"
 #include <fstream>
 
 #include <sys/types.h>
@@ -38,6 +39,14 @@ bool FileExists(std::string const& Name)
 {
    struct stat buf;
    return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
+}
+
+MatrixOperator
+RegularizeM(MatrixOperator const& M)
+{
+   MatrixOperator U = Regularize(M.Basis1());
+   MatrixOperator V = Regularize(M.Basis2());
+   return U * M * herm(V);
 }
 
 int main(int argc, char** argv)
@@ -97,10 +106,11 @@ int main(int argc, char** argv)
       RealDiagonalOperator D;
       std::tie(PsiL, D) = get_left_canonical(InfPsi);
       MatrixOperator Rho = D;
-      Rho = scalar_prod(Rho, herm(Rho));
+      Rho = RegularizeM(scalar_prod(Rho, herm(Rho)));
       if (Rho.size1() != 1 || Rho.size2() != 1)
       {
          std::cerr << "mp-matrix: error: mps has non-trivial symmetries.\n";
+         TRACE(Rho.Basis1());
          return 1;
       }
 
