@@ -427,6 +427,10 @@ StateComponent reflect(StateComponent const& S);
 // in the local Hilbert space.
 StateComponent dual(StateComponent const& S, bool SwapLocalBasis);
 
+// FIXME: this belongs somewhere else
+MatrixOperator dual(MatrixOperator const& M);
+RealDiagonalOperator dual(RealDiagonalOperator const& M);
+
 // does Result' = sum_{s,t} M(s,t) * A^s * herm(B^t)
 // Result' transforms the same way as M.
 MatrixOperator operator_prod(SimpleOperator const& M,

@@ -123,6 +123,17 @@ MatrixOperator dual(MatrixOperator const& M)
    return Result;
 }
 
+RealDiagonalOperator dual(RealDiagonalOperator const& M)
+{
+   RealDiagonalOperator Result(adjoint(M.Basis1()), adjoint(M.Basis2()), adjoint(M.TransformsAs()));
+   for (int i = 0; i < M.Basis1().size(); ++i)
+   {
+      Result(i,i) = M(i,i);
+   }
+   return Result;
+}
+
+
 StateComponent dual(StateComponent const& S, bool SwapLocalBasis)
 {
    if (SwapLocalBasis)

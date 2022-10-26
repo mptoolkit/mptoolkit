@@ -150,7 +150,7 @@ int main(int argc, char** argv)
           "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi1 (gives parity eigenvalue)")
-         ("dual", prog_opt::value(&Dual), "Apply duality transformation on the quantum numbers")
+         ("dual", prog_opt::bool_switch(&Dual), "Apply duality transformation on the quantum numbers")
          ("coarsegrain1", prog_opt::value(&CoarseGrain1),
           "coarse-grain wavefunction 1 by this amount")
          ("coarsegrain2", prog_opt::value(&CoarseGrain2),

@@ -668,10 +668,20 @@ void inplace_conj(InfiniteWavefunctionLeft& Psi)
 
 void inplace_dual(InfiniteWavefunctionLeft& Psi, bool SwapLocalBasis)
 {
+   Psi.setBasis1(adjoint(Psi.Basis1()));
+   Psi.setBasis2(adjoint(Psi.Basis2()));
+
    for (InfiniteWavefunctionLeft::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
    {
       *I = dual(*I, SwapLocalBasis);
    }
+
+   for (InfiniteWavefunctionLeft::lambda_iterator I = Psi.lambda_begin_(); I != Psi.lambda_end_(); ++I)
+   {
+      *I = dual(*I);
+   }
+
+   Psi.check_structure();
 }
 
 void inplace_qshift(InfiniteWavefunctionLeft& Psi, QuantumNumbers::QuantumNumber const& Shift)
