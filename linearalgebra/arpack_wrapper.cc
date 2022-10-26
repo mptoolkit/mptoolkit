@@ -74,7 +74,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
             LinearAlgebra::make_vec(&(*OutputVectors)[n*k], n) = RV(k, LinearAlgebra::all);
          }
       }
-      // If we are using LAPACK for the diaginalization then we might have more eigenvalues than we need.  In order to ensure
+      // If we are using LAPACK for the diagonalization then we might have more eigenvalues than we need.  In order to ensure
       // that we get the right eigenvalues, we must sort them, even if the caller doesn't require it.
       Sort = true;
    }

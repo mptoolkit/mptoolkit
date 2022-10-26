@@ -919,6 +919,11 @@ BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String
    return sum_string(SiteList, JW, Op1, String, Op2, UnitCellSize, q);
 }
 
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_)
+{
+   return sum_string(Op1_, String_, Op2_, Op1_.GetSiteList()->size(), QuantumNumber(Op1_.GetSymmetryList()));
+}
+
 BasicTriangularMPO sum_string_dot(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                              int UnitCellSize)
 {
@@ -955,6 +960,247 @@ ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
    return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
 }
 */
+
+// 5-term version of sum_string
+BasicTriangularMPO sum_string(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op1,
+                         BasicFiniteMPO const& String1, BasicFiniteMPO const& Op2,
+                         BasicFiniteMPO const& String2, BasicFiniteMPO const& Op3,
+                         int UnitCellSize, QuantumNumbers::QuantumNumber q)
+{
+   BasicFiniteMPO X = JW;
+   BasicFiniteMPO A = Op1;
+   BasicFiniteMPO B = String1;
+   BasicFiniteMPO C = Op2;
+   BasicFiniteMPO D = String2;
+   BasicFiniteMPO E = Op3;
+   // Suppose the unit cell is 1 site, and all operators are 1-site local.
+   // We want to generate the string
+   // X * ...  * X * A * B * ... * B * C * D * ... * D * E * I * ....
+   // This is the MPO
+   // ( X A 0 0 )
+   // ( 0 B C 0 )
+   // ( 0 0 D E )
+   // ( 0 0 0 I )
+
+   CHECK(UnitCellSize % SiteList.size() == 0)
+      ("UnitCellSize for sum_string() must be a multiple of UnitCell.size()");
+   CHECK(A.size() % UnitCellSize == 0)
+      ("Operator for sum_string() must be a multiple of the unit cell")
+      (A.size())(UnitCellSize);
+   CHECK(C.size() % UnitCellSize == 0)
+      ("Operator for sum_string() must be a multiple of the unit cell")
+      (C.size())(UnitCellSize);
+   // THe JW string operator must have a unit cell that is a divisor of UnitCellSize
+   CHECK(UnitCellSize % X.size() == 0)
+      ("JW string for sum_string() must divide UnitCell.size()");
+   CHECK(UnitCellSize % B.size() == 0)
+      ("middle string for sum_string() must divide UnitCell.size()");
+   CHECK(D.size() % UnitCellSize == 0)
+      ("Operator for sum_string() must be a multiple of the unit cell")
+      (D.size())(UnitCellSize);
+   CHECK(E.size() % UnitCellSize == 0)
+      ("Operator for sum_string() must be a multiple of the unit cell")
+      (E.size())(UnitCellSize);
+
+   // The aux basis for the operators is already fixed correctly
+   CHECK_EQUAL(X.qn2(), A.qn1());
+   CHECK_EQUAL(A.qn2(), B.qn1());
+   CHECK_EQUAL(B.qn2(), C.qn1());
+   CHECK_EQUAL(C.qn2(), D.qn1());
+   CHECK_EQUAL(D.qn2(), E.qn1());
+   CHECK(is_scalar(E.qn2()));
+
+   // Split A, C, E into UnitCellSize pieces
+   std::vector<std::vector<OperatorComponent>> SplitA = SplitOperator(A, UnitCellSize);
+   std::vector<std::vector<OperatorComponent>> SplitC = SplitOperator(C, UnitCellSize);
+   std::vector<std::vector<OperatorComponent>> SplitE = SplitOperator(E, UnitCellSize);
+
+   // and make the identity operator; C.qn2() is always the identity
+   BasicFiniteMPO Ident = identity_mpo(SiteList, C.qn2());
+
+   BasicTriangularMPO Result(UnitCellSize);
+   for (int i = 0; i < UnitCellSize; ++i)
+   {
+      // Construct the basis
+      BasisList Basis1(A.GetSymmetryList());
+      BasisList Basis2(A.GetSymmetryList());
+      if (i != 0)
+         JoinBasis(Basis1, JW[i%JW.size()].Basis1());
+      JoinBasis(Basis2, JW[i%JW.size()].Basis2());
+
+      for (unsigned n = 0; n < SplitA.size(); ++n)
+      {
+         JoinBasis(Basis1, SplitA[n][i].Basis1());
+         JoinBasis(Basis2, SplitA[n][i].Basis2());
+      }
+
+      if (i != 0)
+         JoinBasis(Basis1, B[i%B.size()].Basis1());
+      if (i != int(UnitCellSize-1))
+         JoinBasis(Basis2, B[i%B.size()].Basis2());
+
+      for (unsigned n = 0; n < SplitC.size(); ++n)
+      {
+         JoinBasis(Basis1, SplitC[n][i].Basis1());
+         JoinBasis(Basis2, SplitC[n][i].Basis2());
+      }
+
+      if (i != 0)
+         JoinBasis(Basis1, D[i%D.size()].Basis1());
+      if (i != int(UnitCellSize-1))
+         JoinBasis(Basis2, D[i%D.size()].Basis2());
+
+      for (unsigned n = 0; n < SplitE.size(); ++n)
+      {
+         JoinBasis(Basis1, SplitE[n][i].Basis1());
+         JoinBasis(Basis2, SplitE[n][i].Basis2());
+      }
+
+      JoinBasis(Basis1, Ident[i%SiteList.size()].Basis1());
+      if (i != int(UnitCellSize)-1)
+         JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
+
+      // Construct the OperatorComponent
+      OperatorComponent Comp(A[i].LocalBasis1(), A[i].LocalBasis2(), Basis1, Basis2);
+
+      // The JW goes in the top left
+      int r = 0;
+
+      int c = 0;
+      SetComponents(Comp, X[i%X.size()], r, c);
+      if (i != 0)
+         r += X[i%X.size()].Basis1().size();
+      c += X[i%X.size()].Basis2().size();
+
+      // the A components go along the diagonal
+      for (unsigned n = 0; n < SplitA.size(); ++n)
+      {
+         SetComponents(Comp, SplitA[n][i], r, c);
+         r += SplitA[n][i].Basis1().size();
+         c += SplitA[n][i].Basis2().size();
+      }
+
+      if (i == int(UnitCellSize-1))
+         --c;  // operator A is guaranteed to have only one column for the final entry
+
+      // the B operator
+      SetComponents(Comp, B[i%B.size()], r, c);
+      if (i != 0)
+         r += B[i%B.size()].Basis1().size();
+      //      if (i != int(UnitCellSize-1))
+      c += B[i%B.size()].Basis2().size();
+
+      // the C components continue on the diagonal
+      for (unsigned n = 0; n < SplitC.size()-1; ++n)
+      {
+         SetComponents(Comp, SplitC[n][i], r, c);
+         r += SplitC[n][i].Basis1().size();
+         c += SplitC[n][i].Basis2().size();
+      }
+
+      SetComponents(Comp, SplitC.back()[i], r, c);
+      r += SplitC.back()[i].Basis1().size();
+      if (i != int(UnitCellSize)-1)
+         c += SplitC.back()[i].Basis2().size();
+
+      // The D operator
+
+      SetComponents(Comp, D[i%D.size()], r, c);
+      if (i != 0)
+         r += D[i%D.size()].Basis1().size();
+      //      if (i != int(UnitCellSize-1))
+      c += D[i%D.size()].Basis2().size();
+
+      // the E components continue on the diagonal
+      for (unsigned n = 0; n < SplitE.size()-1; ++n)
+      {
+         SetComponents(Comp, SplitE[n][i], r, c);
+         r += SplitE[n][i].Basis1().size();
+         c += SplitE[n][i].Basis2().size();
+      }
+
+      SetComponents(Comp, SplitE.back()[i], r, c);
+      r += SplitE.back()[i].Basis1().size();
+      if (i != int(UnitCellSize)-1)
+         c += SplitE.back()[i].Basis2().size();
+
+      // The identity goes in the bottom right
+      SetComponents(Comp, Ident[i%SiteList.size()], r, c);
+
+      // check that we're at the end
+      CHECK_EQUAL(r+Ident[i%SiteList.size()].Basis1().size(), Basis1.size());
+      CHECK_EQUAL(c+Ident[i%SiteList.size()].Basis2().size(), Basis2.size());
+
+      DEBUG_TRACE(Comp);
+
+      Comp.debug_check_structure();
+
+      Result[i] = Comp;
+   }
+
+   Result.check_structure();
+   optimize(Result);
+   return Result;
+}
+
+// This version of sum_string takes UnitCellMPO's for the operator arguments.  The String term
+// must be a scalar with bosonic commutation, and cannot be any longer than UnitCellSize.
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String1_, UnitCellMPO const& Op2_,
+                              UnitCellMPO const& String2_, UnitCellMPO const& Op3_,
+                              int UnitCellSize,
+                              QuantumNumbers::QuantumNumber q)
+{
+   CHECK(is_transform_target(Op1_.TransformsAs(), Op2_.TransformsAs(), q));
+   CHECK(String1_.size() <= UnitCellSize)("String operator 1 cannot exceed the UnitCellSize in sum_string()");
+   CHECK(String2_.size() <= UnitCellSize)("String operator 2 cannot exceed the UnitCellSize in sum_string()");
+   CHECK(is_scalar(String1_.TransformsAs()));
+   CHECK(is_scalar(String2_.TransformsAs()));
+
+   BasicFiniteMPO Op1 = ExtendToCoverUnitCell(Op1_, UnitCellSize).MPO();
+   BasicFiniteMPO String1 = ExtendToCoverUnitCell(String1_, UnitCellSize).MPO();
+   BasicFiniteMPO Op2 = ExtendToCoverUnitCell(Op2_, UnitCellSize).MPO();
+   BasicFiniteMPO String2 = ExtendToCoverUnitCell(String2_, UnitCellSize).MPO();
+   BasicFiniteMPO Op3 = ExtendToCoverUnitCell(Op3_, UnitCellSize).MPO();
+
+   SiteListType SiteList = *Op1_.GetSiteList();
+
+   CHECK(UnitCellSize % SiteList.size() == 0)
+      ("UnitCellSize for sum_string must be a multiple of the lattice unit cell size");
+
+   // shifting the quantum numbers in the aux basis for Op3
+   BasicFiniteMPO IdentShift = identity_mpo(SiteList, Op3.qn1());
+   String2 = String2 * repeat(IdentShift, String2.size() / SiteList.size());
+   Op2 = Op2 * repeat(IdentShift, Op2.size() / SiteList.size());
+   IdentShift = IdentShift * identity_mpo(SiteList, Op2.qn1());
+   String1 = String1 * repeat(IdentShift, String2.size() / SiteList.size());
+   Op1 = project(Op1 * repeat(IdentShift, Op1.size() / SiteList.size()), q);
+
+   // Multiply through the JW string of Op3
+   BasicFiniteMPO JW3 = repeat(string_mpo(SiteList, Op3_.Commute().SignOperator(), QuantumNumber(Op3.GetSymmetryList())),
+                          UnitCellSize / SiteList.size());
+   String2 = String2 * JW3;
+   Op2 = Op2 * repeat(JW3, Op2.size() / JW3.size());
+   String2 = String2 * JW3;
+   Op1 = Op1 * repeat(JW3, Op1.size() / JW3.size());
+
+   // Multiply through the JW string of Op2
+   BasicFiniteMPO JW2 = repeat(string_mpo(SiteList, Op2_.Commute().SignOperator(), QuantumNumber(Op2.GetSymmetryList())),
+                          UnitCellSize / SiteList.size());
+   String1 = String1 * JW2;
+   Op1 = Op1 * repeat(JW2, Op1.size() / JW2.size());
+
+   // compute the overall JW string
+   BasicFiniteMPO JW = repeat(string_mpo(SiteList, Op1_.Commute().SignOperator(), Op1.qn1()),
+                         UnitCellSize / SiteList.size()) * JW2 * JW3;
+
+   return sum_string(SiteList, JW, Op1, String1, Op2, String2, Op3, UnitCellSize, q);
+}
+
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String1_, UnitCellMPO const& Op2_,
+                              UnitCellMPO const& String2_, UnitCellMPO const& Op3_)
+{
+   return sum_string(Op1_, String1_, Op2_, String2_, Op3_, Op1_.GetSiteList()->size(), QuantumNumber(Op1_.GetSymmetryList()));
+}
 
 BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO const& Op, BasicFiniteMPO const& Pivot, /* BasicFiniteMPO const& JW2, */ int UnitCellSize)
 {
@@ -1014,7 +1260,7 @@ BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO 
       for (unsigned n = 0; n < SplitPivot.size(); ++n)
       {
          if (i != 0 || n != 0)
-	    JoinBasis(Basis1, SplitPivot[n][i].Basis1());
+            JoinBasis(Basis1, SplitPivot[n][i].Basis1());
          JoinBasis(Basis2, SplitPivot[n][i].Basis2());
       }
 
@@ -1029,26 +1275,26 @@ BasicTriangularMPO sum_partial(SiteListType const& SiteList, BasicTriangularMPO 
       OperatorComponent C(Op[i%Op.size()].LocalBasis1(), Op[i%Op.size()].LocalBasis2(), Basis1, Basis2);
 
       int r = 0, c = 0;
-      // Teh triangular MPO goes in the top left
+      // The triangular MPO goes in the top left
       SetComponents(C, Op[i%Op.size()], r, c);
       r += Op[i%Op.size()].Basis1().size();
       c += Op[i%Op.size()].Basis2().size();
 
       // at the first entry, move back a row.
       if (i == 0)
-	 --r;
+	     --r;
 
       // Now the pivot operator
       for (unsigned n = 0; n < SplitPivot.size(); ++n)
       {
-	 SetComponents(C, SplitPivot[n][i], r, c);
+         SetComponents(C, SplitPivot[n][i], r, c);
          r += SplitPivot[n][i].Basis1().size();
-	 c += SplitPivot[n][i].Basis2().size();
+         c += SplitPivot[n][i].Basis2().size();
       }
 
       // At the last entry, move back a column
       if (i == int(UnitCellSize)-1)
-	 --c;
+	     --c;
 
       // Finally, the identity in the bottom right
       SetComponents(C, Ident[i%SiteList.size()], r, c);

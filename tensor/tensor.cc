@@ -505,6 +505,12 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
    if (x.base().is_null() || y.is_null() || E.is_null())
       return;
 
+   if (Result.is_null())
+   {
+      Result = Factor * triple_prod(x, E, y, qxy, qEp);
+      return;
+   }
+
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), x.base().GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), qxy.GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(y.GetSymmetryList(), E.GetSymmetryList());
@@ -587,6 +593,12 @@ add_triple_prod(Tensor::IrredTensor<T4, B1, B4, S4>& Result,
 {
    if (x.is_null() || E.is_null() || y.base().is_null())
       return;
+
+   if (Result.is_null())
+   {
+      Result = Factor * triple_prod(x, E, y, qxy, qEp);
+      return;
+   }
 
    DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), y.base().GetSymmetryList());
    DEBUG_PRECONDITION_EQUAL(x.GetSymmetryList(), qxy.GetSymmetryList());

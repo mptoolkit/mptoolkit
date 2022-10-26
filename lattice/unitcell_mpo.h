@@ -206,6 +206,8 @@ UnitCellMPO adjoint(UnitCellMPO const& x);
 // Inverse Adjoint
 UnitCellMPO inv_adjoint(UnitCellMPO const& x);
 
+UnitCellMPO gauge_flip(UnitCellMPO const& x);
+
 // translate - shift a UnitCellMPO by some number of sites.
 // This can be positive or negative but MUST be a multiple of
 // the unit cell size.  TODO: relax this restriction as long as the

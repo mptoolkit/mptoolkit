@@ -620,7 +620,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
    std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
-					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
+					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
 					      HamMatrices.left());
 

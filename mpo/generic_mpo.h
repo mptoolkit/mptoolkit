@@ -216,6 +216,14 @@ ExtractLocalBasis1(GenericMPO const& Op);
 std::vector<BasisList>
 ExtractLocalBasis2(GenericMPO const& Op);
 
+// Reverse the direction of the  rows and coumns of an MPO.  SO
+// (A B)
+// (0 C)
+// turns into
+// (C B)
+// (- A)
+GenericMPO gauge_flip(GenericMPO const& Op);
+
 namespace LinearAlgebra
 {
 

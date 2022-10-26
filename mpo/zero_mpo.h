@@ -79,4 +79,10 @@ ZeroMPO dot(ZeroMPO, ZeroMPO)
    return ZeroMPO();
 }
 
+inline
+ZeroMPO gauge_flip(ZeroMPO)
+{
+   return ZeroMPO();
+}
+
 #endif

@@ -4,7 +4,7 @@
 //
 // mpo/basic_triangular_mpo.h
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@
 // dimension 1.  If the operator has a non-trivial unit cell then it may be that some internal
 // dimensions are larger than 1.
 
-#if !defined(TRIANGULAR_MPO_H_SDJFHU47894789H9O43)
-#define TRIANGULAR_MPO_H_SDJFHU47894789H9O43
+#if !defined(MPTOOLKIT_MPO_BASIC_TRIANGULAR_MPO_H)
+#define MPTOOLKIT_MPO_BASIC_TRIANGULAR_MPO_H
 
 #include "generic_mpo.h"
 #include "basic_finite_mpo.h"
@@ -243,6 +243,8 @@ SplitMPO(BasicTriangularMPO const& m);
 // the second diagonal element doesn't require that the first diagonal element is
 // already calculated, since it only uses E-elements [0,1].
 std::vector<int> Dependencies_E(BasicTriangularMPO const& m);
+
+BasicTriangularMPO gauge_flip(BasicTriangularMPO const& Op);
 
 void optimize(BasicTriangularMPO& Op);
 

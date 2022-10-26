@@ -286,6 +286,8 @@ log_norm_frob_sq(BasicFiniteMPO const& Op);
 std::pair<std::complex<double>, double>
 log_inner_prod(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2);
 
+BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op);
+
 #include "basic_finite_mpo.cc"
 
 #endif

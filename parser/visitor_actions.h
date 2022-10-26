@@ -239,6 +239,21 @@ struct ElementAbs : boost::static_visitor<element_type>
 };
 
 template <typename element_type>
+struct element_gauge_flip : boost::static_visitor<element_type>
+{
+   complex operator()(complex c) const
+   {
+      return c;
+   }
+
+   template <typename T>
+   element_type operator()(T const& x) const
+   {
+      return gauge_flip(x);
+   }
+};
+
+template <typename element_type>
 struct element_flip_conj : boost::static_visitor<element_type>
 {
    element_flip_conj() {}
