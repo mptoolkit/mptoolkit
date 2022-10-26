@@ -78,19 +78,19 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 
    H = HamMPO.begin();
 
-   BlockHamL = Initial_E(HamMPO, Psi_.Basis1());
+   BlockHamL = Initial_E(HamMPO, Psi.Basis1());
    MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
    Rho = delta_shift(Rho, QShift);
    InitialE = SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
    BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
-   for (InfiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
+   for (auto const& I : Psi)
    {
       if (Verbose > 1)
          std::cout << "Site " << (HamL.size()) << std::endl;
-      HamL.push_back(contract_from_left(*H, herm(*I), HamL.back(), *I));
-      MaxStates = std::max(MaxStates, (*I).Basis2().total_dimension());
+      HamL.push_back(contract_from_left(*H, herm(I), HamL.back(), I));
+      MaxStates = std::max(MaxStates, (I).Basis2().total_dimension());
       ++H;
    }
 
@@ -98,7 +98,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    LinearWavefunction PsiR;
    MatrixOperator U;
    RealDiagonalOperator D;
-   std::tie(U, D, PsiR) = get_right_canonical(Psi_);
+   std::tie(U, D, PsiR) = get_right_canonical(PsiCanonical);
 
    PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
 
