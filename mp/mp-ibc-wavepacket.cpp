@@ -26,12 +26,216 @@
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
-#include "linearalgebra/arpack_wrapper.h"
-#include "mp-algorithms/excitation-ansatz.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 
 namespace prog_opt = boost::program_options;
+
+std::vector<std::vector<StateComponent>>
+CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector<std::complex<double>> const& ExpIKVec,
+               std::vector<std::complex<double>> const& FVec, int const N)
+{
+   // A vector for each position at the unit cell, which contains a vector
+   // of each wavepacket B matrix for that unit cell position.
+   std::vector<std::vector<StateComponent>> WPVec(BVec.size(), std::vector<StateComponent>(N));
+
+   auto WPCell = WPVec.begin();
+   auto BCell = BVec.begin();
+   while (BCell != BVec.end())
+   {
+      auto F = FVec.begin();
+      auto ExpIK = ExpIKVec.begin();
+      auto B = BCell->begin();
+      while (B != BCell->end())
+      {
+         // Leftmost unit cell position of the N-unit cell window.
+         int j = -N/2;
+         for (auto& WP : *WPCell)
+         {
+            WP += *F * std::pow(*ExpIK, j) * *B;
+            ++j;
+         }
+         ++F, ++ExpIK, ++B;
+      }
+      ++WPCell, ++BCell;
+   }
+
+   return WPVec;
+}
+
+std::vector<std::complex<double>>
+CalculateNLambdaF(std::vector<std::vector<StateComponent>> const& BVec, std::vector<std::complex<double>> const& ExpIKVec,
+                  std::vector<std::complex<double>> const& FVec, int const N, int const Lambda)
+{
+   std::vector<std::complex<double>> NLambdaFVec(FVec.size(), 0.0);
+
+   auto BCell = BVec.begin();
+   while (BCell != BVec.end())
+   {
+      auto FJ = FVec.begin();
+      auto ExpIKJ = ExpIKVec.begin();
+      auto BJ = BCell->begin();
+      while (BJ != BCell->end())
+      {
+         auto NLambdaFI = NLambdaFVec.begin();
+         auto ExpIKI = ExpIKVec.begin();
+         auto BI = BCell->begin();
+         while (BI != BCell->end())
+         {
+            std::complex<double> Coeff = 0.0;
+            for (int j = Lambda+1; j < N-Lambda; ++j)
+               Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
+
+            *NLambdaFI += *FJ * inner_prod(*BI, *BJ) * Coeff;
+            ++NLambdaFI, ++ExpIKI, ++BI;
+         }
+         ++FJ, ++ExpIKJ, ++BJ;
+      }
+      ++BCell;
+   }
+
+   return NLambdaFVec;
+}
+
+struct NLambdaFunctor
+{
+   NLambdaFunctor(std::vector<std::vector<StateComponent>> const& BVec_,
+                  std::vector<std::complex<double>> const& ExpIKVec_,
+                  int const N_, int const Lambda_)
+      : BVec(BVec_), ExpIKVec(ExpIKVec_), N(N_), Lambda(Lambda_)
+   {
+   }
+
+   std::vector<std::complex<double>> operator()(std::vector<std::complex<double>> const& FVec) const
+   {
+      return CalculateNLambdaF(BVec, ExpIKVec, FVec, N, Lambda);
+   }
+
+   void SetLambda(int const Lambda_)
+   {
+      Lambda = Lambda_;
+   }
+
+   std::vector<std::vector<StateComponent>> const& BVec;
+   std::vector<std::complex<double>> const& ExpIKVec;
+   int N;
+   int Lambda;
+};
+
+std::vector<std::complex<double>>&
+operator*=(std::vector<std::complex<double>>& Input, std::complex<double> x)
+{
+   for (auto& I : Input)
+      I *= x;
+   return Input;
+}
+
+std::vector<std::complex<double>>
+operator*(std::complex<double> x, std::vector<std::complex<double>> const& Input)
+{
+   std::vector<std::complex<double>> Result = Input;
+   Result *= x;
+   return Result;
+}
+
+std::vector<std::complex<double>>&
+operator+=(std::vector<std::complex<double>>& Input1, std::vector<std::complex<double>> const& Input2)
+{
+   auto I1 = Input1.begin();
+   auto I2 = Input2.begin();
+   while (I1 != Input1.end())
+   {
+      *I1 += *I2;
+      ++I1, ++I2;
+   }
+   return Input1;
+}
+
+std::vector<std::complex<double>>
+operator+(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
+{
+   std::vector<std::complex<double>> Result = Input1;
+   Result += Input2;
+   return Result;
+}
+
+std::vector<std::complex<double>>&
+operator-=(std::vector<std::complex<double>>& Input1, std::vector<std::complex<double>> const& Input2)
+{
+   auto I1 = Input1.begin();
+   auto I2 = Input2.begin();
+   while (I1 != Input1.end())
+   {
+      *I1 -= *I2;
+      ++I1, ++I2;
+   }
+   return Input1;
+}
+
+std::vector<std::complex<double>>
+operator-(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
+{
+   std::vector<std::complex<double>> Result = Input1;
+   Result -= Input2;
+   return Result;
+}
+
+double
+norm_frob_sq(std::vector<std::complex<double>> const& Input)
+{
+   double Result = 0.0;
+   for (auto I : Input)
+      Result += std::norm(I);
+   return Result;
+}
+
+double
+norm_frob(std::vector<std::complex<double>> const& Input)
+{
+   return std::sqrt(norm_frob_sq(Input));
+}
+
+std::complex<double>
+inner_prod(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
+{
+   std::complex<double> Result = 0.0;
+   auto I1 = Input1.begin();
+   auto I2 = Input2.begin();
+   while (I1 != Input1.end())
+   {
+      Result += std::conj(*I1) * *I2;
+      ++I1, ++I2;
+   }
+   return Result;
+}
+
+struct IdentityFunctor
+{
+   IdentityFunctor()
+   {
+   }
+
+   std::vector<std::complex<double>> operator()(std::vector<std::complex<double>> const& FVec) const
+   {
+      return FVec;
+   }
+};
+
+struct InnerProdFunctor
+{
+   InnerProdFunctor()
+   {
+   }
+
+   std::complex<double> operator()(std::vector<std::complex<double>> const& FVec1, std::vector<std::complex<double>> const& FVec2) const
+   {
+      return inner_prod(FVec1, FVec2);
+   }
+};
+
+// FIXME: We have to include this header here so that it uses the functions
+// defined above. There must be a better solution.
+#include "mp-algorithms/conjugategradient.h"
 
 int main(int argc, char** argv)
 {
@@ -90,12 +294,30 @@ int main(int argc, char** argv)
          // We only handle single-site EAWavefunctions at the moment.
          CHECK(PsiVec.back().window_size() == 1);
       }
-      
-      std::vector<std::vector<StateComponent>> BSymVec;
+
+      // A vector for each position at the unit cell, which contains a vector
+      // of each B matrix for that unit cell position.
+      std::vector<std::vector<StateComponent>> BSymVec(PsiVec.back().Left.size());
+      std::vector<std::complex<double>> ExpIKVec;
+
       for (EAWavefunction Psi : PsiVec)
       {
-         BSymVec.push_back(std::vector<StateComponent>());
+         ExpIKVec.push_back(Psi.ExpIK);
 
+         auto BSym = BSymVec.begin();
+         // Here we use the left-gauge fixing condition.
+#if 1
+         for (WavefunctionSectionLeft Window : Psi.WindowVec)
+         {
+            LinearWavefunction PsiLinear;
+            MatrixOperator U;
+            std::tie(PsiLinear, U) = get_left_canonical(Window);
+            // Note that we assume that the window is single-site.
+            BSym->push_back(PsiLinear.get_front()*U);
+            ++BSym;
+         }
+         // TODO: Symmetric gauge-fixing.
+#else
          // Get the right null space matrices corresponding to each A-matrix in PsiRight.
          LinearWavefunction PsiLinearLeft;
          std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(Psi.Left);
@@ -112,11 +334,10 @@ int main(int argc, char** argv)
          auto AR = PsiLinearRight.begin();
          for (WavefunctionSectionLeft Window : Psi.WindowVec)
          {
-            LinearWavefunction PsiLinear; 
+            LinearWavefunction PsiLinear;
             MatrixOperator U;
             std::tie(PsiLinear, U) = get_left_canonical(Window);
             // Note that we assume that the window is single-site.
-            //BSymVec.back().push_back(PsiLinear.get_front()*U);
             StateComponent BL = PsiLinear.get_front()*U;
 
             // Find the B-matrix satisfying the right-gauge fixing condition.
@@ -130,9 +351,28 @@ int main(int argc, char** argv)
             TRACE(inner_prod(BR, BL));
             TRACE(norm_frob(BL))(norm_frob(BR))(norm_frob(XR));
 
+            BSym->push_back(0.5*(BL+BR));
+            ++BSym;
             ++NR, ++AR, ++AL;
          }
+#endif
       }
+
+      // The number of Fourier modes in our momentum space (note that this does
+      // not match KNum since we may have missing parts of the spectrum).
+      // FIXME: This way of calculating N is bound to cause problems.
+      int N = std::round(1.0/KStep);
+      TRACE(N)(1.0/KStep);
+
+      int Lambda = 5;
+
+      std::vector<std::complex<double>> FVec(ExpIKVec.size(), 1.0);
+      NLambdaFunctor NLambda(BSymVec, ExpIKVec, N, Lambda);
+      int MaxIter = 100;
+      double Tol = 1e-5;
+
+      ConjugateGradient(FVec, NLambda, std::vector<std::complex<double>>(FVec.size(), 0.0), MaxIter, Tol, IdentityFunctor(), InnerProdFunctor(), InnerProdFunctor());
+      TRACE(MaxIter)(Tol);
    }
    catch (prog_opt::error& e)
    {

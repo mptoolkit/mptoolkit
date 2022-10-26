@@ -108,7 +108,7 @@ ConjugateGradient(Vector &x, MultiplyFunctor MatVecMultiply, Vector const& b,
 
      q = MatVecMultiply(p);
      alpha = rho / InnerProd_LR(p, q);
-     TRACE(norm_frob(r))(InnerProd_RL(r,r))(rho)(alpha)(norm_frob(p))(norm_frob(q));
+     //TRACE(norm_frob(r))(InnerProd_RL(r,r))(rho)(alpha)(norm_frob(p))(norm_frob(q));
 
      //     TRACE(norm_frob_sq(p))(norm_frob_sq(q))(InnerProd(p,q))(InnerProd(p,conj(q)));
 
