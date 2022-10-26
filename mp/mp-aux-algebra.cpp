@@ -145,6 +145,9 @@ int main(int argc, char** argv)
       //      int const NumUnitCells = InfPsi.size() / UnitCellSize;
 
       // orthogonalize the wavefunction
+      if (Verbose)
+         std::cerr << "Getting left canonical wavefunction\n";
+
       LinearWavefunction Psi1;
       RealDiagonalOperator D;
       std::tie(Psi1, D) = get_left_canonical(InfPsi);
@@ -152,68 +155,71 @@ int main(int argc, char** argv)
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
 
-      // reflected and conjugated versions of the wavefunction - we leave them as null
-      // until they are actually needed
-      LinearWavefunction PsiR, PsiC, PsiRC;
-
       // The list of U matrices, for each operator
       std::vector<MatrixOperator> U;
 
       for (unsigned i = 0; i < OperatorStr.size(); ++i)
       {
          std::string OpStr = OperatorStr[i];
-         LinearWavefunction* Psi2 = &Psi1;
-         // Do we have time reversal or reflection?
-         if (boost::starts_with(OpStr, "r&"))
-         {
-            OpStr = std::string(OpStr.begin()+2, OpStr.end());
-            if (PsiR.empty())
-            {
-               InfiniteWavefunctionLeft PR = InfPsi;
-               inplace_reflect(PR);
-               // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
-               if (PR.Basis1() != InfPsi.Basis1())
-               {
-                  std::cerr << "mp-aux-algebra: cannot reflect operator because the basis is not reflection symmetric.\n"
-                            << "mp-aux-algebra: ignoring operator " << OpStr << '\n';
-                  continue;
-               }
-               PsiR = get_left_canonical(PR).first;
-            }
-            Psi2 = &PsiR;
-         }
-         else if (boost::starts_with(OpStr,"c&"))
-         {
-            OpStr = std::string(OpStr.begin()+2, OpStr.end());
-            if (PsiC.empty())
-            {
-               PsiC = conj(Psi1);
-            }
-            Psi2 = &PsiC;
-         }
-         else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
-         {
-            OpStr = std::string(OpStr.begin()+3, OpStr.end());
-            if (PsiR.empty())
-            {
-               InfiniteWavefunctionLeft PR = InfPsi;
-               inplace_reflect(PR);
+         InfiniteWavefunctionLeft InfPsi2 = InfPsi;
+         // Do we have time reversal or reflection or duality?
+         bool Conj = false;
+         bool Reflect = false;
+         bool Dual = false;
+         bool DualSwapLocalBasis = false;
+         std::string::const_iterator Amp = std::find(OpStr.begin(), OpStr.end(), '&');
 
-               // The wavefunction must be in a reflection-symmetric basis, or this isn't valid
-               if (PR.Basis1() != InfPsi.Basis1())
-               {
-                  std::cerr << "mp-aux-algebra: cannot reflect operator because the basis is not reflection symmetric.\n"
-                            << "mp-aux-algebra: ignoring operator " << OpStr << '\n';
-                  continue;
-               }
-               PsiR = get_left_canonical(PR).first;
-            }
-            if (PsiRC.empty())
+         if (Amp != OpStr.end())
+         {
+            std::string::const_iterator i = OpStr.begin();
+            while (i != Amp)
             {
-               PsiRC = conj(PsiR);
+               if (*i == 'c')
+                  Conj = true;
+               else if (*i == 'r')
+                  Reflect = true;
+               else if (*i == 'd')
+                  Dual =  true;
+                  else if (*i == 's')
+                     DualSwapLocalBasis =  true;
+               else
+               {
+                  std::cerr << "Unrecognised special operator " << (*i) << " in operator " << OpStr << '\n';
+               }
+               ++i;
             }
-            Psi2 = &PsiRC;
+            OpStr = std::string(Amp+1, OpStr.cend());
          }
+
+         if (Conj)
+         {
+            if (Verbose)
+               std::cerr << "Conjugating wavefunction\n";
+            inplace_conj(InfPsi2);
+         }
+         if (Reflect)
+         {
+            if (Verbose)
+               std::cerr << "Reflecting wavefunction\n";
+            inplace_reflect(InfPsi2);
+         }
+         if (Dual)
+         {
+            if (Verbose)
+               std::cerr << "Dual wavefunction\n";
+            inplace_dual(InfPsi2, DualSwapLocalBasis);
+         }
+
+         if (InfPsi2.Basis1() != InfPsi.Basis1())
+         {
+            std::cerr << "mp-aux-algebra: cannot reflect operator because the basis is not reflection symmetric.\n"
+                      << "mp-aux-algebra: ignoring operator " << OpStr << '\n';
+            continue;
+         }
+
+         if (Verbose)
+            std::cerr << "Getting canonical wavefunction for Psi2\n";
+         LinearWavefunction Psi2 = get_left_canonical(InfPsi2).first;
 
          ProductMPO StringOperator = ParseProductOperator(*Lattice, OpStr);
 
@@ -228,7 +234,7 @@ int main(int argc, char** argv)
 
          std::complex<double> e;
          MatrixOperator v;
-         std::tie(e, v) = get_left_transfer_eigenvector(*Psi2, Psi1, InfPsi.qshift(), StringOperator,
+         std::tie(e, v) = get_left_transfer_eigenvector(Psi2, Psi1, InfPsi.qshift(), StringOperator,
                                                             Tol, Verbose);
 
 
