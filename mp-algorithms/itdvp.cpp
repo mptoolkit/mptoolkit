@@ -81,7 +81,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    BlockHamL = Initial_E(HamMPO, Psi_.Basis1());
    MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
    Rho = delta_shift(Rho, QShift);
-   InitialE = SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   InitialE = SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
    HamL.push_back(BlockHamL);
    BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
@@ -105,7 +105,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
    Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(QShift));
-   SolveSimpleMPO_Right(BlockHamR, PsiR, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Right(BlockHamR, PsiR, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
 
    U = delta_shift(U, adjoint(QShift));
    BlockHamR = prod(prod(U, BlockHamR), herm(U));
@@ -787,7 +787,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    BlockHamL = Initial_E(HamMPO, Psi.Basis1());
    BlockHamL.back() = HamL.front().back();
 
-   SolveSimpleMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
    HamL = std::deque<StateComponent>(1, BlockHamL);
    BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
@@ -797,7 +797,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    BlockHamR = Initial_F(HamMPO, PsiOld.Basis2());
    BlockHamR.front() = HamR.back().front();
 
-   SolveSimpleMPO_Right(BlockHamR, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Right(BlockHamR, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
    HamR = std::deque<StateComponent>(1, BlockHamR);
    BlockHamR = delta_shift(BlockHamR, QShift);
 
@@ -836,7 +836,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    BlockHamL = Initial_E(HamMPO, PsiOld.Basis1());
    BlockHamL.back() = HamL.front().back();
 
-   SolveSimpleMPO_Left(BlockHamL, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Left(BlockHamL, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
    HamL = std::deque<StateComponent>(1, BlockHamL);
    BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
 
@@ -846,7 +846,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    BlockHamR = Initial_F(HamMPO, Psi.Basis2());
    BlockHamR.front() = HamR.back().front();
 
-   SolveSimpleMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
    HamR = std::deque<StateComponent>(1, BlockHamR);
    BlockHamR = delta_shift(BlockHamR, QShift);
 
