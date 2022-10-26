@@ -150,10 +150,10 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                      int Degree, double Tol,
                      double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(Identity.Basis2(), Psi.Basis2());
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
