@@ -45,7 +45,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMP
    PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
 
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
-   // and PsiRight: for use with SolveFirstOrderMPO_Left_EA/Right_EA.
+   // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
    RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
    RhoR = PsiLeft.lambda_r();
 
@@ -303,9 +303,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    // one B-matrix on the top.
    StateComponent BlockHamLTri, BlockHamRTri;
 
-   SolveFirstOrderMPO_Left_EA(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveFirstOrderMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
                               PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
-   SolveFirstOrderMPO_Right_EA(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveFirstOrderMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
                                PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
 
    // Shift the phases by one unit cell.
@@ -375,9 +375,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       std::complex<double> Alpha = 10.0;
 
       MatrixOperator E, F;
-      SolveStringMPO_Left_EA(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+      SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
                              PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
-      SolveStringMPO_Right_EA(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+      SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
                               PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
       E *= ExpIK;
@@ -453,9 +453,9 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque) const
    LinearWavefunction PsiTri = this->ConstructPsiTri(BDeque);
 
    MatrixOperator E, F;
-   SolveStringMPO_Left_EA(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
                         PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
-   SolveStringMPO_Right_EA(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
                          PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
    E *= ExpIK;

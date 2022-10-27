@@ -20,6 +20,9 @@
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
 
+// The tolerance for determining whether ExpIK == 1.0.
+double const ExpIKTol = 1e-14;
+
 struct OneMinusTransferLeftEA
 {
    OneMinusTransferLeftEA(GenericMPO const& Op_, LinearWavefunction const& Psi1_,
@@ -78,7 +81,7 @@ struct SubProductLeftProjectEA
 };
 
 void
-SolveFirstOrderMPO_Left_EA(StateComponent& E1, StateComponent const& E0,
+SolveFirstOrderMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                            LinearWavefunction const& PsiTri,
                            QuantumNumber const& QShift, BasicTriangularMPO const& Op,
@@ -112,7 +115,7 @@ SolveFirstOrderMPO_Left_EA(StateComponent& E1, StateComponent const& E0,
    // solve for the first component
    // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
    // we do not need to orthogonalize against the leading eigenvector.
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       E1[Col] = C;
       LinearSolve(E1[Col], OneMinusTransferLeftEA(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
@@ -177,7 +180,7 @@ SolveFirstOrderMPO_Left_EA(StateComponent& E1, StateComponent const& E0,
    C = delta_shift(C, QShift);
 
    // solve for the final component
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       E1[Col] = C;
       LinearSolve(E1[Col], OneMinusTransferLeftEA(Op(Col, Col), PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
@@ -221,7 +224,7 @@ struct SubProductLeftProjectEAOp
 };
 
 void
-SolveStringMPO_Left_EA(MatrixOperator& E1, MatrixOperator const& E0,
+SolveStringMPO_EA_Left(MatrixOperator& E1, MatrixOperator const& E0,
                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                        LinearWavefunction const& PsiTri,
                        QuantumNumber const& QShift, ProductMPO const& Op,
@@ -236,7 +239,7 @@ SolveStringMPO_Left_EA(MatrixOperator& E1, MatrixOperator const& E0,
    MatrixOperator C = inject_left(E0, PsiTri, Op.data(), PsiLeft);
    C = delta_shift(C, QShift);
 
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       E1 = C;
       LinearSolve(E1, OneMinusTransferLeftEA(Op, PsiRight, PsiLeft, QShift, ExpIK), C, Tol, Verbose);
@@ -310,7 +313,7 @@ struct SubProductRightProjectEA
 };
 
 void
-SolveFirstOrderMPO_Right_EA(StateComponent& F1, StateComponent const& F0,
+SolveFirstOrderMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                             LinearWavefunction const& PsiTri,
                             QuantumNumber const& QShift, BasicTriangularMPO const& Op,
@@ -344,7 +347,7 @@ SolveFirstOrderMPO_Right_EA(StateComponent& F1, StateComponent const& F0,
    // solve for the final component
    // If the spectral radius of the transfer matrix is < 1 or if k != 0, then
    // we do not need to orthogonalize against the leading eigenvector.
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       F1[Row] = C;
       LinearSolve(F1[Row], OneMinusTransferRightEA(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
@@ -409,7 +412,7 @@ SolveFirstOrderMPO_Right_EA(StateComponent& F1, StateComponent const& F0,
    C.delta_shift(adjoint(QShift));
 
    // solve for the first component
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       F1[Row] = C;
       LinearSolve(F1[Row], OneMinusTransferRightEA(Op(Row, Row), PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
@@ -453,7 +456,7 @@ struct SubProductRightProjectEAOp
 };
 
 void
-SolveStringMPO_Right_EA(MatrixOperator& F1, MatrixOperator const& F0,
+SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
                         LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                         LinearWavefunction const& PsiTri,
                         QuantumNumber const& QShift, ProductMPO const& Op,
@@ -468,7 +471,7 @@ SolveStringMPO_Right_EA(MatrixOperator& F1, MatrixOperator const& F0,
    MatrixOperator C = inject_right(F0, PsiTri, Op.data(), PsiRight);
    C.delta_shift(adjoint(QShift));
 
-   if (Rho.is_null() || std::abs(ExpIK - 1.0) > 1e-14)
+   if (Rho.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol)
    {
       F1 = C;
       LinearSolve(F1, OneMinusTransferRightEA(Op, PsiLeft, PsiRight, QShift, ExpIK), C, Tol, Verbose);
