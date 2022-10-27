@@ -52,7 +52,7 @@ int main(int argc, char** argv)
       std::string String;
       ProductMPO StringOp;
       std::string OutputPrefix;
-      int OutputDigits = 0;
+      int OutputDigits = -1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -72,6 +72,7 @@ int main(int argc, char** argv)
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
+         ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -137,7 +138,8 @@ int main(int argc, char** argv)
 
       double KStep = (KMax-KMin)/(KNum-1);
 
-      OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+      if (OutputDigits == -1)
+         OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
 
       // Initialize the effective Hamiltonian.
       HEff H;

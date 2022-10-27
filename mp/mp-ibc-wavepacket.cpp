@@ -32,6 +32,7 @@
 
 namespace prog_opt = boost::program_options;
 
+// Calculate the B-matrices for a wavepacket using sampling function FVec.
 std::vector<std::vector<StateComponent>>
 CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector<std::complex<double>> const& ExpIKVec,
                std::vector<std::complex<double>> const& FVec, int const N)
@@ -65,53 +66,90 @@ CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector
    return WPVec;
 }
 
+// Apply the "N_Lambda" matrix onto an "F" vector:
+// see Eq. (A6) in Van Damme et al., Phys. Rev. Research 3, 013078.
 std::vector<std::complex<double>>
-CalculateNLambdaF(std::vector<std::vector<StateComponent>> const& BVec, std::vector<std::complex<double>> const& ExpIKVec,
+CalculateNLambdaF(std::vector<std::vector<std::vector<std::complex<double>>>> const& BBVec, std::vector<std::complex<double>> const& ExpIKVec,
                   std::vector<std::complex<double>> const& FVec, int const N, int const Lambda)
 {
    std::vector<std::complex<double>> NLambdaFVec(FVec.size(), 0.0);
 
-   auto BCell = BVec.begin();
-   while (BCell != BVec.end())
+   auto BBCell = BBVec.begin();
+   while (BBCell != BBVec.end())
    {
       auto FJ = FVec.begin();
       auto ExpIKJ = ExpIKVec.begin();
-      auto BJ = BCell->begin();
-      while (BJ != BCell->end())
+      auto BBJ = BBCell->begin();
+      while (BBJ != BBCell->end())
       {
          auto NLambdaFI = NLambdaFVec.begin();
          auto ExpIKI = ExpIKVec.begin();
-         auto BI = BCell->begin();
-         while (BI != BCell->end())
+         auto BBI = BBJ->begin();
+         while (BBI != BBJ->end())
          {
             std::complex<double> Coeff = 0.0;
             for (int j = Lambda+1; j < N-Lambda; ++j)
                Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
 
-            *NLambdaFI += *FJ * inner_prod(*BI, *BJ) * Coeff;
-            ++NLambdaFI, ++ExpIKI, ++BI;
+            *NLambdaFI += *FJ * *BBI * Coeff;
+            ++NLambdaFI, ++ExpIKI, ++BBI;
          }
-         ++FJ, ++ExpIKJ, ++BJ;
+         ++FJ, ++ExpIKJ, ++BBJ;
       }
-      ++BCell;
+      ++BBCell;
    }
 
    return NLambdaFVec;
 }
 
+// Calculate the vector containing matrices for the inner products <B_i, B_j>:
+// since this matrix only needs to be calculated once, doing it separately
+// makes the solver slightly faster.
+std::vector<std::vector<std::vector<std::complex<double>>>>
+CalculateBBVec(std::vector<std::vector<StateComponent>> const& BVec)
+{
+   std::vector<std::vector<std::vector<std::complex<double>>>> BBVec(BVec.size(),
+      std::vector<std::vector<std::complex<double>>>(BVec.front().size(),
+      std::vector<std::complex<double>>(BVec.front().size())));
+
+   auto BCell = BVec.begin();
+   auto BBCell = BBVec.begin();
+   while (BCell != BVec.end())
+   {
+      auto BJ = BCell->begin();
+      auto BBJ = BBCell->begin();
+      while (BJ != BCell->end())
+      {
+         auto BI = BCell->begin();
+         auto BBI = BBJ->begin();
+         while (BI != BCell->end())
+         {
+            *BBI = inner_prod(*BI, *BJ);
+            ++BI, ++BBI;
+         }
+         ++BJ, ++BBJ;
+      }
+      ++BCell, ++BBCell;
+   }
+
+   return BBVec;
+}
+
+// Functor to calculate the application of the "N_Lambda" matrix onto an "F"
+// vector for the ARPACK wrapper.
 struct NLambdaFunctor
 {
    NLambdaFunctor(std::vector<std::vector<StateComponent>> const& BVec_,
                   std::vector<std::complex<double>> const& ExpIKVec_,
                   int const N_, int const Lambda_)
-      : BVec(BVec_), ExpIKVec(ExpIKVec_), N(N_), Lambda(Lambda_)
+      : BBVec(CalculateBBVec(BVec_)), ExpIKVec(ExpIKVec_), N(N_), Lambda(Lambda_)
    {
    }
 
    void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
       std::vector<std::complex<double>> InVec(In, In + ExpIKVec.size());
-      std::vector<std::complex<double>> OutVec = CalculateNLambdaF(BVec, ExpIKVec, InVec, N, Lambda);
+      std::vector<std::complex<double>> OutVec = CalculateNLambdaF(BBVec, ExpIKVec, InVec, N, Lambda);
       std::copy(OutVec.begin(), OutVec.end(), Out);
    }
 
@@ -120,7 +158,7 @@ struct NLambdaFunctor
       Lambda = Lambda_;
    }
 
-   std::vector<std::vector<StateComponent>> const& BVec;
+   std::vector<std::vector<std::vector<std::complex<double>>>> BBVec;
    std::vector<std::complex<double>> const& ExpIKVec;
    int N;
    int Lambda;
@@ -135,7 +173,9 @@ int main(int argc, char** argv)
       double KMin = 0;
       int KNum = 1;
       std::string InputPrefix;
-      int InputDigits = 0;
+      int InputDigits = -1;
+      double Tol = 1e-10;
+      double ExternalWeightTol = 1e-5;
       std::string OutputFilename;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -146,6 +186,10 @@ int main(int argc, char** argv)
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to use")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k])")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename")
+         ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
+         ("tol", prog_opt::value(&Tol), FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
+         ("external-tol,e", prog_opt::value(&ExternalWeightTol),
+          FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", ExternalWeightTol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -171,7 +215,11 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
 
       double KStep = (KMax-KMin)/(KNum-1);
-      InputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+      if (InputDigits == -1)
+         InputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+
+      if (Verbose > 1)
+         std::cout << "Loading wavefunctions..." << std::endl;
 
       // Read input wavefunctions.
       std::vector<EAWavefunction> PsiVec;
@@ -183,6 +231,9 @@ int main(int argc, char** argv)
          // We only handle single-site EAWavefunctions at the moment.
          CHECK(PsiVec.back().window_size() == 1);
       }
+
+      if (Verbose > 1)
+         std::cout << "Calculating B-matrices..." << std::endl;
 
       // A vector for each position at the unit cell, which contains a vector
       // of each B matrix for that unit cell position.
@@ -247,16 +298,17 @@ int main(int argc, char** argv)
 #endif
       }
 
+      if (Verbose > 1)
+         std::cout << "Localizing wavepacket..." << std::endl;
+
       // The number of Fourier modes in our momentum space (note that this does
       // not match KNum since we may have missing parts of the spectrum).
       // FIXME: This way of calculating N is bound to cause problems.
       int N = std::round(2.0/KStep);
-      TRACE(N)(2.0/KStep);
+      //TRACE(N)(2.0/KStep);
 
       int Lambda = 1;
       NLambdaFunctor NLambda(BSymVec, ExpIKVec, N, Lambda);
-      double ARPACKTol = 1e-10;
-      double ExternalWeightTol = 1e-5;
 
       std::vector<std::complex<double>> FVec;
       while (Lambda < N/2)
@@ -280,11 +332,20 @@ int main(int argc, char** argv)
       }
 
       std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N);
-      for (auto const& WPCell : WPVec)
+
+      // Print the norm of the B-matrices in WPVec for each unit cell.
+      if (Verbose > 1)
       {
-         int j = -N/2;
-         for (auto const& WP : WPCell)
-            std::cout << j++ << " " << norm_frob(WP) << std::endl;
+         std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
+         std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
+         int i = 0;
+         for (auto const& WPCell : WPVec)
+         {
+            int j = -N/2;
+            for (auto const& WP : WPCell)
+               std::cout << i << " " << j++ << " " << norm_frob(WP) << std::endl;
+            ++i;
+         }
       }
    }
    catch (prog_opt::error& e)
