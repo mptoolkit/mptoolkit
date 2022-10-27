@@ -54,8 +54,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
    // Construct left Hamiltonian environment.
    StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis1());
-   std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
-                                                         GMRESTol, Verbose-1);
+   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
+                                                              GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
@@ -73,7 +73,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
-   SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamiltonianLeft, Rho, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamiltonianLeft, Rho, GMRESTol, Verbose-1);
    std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
 
    if (Verbose > 0)
@@ -95,8 +95,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
    // Construct right Hamiltonian environment.
    StateComponent BlockHamR = Initial_F(HamiltonianRight, PsiRight.Basis2());
-   std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
-                                                           GMRESTol, Verbose-1);
+   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
+                                                                GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 

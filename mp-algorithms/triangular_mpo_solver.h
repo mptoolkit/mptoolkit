@@ -157,35 +157,38 @@ std::complex<double>
 SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
                      BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
-void
-SolveSimpleMPO_Left2(StateComponent& E2, StateComponent const& E1,
-                     LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     LinearWavefunction const& PsiTri,
-                     QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                     MatrixOperator const& Ident, MatrixOperator const& Rho,
-                     std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+// Solvers for excitation ansatz wavefunctions, where PsiTri is the
+// "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
 
 void
-SolveStringMPO_Left2(MatrixOperator& E1, MatrixOperator const& E0,
-                     LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     LinearWavefunction const& PsiTri,
-                     QuantumNumber const& QShift, ProductMPO const& Op,
-                     MatrixOperator const& Ident, MatrixOperator const& Rho,
-                     std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveFirstOrderMPO_Left_EA(StateComponent& E2, StateComponent const& E1,
+                           LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                           LinearWavefunction const& PsiTri,
+                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                           MatrixOperator const& Ident, MatrixOperator const& Rho,
+                           std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveSimpleMPO_Right2(StateComponent& F2, StateComponent const& F1,
-                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      LinearWavefunction const& PsiTri,
-                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                      MatrixOperator const& Rho, MatrixOperator const& Ident,
-                      std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveStringMPO_Left_EA(MatrixOperator& E1, MatrixOperator const& E0,
+                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                       LinearWavefunction const& PsiTri,
+                       QuantumNumber const& QShift, ProductMPO const& Op,
+                       MatrixOperator const& Ident, MatrixOperator const& Rho,
+                       std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveStringMPO_Right2(MatrixOperator& F1, MatrixOperator const& F0,
-                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      LinearWavefunction const& PsiTri,
-                      QuantumNumber const& QShift, ProductMPO const& Op,
-                      MatrixOperator const& Rho, MatrixOperator const& Ident,
-                      std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveFirstOrderMPO_Right_EA(StateComponent& F2, StateComponent const& F1,
+                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                            LinearWavefunction const& PsiTri,
+                            QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                            MatrixOperator const& Rho, MatrixOperator const& Ident,
+                            std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveStringMPO_Right_EA(MatrixOperator& F1, MatrixOperator const& F0,
+                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                        LinearWavefunction const& PsiTri,
+                        QuantumNumber const& QShift, ProductMPO const& Op,
+                        MatrixOperator const& Rho, MatrixOperator const& Ident,
+                        std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 #endif
