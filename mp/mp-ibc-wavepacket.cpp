@@ -26,6 +26,7 @@
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
+#include "linearalgebra/arpack_wrapper.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 
@@ -107,9 +108,11 @@ struct NLambdaFunctor
    {
    }
 
-   std::vector<std::complex<double>> operator()(std::vector<std::complex<double>> const& FVec) const
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
    {
-      return CalculateNLambdaF(BVec, ExpIKVec, FVec, N, Lambda);
+      std::vector<std::complex<double>> InVec(In, In + ExpIKVec.size());
+      std::vector<std::complex<double>> OutVec = CalculateNLambdaF(BVec, ExpIKVec, InVec, N, Lambda);
+      std::copy(OutVec.begin(), OutVec.end(), Out);
    }
 
    void SetLambda(int const Lambda_)
@@ -122,121 +125,6 @@ struct NLambdaFunctor
    int N;
    int Lambda;
 };
-
-std::vector<std::complex<double>>&
-operator*=(std::vector<std::complex<double>>& Input, std::complex<double> x)
-{
-   for (auto& I : Input)
-      I *= x;
-   return Input;
-}
-
-std::vector<std::complex<double>>
-operator*(std::complex<double> x, std::vector<std::complex<double>> const& Input)
-{
-   std::vector<std::complex<double>> Result = Input;
-   Result *= x;
-   return Result;
-}
-
-std::vector<std::complex<double>>&
-operator+=(std::vector<std::complex<double>>& Input1, std::vector<std::complex<double>> const& Input2)
-{
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      *I1 += *I2;
-      ++I1, ++I2;
-   }
-   return Input1;
-}
-
-std::vector<std::complex<double>>
-operator+(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
-{
-   std::vector<std::complex<double>> Result = Input1;
-   Result += Input2;
-   return Result;
-}
-
-std::vector<std::complex<double>>&
-operator-=(std::vector<std::complex<double>>& Input1, std::vector<std::complex<double>> const& Input2)
-{
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      *I1 -= *I2;
-      ++I1, ++I2;
-   }
-   return Input1;
-}
-
-std::vector<std::complex<double>>
-operator-(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
-{
-   std::vector<std::complex<double>> Result = Input1;
-   Result -= Input2;
-   return Result;
-}
-
-double
-norm_frob_sq(std::vector<std::complex<double>> const& Input)
-{
-   double Result = 0.0;
-   for (auto I : Input)
-      Result += std::norm(I);
-   return Result;
-}
-
-double
-norm_frob(std::vector<std::complex<double>> const& Input)
-{
-   return std::sqrt(norm_frob_sq(Input));
-}
-
-std::complex<double>
-inner_prod(std::vector<std::complex<double>> const& Input1, std::vector<std::complex<double>> const& Input2)
-{
-   std::complex<double> Result = 0.0;
-   auto I1 = Input1.begin();
-   auto I2 = Input2.begin();
-   while (I1 != Input1.end())
-   {
-      Result += std::conj(*I1) * *I2;
-      ++I1, ++I2;
-   }
-   return Result;
-}
-
-struct IdentityFunctor
-{
-   IdentityFunctor()
-   {
-   }
-
-   std::vector<std::complex<double>> operator()(std::vector<std::complex<double>> const& FVec) const
-   {
-      return FVec;
-   }
-};
-
-struct InnerProdFunctor
-{
-   InnerProdFunctor()
-   {
-   }
-
-   std::complex<double> operator()(std::vector<std::complex<double>> const& FVec1, std::vector<std::complex<double>> const& FVec2) const
-   {
-      return inner_prod(FVec1, FVec2);
-   }
-};
-
-// FIXME: We have to include this header here so that it uses the functions
-// defined above. There must be a better solution.
-#include "mp-algorithms/conjugategradient.h"
 
 int main(int argc, char** argv)
 {
@@ -365,24 +253,36 @@ int main(int argc, char** argv)
       int N = std::round(2.0/KStep);
       TRACE(N)(2.0/KStep);
 
-      int Lambda = 5;
-
-      std::vector<std::complex<double>> FVec(ExpIKVec.size(), 1.0);
+      int Lambda = 1;
       NLambdaFunctor NLambda(BSymVec, ExpIKVec, N, Lambda);
-      int MaxIter = 100;
-      double Tol = 1e-5;
+      double ARPACKTol = 1e-10;
+      double ExternalWeightTol = 1e-5;
 
-      TRACE(norm_frob(FVec));
-      TRACE(inner_prod(FVec, NLambda(FVec)));
-      ConjugateGradient(FVec, NLambda, std::vector<std::complex<double>>(FVec.size(), 0.0), MaxIter, Tol, IdentityFunctor(), InnerProdFunctor(), InnerProdFunctor());
-      TRACE(MaxIter)(Tol)(norm_frob(FVec));
-      FVec *= std::sqrt(ExpIKVec.size()) / norm_frob(FVec);
-      TRACE(inner_prod(FVec, NLambda(FVec)));
+      std::vector<std::complex<double>> FVec;
+      while (Lambda < N/2)
+      {
+         LinearAlgebra::Vector<std::complex<double>> EValues
+            = LinearAlgebra::DiagonalizeARPACK(NLambda, ExpIKVec.size(), 1,
+                                               LinearAlgebra::WhichEigenvalues::SmallestReal,
+                                               Tol, &FVec, 0, true, Verbose-1);
+         if (Verbose > 0)
+            std::cout << "Lambda=" << Lambda
+                      << " ExternalWeight=" << std::real(EValues[0])
+                      << std::endl;
 
-      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, 2*N);
+         if (std::real(EValues[0]) < ExternalWeightTol)
+            break;
+         else
+         {
+            ++Lambda;
+            NLambda.SetLambda(Lambda);
+         }
+      }
+
+      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N);
       for (auto const& WPCell : WPVec)
       {
-         int j = -N;
+         int j = -N/2;
          for (auto const& WP : WPCell)
             std::cout << j++ << " " << norm_frob(WP) << std::endl;
       }
