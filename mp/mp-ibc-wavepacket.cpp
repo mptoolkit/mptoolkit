@@ -37,7 +37,7 @@ CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector
 {
    // A vector for each position at the unit cell, which contains a vector
    // of each wavepacket B matrix for that unit cell position.
-   std::vector<std::vector<StateComponent>> WPVec(BVec.size(), std::vector<StateComponent>(N));
+   std::vector<std::vector<StateComponent>> WPVec(BVec.size());
 
    auto WPCell = WPVec.begin();
    auto BCell = BVec.begin();
@@ -46,6 +46,7 @@ CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector
       auto F = FVec.begin();
       auto ExpIK = ExpIKVec.begin();
       auto B = BCell->begin();
+      *WPCell = std::vector<StateComponent>(N, StateComponent(B->LocalBasis(), B->Basis1(), B->Basis2()));
       while (B != BCell->end())
       {
          // Leftmost unit cell position of the N-unit cell window.
@@ -361,8 +362,8 @@ int main(int argc, char** argv)
       // The number of Fourier modes in our momentum space (note that this does
       // not match KNum since we may have missing parts of the spectrum).
       // FIXME: This way of calculating N is bound to cause problems.
-      int N = std::round(1.0/KStep);
-      TRACE(N)(1.0/KStep);
+      int N = std::round(2.0/KStep);
+      TRACE(N)(2.0/KStep);
 
       int Lambda = 5;
 
@@ -371,8 +372,20 @@ int main(int argc, char** argv)
       int MaxIter = 100;
       double Tol = 1e-5;
 
+      TRACE(norm_frob(FVec));
+      TRACE(inner_prod(FVec, NLambda(FVec)));
       ConjugateGradient(FVec, NLambda, std::vector<std::complex<double>>(FVec.size(), 0.0), MaxIter, Tol, IdentityFunctor(), InnerProdFunctor(), InnerProdFunctor());
-      TRACE(MaxIter)(Tol);
+      TRACE(MaxIter)(Tol)(norm_frob(FVec));
+      FVec *= std::sqrt(ExpIKVec.size()) / norm_frob(FVec);
+      TRACE(inner_prod(FVec, NLambda(FVec)));
+
+      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, 2*N);
+      for (auto const& WPCell : WPVec)
+      {
+         int j = -N;
+         for (auto const& WP : WPCell)
+            std::cout << j++ << " " << norm_frob(WP) << std::endl;
+      }
    }
    catch (prog_opt::error& e)
    {
