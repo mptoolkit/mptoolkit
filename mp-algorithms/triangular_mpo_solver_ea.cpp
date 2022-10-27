@@ -93,7 +93,7 @@ SolveFirstOrderMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
-      std::cerr << "SolveSimpleMPO_Left2: dimension is " << Dim << std::endl;
+      std::cerr << "SolveFirstOrderMPO_EA_Left: dimension is " << Dim << std::endl;
 
    // First column
    int Col = 0;
@@ -104,7 +104,7 @@ SolveFirstOrderMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
 
    if (!classify(Op(Col,Col), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Left2: fatal: MPO(0,0) must be the identity operator.\n";
+      std::cerr << "SolveFirstOrderMPO_EA_Left: fatal: MPO(0,0) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
@@ -156,7 +156,7 @@ SolveFirstOrderMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
          // an operator with spectral radius strictly < 1
          if (Classification.is_unitary())
          {
-            std::cerr << "SolveSimpleMPO_Left2: Unitary operator on the diagonal is not supported!\n";
+            std::cerr << "SolveFirstOrderMPO_EA_Left: Unitary operator on the diagonal is not supported!\n";
             PANIC("Fatal: unitary")(Col);
          }
 
@@ -170,7 +170,7 @@ SolveFirstOrderMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
    Col = Dim-1;
    if (!classify(Op(Col,Col), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Left2: fatal: MPO(d,d) must be the identity operator.\n";
+      std::cerr << "SolveFirstOrderMPO_EA_Left: fatal: MPO(d,d) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
@@ -325,7 +325,7 @@ SolveFirstOrderMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    if (Verbose > 0)
-      std::cerr << "SolveSimpleMPO_Right2: dimension is " << Dim << std::endl;
+      std::cerr << "SolveFirstOrderMPO_EA_Right: dimension is " << Dim << std::endl;
 
    // Final row
    int Row = Dim-1;
@@ -336,7 +336,7 @@ SolveFirstOrderMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
 
    if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Right2: fatal: MPO(d,d) must be the identity operator.\n";
+      std::cerr << "SolveFirstOrderMPO_EA_Right: fatal: MPO(d,d) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
@@ -388,7 +388,7 @@ SolveFirstOrderMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
          // an operator with spectral radius strictly < 1
          if (Classification.is_unitary())
          {
-            std::cerr << "SolveSimpleMPO_Right2: Unitary operator on the diagonal is not supported!\n";
+            std::cerr << "SolveFirstOrderMPO_EA_Right: Unitary operator on the diagonal is not supported!\n";
             PANIC("Fatal: unitary")(Row);
          }
 
@@ -402,7 +402,7 @@ SolveFirstOrderMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
    Row = 0;
    if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_Right2: fatal: MPO(0,0) must be the identity operator.\n";
+      std::cerr << "SolveFirstOrderMPO_EA_Right: fatal: MPO(0,0) must be the identity operator.\n";
       PANIC("Fatal");
    }
 
