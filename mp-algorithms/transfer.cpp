@@ -60,8 +60,8 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
    //   int ncvsave = ncv;
    int NumEigen = 1;
 
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
                                                             RightMultiplyOperator(Psi1, QShift,
                                                                                  StringOp,
@@ -83,18 +83,44 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
    CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis1(), Psi2.Basis1());
    int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
    int NumEigen = 1;
 
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
             Psi1.size(), Verbose-1)), n, NumEigen, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
    return std::make_tuple(LeftEigen[0], LeftVector[0]);
+}
+
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                     ProductMPO const& StringOp,
+                     double tol, int Verbose)
+{
+   int ncv = 0;
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   int n = Pack.size();
+   int NumEigen = N;
+
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
+            Psi1.size(), Verbose-1)), n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+
+   std::vector<MatrixOperator> LeftVectors(N);
+   for (int i = 0; i < N; ++i)
+   {
+      StateComponent C = Pack.unpack(&(OutVec[n*i]));
+      LeftVectors[i] = C[0];
+   }
+   std::vector<std::complex<double>> Eigen(LeftEigen.begin(), LeftEigen.end());
+   return std::make_tuple(Eigen, LeftVectors);
+
 }
 
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>

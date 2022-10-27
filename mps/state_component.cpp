@@ -1071,9 +1071,8 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
    return Result;
 }
 
-StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B)
+StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B, Tensor::ProductBasis<BasisList, BasisList> const& PB)
 {
-   Tensor::ProductBasis<BasisList, BasisList> PB(A.LocalBasis(), B.LocalBasis());
    StateComponent Result(PB.Basis(), A.Basis1(), B.Basis2());
    for (unsigned i = 0; i < A.LocalBasis().size(); ++i)
    {
@@ -1090,6 +1089,14 @@ StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& 
 
    return Result;
 }
+
+StateComponent
+contract_local_tensor_prod_left(LinearAlgebra::HermitianProxy<StateComponent> const& A,
+   StateComponent L, Tensor::ProductBasis<BasisList, BasisList> const& PB)
+{
+   PANIC("not yet implemented");
+}
+
 
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
                                         VectorBasis const& B2,

@@ -133,6 +133,29 @@ RepLabelBase<Tag>::ReadRaw(PStream::ipstream& in)
 //
 
 inline
+QuantumNumberList
+adjoint(QuantumNumberList ql)
+{
+   for (auto& q : ql)
+   {
+      q = adjoint(q);
+   }
+   return ql;
+}
+
+inline
+std::set<QuantumNumber>
+adjoint(std::set<QuantumNumber> const& ql)
+{
+   std::set<QuantumNumber> Result;
+   for (const auto& q : ql)
+   {
+      Result.insert(adjoint(q));
+   }
+   return Result;
+}
+
+inline
 QuantumNumber::QuantumNumber() noexcept
 {
 }

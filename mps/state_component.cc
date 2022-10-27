@@ -95,6 +95,14 @@ BasicStateComponent<T>::ConstructFullBasis2(VectorBasis const& Basis1, BasisList
    return Result;
 }
 
+
+inline
+StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& B)
+{
+   Tensor::ProductBasis<BasisList, BasisList> PB(A.LocalBasis(), B.LocalBasis());
+   return local_tensor_prod(A, B, PB);
+}
+
 template <typename T>
 PStream::opstream& operator<<(PStream::opstream& out, BasicStateComponent<T> const& Op)
 {

@@ -626,7 +626,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
    typedef Function::ArgumentList              RawArgumentType;
 
    static constants                  constants_p;
-   static unary_funcs<ElementType>  unary_funcs_p;
+   static unary_funcs_mpo<ElementType>  unary_funcs_p;
    static binary_funcs<ElementType> binary_funcs_p;
 
    InfiniteLatticeParser(ElemStackType& eval_,
@@ -893,7 +893,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 
 // global variables (static members of InfiniteLatticeParser)
 constants InfiniteLatticeParser::constants_p;
-unary_funcs<InfiniteLatticeParser::ElementType> InfiniteLatticeParser::unary_funcs_p;
+unary_funcs_mpo<InfiniteLatticeParser::ElementType> InfiniteLatticeParser::unary_funcs_p;
 binary_funcs<InfiniteLatticeParser::ElementType> InfiniteLatticeParser::binary_funcs_p;
 
 InfiniteMPOElement

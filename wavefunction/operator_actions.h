@@ -4,7 +4,7 @@
 //
 // wavefunction/operator_actions.h
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@
 // some MPO from the left, then the resulting eigenvalue
 // is the conjgate of what we would expect.
 
-#if !defined(OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW)
-#define OPERATOR_ACTIONS_H_SDH47589FOIJHO9JEW
+#if !defined(MPTOOLKIT_WAVEFUNCTION_OPERATOR_ACTIONS_H)
+#define MPTOOLKIT_WAVEFUNCTION_OPERATOR_ACTIONS_H
 
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/generic_mpo.h"
@@ -555,6 +555,44 @@ struct OneMinusTransferRight
    BasicFiniteMPO const& Op_;
    LinearWavefunction const& Psi_;
    QuantumNumber const& QShift_;
+};
+
+struct OneMinusTransferRight_Ortho
+{
+   OneMinusTransferRight_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
+                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
+                              MatrixOperator const& Identity,
+                              MatrixOperator const& Rho, bool Orthogonalize)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+        Identity_(Identity),
+        Rho_(Rho), Scale_(1.0), Orthogonalize_(Orthogonalize) { }
+
+   OneMinusTransferRight_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
+                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
+                              MatrixOperator const& Identity,
+                              MatrixOperator const& Rho, std::complex<double> Scale, bool Orthogonalize)
+      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
+        Identity_(Identity),
+        Rho_(Rho), Scale_(Scale), Orthogonalize_(Orthogonalize) { }
+
+   MatrixOperator operator()(MatrixOperator const& x) const
+   {
+      MatrixOperator r = x-delta_shift(inject_right(x, Psi1_, Op_, Psi2_), adjoint(QShift_))*Scale_;
+      if (Orthogonalize_ && r.TransformsAs() == Rho_.TransformsAs())
+         {
+            r -= std::conj(inner_prod(r, Rho_)) * Identity_; // orthogonalize to the identity
+         }
+      return r;
+   }
+
+   LinearWavefunction const& Psi1_;
+   QuantumNumber const& QShift_;
+   BasicFiniteMPO const& Op_;
+   LinearWavefunction const& Psi2_;
+   MatrixOperator const& Identity_;
+   MatrixOperator const& Rho_;
+   std::complex<double> Scale_;
+   bool Orthogonalize_;
 };
 
 #endif
