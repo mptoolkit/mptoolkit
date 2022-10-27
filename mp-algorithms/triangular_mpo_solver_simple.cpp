@@ -302,7 +302,7 @@ SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
-   MatrixOperator Rho = Lambda*Lambda;
+   MatrixOperator Rho = delta_shift(Lambda*Lambda, Psi.qshift());
    return SolveHamiltonianMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
 
@@ -360,6 +360,6 @@ SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Ps
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
-   MatrixOperator Rho = Lambda*Lambda;
+   MatrixOperator Rho = delta_shift(Lambda*Lambda, adjoint(Psi.qshift()));
    return SolveHamiltonianMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
