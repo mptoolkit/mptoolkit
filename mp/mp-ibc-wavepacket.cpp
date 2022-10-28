@@ -66,6 +66,65 @@ CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector
    return WPVec;
 }
 
+// Construct the triangular MPS window for the wavepacket.
+LinearWavefunction
+ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight PsiRight,
+                   std::vector<std::vector<StateComponent>> const& WPVec)
+{
+   int UCSize = WPVec.front().size();
+   int WindowSize = WPVec.size(); // In terms of unit cells.
+
+   std::vector<LinearWavefunction> PsiWindowVec(UCSize);
+
+   LinearWavefunction PsiLinearLeft, PsiLinearRight;
+   std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
+   std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
+
+   // Just in case we somehow have a single site window
+   if (UCSize == 1 && WindowSize == 1)
+      PsiWindowVec.front().push_back(WPVec.front().front());
+   else
+   {
+      auto CL = PsiLinearLeft.begin();
+      auto CR = PsiLinearRight.begin();
+      auto WPCell = WPVec.begin();
+      auto WP = WPCell->begin();
+      auto PsiWindow = PsiWindowVec.begin();
+
+      // Handle the first site separately.
+      SumBasis<VectorBasis> NewBasisFront((*CL).Basis2(), (*WP).Basis2());
+      PsiWindow->push_back(tensor_row_sum(*CL, *WP, NewBasisFront));
+      ++WP, ++PsiWindow;
+
+      // Handle all of the middle sites.
+      for (int i = 1; i < UCSize*WindowSize-1; ++i)
+      {
+         if (WP == WPCell->end())
+         {
+            ++WPCell, ++CL, ++CR;
+            WP = WPCell->begin();
+            PsiWindow = PsiWindowVec.begin();
+         }
+         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
+         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*WP).Basis2());
+         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
+         PsiWindow->push_back(tensor_col_sum(tensor_row_sum(*CL, *WP, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+         ++WP, ++PsiWindow;
+      }
+
+      // Handle the last site separately.
+      SumBasis<VectorBasis> NewBasisBack((*WP).Basis1(), (*CR).Basis1());
+      PsiWindow->push_back(tensor_col_sum(*WP, *CR, NewBasisBack));
+   }
+
+   // Concatenate PsiWindowVec.
+   LinearWavefunction PsiWindowVecFull;
+   for (auto const& PsiWindow : PsiWindowVec)
+      PsiWindowVecFull.push_back(PsiWindow);
+
+   return PsiWindowVecFull;
+}
+
 // Apply the "N_Lambda" matrix onto an "F" vector:
 // see Eq. (A6) in Van Damme et al., Phys. Rev. Research 3, 013078.
 std::vector<std::complex<double>>
@@ -169,19 +228,19 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      double KMax = 0;
-      double KMin = 0;
+      double KMax = 1;
+      double KMin = -1;
       int KNum = 1;
       std::string InputPrefix;
+      std::string OutputFilename;
       int InputDigits = -1;
       double Tol = 1e-10;
       double ExternalWeightTol = 1e-5;
-      std::string OutputFilename;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
+         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
          ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to use")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k])")
@@ -201,7 +260,7 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help"))
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || vm.count("knum") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
@@ -214,34 +273,50 @@ int main(int argc, char** argv)
 
       mp_pheap::InitializeTempPHeap();
 
+      CHECK(KNum > 1);
+
       double KStep = (KMax-KMin)/(KNum-1);
+
       if (InputDigits == -1)
          InputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
 
       if (Verbose > 1)
          std::cout << "Loading wavefunctions..." << std::endl;
 
-      // Read input wavefunctions.
-      std::vector<EAWavefunction> PsiVec;
-      for (int n = 0; n < KNum; ++n)
+      // Load first wavefunction: we do this to get the left and right
+      // boundaries and the unit cell size.
+      InfiniteWavefunctionLeft PsiLeft;
+      InfiniteWavefunctionRight PsiRight;
+      int UCSize;
       {
-         std::string InputFilename = InputPrefix + ".k" + formatting::format_digits(KMin + KStep*n, InputDigits);
+         std::string InputFilename = InputPrefix + ".k" + formatting::format_digits(KMin, InputDigits);
          pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
-         PsiVec.push_back(InPsi->get<EAWavefunction>());
-         // We only handle single-site EAWavefunctions at the moment.
-         CHECK(PsiVec.back().window_size() == 1);
-      }
+         EAWavefunction Psi = InPsi->get<EAWavefunction>();
 
-      if (Verbose > 1)
-         std::cout << "Calculating B-matrices..." << std::endl;
+         PsiLeft = Psi.Left;
+         PsiRight = Psi.Right;
+         UCSize = PsiLeft.size();
+
+         CHECK(PsiRight.size() == UCSize);
+         CHECK(Psi.WindowVec.size() == UCSize);
+      }
 
       // A vector for each position at the unit cell, which contains a vector
       // of each B matrix for that unit cell position.
-      std::vector<std::vector<StateComponent>> BSymVec(PsiVec.back().Left.size());
+      std::vector<std::vector<StateComponent>> BSymVec(UCSize);
       std::vector<std::complex<double>> ExpIKVec;
-
-      for (EAWavefunction Psi : PsiVec)
+      for (int n = 0; n < KNum; ++n)
       {
+         // Load wavefunction.
+         std::string InputFilename = InputPrefix + ".k" + formatting::format_digits(KMin + KStep*n, InputDigits);
+         pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
+         EAWavefunction Psi = InPsi->get<EAWavefunction>();
+
+         // We only handle single-site EAWavefunctions at the moment.
+         CHECK(Psi.window_size() == 1);
+
+         // TODO: Check each wavefunction has the same left/right boundaries.
+
          ExpIKVec.push_back(Psi.ExpIK);
 
          auto BSym = BSymVec.begin();
@@ -331,11 +406,13 @@ int main(int argc, char** argv)
          }
       }
 
-      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N);
+      if (Lambda == N/2)
+         PANIC("Cannot localize wavepacket");
 
-      // Print the norm of the B-matrices in WPVec for each unit cell.
       if (Verbose > 1)
       {
+         // Print the norm of the B-matrices in WPVec for each unit cell.
+         std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N);
          std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
          std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
          int i = 0;
@@ -347,6 +424,31 @@ int main(int argc, char** argv)
             ++i;
          }
       }
+
+      if (Verbose > 1)
+         std::cout << "Constructing window..." << std::endl;
+
+      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, 2*Lambda);
+      LinearWavefunction PsiWindowLinear = ConstructPsiWindow(PsiLeft, PsiRight, WPVec);
+
+      if (Verbose > 1)
+         std::cout << "Orthogonalizing window..." << std::endl;
+      MatrixOperator I = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
+      WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
+
+      // FIXME: Normalize the wavefunction.
+
+      if (Verbose > 1)
+         std::cout << "Saving wavefunction..." << std::endl;
+      // TODO: Is -Lambda*UCSize the correct offset?
+      IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
+
+      MPWavefunction Wavefunction;
+      Wavefunction.Wavefunction() = std::move(PsiOut);
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+      Wavefunction.SetDefaultAttributes();
+      pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
+      pheap::ExportHeap(OutputFilename, PsiPtr);
    }
    catch (prog_opt::error& e)
    {

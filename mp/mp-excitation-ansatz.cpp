@@ -204,6 +204,7 @@ int main(int argc, char** argv)
          // Save wavefunction.
          if (OutputPrefix != "")
          {
+            // TODO: Add ability to save higher excitations.
             int Index = (NumEigen-1) * PackH.size();
             EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
 
