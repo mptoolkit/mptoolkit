@@ -62,7 +62,7 @@
 // AttributeList
 // HistoryLog
 
-PStream::VersionTag MPWavefunction::VersionT(7);
+PStream::VersionTag MPWavefunction::VersionT(8);
 
 PStream::ipstream&
 operator>>(PStream::ipstream& in, MPWavefunction& Psi)
