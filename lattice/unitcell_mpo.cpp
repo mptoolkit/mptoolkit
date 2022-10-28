@@ -395,3 +395,9 @@ UnitCellMPO translate(UnitCellMPO x, int Sites)
    Result.translate(Sites);
    return Result;
 }
+
+UnitCellMPO gauge_flip(UnitCellMPO const& x)
+{
+   BasicFiniteMPO Flipped = gauge_flip(x.MPO());
+   return UnitCellMPO(x.GetSiteList(), Flipped, x.Commute(), x.offset(), x.description(), x.coarse_grain_factor());
+}

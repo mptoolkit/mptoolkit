@@ -25,6 +25,7 @@
 #define MPTOOLKIT_WAVEFUNCTION_MPWAVEFUNCTION_H
 
 #include "infinitewavefunctionleft.h"
+#include "infinitewavefunctionright.h"
 #include "ibc.h"
 #include "ea.h"
 #include "finitewavefunctionleft.h"
@@ -36,8 +37,9 @@
 
 typedef boost::variant<InfiniteWavefunctionLeft,
 		       IBCWavefunction,
-                       EAWavefunction,
-		       FiniteWavefunctionLeft> WavefunctionTypes;
+		       FiniteWavefunctionLeft,
+		       InfiniteWavefunctionRight,
+                       EAWavefunction> WavefunctionTypes;
 
 class InvalidWavefunction : public std::runtime_error
 {

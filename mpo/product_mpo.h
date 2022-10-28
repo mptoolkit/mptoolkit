@@ -163,6 +163,8 @@ ProductMPO inv_adjoint(ProductMPO const& x);
 // constructs a ProductMPO as a repeated string of some BasicFiniteMPO
 ProductMPO string(BasicFiniteMPO const& Op);
 
+ProductMPO gauge_flip(ProductMPO const& Op);
+
 // Constructs a ProductMPO as the infinite product of translations of Op.
 // Op.size() must be an integer multiple of UnitCellSize,
 // and the local basis of Op[i] must be the same as the local basis of Op[i%UnitCellSize]

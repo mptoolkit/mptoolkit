@@ -161,8 +161,7 @@ int main(int argc, char** argv)
 
          std::cout << "Solving fixed-point Hamiltonian..." << std::endl;
          StateComponent BlockHamL = Initial_E(HamMPOLeft, PsiLeft.Basis1());
-         std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPOLeft,
-                                                               GMRESTol, Verbose);
+         std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPOLeft, GMRESTol, Verbose);
          std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
          BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
@@ -171,8 +170,7 @@ int main(int argc, char** argv)
             HamMPORight = repeat(HamMPORight, PsiRight.size() / HamMPORight.size());
 
          StateComponent BlockHamR = Initial_F(HamMPORight, PsiRight.Basis2());
-         std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamMPORight,
-                                                                 GMRESTol, Verbose);
+         std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPORight, GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 

@@ -73,6 +73,10 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // returns the orthogonality fidelity.  Normally this should be epsilon
       double orthogonality_fidelity() const;
 
+      void SetDefaultAttributes(AttributeList& A) const;
+
+      static std::string Type;
+
       static PStream::VersionTag VersionT;
 
       friend PStream::ipstream& operator>>(PStream::ipstream& in,

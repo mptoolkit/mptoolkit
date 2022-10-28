@@ -46,7 +46,14 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
                      ProductMPO const& StringOp,
                      double tol = 1E-14, int Verbose = 0);
 
-// The returned eigenvector is in the Basis2() of Psi1/Psi2.
+// this version gets the N largest magnitude eigenvectors.  Parameter N comes first to avoid confusion with default
+// arguments and get_left_transfer_eigenvector
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                     ProductMPO const& StringOp,
+                     double tol = 1E-14, int Verbose = 0);
+
+// Get the right eigenvector.  The returned eigenvector is in the Basis2() of Psi1/Psi2.
 std::tuple<std::complex<double>, MatrixOperator>
 get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                       ProductMPO const& StringOp,
@@ -62,6 +69,7 @@ get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const&
                        ProductMPO const& StringOp,
                        double tol = 1E-14, int Verbose = 0);
 
+// version that uses StringOp == identity
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                        double tol = 1E-14, int Verbose = 0);

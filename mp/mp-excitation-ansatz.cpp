@@ -198,7 +198,7 @@ int main(int argc, char** argv)
                std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
                std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
             }
-            std::cout << std::setw(20) << formatting::format_complex(remove_small_imag(*E)) << std::endl;
+            std::cout << std::setw(20) << std::real(*E) << std::endl;
          }
 
          // Save wavefunction.

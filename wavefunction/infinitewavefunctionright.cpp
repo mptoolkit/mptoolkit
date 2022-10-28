@@ -40,6 +40,8 @@ extern double const ArnoldiTol;
 extern double const InverseTol;
 extern double const OrthoTol;
 
+std::string InfiniteWavefunctionRight::Type = "InfiniteWavefunctionRight";
+
 PStream::VersionTag
 InfiniteWavefunctionRight::VersionT(1);
 
@@ -387,6 +389,14 @@ InfiniteWavefunctionRight::rotate_right(int Count)
 }
 
 void
+InfiniteWavefunctionRight::SetDefaultAttributes(AttributeList& A) const
+{
+   A["WavefunctionType"] = "InfiniteRightCanonical";
+   A["UnitCellSize"] = this->size();
+   A["QShift"] = this->qshift();
+}
+
+void
 InfiniteWavefunctionRight::check_structure() const
 {
    this->CanonicalWavefunctionBase::check_structure();
@@ -423,6 +433,11 @@ void inplace_qshift(InfiniteWavefunctionRight& Psi, QuantumNumbers::QuantumNumbe
 
 InfiniteWavefunctionRight
 reflect(InfiniteWavefunctionLeft const& Psi)
+{
+   PANIC("not implemented");
+}
+
+void inplace_reflect(InfiniteWavefunctionRight& Psi)
 {
    PANIC("not implemented");
 }

@@ -71,8 +71,8 @@ double const DefaultTol = 1E-14;
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
-              BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-              MatrixOperator const& RightIdentity,
+              BasicTriangularMPO const& Op, MatrixOperator const& Identity,
+              MatrixOperator const& Rho,
               bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
               double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
@@ -82,66 +82,113 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 void
 SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                     LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
-                    BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-                    MatrixOperator const& RightIdentity,
+                    BasicTriangularMPO const& Op, MatrixOperator const& Identity,
+                    MatrixOperator const& Rho,
                     std::complex<double> lambda,
                     bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
                     double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
+// MPO solver for 'simple' triangular MPO's.  These are a bit mis-named,
+// they are not so simple, but refers to an MPO that has no momentum dependence,
+// and if there are any diagonal components they are proportional to the identity,
+// with either prefactor 1.0 or |prefactor| < 1.0
 
-//
-// 'Simple' solvers, for first order operators (eg Hamiltonians).  Return value is
-// the eigenvalue per wavefunction unit cell.  The wavefunction must be in the appropriate
-// left or right canonical form.  Prefer the versions that take an InfiniteWavefunctionLeft/Right
-//
+void
+SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
+                   LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                   BasicTriangularMPO const& Op,
+                   MatrixOperator const& Identity,
+                   MatrixOperator const& Rho, bool NeedFinalMatrix,
+                   int Degree, double Tol,
+                   double UnityEpsilon, int Verbose);
+
+void
+SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
+                   LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                   BasicTriangularMPO const& Op,
+                   MatrixOperator const& Identity,
+                   MatrixOperator const& Rho, bool NeedFinalMatrix,
+                   int Degree, double Tol,
+                   double UnityEpsilon, int Verbose);
+
+// Hamiltonian operators.  These are not necessarily strictly first order, so
+// it is implemented as the fixed point polynomial evaluated at n=0.
 
 std::complex<double>
-SolveSimpleMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                       MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+                   BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
                     QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                     MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
-SolveSimpleMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
+                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+//
+// Example code for first order operators.  These work for almost all Hamiltonian operators,
+// although in practice we use the SimpleMPO variants above since some exotic cases (eg gauge fields)
+// end up having a higher order MPO, although the final expectation value is linear.
+// This code is left for demonstration purposes.
+//
+
+std::complex<double>
+SolveFirstOrderMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+                        QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                        MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveFirstOrderMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
                     BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
-SolveSimpleMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
+SolveFirstOrderMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                      MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
-SolveSimpleMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
+SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
                      BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
-void
-SolveSimpleMPO_Left2(StateComponent& E2, StateComponent const& E1,
-                     LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     LinearWavefunction const& PsiTri,
-                     QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                     MatrixOperator const& Ident, MatrixOperator const& Rho,
-                     std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+// Solvers for excitation ansatz wavefunctions, where PsiTri is the
+// "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
 
 void
-SolveStringMPO_Left2(MatrixOperator& E1, MatrixOperator const& E0,
-                     LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                     LinearWavefunction const& PsiTri,
-                     QuantumNumber const& QShift, ProductMPO const& Op,
-                     MatrixOperator const& Ident, MatrixOperator const& Rho,
-                     std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveFirstOrderMPO_EA_Left(StateComponent& E2, StateComponent const& E1,
+                           LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                           LinearWavefunction const& PsiTri,
+                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                           MatrixOperator const& Ident, MatrixOperator const& Rho,
+                           std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveSimpleMPO_Right2(StateComponent& F2, StateComponent const& F1,
-                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      LinearWavefunction const& PsiTri,
-                      QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                      MatrixOperator const& Rho, MatrixOperator const& Ident,
-                      std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveStringMPO_EA_Left(MatrixOperator& E1, MatrixOperator const& E0,
+                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                       LinearWavefunction const& PsiTri,
+                       QuantumNumber const& QShift, ProductMPO const& Op,
+                       MatrixOperator const& Ident, MatrixOperator const& Rho,
+                       std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveStringMPO_Right2(MatrixOperator& F1, MatrixOperator const& F0,
-                      LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                      LinearWavefunction const& PsiTri,
-                      QuantumNumber const& QShift, ProductMPO const& Op,
-                      MatrixOperator const& Rho, MatrixOperator const& Ident,
-                      std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveFirstOrderMPO_EA_Right(StateComponent& F2, StateComponent const& F1,
+                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                            LinearWavefunction const& PsiTri,
+                            QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                            MatrixOperator const& Rho, MatrixOperator const& Ident,
+                            std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
+                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                        LinearWavefunction const& PsiTri,
+                        QuantumNumber const& QShift, ProductMPO const& Op,
+                        MatrixOperator const& Rho, MatrixOperator const& Ident,
+                        std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 #endif

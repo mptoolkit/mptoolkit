@@ -163,6 +163,15 @@ void deparallelize(BasicTriangularMPO& Op)
    }
 }
 
+BasicTriangularMPO gauge_flip(BasicTriangularMPO const& Op)
+{
+   GenericMPO OpFlipped = gauge_flip(Op.data());
+   BasicTriangularMPO Result(Op.size());
+   for (int i = 0; i < Result.size(); ++i)
+      Result[i] = OpFlipped[i];
+   return Result;
+}
+
 void optimize(BasicTriangularMPO& Op)
 {
    switch (BasicTriangularMPOOptimization)

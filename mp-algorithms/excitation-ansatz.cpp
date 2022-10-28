@@ -57,6 +57,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
    std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
 
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
+   // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
    // and PsiRight: for use with SolveSimpleMPOLeft/Right2.
    // If the leading eigenvalue of the left/right mixed transfer matrix
    // has magnitude < 1, we do not need to orthogonalize the E/F matrix
@@ -118,7 +119,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
 
    // Solve the left Hamiltonian environment.
    BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-   std::complex<double> LeftEnergy = SolveSimpleMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
@@ -126,7 +127,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
 
    // Solve the right Hamiltonian environment.
    BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
-   std::complex<double> RightEnergy = SolveSimpleMPO_Right(BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 
@@ -280,10 +281,10 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    // one B-matrix on the top.
    StateComponent BlockHamLTri, BlockHamRTri;
 
-   SolveSimpleMPO_Left2(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                        PsiLeft.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
-   SolveSimpleMPO_Right2(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                         PsiRight.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
+   SolveFirstOrderMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                              PsiLeft.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
+   SolveFirstOrderMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                               PsiRight.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
 
    // Shift the phases by one unit cell.
    BlockHamLTri *= ExpIK;
@@ -352,10 +353,10 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       std::complex<double> Alpha = 10.0;
 
       MatrixOperator E, F;
-      SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
-      SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                            PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+      SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                             PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+      SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                              PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
       E *= ExpIK;
       F *= ExpIK;
@@ -430,9 +431,9 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque) const
    LinearWavefunction PsiTri = this->ConstructPsiTri(BDeque);
 
    MatrixOperator E, F;
-   SolveStringMPO_Left2(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
                         PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
-   SolveStringMPO_Right2(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+   SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
                          PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
 
    E *= ExpIK;
@@ -543,7 +544,6 @@ HEff::SetK(double k)
 {
    ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
 }
-
 
 PackHEff::PackHEff(HEff H_)
     : H(H_)

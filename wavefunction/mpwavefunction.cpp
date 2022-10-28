@@ -19,7 +19,7 @@
 
 #include "mpwavefunction.h"
 
-// default version is 7.
+// default version is 8.
 //
 // Versions 1 and 2 don't contain an AttributeList (although older versions of
 // InfiniteWavefunction do, but it isn't used anywhere so no need to keep it).
@@ -53,7 +53,12 @@
 // HistoryLog
 //
 // Version 7:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, EAWavefunction, FiniteWavefunctionLeft>
+// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
+// AttributeList
+// HistoryLog
+//
+// Version 8:
+// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
 // AttributeList
 // HistoryLog
 
@@ -126,7 +131,13 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
    }
    else if (Version == 7)
    {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, EAWavefunction, FiniteWavefunctionLeft> x;
+      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight> x;
+      in >> x;
+      Psi.Psi_ = x;
+   }
+   else if (Version == 8)
+   {
+      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction> x;
       in >> x;
       Psi.Psi_ = x;
    }

@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "ibc.h"
+#include "mpwavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/transfer.h"
 
@@ -29,6 +30,8 @@
 //
 // Version 1:
 // Base class CanonicalWavefunctionBase
+// LeftU
+// RightU
 
 // The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
 double const OverlapTol = 1e-8;
@@ -194,9 +197,19 @@ WavefunctionSectionLeft::check_structure() const
 // InfiniteWavefunctionLeft Left
 // WavefunctionSectionLeft Window
 // InfiniteWavefunctionRight Right
+//
+// Version 2:
+// int WindowLeftSites
+// int WindowRightSites
+// int WindowOffset
+// string WavefunctionLeftFile
+// string WavefunctionRightFile
+// InfiniteWavefunctionLeft Left (only if WavefunctionLeftFile is empty)
+// WavefunctionSectionLeft Window
+// InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
 
 PStream::VersionTag
-IBCWavefunction::VersionT(1);
+IBCWavefunction::VersionT(2);
 
 std::string const IBCWavefunction::Type = "IBCWavefunction";
 
@@ -261,9 +274,17 @@ PStream::opstream& operator<<(PStream::opstream& out, IBCWavefunction const& Psi
    out << Psi.WindowLeftSites;
    out << Psi.WindowRightSites;
    out << Psi.WindowOffset;
-   out << Psi.Left;
+   out << Psi.WavefunctionLeftFile;
+   out << Psi.WavefunctionRightFile;
+
+   if (Psi.WavefunctionLeftFile.empty())
+      out << Psi.Left;
+
    out << Psi.Window;
-   out << Psi.Right;
+
+   if (Psi.WavefunctionRightFile.empty())
+      out << Psi.Right;
+
    return out;
 }
 
@@ -272,17 +293,39 @@ PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi)
    int Version = in.read<int>();
    PStream::VersionSentry Sentry(in, IBCWavefunction::VersionT, Version);
 
-   if (Version != 1)
-   {
-      PANIC("This program is too old to read this wavefunction, expected version = 1")(Version);
-   }
-
    in >> Psi.WindowLeftSites;
    in >> Psi.WindowRightSites;
    in >> Psi.WindowOffset;
-   in >> Psi.Left;
-   in >> Psi.Window;
-   in >> Psi.Right;
+   if (Version == 1)
+   {
+      in >> Psi.Left;
+      in >> Psi.Window;
+      in >> Psi.Right;
+   }
+   else if (Version == 2)
+   {
+      in >> Psi.WavefunctionLeftFile;
+      in >> Psi.WavefunctionRightFile;
+      if (Psi.WavefunctionLeftFile.empty())
+         in >> Psi.Left;
+      else
+      {
+         pvalue_ptr<MPWavefunction> PsiLeft = pheap::ImportHeap(Psi.WavefunctionLeftFile);
+         Psi.Left = PsiLeft->get<InfiniteWavefunctionLeft>();
+      }
+      in >> Psi.Window;
+      if (Psi.WavefunctionRightFile.empty())
+         in >> Psi.Right;
+      else
+      {
+         pvalue_ptr<MPWavefunction> PsiRight = pheap::ImportHeap(Psi.WavefunctionRightFile);
+         Psi.Right = PsiRight->get<InfiniteWavefunctionRight>();
+      }
+   }
+   else
+   {
+      PANIC("This program is too old to read this wavefunction, expected version <= 2")(Version);
+   }
 
    return in;
 }
@@ -312,6 +355,8 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["WindowOffset"] = this->window_offset();
    A["LeftUnitCellSize"] = Left.size();
    A["RightUnitCellSize"] = Left.size();
+   A["LeftWindowFile"] = this->LeftWindowFile();
+   A["RightWindowFile"] = this->RightWindowFile();
 }
 
 // This class provides an "iterator" which runs over the A-matrices in an IBC

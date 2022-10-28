@@ -240,7 +240,7 @@ BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);
 
 // sum_string
 // Constsructs a BasicTriangularMPO of the form
-// A(0)*C(1) + A(0)*B(1)*C(2) + A(0)*B(1)*B(2)*C(3) + ....
+// A*C + A*B*C + A*B*B*C + ...
 // plus translations.
 // PRECONDITION(JW.qn2() == Op1.qn1() && Op1.qn2() == String.qn1() && String.qn2() == Op1.qn1()
 // && is_scalar(Op2.qn2()))
@@ -253,6 +253,22 @@ BasicTriangularMPO sum_string(SiteListType const& SiteList, BasicFiniteMPO const
 BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_,
                          int UnitCellSize,
                          QuantumNumbers::QuantumNumber q);
+
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String_, UnitCellMPO const& Op2_);
+
+// 5-term variation of sum_string
+BasicTriangularMPO sum_string(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op1,
+                         BasicFiniteMPO const& String1, BasicFiniteMPO const& Op2,
+                         BasicFiniteMPO const& String2, BasicFiniteMPO const& Op3,
+                         int UnitCellSize, QuantumNumbers::QuantumNumber q);
+
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String1_, UnitCellMPO const& Op2_,
+                              UnitCellMPO const& String2_, UnitCellMPO const& Op3_,
+                              int UnitCellSize,
+                              QuantumNumbers::QuantumNumber q);
+
+BasicTriangularMPO sum_string(UnitCellMPO const& Op1_, UnitCellMPO const& String1_, UnitCellMPO const& Op2_,
+                              UnitCellMPO const& String2_, UnitCellMPO const& Op3_);
 
 // sum_string_dot
 // variant of sum_string where we take the (non-abelian) dot product between operators A and C.
