@@ -28,26 +28,62 @@
 // fixing their relative phase.
 double const TraceTol = 1e-8;
 
-HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
-           QuantumNumbers::QuantumNumber const& Q_, ProductMPO const& StringOp_,
-           double k, double GMRESTol_, int Verbose_)
-   : PsiLeft(Psi_), PsiRight(Psi_), HamMPO(HamMPO_), Q(Q_),
+// Tolerance for the overlap of PsiLeft/PsiRight when calculating the leading
+// eigenvectors of the mixed transfer matrix: we treat the states as orthogonal
+// if the overlap - 1 is greater than this value.
+double const OverlapTol = 1e-8;
+
+HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
+           BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
+           ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
+   : PsiLeft(PsiLeft_), HamMPO(HamMPO_), Q(Q_),
      StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
 {
+   CHECK_EQUAL(PsiLeft.size(), PsiRight_.size());
+   CHECK_EQUAL(PsiLeft.qshift(), PsiRight_.qshift());
+
    this->SetK(k);
+
+   // Get PsiRight in right canonical form.
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   LinearWavefunction PsiLinear;
+   std::tie(U, D, PsiLinear) = get_right_canonical(PsiRight_);
+
+   PsiRight = InfiniteWavefunctionRight(U*D, PsiLinear, PsiRight_.qshift());
 
    // Get PsiLeft and PsiRight as LinearWavefunctions.
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
-
-   MatrixOperator U;
-   RealDiagonalOperator D;
-   std::tie(U, D, PsiLinearRight) = get_right_canonical(PsiRight);
-   PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
+   std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
 
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
    // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
-   RhoL = delta_shift(PsiLeft.lambda_r(), PsiLeft.qshift());
-   RhoR = PsiLeft.lambda_r();
+   // If the leading eigenvalue of the left/right mixed transfer matrix
+   // has magnitude < 1, we do not need to orthogonalize the E/F matrix
+   // elements against its eigenvectors, so we set them to blank so that they
+   // are ignored by SolveSimpleMPOLeft/Right2.
+   std::complex<double> OverlapLR, OverlapRL;
+
+   std::tie(OverlapLR, RhoLRLeft, RhoLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift());
+   RhoLRRight = delta_shift(RhoLRRight, PsiLeft.qshift());
+   if (Verbose > 1)
+      std::cout << "LR overlap = " << OverlapLR << std::endl;
+
+   std::tie(OverlapRL, RhoRLLeft, RhoRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift());
+   RhoRLLeft = delta_shift(RhoRLLeft, adjoint(PsiRight.qshift()));
+   if (Verbose > 1)
+      std::cout << "RL overlap = " << OverlapRL << std::endl;
+
+   if (std::abs(OverlapLR - std::conj(OverlapRL)) > OverlapTol)
+      PANIC("OverlapLR and conj(OverlapRL) are different!");
+
+   if (std::abs(std::abs(OverlapLR) - 1.0) > OverlapTol)
+   {
+      RhoLRLeft = MatrixOperator();
+      RhoLRRight = MatrixOperator();
+      RhoRLLeft = MatrixOperator();
+      RhoRLRight = MatrixOperator();
+   }
 
    if (!StringOp.is_null())
    {
@@ -55,8 +91,24 @@ HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMP
       // matrices with the string operator corresponding to Ty.
       std::tie(std::ignore, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
       TyLRRight = delta_shift(TyLRRight, PsiLeft.qshift());
+      if (Verbose > 1)
+         std::cout << "TyLR overlap = " << OverlapLR << std::endl;
+
       std::tie(std::ignore, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
       TyRLLeft = delta_shift(TyRLLeft, adjoint(PsiRight.qshift()));
+      if (Verbose > 1)
+         std::cout << "TyRL overlap = " << OverlapRL << std::endl;
+
+      if (std::abs(OverlapLR - std::conj(OverlapRL)) > OverlapTol)
+         PANIC("OverlapLR and conj(OverlapRL) are different!");
+
+      if (std::abs(std::abs(OverlapLR) - 1.0) > OverlapTol)
+      {
+         TyLRLeft = MatrixOperator();
+         TyLRRight = MatrixOperator();
+         TyRLLeft = MatrixOperator();
+         TyRLRight = MatrixOperator();
+      }
    }
 
    // Ensure HamMPO is the correct size.
@@ -74,11 +126,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMP
 
    // Solve the right Hamiltonian environment.
    BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
-   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
-   Rho = delta_shift(Rho, adjoint(PsiRight.qshift()));
-
-   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiLinearRight, PsiRight.qshift(),
-                                                                HamMPO, Rho, GMRESTol, Verbose-1);
+   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 
@@ -88,7 +136,19 @@ HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMP
    // and one contribution from the "bond energy", which is the energy
    // contribution from the terms in the Hamiltonian which cross the bond at
    // a unit cell boundary.
-   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamR);
+   // Since we have two different wavefunctions which could have incompatible
+   // boundary bases (even if they come from the same state, since we
+   // transformed PsiRight to right canonical form), we must calculate the
+   // right canonical form of PsiLeft in such a way to preserve this boundary.
+   std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
+   PsiLinear.set_front(prod(U, PsiLinear.get_front()));
+
+   StateComponent BlockHamLR = Initial_F(HamMPO, PsiLinear.Basis2());
+   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+   Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
+
+   SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
+   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
 
    // An alternate way to calculate the bond energy using only the right
    // block Hamiltonian by essentially setting the upper-right element in
@@ -106,92 +166,9 @@ HEff::HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMP
    if (Verbose > 0)
       std::cout << "Bond energy = " << BondEnergy << std::endl;
 
-   BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
-
-   this->Initialize();
-}
-
-HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
-           BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-           ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
-   : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_), Q(Q_),
-     StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
-{
-   CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
-   CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
-
-   this->SetK(k);
-
-   // Get PsiLeft and PsiRight as LinearWavefunctions.
-   std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
-
-   MatrixOperator U;
-   RealDiagonalOperator D;
-   std::tie(U, D, PsiLinearRight) = get_right_canonical(PsiRight);
-   PsiLinearRight.set_front(prod(U, PsiLinearRight.get_front()));
-
-   // Since the leading eigenvalue of the left/right mixed transfer matrix
-   // has magnitude < 1, we do not need to orthogonalize the E/F matrix
-   // elements against its eigenvectors.
-   RhoL = MatrixOperator();
-   RhoR = MatrixOperator();
-
-   if (!StringOp.is_null())
-   {
-      TyLRLeft = MatrixOperator();
-      TyLRRight = MatrixOperator();
-      TyRLLeft = MatrixOperator();
-      TyRLRight = MatrixOperator();
-   }
-
-   // Ensure HamMPO is the correct size.
-   if (HamMPO.size() < PsiLeft.size())
-      HamMPO = repeat(HamMPO, PsiLeft.size() / HamMPO.size());
-   CHECK_EQUAL(HamMPO.size(), PsiLeft.size());
-
-   // Solve the left Hamiltonian environment.
-   BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
-   if (Verbose > 0)
-      std::cout << "Left energy = " << LeftEnergy << std::endl;
-
-   BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
-
-   // Solve the right Hamiltonian environment.
-   BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
-   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
-   Rho = delta_shift(Rho, adjoint(PsiRight.qshift()));
-
-   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiLinearRight, PsiRight.qshift(),
-                                                                HamMPO, Rho, GMRESTol, Verbose-1);
-   if (Verbose > 0)
-      std::cout << "Right energy = " << RightEnergy << std::endl;
-
-   // Solve the right Hamiltonian environment for PsiLeft to find the "bond
-   // energy": see the comments above.
-   LinearWavefunction PsiLinear;
-   std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
-   PsiLinear.set_front(prod(U, PsiLinear.get_front()));
-
-   StateComponent BlockHamLR = Initial_F(HamMPO, PsiLinear.Basis2());
-   Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
-   Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
-
-   SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
-   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
-
-   if (Verbose > 0)
-      std::cout << "Bond energy = " << BondEnergy << std::endl;
-
    // Remove the contribution from the ground state energy density.
    BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
 
-   this->Initialize();
-}
-
-void
-HEff::Initialize()
-{
    // Get the null space matrices corresponding to each A-matrix in PsiLeft.
    for (StateComponent C : PsiLinearLeft)
       NullLeftDeque.push_back(NullSpace2(C));
@@ -260,7 +237,7 @@ HEff::Initialize()
             WARNING("The trace of TyR is below threshold, so Ty will have a spurious phase contribution.")(TyRTrace);
       }
       else
-         WARNING("Psi1 and Psi2 have different boundary bases, so Ty will have a spurious phase contribution.");
+         WARNING("TyL or TyR is not square, so Ty will have a spurious phase contribution.");
 
       // Only needed when adding TyEff to HEff.
 #if 0
@@ -304,9 +281,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    StateComponent BlockHamLTri, BlockHamRTri;
 
    SolveFirstOrderMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiLeft.qshift(), HamMPO, RhoL, RhoL, ExpIK, GMRESTol, Verbose-1);
+                              PsiLeft.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
    SolveFirstOrderMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                               PsiRight.qshift(), HamMPO, RhoR, RhoR, ExpIK, GMRESTol, Verbose-1);
+                               PsiRight.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
 
    // Shift the phases by one unit cell.
    BlockHamLTri *= ExpIK;
@@ -542,6 +519,23 @@ HEff::PackInitialize() const
    }
 
    return Result;
+}
+
+EAWavefunction
+HEff::ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const
+{
+   std::vector<WavefunctionSectionLeft> WindowVec;
+   auto NL = NullLeftDeque.begin();
+   auto X = XDeque.begin();
+   while (NL != NullLeftDeque.end())
+   {
+      LinearWavefunction Psi;
+      Psi.push_back(*NL);
+      WindowVec.push_back(WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), *X, Verbose-1));
+      ++NL, ++X;
+   }
+
+   return EAWavefunction(PsiLeft, WindowVec, PsiRight, ExpIK);
 }
 
 void

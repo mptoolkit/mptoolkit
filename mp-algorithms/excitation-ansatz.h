@@ -22,6 +22,7 @@
 
 #include "mpo/basic_triangular_mpo.h"
 #include "mps/packunpack.h"
+#include "wavefunction/ea.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 
@@ -41,15 +42,14 @@ struct HEff
    // of the excitation correspond to the same ground state Psi.
    HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
         QuantumNumbers::QuantumNumber const& Q_, ProductMPO const& StringOp_,
-        double k, double GMRESTol_, int Verbose_);
+        double k, double GMRESTol_, int Verbose_)
+      : HEff(Psi_, Psi_, HamMPO_, Q_, StringOp_, k, GMRESTol_, Verbose_)
+   {}
 
-   // Initializer for the case where PsiLeft and PsiRight are two DIFFERENT ground states.
+   // Initializer for the case where PsiLeft and PsiRight are two (possibly different) ground states.
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
         BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
         ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_);
-
-   // This function performs the part of the initialization common to both cases above.
-   void Initialize();
 
    // Apply the effective Hamiltonian to XDeque.
    std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque) const;
@@ -74,8 +74,11 @@ struct HEff
    // Update the value of k.
    void SetK(double k);
 
+   // Construct an EAWavefunction for the supplied X-matrices.
+   EAWavefunction ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const;
+
    InfiniteWavefunctionLeft PsiLeft;
-   InfiniteWavefunctionLeft PsiRight;
+   InfiniteWavefunctionRight PsiRight;
    BasicTriangularMPO HamMPO;
    QuantumNumbers::QuantumNumber Q;
    ProductMPO StringOp;
@@ -87,8 +90,9 @@ struct HEff
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;
-   // Eigenvectors of the left/right mixed transfer matrices.
-   MatrixOperator RhoL, RhoR;
+   // Left/right eigenvectors of the left/right mixed transfer matrices.
+   MatrixOperator RhoLRLeft, RhoLRRight;
+   MatrixOperator RhoRLLeft, RhoRLRight;
    // Eigenvectors of the left/right non-mixed (i.e. left/left and right/right)
    // transfer matrices with the Ty operator.
    MatrixOperator TyL, TyR;

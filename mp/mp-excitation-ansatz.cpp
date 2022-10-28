@@ -51,16 +51,15 @@ int main(int argc, char** argv)
       QuantumNumbers::QuantumNumber Q;
       std::string String;
       ProductMPO StringOp;
+      std::string OutputPrefix;
+      int OutputDigits = -1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax,k", prog_opt::value(&KMax),
-          FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin),
-          FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
-         ("knum", prog_opt::value(&KNum),
-          "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
+         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
           FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
          ("tol", prog_opt::value(&Tol),
@@ -72,8 +71,9 @@ int main(int argc, char** argv)
          // "The quantum number sector for the excitation [default identity]")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "Increase verbosity (can be used more than once)")
+         ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
+         ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -138,6 +138,9 @@ int main(int argc, char** argv)
 
       double KStep = (KMax-KMin)/(KNum-1);
 
+      if (OutputDigits == -1)
+         OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+
       // Initialize the effective Hamiltonian.
       HEff H;
       if (vm.count("psi2"))
@@ -196,6 +199,25 @@ int main(int argc, char** argv)
                std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
             }
             std::cout << std::setw(20) << std::real(*E) << std::endl;
+         }
+
+         // Save wavefunction.
+         if (OutputPrefix != "")
+         {
+            int Index = (NumEigen-1) * PackH.size();
+            EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+
+            MPWavefunction Wavefunction;
+            Wavefunction.Wavefunction() = std::move(PsiEA);
+            Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+            Wavefunction.SetDefaultAttributes();
+            Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+            // Use the value of k relative to the lattice unit cell.
+            double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
+            std::string FName = OutputPrefix + ".k" + formatting::format_digits(KPrint, OutputDigits);
+
+            pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
+            pheap::ExportHeap(FName, PsiPtr);
          }
       }
    }

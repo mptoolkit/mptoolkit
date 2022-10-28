@@ -139,6 +139,13 @@ get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const&
 }
 
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                       double tol, int Verbose)
+{
+   return get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), QShift), tol, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
                        QuantumNumber const& q, double tol, int Verbose)
 {

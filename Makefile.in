@@ -124,7 +124,7 @@ mpoobj = operator_component.o generic_mpo.o basic_finite_mpo.o basic_triangular_
 mpsobj = state_component.o density.o
 
 wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunctionleft.o \
-                  infinitewavefunctionright.o ibc.o finitewavefunctionleft.o \
+                  infinitewavefunctionright.o ibc.o ea.o finitewavefunctionleft.o \
                   mpwavefunction.o operator_actions.o \
                   attributes.o history.o
 
@@ -226,7 +226,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-ibc-join \
-                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation mp-excitation-ansatz
+                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation mp-excitation-ansatz mp-ibc-wavepacket
 
 
 benchmarks = benchtripleprod
@@ -577,6 +577,7 @@ LIBS_mp-imoments-cross = $(LIBARPACK)
 LIBS_mp-ibc-overlap = $(LIBARPACK)
 LIBS_mp-ibc-correlation = $(LIBARPACK)
 LIBS_mp-excitation-ansatz = $(LIBARPACK)
+LIBS_mp-ibc-wavepacket = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

@@ -71,6 +71,10 @@ get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const&
 
 // version that uses StringOp == identity
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                       double tol = 1E-14, int Verbose = 0);
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
                        QuantumNumber const& q,
                        double tol = 1E-14, int Verbose = 0);

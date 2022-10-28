@@ -93,6 +93,27 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    out << "Number of states (left edge of window) = " << Psi.Window.Basis1().total_dimension() << '\n';
 }
 
+// TODO
+void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
+{
+   out << "Wavefunction is an excitation ansatz wavefunction in the left/left/right canonical basis.\n";
+   out << "Symmetry list = " << Psi.Left.GetSymmetryList() << '\n';
+   out << "Left semi-infinite strip unit cell size = " << Psi.Left.size() << '\n';
+   if (!Psi.Left.empty())
+   {
+      out << "Quantum number per unit cell (left) = " << Psi.Left.qshift() << '\n';
+   }
+   out << "Right semi-infinite strip unit cell size = " << Psi.Right.size() << '\n';
+   if (!Psi.Right.empty())
+   {
+      out << "Quantum number per unit cell (right) = " << Psi.Right.qshift() << '\n';
+   }
+
+   out << "Window size = " << Psi.window_size() << '\n';
+   out << "ExpIK = " << Psi.ExpIK << '\n';
+   out << std::endl;
+}
+
 void ShowBasicInfo(FiniteWavefunctionLeft const& Psi, std::ostream& out)
 {
    out << "Finite wavefunction in the left canonical basis.\n";
@@ -220,6 +241,7 @@ struct ShowWavefunction : public boost::static_visitor<void>
    void operator()(InfiniteWavefunctionLeft const& Psi) const;
    void operator()(InfiniteWavefunctionRight const& Psi) const;
    void operator()(IBCWavefunction const& Psi) const;
+   void operator()(EAWavefunction const& Psi) const;
    void operator()(FiniteWavefunctionLeft const& Psi) const;
 };
 
@@ -311,6 +333,37 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
 
    if (ShowLocalBasis)
       ShowLocalBasisInfo(Psi.Window, std::cout);
+}
+
+// TODO
+void
+ShowWavefunction::operator()(EAWavefunction const& Psi) const
+{
+   std::sort(Partition.begin(), Partition.end());
+   if (Partition.empty())
+   {
+      // all partitions in the window
+      for (int i = 0; i <= Psi.Left.size(); ++i)
+         Partition.push_back(i);
+   }
+
+   if (ShowStates)
+      ShowStateInfo(Psi.Left, std::cout);
+
+   if (ShowBasis)
+      ShowBasisInfo(Psi.Left, std::cout);
+
+   if (ShowEntropy)
+      ShowEntropyInfo(Psi.Left, std::cout);
+
+   if (ShowDensity)
+      ShowDM(Psi.Left, std::cout);
+
+   if (ShowCasimir)
+      ShowCasimirInfo(Psi.Left, std::cout);
+
+   if (ShowLocalBasis)
+      ShowLocalBasisInfo(Psi.Left, std::cout);
 }
 
 void
