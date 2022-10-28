@@ -58,7 +58,6 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
 
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
    // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
-   // and PsiRight: for use with SolveSimpleMPOLeft/Right2.
    // If the leading eigenvalue of the left/right mixed transfer matrix
    // has magnitude < 1, we do not need to orthogonalize the E/F matrix
    // elements against its eigenvectors, so we set them to blank so that they
@@ -148,7 +147,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
    MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
-   SolveSimpleMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
    std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
 
    // An alternate way to calculate the bond energy using only the right

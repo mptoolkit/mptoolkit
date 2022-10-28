@@ -213,7 +213,8 @@ int main(int argc, char** argv)
             Wavefunction.SetDefaultAttributes();
             Wavefunction.Attributes()["Prefix"] = OutputPrefix;
             // Use the value of k relative to the lattice unit cell.
-            std::string FName = OutputPrefix + ".k" + formatting::format_digits(KMin + KStep*n, OutputDigits);
+            double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
+            std::string FName = OutputPrefix + ".k" + formatting::format_digits(KPrint, OutputDigits);
 
             pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
             pheap::ExportHeap(FName, PsiPtr);
