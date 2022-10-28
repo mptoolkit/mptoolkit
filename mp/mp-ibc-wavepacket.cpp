@@ -29,6 +29,7 @@
 #include "linearalgebra/arpack_wrapper.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
+#include <boost/math/special_functions/jacobi_theta.hpp>
 
 namespace prog_opt = boost::program_options;
 
@@ -233,6 +234,8 @@ int main(int argc, char** argv)
       int KNum = 1;
       std::string InputPrefix;
       std::string OutputFilename;
+      double Sigma = 0.0;
+      double KCenter = 0.0;
       int InputDigits = -1;
       double Tol = 1e-10;
       double ExternalWeightTol = 1e-5;
@@ -246,6 +249,8 @@ int main(int argc, char** argv)
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k])")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
+         ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width")
+         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
          ("tol", prog_opt::value(&Tol), FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
          ("external-tol,e", prog_opt::value(&ExternalWeightTol),
           FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", ExternalWeightTol).c_str())
@@ -304,7 +309,8 @@ int main(int argc, char** argv)
       // A vector for each position at the unit cell, which contains a vector
       // of each B matrix for that unit cell position.
       std::vector<std::vector<StateComponent>> BSymVec(UCSize);
-      std::vector<std::complex<double>> ExpIKVec;
+      std::vector<std::complex<double>> ExpIKVec(KNum);
+      std::vector<double> KVec(KNum);
       for (int n = 0; n < KNum; ++n)
       {
          // Load wavefunction.
@@ -317,7 +323,8 @@ int main(int argc, char** argv)
 
          // TODO: Check each wavefunction has the same left/right boundaries.
 
-         ExpIKVec.push_back(Psi.ExpIK);
+         ExpIKVec[n] = Psi.ExpIK;
+         KVec[n] = KMin + KStep*n;
 
          auto BSym = BSymVec.begin();
          // Here we use the left-gauge fixing condition.
@@ -409,6 +416,35 @@ int main(int argc, char** argv)
       if (Lambda == N/2)
          PANIC("Cannot localize wavepacket");
 
+      // Normalize F.
+      for (auto& F : FVec)
+         F /= sqrt(N);
+
+      // Convolute with momentum space Gaussian.
+      if (Sigma != 0.0)
+      {
+         if (Verbose > 1)
+            std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
+         auto K = KVec.begin();
+         auto F = FVec.begin();
+         //double Kappa = 1/2.0/std::pow(Sigma, 2);
+         while (F != FVec.end())
+         {
+            // Note that since we have a periodic domain in momentum space, we
+            // cannot just use a normal Gaussian, so we should use a suitable
+            // function defined on a periodic domain.
+            // The first one is the von Mises distribution, which is simplier to calculate.
+            //*F *= exp(Kappa*(cos(math_const::pi*(*K-KCenter))-1.0));
+            // The second one is the wrapped Gaussian function, which is the
+            // superposititon of Gaussian functions spaced by 2*pi: this can be
+            // calculated in terms of the Jacobi theta function.
+            // TODO: Check that the coefficients are correct.
+            *F *= 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*K-KCenter)),(0.5*std::pow(Sigma,2))/math_const::pi);
+            // TODO: Renormalize F.
+            ++K, ++F;
+         }
+      }
+
       if (Verbose > 1)
       {
          // Print the norm of the B-matrices in WPVec for each unit cell.
@@ -435,8 +471,6 @@ int main(int argc, char** argv)
          std::cout << "Orthogonalizing window..." << std::endl;
       MatrixOperator I = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
       WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
-
-      // FIXME: Normalize the wavefunction.
 
       if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
