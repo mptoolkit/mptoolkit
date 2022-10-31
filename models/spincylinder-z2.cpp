@@ -34,6 +34,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       int x = 0;
       int y = 4;
+      bool NoReflect = false;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -42,8 +43,11 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the spin", Spin).c_str())
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
+         ("noreflect", prog_opt::bool_switch(&NoReflect),
+          "don't include the spatial reflection operator (expensive for large width lattices)")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
+
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
@@ -55,20 +59,35 @@ int main(int argc, char** argv)
       OperatorDescriptions OpDescriptions;
       OpDescriptions.description("Z2 spin cylinder");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
+      OpDescriptions.add_cell_operators()
+         ("Trans"  , "translation by one site (rotation by 2*pi/y) in y direction",
+         "x = 0", [&x]()->bool{return x == 0;})
+         ("Ref"    , "reflection in y direction",
+         "x = 0, not present with --noreflect",
+         [&x, &NoReflect]()->bool{return x == 0 && !NoReflect;})
+         ;
       OpDescriptions.add_operators()
-         ("H_xx_x"  , "nearest neighbor spin coupling Sx Sx in the x direction")
-         ("H_yy_x"  , "nearest neighbor spin coupling Sy Sy in the x direction")
-         ("H_zz_x"  , "nearest neighbor spin coupling Sz Sz in the x direction")
-         ("H_xx_y"  , "nearest neighbor spin coupling Sx Sx in the y direction")
-         ("H_yy_y"  , "nearest neighbor spin coupling Sy Sy in the y direction")
-         ("H_zz_y"  , "nearest neighbor spin coupling Sz Sz in the y direction")
-         ("H_xx"    , "nearest neighbor spin coupling Sx Sx")
-         ("H_yy"    , "nearest neighbor spin coupling Sy Sy")
-         ("H_zz"    , "nearest neighbor spin coupling Sz Sz")
-         ("H_J1z"   , "same as H_zz")
-         ("H_J1t"   , "transverse spin exchange, H_xx + H_yy")
-         ("H_J1"    , "nearest neighbor spin exchange = H_J1z + H_J1t")
-         ("H_x"     , "magnetic field in the x direction")
+         ("H_xx_x" , "nearest neighbor spin coupling Sx Sx in the x direction")
+         ("H_yy_x" , "nearest neighbor spin coupling Sy Sy in the x direction")
+         ("H_zz_x" , "nearest neighbor spin coupling Sz Sz in the x direction")
+         ("H_xx_y" , "nearest neighbor spin coupling Sx Sx in the y direction")
+         ("H_yy_y" , "nearest neighbor spin coupling Sy Sy in the y direction")
+         ("H_zz_y" , "nearest neighbor spin coupling Sz Sz in the y direction")
+         ("H_xx"   , "nearest neighbor spin coupling Sx Sx")
+         ("H_yy"   , "nearest neighbor spin coupling Sy Sy")
+         ("H_zz"   , "nearest neighbor spin coupling Sz Sz")
+         ("H_J1z"  , "same as H_zz")
+         ("H_J1t"  , "transverse spin exchange, H_xx + H_yy")
+         ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_x"    , "magnetic field in the x direction")
+         ("Ty"     , "translation by one site in y direction",
+         "x = 0", [&x]()->bool{return x == 0;})
+         ("TyPi"   , "translation by y/2 sites in y direction",
+         "x = 0, y even, not present with --noreflect",
+         [&x, &y, &NoReflect]()->bool{return x == 0 && y % 2 == 0 && !NoReflect;})
+         ("Ry"     , "reflection in y direction",
+         "x = 0, not present with --noreflect",
+         [&x, &NoReflect]()->bool{return x == 0 && !NoReflect;})
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -88,7 +107,8 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinZ2(Spin);
       UnitCell Cell(repeat(Site, CellSize));
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"), Sp(Cell, "Sp"), Sm(Cell, "Sm");
+      UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"),
+                       Sp(Cell, "Sp"), Sm(Cell, "Sm"), I(Cell, "I");
 
       UnitCellMPO H_xx_x, H_yy_x, H_zz_x, H_xx_y, H_yy_y, H_zz_y;
       // the XY configuration is special
@@ -143,6 +163,38 @@ int main(int argc, char** argv)
          H_x += Sx(0)[i];
 
       Lattice["H_x"] = sum_unit(H_x);
+
+      if (x == 0)
+      {
+         UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
+
+         // Translation operators.
+         Trans = I(0);
+         for (int i = 0; i < y-1; ++i)
+            Trans = Trans(0) * Cell.swap_gate_no_sign(i, i+1);
+
+         Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), y);
+
+         if (!NoReflect)
+         {
+            // Reflection operators.
+            Ref = I(0);
+            for (int i = 1; i < y/2; ++i)
+               Ref = Ref(0) * Cell.swap_gate_no_sign(i, y-i);
+
+            Lattice["Ry"] = prod_unit_left_to_right(UnitCellMPO(Ref(0)).MPO(), y);
+
+            if (y % 2 == 0)
+            {
+               // Rotation by pi.
+               UnitCellMPO TyPi = I(0);
+               for (int i = 0; i < y/2; ++i)
+                  TyPi = TyPi * Cell.swap_gate_no_sign(i, i+y/2);
+
+               Lattice["TyPi"] = prod_unit_left_to_right(TyPi.MPO(), y);
+            }
+         }
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
