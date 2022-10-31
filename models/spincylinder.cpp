@@ -99,7 +99,7 @@ int main(int argc, char** argv)
          for (int i = 0; i < y; ++i)
          {
             H_xx_x += Sx(0)[i]*Sx(1)[i];
-            H_yy_x += Sx(0)[i]*Sy(1)[i];
+            H_yy_x += Sy(0)[i]*Sy(1)[i];
             H_zz_x += Sz(0)[i]*Sz(1)[i];
             H_xx_y += Sx(0)[i]*Sx(0)[(i+1)%y];
             H_yy_y += Sy(0)[i]*Sy(0)[(i+1)%y];
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
          for (int i = 0; i < x; ++i)
          {
             H_xx_y += Sx(0)[i]*Sx(1)[i];
-            H_yy_y += Sx(0)[i]*Sy(1)[i];
+            H_yy_y += Sy(0)[i]*Sy(1)[i];
             H_zz_y += Sz(0)[i]*Sz(1)[i];
          }
       }
