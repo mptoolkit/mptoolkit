@@ -416,9 +416,8 @@ int main(int argc, char** argv)
       if (Lambda == N/2)
          PANIC("Cannot localize wavepacket");
 
-      // Normalize F.
-      for (auto& F : FVec)
-         F /= sqrt(N);
+      // Squared norm of FVec.
+      double Norm2 = 1.0;
 
       // Convolute with momentum space Gaussian.
       if (Sigma != 0.0)
@@ -427,23 +426,26 @@ int main(int argc, char** argv)
             std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
          auto K = KVec.begin();
          auto F = FVec.begin();
-         //double Kappa = 1/2.0/std::pow(Sigma, 2);
-         while (F != FVec.end())
+         Norm2 = 0.0;
+         while (K != KVec.end())
          {
-            // Note that since we have a periodic domain in momentum space, we
-            // cannot just use a normal Gaussian, so we should use a suitable
-            // function defined on a periodic domain.
-            // The first one is the von Mises distribution, which is simplier to calculate.
-            //*F *= exp(Kappa*(cos(math_const::pi*(*K-KCenter))-1.0));
-            // The second one is the wrapped Gaussian function, which is the
-            // superposititon of Gaussian functions spaced by 2*pi: this can be
-            // calculated in terms of the Jacobi theta function.
-            // TODO: Check that the coefficients are correct.
-            *F *= 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*K-KCenter)),(0.5*std::pow(Sigma,2))/math_const::pi);
-            // TODO: Renormalize F.
+            //*F *= std::exp(1/2.0/std::pow(Sigma, 2)*(std::pow(math_const::pi*(*K-KCenter),2)));
+            // Since we have a periodic domain in momentum space, we cannot
+            // just use a normal Gaussian, so we should use a suitable function
+            // defined on a periodic domain.
+            // We use the wrapped Gaussian function, which is the superposition
+            // of Gaussian functions spaced by 2*pi: this can be calculated in
+            // terms of the Jacobi theta function.
+            *F *= 1.0/std::sqrt(8.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*K-KCenter)),(0.5*std::pow(Sigma,2))/math_const::pi);
+            // Confusingly, std::norm is NOT the norm, but the SQUARED norm of a complex number.
+            Norm2 += std::norm(*F);
             ++K, ++F;
          }
       }
+
+      // Scale the norm of FVec to 1/sqrt(N): this results in an approximately normalized wavefunction.
+      for (auto& F : FVec)
+         F /= std::sqrt(Norm2*N);
 
       if (Verbose > 1)
       {
