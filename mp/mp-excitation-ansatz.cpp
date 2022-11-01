@@ -41,18 +41,18 @@ int main(int argc, char** argv)
       std::string InputFileLeft;
       std::string InputFileRight;
       std::string HamStr;
-      double KMax = 0;
-      double KMin = 0;
+      double KMax = 0.0;
+      double KMin = 0.0;
       int KNum = 1;
-      double GMRESTol = 1e-13;
       double Tol = 1e-10;
       int NumEigen = 1;
       std::string QuantumNumber;
       QuantumNumbers::QuantumNumber Q;
       std::string String;
-      ProductMPO StringOp;
       std::string OutputPrefix;
       int OutputDigits = -1;
+
+      EASettings Settings;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -62,12 +62,14 @@ int main(int argc, char** argv)
          ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
          ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
+         ("ky", prog_opt::value(&Settings.ky), "Target this value of the y-momentum [2D cylinders]")
+         ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
           FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
-         ("gmrestol", prog_opt::value(&GMRESTol),
-          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
+         ("gmrestol", prog_opt::value(&Settings.GMRESTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
          //("quantumnumber,q", prog_opt::value(&QuantumNumber),
          // "The quantum number sector for the excitation [default identity]")
@@ -107,6 +109,8 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
+      Settings.Verbose = Verbose;
+
       unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
          : (ext::get_unique() % RAND_MAX);
       srand(RandSeed);
@@ -138,29 +142,38 @@ int main(int argc, char** argv)
 
       if (vm.count("string"))
       {
-         InfiniteLattice Lattice;
-         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(String);
+         std::tie(Settings.StringOp, std::ignore) = ParseProductOperatorAndLattice(String);
       }
 
-      double k = KMax;
+      Settings.k = KMax;
       // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
-      k *= PsiLeft.size() / Lattice.GetUnitCell().size();
+      Settings.k *= PsiLeft.size() / Lattice.GetUnitCell().size();
 
       double KStep = (KMax-KMin)/(KNum-1);
 
       if (OutputDigits == -1)
+      {
          OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+         if (vm.count("ky"))
+            OutputDigits = std::max(OutputDigits, formatting::digits(Settings.ky));
+      }
 
       // Initialize the effective Hamiltonian.
       HEff H;
+      InfiniteWavefunctionLeft PsiRight;
       if (vm.count("psi2"))
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
-         InfiniteWavefunctionLeft PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-         H = HEff(PsiLeft, PsiRight, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
+         PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
       }
       else
-         H = HEff(PsiLeft, HamMPO, Q, StringOp, k, GMRESTol, Verbose);
+         PsiRight = PsiLeft;
+
+      // Turn off momentum targeting if ky is unspecified.
+      if (vm.count("ky") == 0)
+         Settings.Alpha = 0.0;
+
+      H = HEff(PsiLeft, PsiLeft, HamMPO, Q, Settings);
 
       // Print column headers.
       if (KNum > 1)
@@ -178,7 +191,7 @@ int main(int argc, char** argv)
       {
          if (KNum > 1)
          {
-            k = KMin + KStep * n;
+            double k = KMin + KStep * n;
             k *= PsiLeft.size() / Lattice.GetUnitCell().size();
             H.SetK(k);
          }
@@ -198,37 +211,42 @@ int main(int argc, char** argv)
          for (int i = 0; i < NumEigen && E != EValues.begin(); ++i)
          {
             --E;
+            int Index = (NumEigen-i-1) * PackH.size();
             if (KNum > 1)
                std::cout << std::setw(20) << KMin + KStep * n;
             if (NumEigen > 1)
                std::cout << std::setw(10) << i;
             if (vm.count("string"))
             {
-               int Index = (NumEigen-i-1) * PackH.size();
                std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
                std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
             }
-            std::cout << std::setw(20) << std::real(*E) << std::endl;
-         }
+            std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
 
-         // Save wavefunction.
-         if (OutputPrefix != "")
-         {
-            // TODO: Add ability to save higher excitations.
-            int Index = (NumEigen-1) * PackH.size();
-            EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+            // Save wavefunction.
+            if (OutputPrefix != "")
+            {
+               EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
 
-            MPWavefunction Wavefunction;
-            Wavefunction.Wavefunction() = std::move(PsiEA);
-            Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
-            Wavefunction.SetDefaultAttributes();
-            Wavefunction.Attributes()["Prefix"] = OutputPrefix;
-            // Use the value of k relative to the lattice unit cell.
-            double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
-            std::string FName = OutputPrefix + ".k" + formatting::format_digits(KPrint, OutputDigits);
+               MPWavefunction Wavefunction;
+               Wavefunction.Wavefunction() = std::move(PsiEA);
+               Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+               Wavefunction.SetDefaultAttributes();
+               Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+               // Use the value of k relative to the lattice unit cell.
+               double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
+                std::string FName = OutputPrefix;
+               if (vm.count("ky") == 0)   
+                  FName += ".k" + formatting::format_digits(KPrint, OutputDigits);
+               else
+                  FName += ".kx" + formatting::format_digits(KPrint, OutputDigits)
+                         + ".ky" + formatting::format_digits(Settings.ky, OutputDigits);
+               if (NumEigen > 1)
+                  FName += ".n" + std::to_string(i);
 
-            pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
-            pheap::ExportHeap(FName, PsiPtr);
+               pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
+               pheap::ExportHeap(FName, PsiPtr);
+            }
          }
       }
    }

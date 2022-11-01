@@ -26,6 +26,17 @@
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 
+struct EASettings
+{
+   ProductMPO StringOp;
+   double k = 0.0;
+   double ky = 0.0;
+   double Alpha = 5.0;
+   double GMRESTol = 1e-13;
+   int Verbose = 0;
+};
+
+
 // Struct to describe the effective Hamiltonian operator for the MPS excitation ansatz.
 //
 // HEff can be applied to a deque of MatrixOperators describing the X-matrices
@@ -38,18 +49,9 @@ struct HEff
 {
    HEff() {}
 
-   // Initializer for the case where the A-matrices to the left and the right
-   // of the excitation correspond to the same ground state Psi.
-   HEff(InfiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& HamMPO_,
-        QuantumNumbers::QuantumNumber const& Q_, ProductMPO const& StringOp_,
-        double k, double GMRESTol_, int Verbose_)
-      : HEff(Psi_, Psi_, HamMPO_, Q_, StringOp_, k, GMRESTol_, Verbose_)
-   {}
-
-   // Initializer for the case where PsiLeft and PsiRight are two (possibly different) ground states.
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
         BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-        ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_);
+        EASettings const& Settings_);
 
    // Apply the effective Hamiltonian to XDeque.
    std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque) const;
@@ -74,6 +76,9 @@ struct HEff
    // Update the value of k.
    void SetK(double k);
 
+   // Update the value of ky.
+   void SetKY(double k);
+
    // Construct an EAWavefunction for the supplied X-matrices.
    EAWavefunction ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const;
 
@@ -85,6 +90,9 @@ struct HEff
    double GMRESTol;
    int Verbose;
    std::complex<double> ExpIK;
+   std::complex<double> ExpIKY = 0.0;
+   // Parameter to penalize states with the wrong y-momentum.
+   double Alpha;
 
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
    StateComponent BlockHamL, BlockHamR;
@@ -98,7 +106,7 @@ struct HEff
    MatrixOperator TyL, TyR;
    // Partially contracted versions of TyL and TyR.
    // Only needed when adding TyEff to HEff.
-   //std::deque<StateComponent> TyLDeque, TyRDeque;
+   std::deque<StateComponent> TyLDeque, TyRDeque;
    // Left/right eigenvectors of the left/right mixed transfer matrices with
    // the Ty operator.
    MatrixOperator TyLRLeft, TyLRRight;

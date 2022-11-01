@@ -35,14 +35,16 @@ double const OverlapTol = 1e-8;
 
 HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
            BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-           ProductMPO const& StringOp_, double k, double GMRESTol_, int Verbose_)
+           EASettings const& Settings_)
    : PsiLeft(PsiLeft_), HamMPO(HamMPO_), Q(Q_),
-     StringOp(StringOp_), GMRESTol(GMRESTol_), Verbose(Verbose_)
+     StringOp(Settings_.StringOp), GMRESTol(Settings_.GMRESTol),
+     Alpha(Settings_.Alpha), Verbose(Settings_.Verbose)
 {
    CHECK_EQUAL(PsiLeft.size(), PsiRight_.size());
    CHECK_EQUAL(PsiLeft.qshift(), PsiRight_.qshift());
 
-   this->SetK(k);
+   this->SetK(Settings_.k);
+   this->SetKY(Settings_.ky);
 
    // Get PsiRight in right canonical form.
    MatrixOperator U;
@@ -240,7 +242,6 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
          WARNING("TyL or TyR is not square, so Ty will have a spurious phase contribution.");
 
       // Only needed when adding TyEff to HEff.
-#if 0
       // Construct the partially contracted versions of TyL and TyR.
       StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
       TyLSC.front() = TyL;
@@ -266,7 +267,6 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
          --CR, --O;
          TyRDeque.push_front(contract_from_right(herm(*O), *CR, TyRDeque.front(), herm(*CR)));
       }
-#endif
    }
 }
 
@@ -345,12 +345,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
          Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
    }
 
-   // Code to target excitations with a specific y-momentum (WIP).
-#if 0
-   if (!StringOp.is_null())
+   // Code to target excitations with a specific y-momentum.
+   if (Alpha != 0.0)
    {
-      std::complex<double> Alpha = 10.0;
-
       MatrixOperator E, F;
       SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
                              PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
@@ -371,7 +368,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       R = Result.begin();
       while (B != BDeque.end())
       {
-         *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR);
+         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR);
          ++B, ++NL, ++O, ++BHL, ++BHR, ++R;
       }
 
@@ -390,7 +387,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       R = Result.begin();
       while (B != BDeque.end())
       {
-         *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
+         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
          ++R;
          if (R != Result.end())
             Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
@@ -413,12 +410,11 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       while (B != BDeque.begin())
       {
          --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
-         *R += -Alpha * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
+         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
          if (B != BDeque.end())
             Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
    }
-#endif
 
    return Result;
 }
@@ -542,6 +538,12 @@ void
 HEff::SetK(double k)
 {
    ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
+}
+
+void
+HEff::SetKY(double ky)
+{
+   ExpIKY = exp(std::complex<double>(0.0, math_const::pi) * ky);
 }
 
 PackHEff::PackHEff(HEff H_)
