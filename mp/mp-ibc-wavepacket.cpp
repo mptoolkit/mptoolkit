@@ -36,7 +36,7 @@ namespace prog_opt = boost::program_options;
 // Calculate the B-matrices for a wavepacket using sampling function FVec.
 std::vector<std::vector<StateComponent>>
 CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector<std::complex<double>> const& ExpIKVec,
-               std::vector<std::complex<double>> const& FVec, int const N)
+               std::vector<std::complex<double>> const& FVec, int const Lambda)
 {
    // A vector for each position at the unit cell, which contains a vector
    // of each wavepacket B matrix for that unit cell position.
@@ -49,11 +49,11 @@ CalculateWPVec(std::vector<std::vector<StateComponent>> const& BVec, std::vector
       auto F = FVec.begin();
       auto ExpIK = ExpIKVec.begin();
       auto B = BCell->begin();
-      *WPCell = std::vector<StateComponent>(N, StateComponent(B->LocalBasis(), B->Basis1(), B->Basis2()));
+      *WPCell = std::vector<StateComponent>(2*Lambda+1, StateComponent(B->LocalBasis(), B->Basis1(), B->Basis2()));
       while (B != BCell->end())
       {
          // Leftmost unit cell position of the N-unit cell window.
-         int j = -N/2;
+         int j = -Lambda;
          for (auto& WP : *WPCell)
          {
             WP += *F * std::pow(*ExpIK, j) * *B;
@@ -81,7 +81,7 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
    std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
 
-   // Just in case we somehow have a single site window
+   // Just in case we somehow have a single site window.
    if (UCSize == 1 && WindowSize == 1)
       PsiWindowVec.front().push_back(WPVec.front().front());
    else
@@ -416,9 +416,6 @@ int main(int argc, char** argv)
       if (Lambda == N/2)
          PANIC("Cannot localize wavepacket");
 
-      // Squared norm of FVec.
-      double Norm2 = 1.0;
-
       // Convolute with momentum space Gaussian.
       if (Sigma != 0.0)
       {
@@ -426,7 +423,6 @@ int main(int argc, char** argv)
             std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
          auto K = KVec.begin();
          auto F = FVec.begin();
-         Norm2 = 0.0;
          while (K != KVec.end())
          {
             //*F *= std::exp(1/2.0/std::pow(Sigma, 2)*(std::pow(math_const::pi*(*K-KCenter),2)));
@@ -437,15 +433,9 @@ int main(int argc, char** argv)
             // of Gaussian functions spaced by 2*pi: this can be calculated in
             // terms of the Jacobi theta function.
             *F *= 1.0/std::sqrt(8.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*K-KCenter)),(0.5*std::pow(Sigma,2))/math_const::pi);
-            // Confusingly, std::norm is NOT the norm, but the SQUARED norm of a complex number.
-            Norm2 += std::norm(*F);
             ++K, ++F;
          }
       }
-
-      // Scale the norm of FVec to 1/sqrt(N): this results in an approximately normalized wavefunction.
-      for (auto& F : FVec)
-         F /= std::sqrt(Norm2*N);
 
       if (Verbose > 1)
       {
@@ -466,16 +456,26 @@ int main(int argc, char** argv)
       if (Verbose > 1)
          std::cout << "Constructing window..." << std::endl;
 
-      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, 2*Lambda);
+      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, Lambda);
       LinearWavefunction PsiWindowLinear = ConstructPsiWindow(PsiLeft, PsiRight, WPVec);
 
       if (Verbose > 1)
          std::cout << "Orthogonalizing window..." << std::endl;
+
       MatrixOperator I = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
       WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
 
       if (Verbose > 1)
+         std::cout << "Normalizing window..." << std::endl;
+
+      MatrixOperator LambdaWindow;
+      std::tie(PsiWindowLinear, LambdaWindow) = get_left_canonical(PsiWindow);
+      LambdaWindow *= 1.0 / norm_frob(LambdaWindow);
+      PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), LambdaWindow, Verbose-1);
+
+      if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
+
       // TODO: Is -Lambda*UCSize the correct offset?
       IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
 
