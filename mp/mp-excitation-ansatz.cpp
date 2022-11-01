@@ -57,6 +57,8 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
+         ("Hamiltonian,H", prog_opt::value(&HamStr),
+          "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
          ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
          ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
@@ -79,13 +81,11 @@ int main(int argc, char** argv)
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
          ("psi", prog_opt::value(&InputFileLeft), "psi")
-         ("ham", prog_opt::value(&HamStr), "ham")
          ("psi2", prog_opt::value(&InputFileRight), "psi2")
          ;
 
       prog_opt::positional_options_description p;
       p.add("psi", 1);
-      p.add("ham", 1);
       p.add("psi2", 1);
 
       prog_opt::options_description opt;
@@ -96,10 +96,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("ham") == 0)
+      if (vm.count("help") || vm.count("psi") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <hamiltonian> [psi-right]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> [psi-right]" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -116,8 +116,18 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
+      if (HamStr.empty())
+      {
+         if (InPsiLeft->Attributes().count("Hamiltonian") == 0)
+         {
+            std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute Hamiltonian." << std::endl;
+            return 1;
+         }
+         HamStr = InPsiLeft->Attributes()["Hamiltonian"].as<std::string>();
+      }
+
       InfiniteLattice Lattice;
-      BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
+      BasicTriangularMPO HamMPO;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
 
       // TODO: Add support for excitations with quantum numbers other than the identity.
