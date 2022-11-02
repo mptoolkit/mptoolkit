@@ -51,7 +51,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
 {
    if (Verbose >= 1)
    {
-      std::cerr << "Total dimension = " << n << '\n';
+      std::cerr << "Total dimension = " << n << std::endl;
    }
    // save the arpack debug log level so we can restore it later
    int DebugOutputLevelSave = ARPACK::debug().mceupd;
@@ -71,7 +71,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       // more elements in the array than expected.  Truncate the eigenvalue array if we get more than expected.
       if (Verbose >= 1)
       {
-         std::cerr << "Constructing matrix for direct diagonalization\n";
+         std::cerr << "Constructing matrix for direct diagonalization" << std::endl;
       }
       LinearAlgebra::Vector<std::complex<double>> e(n, 0.0), Out(n);
       LinearAlgebra::Matrix<std::complex<double>> Mat(n, n);
@@ -120,7 +120,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
 
       if (Verbose >= 1)
       {
-         std::cerr << "Starting ARPACK" << std::endl;
+         std::cerr << "Starting ARPACK mode " << w << std::endl;
          if (Verbose >= 2)
             std::cerr << "n=" << n << ", nev=" << nev << ", ncv=" << ncv << std::endl;
       }
