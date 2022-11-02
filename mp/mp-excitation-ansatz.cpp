@@ -236,7 +236,7 @@ int main(int argc, char** argv)
                // Use the value of k relative to the lattice unit cell.
                double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
                 std::string FName = OutputPrefix;
-               if (vm.count("ky") == 0)   
+               if (vm.count("ky") == 0)
                   FName += ".k" + formatting::format_digits(KPrint, OutputDigits);
                else
                   FName += ".kx" + formatting::format_digits(KPrint, OutputDigits)

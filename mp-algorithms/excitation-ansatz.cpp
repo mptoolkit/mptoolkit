@@ -243,29 +243,32 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
 
       // Only needed when adding TyEff to HEff.
       // Construct the partially contracted versions of TyL and TyR.
-      StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
-      TyLSC.front() = TyL;
-
-      TyLDeque.push_back(TyLSC);
-
-      CL = PsiLinearLeft.begin();
-      O = StringOp.begin();
-      while (CL != PsiLinearLeft.end())
+      if (Alpha != 0.0)
       {
-         TyLDeque.push_back(contract_from_left(*O, herm(*CL), TyLDeque.back(), *CL));
-         ++CL, ++O;
-      }
+         StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
+         TyLSC.front() = TyL;
 
-      StateComponent TyRSC = StateComponent(StringOp.Basis2(), PsiRight.Basis2(), PsiRight.Basis2());
-      TyRSC.front() = TyR;
+         TyLDeque.push_back(TyLSC);
 
-      TyRDeque.push_front(TyRSC);
-      CR = PsiLinearRight.end();
-      O = StringOp.end();
-      while (CR != PsiLinearRight.begin())
-      {
-         --CR, --O;
-         TyRDeque.push_front(contract_from_right(herm(*O), *CR, TyRDeque.front(), herm(*CR)));
+         CL = PsiLinearLeft.begin();
+         O = StringOp.begin();
+         while (CL != PsiLinearLeft.end())
+         {
+            TyLDeque.push_back(contract_from_left(*O, herm(*CL), TyLDeque.back(), *CL));
+            ++CL, ++O;
+         }
+
+         StateComponent TyRSC = StateComponent(StringOp.Basis2(), PsiRight.Basis2(), PsiRight.Basis2());
+         TyRSC.front() = TyR;
+
+         TyRDeque.push_front(TyRSC);
+         CR = PsiLinearRight.end();
+         O = StringOp.end();
+         while (CR != PsiLinearRight.begin())
+         {
+            --CR, --O;
+            TyRDeque.push_front(contract_from_right(herm(*O), *CR, TyRDeque.front(), herm(*CR)));
+         }
       }
    }
 }
