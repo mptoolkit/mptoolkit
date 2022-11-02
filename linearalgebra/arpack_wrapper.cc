@@ -180,7 +180,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       char howmny = 'A';
       std::vector<int> select(ncv);
       std::vector<std::complex<double>> d(nev+1);
-      std::vector<std::complex<double>> z(OutputVectors ? n*(nev+1) : 1); // output array
+      std::vector<std::complex<double>> z(OutputVectors ? n*nev : 1); // output array
       int ldz = n;
       std::complex<double> sigma;   // not referenced
       std::vector<std::complex<double>> workev(2*ncv);
