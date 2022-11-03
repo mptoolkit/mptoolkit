@@ -38,6 +38,7 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
+      int Quiet = 0;
       std::string InputFileLeft;
       std::string InputFileRight;
       std::string HamStr;
@@ -71,12 +72,13 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&Settings.GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
-         //("quantumnumber,q", prog_opt::value(&QuantumNumber),
+         //("quantumnumber", prog_opt::value(&QuantumNumber),
          // "The quantum number sector for the excitation [default identity]")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
          ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
+         ("quiet,q", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum, use thrice to hide energies")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -103,6 +105,12 @@ int main(int argc, char** argv)
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> [psi-right]" << std::endl;
          std::cerr << desc << std::endl;
+         return 1;
+      }
+
+      if ((vm.count("ky") || vm.count("alpha")) && vm.count("string") == 0)
+      {
+         std::cerr << "fatal: Please specify the cylinder translation operator using --string." << std::endl;
          return 1;
       }
 
@@ -145,9 +153,10 @@ int main(int argc, char** argv)
          std::tie(Settings.StringOp, std::ignore) = ParseProductOperatorAndLattice(String);
       }
 
-      Settings.k = KMax;
-      // Rescale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
-      Settings.k *= PsiLeft.size() / Lattice.GetUnitCell().size();
+      // The number of lattice unit cells in Psi.
+      int LatticeUCsPerPsiUC = PsiLeft.size() / Lattice.GetUnitCell().size();
+      // Scale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
+      Settings.k = KMax * LatticeUCsPerPsiUC;
 
       double KStep = (KMax-KMin)/(KNum-1);
 
@@ -176,25 +185,26 @@ int main(int argc, char** argv)
       H = HEff(PsiLeft, PsiLeft, HamMPO, Q, Settings);
 
       // Print column headers.
-      if (KNum > 1)
-         std::cout << "#kx                 ";
-      if (NumEigen > 1)
-         std::cout << "#n        ";
-      if (vm.count("string"))
-         std::cout << "#Ty                                               ";
-      if (KNum > 1 || NumEigen > 1 || vm.count("string"))
-      std::cout << "#E" << std::endl;
+      if (Quiet == 0)
+      {
+         if (vm.count("string"))
+            std::cout << "#kx/pi              ";
+         else
+            std::cout << "#k/pi               ";
+         if (NumEigen > 1)
+            std::cout << "#n        ";
+         if (vm.count("string"))
+            std::cout << "#ky/pi              #|Ty|               ";
+         std::cout << "#E" << std::endl;
+      }
       std::cout << std::left;
 
       // Calculate the excitation spectrum for each k desired.
       for (int n = 0; n < KNum; ++n)
       {
+         double k = KNum > 1 ? KMin + KStep*n : KMax;
          if (KNum > 1)
-         {
-            double k = KMin + KStep * n;
-            k *= PsiLeft.size() / Lattice.GetUnitCell().size();
-            H.SetK(k);
-         }
+            H.SetK(k * LatticeUCsPerPsiUC);
 
          PackHEff PackH = PackHEff(H);
          std::vector<std::complex<double>> EVectors;
@@ -212,16 +222,18 @@ int main(int argc, char** argv)
          {
             --E;
             int Index = (NumEigen-i-1) * PackH.size();
-            if (KNum > 1)
-               std::cout << std::setw(20) << KMin + KStep * n;
-            if (NumEigen > 1)
+            if (Quiet < 2)
+               std::cout << std::setw(20) << k;
+            if (NumEigen > 1 && Quiet < 3)
                std::cout << std::setw(10) << i;
-            if (vm.count("string"))
+            if (vm.count("string") && Quiet < 2)
             {
                std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
-               std::cout << std::setw(50) << formatting::format_complex(H.Ty(XDeque));
+               std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi
+                         << std::setw(20) << std::abs(H.Ty(XDeque));
             }
-            std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
+            if (Quiet < 3)
+               std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
 
             // Save wavefunction.
             if (OutputPrefix != "")
@@ -234,12 +246,11 @@ int main(int argc, char** argv)
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
                // Use the value of k relative to the lattice unit cell.
-               double KPrint = KNum > 1 ? KMin + KStep*n : KMax;
-                std::string FName = OutputPrefix;
+               std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)
-                  FName += ".k" + formatting::format_digits(KPrint, OutputDigits);
+                  FName += ".k" + formatting::format_digits(k, OutputDigits);
                else
-                  FName += ".kx" + formatting::format_digits(KPrint, OutputDigits)
+                  FName += ".kx" + formatting::format_digits(k, OutputDigits)
                          + ".ky" + formatting::format_digits(Settings.ky, OutputDigits);
                if (NumEigen > 1)
                   FName += ".n" + std::to_string(i);

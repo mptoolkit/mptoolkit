@@ -371,7 +371,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       R = Result.begin();
       while (B != BDeque.end())
       {
-         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR);
+         *R += -Alpha * std::conj(ExpIKY) * scalar_prod(herm(contract_from_left(*O, herm(*B), *BHL, *NL)), *BHR);
          ++B, ++NL, ++O, ++BHL, ++BHR, ++R;
       }
 
@@ -390,7 +390,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       R = Result.begin();
       while (B != BDeque.end())
       {
-         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
+         *R += -Alpha * std::conj(ExpIKY) * scalar_prod(herm(contract_from_left(*O, herm(*CR), Tmp, *NL)), *BHR);
          ++R;
          if (R != Result.end())
             Tmp = contract_from_left(*O, herm(*CR), Tmp, *CL) + contract_from_left(*O, herm(*B), *BHL, *CL);
@@ -413,7 +413,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
       while (B != BDeque.begin())
       {
          --B, --NL, --CL, --CR, --O, --BHL, --BHR, --R;
-         *R += -Alpha * ExpIKY * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
+         *R += -Alpha * std::conj(ExpIKY) * scalar_prod(herm(contract_from_left(*O, herm(*CL), *BHL, *NL)), Tmp);
          if (B != BDeque.end())
             Tmp = contract_from_right(herm(*O), *CL, Tmp, herm(*CR)) + contract_from_right(herm(*O), *B, *BHR, herm(*CR));
       }
