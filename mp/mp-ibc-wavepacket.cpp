@@ -385,9 +385,9 @@ int main(int argc, char** argv)
 
       // The number of Fourier modes in our momentum space (note that this does
       // not match KNum since we may have missing parts of the spectrum).
-      // FIXME: This way of calculating N is bound to cause problems.
       int N = std::round(2.0/KStep);
-      //TRACE(N)(2.0/KStep);
+      if (N*KStep/2.0 - 1.0 > std::numeric_limits<double>::epsilon())
+         std::cerr << "WARNING: 2/KStep=" << 2.0/KStep << " is noninteger! Trying N=" << N << std::endl;
 
       int Lambda = 1;
       NLambdaFunctor NLambda(BSymVec, ExpIKVec, N, Lambda);
@@ -440,7 +440,7 @@ int main(int argc, char** argv)
       if (Verbose > 1)
       {
          // Print the norm of the B-matrices in WPVec for each unit cell.
-         std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N);
+         std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BSymVec, ExpIKVec, FVec, N/2);
          std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
          std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
          int i = 0;
