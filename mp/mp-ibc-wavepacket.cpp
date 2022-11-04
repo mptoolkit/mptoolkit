@@ -26,7 +26,7 @@
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
-#include "linearalgebra/arpack_wrapper.h"
+#include "linearalgebra/eigen.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 #include <boost/math/special_functions/jacobi_theta.hpp>
@@ -72,7 +72,7 @@ LinearWavefunction
 ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight PsiRight,
                    std::vector<std::vector<StateComponent>> const& WPVec)
 {
-   int UCSize = WPVec.front().size();
+   int UCSize = WPVec.front().size(); // The GS wavefunction unit cell size.
    int WindowSize = WPVec.size(); // In terms of unit cells.
 
    std::vector<LinearWavefunction> PsiWindowVec(UCSize);
@@ -92,12 +92,15 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
       auto WP = WPCell->begin();
       auto PsiWindow = PsiWindowVec.begin();
 
-      // Handle the first site separately.
+      // Handle the first site separately: this is of the form
+      // (A B)
       SumBasis<VectorBasis> NewBasisFront((*CL).Basis2(), (*WP).Basis2());
       PsiWindow->push_back(tensor_row_sum(*CL, *WP, NewBasisFront));
       ++WP, ++PsiWindow;
 
-      // Handle all of the middle sites.
+      // Handle all of the middle sites: these are of the form
+      // (A B)
+      // (0 C)
       for (int i = 1; i < UCSize*WindowSize-1; ++i)
       {
          if (WP == WPCell->end())
@@ -113,7 +116,9 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
          ++WP, ++PsiWindow;
       }
 
-      // Handle the last site separately.
+      // Handle the last site separately: this is of the form
+      // (B)
+      // (C)
       SumBasis<VectorBasis> NewBasisBack((*WP).Basis1(), (*CR).Basis1());
       PsiWindow->push_back(tensor_col_sum(*WP, *CR, NewBasisBack));
    }
@@ -126,26 +131,24 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
    return PsiWindowVecFull;
 }
 
-// Apply the "N_Lambda" matrix onto an "F" vector:
-// see Eq. (A6) in Van Damme et al., Phys. Rev. Research 3, 013078.
-std::vector<std::complex<double>>
-CalculateNLambdaF(std::vector<std::vector<std::vector<std::complex<double>>>> const& BBVec, std::vector<std::complex<double>> const& ExpIKVec,
-                  std::vector<std::complex<double>> const& FVec, int const N, int const Lambda, int const LambdaY, int const LatticeUCSize)
+// Calculate the "N_Lambda" matrix from Eq. (A6) in Van Damme et al., Phys. Rev. Research 3, 013078.
+LinearAlgebra::Matrix<std::complex<double>>
+CalculateNLambda(std::vector<std::vector<std::vector<std::complex<double>>>> const& BBVec, std::vector<std::complex<double>> const& ExpIKVec,
+                  int const N, int const Lambda, int const LambdaY, int const LatticeUCSize)
 {
-   std::vector<std::complex<double>> NLambdaFVec(FVec.size(), 0.0);
+   int Size = ExpIKVec.size();
+   LinearAlgebra::Matrix<std::complex<double>> NLambdaMat(Size, Size, 0.0);
 
    auto BBCell = BBVec.begin();
    for (int m = 0; m < BBVec.size(); ++m)
    {
-      auto FJ = FVec.begin();
       auto ExpIKJ = ExpIKVec.begin();
       auto BBJ = BBCell->begin();
-      while (BBJ != BBCell->end())
+      for (int Col = 0; Col < Size; ++Col)
       {
-         auto NLambdaFI = NLambdaFVec.begin();
          auto ExpIKI = ExpIKVec.begin();
          auto BBI = BBJ->begin();
-         while (BBI != BBJ->end())
+         for (int Row = 0; Row < Size; ++Row)
          {
             std::complex<double> Coeff = 0.0;
             // If LambdaY < m % LatticeUCSize < LatticeUCSize - LambdaY,
@@ -158,15 +161,15 @@ CalculateNLambdaF(std::vector<std::vector<std::vector<std::complex<double>>>> co
                for (int j = Lambda+1; j < N-Lambda; ++j)
                   Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
 
-            *NLambdaFI += *FJ * *BBI * Coeff;
-            ++NLambdaFI, ++ExpIKI, ++BBI;
+            NLambdaMat(Col, Row) += *BBI * Coeff;
+            ++ExpIKI, ++BBI;
          }
-         ++FJ, ++ExpIKJ, ++BBJ;
+         ++ExpIKJ, ++BBJ;
       }
       ++BBCell;
    }
 
-   return NLambdaFVec;
+   return NLambdaMat;
 }
 
 // Calculate the vector containing matrices for the inner products <B_i, B_j>:
@@ -202,44 +205,6 @@ CalculateBBVec(std::vector<std::vector<StateComponent>> const& BVec)
    return BBVec;
 }
 
-// Functor to calculate the application of the "N_Lambda" matrix onto an "F"
-// vector for the ARPACK wrapper.
-struct NLambdaFunctor
-{
-   NLambdaFunctor(std::vector<std::vector<StateComponent>> const& BVec_,
-                  std::vector<std::complex<double>> const& ExpIKVec_,
-                  int const N_, int const Lambda_, int const LambdaY_,
-                  int const LatticeUCSize_)
-      : BBVec(CalculateBBVec(BVec_)), ExpIKVec(ExpIKVec_), N(N_),
-        Lambda(Lambda_), LambdaY(LambdaY_), LatticeUCSize(LatticeUCSize_)
-   {
-   }
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      std::vector<std::complex<double>> InVec(In, In + ExpIKVec.size());
-      std::vector<std::complex<double>> OutVec = CalculateNLambdaF(BBVec, ExpIKVec, InVec, N, Lambda, LambdaY, LatticeUCSize);
-      std::copy(OutVec.begin(), OutVec.end(), Out);
-   }
-
-   void SetLambda(int const Lambda_)
-   {
-      Lambda = Lambda_;
-   }
-
-   void SetLambdaY(int const LambdaY_)
-   {
-      LambdaY = LambdaY_;
-   }
-
-   std::vector<std::vector<std::vector<std::complex<double>>>> BBVec;
-   std::vector<std::complex<double>> const& ExpIKVec;
-   int N;
-   int Lambda;
-   int LambdaY;
-   int LatticeUCSize;
-};
-
 int main(int argc, char** argv)
 {
    try
@@ -259,8 +224,7 @@ int main(int argc, char** argv)
       double SigmaY = 0.0;
       double KYCenter = 0.0;
       int InputDigits = -1;
-      double Tol = 1e-10;
-      double ExternalWeightTol = 1e-5;
+      double Tol = 1e-5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -279,9 +243,8 @@ int main(int argc, char** argv)
          ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
          ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width")
          ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian", KCenter).c_str())
-         ("tol", prog_opt::value(&Tol), FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
-         ("external-tol,e", prog_opt::value(&ExternalWeightTol),
-          FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", ExternalWeightTol).c_str())
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", Tol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -455,23 +418,25 @@ int main(int argc, char** argv)
          // This makes it such that each Lambda is calculated once.
          NY = 4;
 
-      int Lambda = 1;
-      int LambdaY = 1;
-      NLambdaFunctor NLambda(BVec, ExpIKVec, N, Lambda, LambdaY, LatticeUCSize);
 
       std::vector<std::complex<double>> FVec;
+      std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
+      // Number of different Fourier modes that we optimize over.
+      int Size = KNum*KYNum;
 
+      int Lambda = 1;
       bool Finished = false;
       while (Lambda < N/2 && !Finished)
       {
-         LambdaY = 1;
-         NLambda.SetLambdaY(LambdaY);
+         int LambdaY = 1;
+         // Only try values of LambdaY up to the current value of Lambda.
+         // If we aren't localising along the y-axis, then this loop will only
+         // run once, since we set NY/2 = 2.
          while (LambdaY < std::min(Lambda+1, NY/2) && !Finished)
          {
-            LinearAlgebra::Vector<std::complex<double>> EValues
-               = LinearAlgebra::DiagonalizeARPACK(NLambda, ExpIKVec.size(), 1,
-                                                  LinearAlgebra::WhichEigenvalues::SmallestReal,
-                                                  Tol, &FVec, 0, true, Verbose-1);
+            LinearAlgebra::Matrix<std::complex<double>> NLambdaMat = CalculateNLambda(BBVec, ExpIKVec, N, Lambda, LambdaY, LatticeUCSize);
+            LinearAlgebra::Vector<double> EValues = LinearAlgebra::DiagonalizeHermitian(NLambdaMat);
+
             if (Verbose > 0)
             {
                std::cout << "Lambda=" << Lambda;
@@ -481,14 +446,16 @@ int main(int argc, char** argv)
                          << std::endl;
             }
 
-            if (std::real(EValues[0]) < ExternalWeightTol)
+            if (std::real(EValues[0]) < Tol)
+            {
                Finished = true;
+               // Extract the smallest eigenvector.
+               FVec = std::vector<std::complex<double>>(NLambdaMat.data(), NLambdaMat.data()+Size);
+            }
 
             ++LambdaY;
-            NLambda.SetLambdaY(LambdaY);
          }
          ++Lambda;
-         NLambda.SetLambda(Lambda);
       }
 
       if (!Finished)

@@ -577,7 +577,6 @@ LIBS_mp-imoments-cross = $(LIBARPACK)
 LIBS_mp-ibc-overlap = $(LIBARPACK)
 LIBS_mp-ibc-correlation = $(LIBARPACK)
 LIBS_mp-excitation-ansatz = $(LIBARPACK)
-LIBS_mp-ibc-wavepacket = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
