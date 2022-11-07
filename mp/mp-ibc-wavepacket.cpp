@@ -24,14 +24,21 @@
 #include "common/terminal.h"
 #include "common/unique.h"
 #include "interface/inittemp.h"
-#include "lattice/infinite-parser.h"
-#include "lattice/infinitelattice.h"
 #include "linearalgebra/eigen.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 #include <boost/math/special_functions/jacobi_theta.hpp>
 
 namespace prog_opt = boost::program_options;
+
+// The "wrapped Gaussian" is the sum of the Guassian with mean mu and standard
+// deviation sigma and all displacements of this Gaussian by 2*pi.
+// This can be calculated in terms of the Jacobi theta function.
+double
+WrappedGaussian(double x, double mu, double sigma)
+{
+   return 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(x-mu)),(0.5*std::pow(sigma,2))/math_const::pi);
+}
 
 // Calculate the B-matrices for a wavepacket using sampling function FVec.
 std::vector<std::vector<StateComponent>>
@@ -231,13 +238,13 @@ int main(int argc, char** argv)
          ("help", "Show this help message")
          ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
          ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
-         ("knum", prog_opt::value(&KNum), "Number of momentum steps to use")
+         ("knum", prog_opt::value(&KNum), "Number of momentum steps to use [required]")
          ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (divided by pi)", KYMax).c_str())
          ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (divided by pi)", KYMin).c_str())
          ("kynum", prog_opt::value(&KYNum), "Number of y-momentum steps to use")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Size of lattice unit cell")
-         ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k])")
-         ("output,o", prog_opt::value(&OutputFilename), "Output filename")
+         ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
+         ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width")
          ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
@@ -475,12 +482,9 @@ int main(int argc, char** argv)
          {
             //*F *= std::exp(1/2.0/std::pow(Sigma, 2)*(std::pow(math_const::pi*(*K-KCenter),2)));
             // Since we have a periodic domain in momentum space, we cannot
-            // just use a normal Gaussian, so we should use a suitable function
-            // defined on a periodic domain.
-            // We use the wrapped Gaussian function, which is the superposition
-            // of Gaussian functions spaced by 2*pi: this can be calculated in
-            // terms of the Jacobi theta function.
-            *F *= 1.0/std::sqrt(8.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*K-KCenter)),(0.5*std::pow(Sigma,2))/math_const::pi);
+            // just use a normal Gaussian, so we use the "wrapped Gaussian",
+            // which is defined on a periodic domain.
+            *F *= WrappedGaussian(*K, KCenter, Sigma);
             ++K, ++F;
          }
       }
@@ -494,7 +498,7 @@ int main(int argc, char** argv)
          auto F = FVec.begin();
          while (KY != KYVec.end())
          {
-            *F *= 1.0/std::sqrt(8.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(*KY-KYCenter)),(0.5*std::pow(SigmaY,2))/math_const::pi);
+            *F *= WrappedGaussian(*KY, KYCenter, SigmaY);
             ++KY, ++F;
          }
       }
