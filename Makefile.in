@@ -226,7 +226,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-ibc-join \
-                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation mp-excitation-ansatz mp-ibc-wavepacket
+                     mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice
 
 
 benchmarks = benchtripleprod
@@ -512,6 +512,7 @@ mp-ibc-join : random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_op
 mp-ibc-overlap : packunpack.o transfer.o
 mp-ibc-correlation : packunpack.o transfer.o number-parser.o
 mp-excitation-ansatz : excitation-ansatz.o triangular_mpo_solver.o ef-optim.o momentum_operations.o packunpack.o transfer.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o triangular_mpo_solver_ea.o
+mp-ibc-splice : packunpack.o transfer.o
 
 mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
@@ -577,6 +578,7 @@ LIBS_mp-imoments-cross = $(LIBARPACK)
 LIBS_mp-ibc-overlap = $(LIBARPACK)
 LIBS_mp-ibc-correlation = $(LIBARPACK)
 LIBS_mp-excitation-ansatz = $(LIBARPACK)
+LIBS_mp-ibc-splice = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)
