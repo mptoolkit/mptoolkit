@@ -4,7 +4,7 @@
 //
 // mp/mp-ispectrum.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,17 +19,14 @@
 
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
-#include "lattice/latticesite.h"
+#include "mp-algorithms/transfer.h"
 #include "wavefunction/operator_actions.h"
-#include "mps/packunpack.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
 #include "interface/inittemp.h"
-#include "tensor/tensor_eigen.h"
-#include "mp-algorithms/arnoldi.h"
 #include "lattice/siteoperator-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include "lattice/infinitelattice.h"
@@ -73,393 +70,7 @@ void PrintFormat(QuantumNumber const& q, std::complex<double> x, int n, bool Sho
    }
 }
 
-
-struct LeftMultiply
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
-      : L(L_), QShift(QShift_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, QShift);
-      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
-      {
-         r = operator_prod(herm(*I), r, *I);
-      }
-      return r;
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-};
-
-struct LeftMultiplyStringSimple
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   LeftMultiplyStringSimple(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                      ProductMPO const& StringOp_)
-      : L(L_), QShift(QShift_), StringOp(StringOp_)
-   {
-      CHECK_EQUAL(int(L.size()), StringOp.size())("The string operator must be the same length as the unit cell");
-   }
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, QShift);
-      r = inject_left(r, StringOp, L);
-      return r;
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-   ProductMPO StringOp;
-};
-
-struct RightMultiply
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   RightMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
-      : L(L_), QShift(QShift_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = x;
-      LinearWavefunction::const_iterator I = L.end();
-      while (I != L.begin())
-      {
-         --I;
-         r = operator_prod(*I, r, herm(*I));
-      }
-      return delta_shift(r, adjoint(QShift));
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-};
-
-struct RightMultiplyString
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   RightMultiplyString(LinearWavefunction const& L_, QuantumNumber const& QShift_,
-                       ProductMPO const& StringOp_)
-      : L(L_), QShift(QShift_) , StringOp(StringOp_)
-   {
-      CHECK_EQUAL(int(L.size()), StringOp.size())("The string operator must be the same length as the unit cell");
-   }
-
-   result_type operator()(argument_type const& x) const
-   {
-      return inject_right_qshift(x, StringOp, L, QShift);
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-   ProductMPO StringOp;
-};
-
-struct RightMultiplyOp
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   RightMultiplyOp(LinearWavefunction const& L_, QuantumNumber const& QShift_, SimpleOperator const& Op_)
-      : L(L_), QShift(QShift_), Op(Op_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = x;
-      LinearWavefunction::const_iterator I = L.end();
-      while (I != L.begin())
-      {
-         --I;
-         r = operator_prod(Op, *I, r, herm(*I));
-      }
-      return delta_shift(x, adjoint(QShift));
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-   SimpleOperator const& Op;
-};
-
-struct MultFunc
-{
-   MultFunc(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-            QuantumNumbers::QuantumNumber const& q)
-      : Mult(Psi, QShift), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
-      Pack.pack(x, Out);
-   }
-
-   LeftMultiply Mult;
-   PackMatrixOperator Pack;
-};
-
-struct MultFuncTrans
-{
-   MultFuncTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-            QuantumNumbers::QuantumNumber const& q)
-      : Mult(Psi, QShift), Pack(Psi.Basis2(), Psi.Basis2(), q) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
-      Pack.pack(x, Out);
-   }
-
-   RightMultiply Mult;
-   PackMatrixOperator Pack;
-};
-
-struct MultFuncString
-{
-   MultFuncString(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-                  QuantumNumbers::QuantumNumber const& q,
-                  ProductMPO const& StringOp)
-      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
-      Pack.pack(x, Out);
-   }
-
-   LeftMultiplyStringSimple Mult;
-   PackMatrixOperator Pack;
-};
-
-struct MultFuncStringTrans
-{
-   MultFuncStringTrans(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-                       QuantumNumbers::QuantumNumber const& q,
-                       ProductMPO const& StringOp)
-      : Mult(Psi, QShift, StringOp), Pack(Psi.Basis2(), Psi.Basis2(), q) { }
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      MatrixOperator x = Pack.unpack(In);
-      x = Mult(x);
-      Pack.pack(x, Out);
-   }
-
-   RightMultiplyString Mult;
-   PackMatrixOperator Pack;
-};
-
-
 // inject_left for a BasicFiniteMPO.  This can have support on multiple wavefunction unit cells
-MatrixOperator
-inject_left(MatrixOperator const& m,
-            LinearWavefunction const& Psi1,
-            QuantumNumbers::QuantumNumber const& QShift,
-            BasicFiniteMPO const& Op,
-            LinearWavefunction const& Psi2)
-{
-   CHECK_EQUAL(Psi1.size(), Psi2.size());
-   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis2());
-   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis2());
-   if (Op.is_null())
-      return MatrixOperator();
-
-   // we currently only support simple irreducible operators
-   CHECK_EQUAL(Op.Basis1().size(), 1);
-   CHECK_EQUAL(Op.Basis2().size(), 1);
-   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
-   MatrixOperator mm = delta_shift(m, QShift);
-   StateComponent E(Op.Basis1(), mm.Basis1(), mm.Basis2());
-   E[0] = mm;
-   E.debug_check_structure();
-   LinearWavefunction::const_iterator I1 = Psi1.begin();
-   LinearWavefunction::const_iterator I2 = Psi2.begin();
-   BasicFiniteMPO::const_iterator OpIter = Op.begin();
-   while (OpIter != Op.end())
-   {
-      if (I1 == Psi1.end())
-      {
-         I1 = Psi1.begin();
-         I2 = Psi2.begin();
-         E = delta_shift(E, QShift);
-      }
-      E = contract_from_left(*OpIter, herm(*I1), E, *I2);
-      ++I1; ++I2; ++OpIter;
-   }
-   return E[0]; //delta_shift(E[0], QShift);
-}
-
-MatrixOperator
-inject_right(MatrixOperator const& m,
-             LinearWavefunction const& Psi1,
-             QuantumNumbers::QuantumNumber const& QShift,
-             GenericMPO const& Op,
-             LinearWavefunction const& Psi2)
-{
-   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
-   if (Op.is_null())
-      return MatrixOperator();
-
-   // we currently only support simple irreducible operators
-   CHECK_EQUAL(Op.Basis1().size(), 1);
-   CHECK_EQUAL(Op.Basis2().size(), 1);
-   StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
-   E[0] = m;
-   MatrixOperator Result = m;
-   LinearWavefunction::const_iterator I1 = Psi1.end();
-   LinearWavefunction::const_iterator I2 = Psi2.end();
-   GenericMPO::const_iterator OpIter = Op.end();
-   while (OpIter != Op.begin())
-   {
-      if (I1 == Psi1.begin())
-      {
-         I1 = Psi1.end();
-         I2 = Psi2.end();
-         E = delta_shift(E, adjoint(QShift));
-      }
-      --I1; --I2; --OpIter;
-      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
-   }
-   return delta_shift(E[0], adjoint(QShift));
-}
-
-LinearAlgebra::Vector<std::complex<double> >
-get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-                    ProductMPO const& StringOp,
-                    int NumEigen,
-                    QuantumNumbers::QuantumNumber const& q, double tol = 1e-10,
-                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = NULL,
-                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors = NULL,
-                    int ncv = 0, bool Sort = false, int Verbose = 0)
-{
-   PackMatrixOperator Pack(Psi.Basis2(), Psi.Basis2(), q);
-   int n = Pack.size();
-   double tolsave = tol;
-   int ncvsave = ncv;
-
-   if (Verbose >= 1)
-   {
-      std::cerr << "Calculating right eigenvalues\n";
-   }
-
-   std::vector<std::complex<double> >* OutVec
-      = RightVectors ? new std::vector<std::complex<double> >() : NULL;
-   LinearAlgebra::Vector<std::complex<double> >  RightEigen =
-      LinearAlgebra::DiagonalizeARPACK(MultFuncString(Psi, QShift, q, StringOp),
-                                       n, NumEigen, tol, OutVec, ncv, Sort, Verbose);
-
-   if (LeftVectors)
-   {
-      if (Verbose >= 1)
-      {
-         std::cerr << "Calculating left eigenvalues\n";
-      }
-      tol = tolsave;
-      ncv = ncvsave;
-      std::vector<std::complex<double> >* OutLeftVec = new std::vector<std::complex<double> >();
-      LinearAlgebra::Vector<std::complex<double> >  LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MultFuncStringTrans(Psi, QShift, q, StringOp),
-                                          n, NumEigen, tol, OutLeftVec, ncv, Sort, Verbose);
-      // The left vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
-      LeftEigen = conj(LeftEigen);
-      *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
-
-      // If we have both left & right eigenvectors, then match the corresponding eigenvalues
-      if (RightVectors)
-         LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutLeftVec, RightEigen, *OutVec, tolsave*10);
-
-      // Unpack the eigenvectors into the output array.
-      // note that we do not conjugate the eigenvector, since we want this to be a 'column vector',
-      // that we will use on the left-hand side of an inner product (eg inner_prod(left, right)).
-      for (unsigned i = 0; i < LeftEigen.size(); ++i)
-      {
-         (*LeftVectors)[i] = Pack.unpack(&((*OutLeftVec)[n*i]));
-      }
-   }
-
-   // eigenvectors
-   if (RightVectors)
-   {
-      *RightVectors = LinearAlgebra::Vector<MatrixOperator>(RightEigen.size());
-      for (unsigned i = 0; i < RightEigen.size(); ++i)
-      {
-         (*RightVectors)[i] = Pack.unpack(&((*OutVec)[n*i]));
-      }
-   }
-
-   return RightEigen;
-}
-
-// returns the left/right eigenvector pair corresponding to the eigenvalue 1
-// TODO: handle the degenerate case where there is more than one eigenvalue = 1
-std::pair<MatrixOperator, MatrixOperator>
-get_principal_eigenpair(LinearWavefunction const& Psi, QuantumNumber const& QShift,
-                        double TolIn = 1E-14, int Verbose = 0,
-                        MatrixOperator LeftGuess = MatrixOperator(),
-                        MatrixOperator RightGuess = MatrixOperator())
-{
-   // get the left eigenvector
-
-   LeftMultiply LeftMult(Psi, QShift);
-   MatrixOperator LeftEigen = LeftGuess;
-   if (LeftEigen.is_null())
-      LeftEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
-
-   int Iterations = 20;
-   double Tol = TolIn;
-   LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult,
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false,
-                                                      Verbose);
-   while (Iterations == 20)
-   {
-      Iterations = 20; Tol = 1E-14;
-      LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal,
-                                    false, Verbose);
-   }
-
-   DEBUG_TRACE(EtaL);
-
-   // get the right eigenvector
-
-   RightMultiply RightMult(Psi, QShift);
-   MatrixOperator RightEigen = RightGuess;
-   if (RightEigen.is_null())
-      RightEigen = MakeRandomMatrixOperator(Psi.Basis2(), Psi.Basis2());
-
-   Iterations = 20; Tol = TolIn;
-   RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult,
-                                                      Iterations, Tol, LinearSolvers::LargestAlgebraicReal,
-                                                      false, Verbose);
-   //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
-   while (Iterations == 20)
-   {
-      Iterations = 20; Tol = 1E-14;
-      RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMult, Iterations, Tol, LinearSolvers::LargestAlgebraicReal,
-                                    false, Verbose);
-   }
-   DEBUG_TRACE(EtaR);
-
-   RightEigen *= 1.0 / inner_prod(LeftEigen, RightEigen);
-
-   return std::make_pair(LeftEigen, RightEigen);
-}
-
 int main(int argc, char** argv)
 {
    try
@@ -606,11 +217,12 @@ int main(int argc, char** argv)
 
       if (Symmetric)
       {
-         MatrixOperator LambdaSqrt = D;
-         LambdaSqrt = SqrtDiagonal(LambdaSqrt);
-         MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
-         Psi.set_back(prod(Psi.get_back(), LambdaSqrt));
-         Psi.set_front(prod(delta_shift(LambdaInvSqrt, QShift), Psi.get_front()));
+         PANIC("not supported");
+         // MatrixOperator LambdaSqrt = D;
+         // LambdaSqrt = SqrtDiagonal(LambdaSqrt);
+         // MatrixOperator LambdaInvSqrt = InvertDiagonal(LambdaSqrt, InverseTol);
+         // Psi.set_back(prod(Psi.get_back(), LambdaSqrt));
+         // Psi.set_front(prod(delta_shift(LambdaInvSqrt, QShift), Psi.get_front()));
       }
 
 
@@ -618,27 +230,20 @@ int main(int argc, char** argv)
       MatrixOperator LeftIdent, RightIdent;
       if (Symmetric)
       {
-         MatrixOperator R = D;
-
          if (Verbose)
             std::cout << "Solving principal eigenpair...\n";
-         std::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
-                                                                     R, R);
+         std::complex<double> EValue;
+         std::tie(EValue, LeftIdent, RightIdent) = get_transfer_eigenpair(Psi, Psi, QShift, Tol, Verbose);
+         RightIdent = delta_shift(RightIdent, QShift);
       }
       else
       {
          // if we're in the left canonical basis, then we know what the eigenpair is.
-         if (Verbose)
-            std::cout << "In left-canonical basis: principal eigenpair is already known.\n";
-         LeftIdent = MatrixOperator::make_identity(Psi.Basis2());
-         RightIdent = D;
-         RightIdent = scalar_prod(RightIdent, herm(RightIdent));
-
-         std::tie(LeftIdent, RightIdent) = get_principal_eigenpair(Psi, QShift, Tol, Verbose,
-                                                                     LeftIdent, RightIdent);
+         LeftIdent = MatrixOperator::make_identity(Psi.Basis1());
+         RightIdent = D*D;
       }
 
-      std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, RightIdent);
+      std::complex<double> IdentNormalizationFactor = inner_prod(LeftIdent, delta_shift(RightIdent, QShift));
 
       // Get the string operator
       ProductMPO StringOp;
@@ -738,31 +343,34 @@ int main(int argc, char** argv)
 
       for (unsigned i = 0; i < LeftOpStr.size(); ++i)
       {
+         // TODO: the MPO types here are a bit weird, converting to a finite MPO then back to a GenericMPO...
          UnitCellMPO Op = ParseUnitCellOperatorAndLattice(LeftOpStr[i]).first;
          Op.ExtendToCoverUnitCell(Psi.size());
          // Adjust the MPO so that the left basis is the identity
          BasicFiniteMPO Mpo = Op.MPO() * BasicFiniteMPO::make_identity(Op.MPO().LocalBasis2List(),
                                                               adjoint(Op.TransformsAs()));
          Mpo = project(Mpo, QuantumNumbers::QuantumNumber(Op.GetSymmetryList()));
-         LeftOp.push_back(inject_left(LeftIdent, Psi, QShift, Mpo, Psi));
+         // Don't do a qshift here; this leaves LeftOp in the wavefunction Basis2()
+         LeftOp.push_back(inject_left(LeftIdent, Psi, Mpo.data(), Psi));
       }
 
       for (unsigned i = 0; i < RightOpStr.size(); ++i)
       {
          UnitCellMPO Op = ParseUnitCellOperatorAndLattice(RightOpStr[i]).first;
          Op.ExtendToCoverUnitCell(Psi.size());
-         RightOp.push_back(inject_right(RightIdent, Psi, QShift, Op.MPO(), Psi));
+         // Don't do a qshift here; this leaves RightOp in the wavefunction Basis1()
+         RightOp.push_back(inject_right(RightIdent, Psi, Op.MPO(), Psi));
       }
 
       // iterate over the relevant quantum number sectors
       for (QSetType::const_iterator qI = QL.begin(); qI != QL.end(); ++qI)
       {
-         LinearAlgebra::Vector<MatrixOperator> RightEigenvectors;
          LinearAlgebra::Vector<MatrixOperator> LeftEigenvectors;
+         LinearAlgebra::Vector<MatrixOperator> RightEigenvectors;
          LinearAlgebra::Vector<std::complex<double> > EValues;
 
-         LinearAlgebra::Vector<MatrixOperator>* RightEigenvectorsPtr = NULL;
          LinearAlgebra::Vector<MatrixOperator>* LeftEigenvectorsPtr = NULL;
+         LinearAlgebra::Vector<MatrixOperator>* RightEigenvectorsPtr = NULL;
 
          if (!RightOp.empty())
          {
@@ -772,19 +380,8 @@ int main(int argc, char** argv)
 
          // determine the spectrum
          EValues = get_spectrum_string(Psi, QShift, StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), *qI),
-                                       MaxEigen, *qI, Tol, RightEigenvectorsPtr,
-                                       LeftEigenvectorsPtr, KrylovLength, true, Verbose);
-
-#if 0
-         if (!RightOp.is_null() && RightOp.TransformsAs() == *qI && ShowEigenvectorOverlaps)
-         {
-            LinearAlgebra::Matrix<double> EigenOverlaps(size(RightEigenvectors), size(LeftEigenvectors));
-            for (unsigned i = 0; i < size(RightEigenvectors); ++i)
-               for (unsigned j = 0; j < size(LeftEigenvectors); ++j)
-                  EigenOverlaps(i,j) = norm_frob(inner_prod(LeftEigenvectors[j], RightEigenvectors[i]));
-            std::cerr << "Eigenvector overlap matrix:\n" << EigenOverlaps << '\n';
-         }
-#endif
+                                       MaxEigen, Tol, LeftEigenvectorsPtr,
+                                       RightEigenvectorsPtr, KrylovLength, true, Verbose);
 
          for (int i = 0; i < int(size(EValues)); ++i)
          {
@@ -799,17 +396,10 @@ int main(int argc, char** argv)
                   if (LeftOp[iL].TransformsAs() == LeftEigenvectors[i].TransformsAs()
                       && RightOp[iR].TransformsAs() == RightEigenvectors[i].TransformsAs())
                   {
-#if 1
-                     std::complex<double> Overlap = inner_prod(LeftOp[iL], LeftEigenvectors[i])
-                        * inner_prod(RightEigenvectors[i], RightOp[iR])
-                        / (inner_prod(RightEigenvectors[i], LeftEigenvectors[i]) * IdentNormalizationFactor);
-                     //TRACE(inner_prod(LeftOp[iL], LeftEigenvectors[i]))(inner_prod(RightEigenvectors[i], RightOp[iR]))
-                     //(inner_prod(RightEigenvectors[i], LeftEigenvectors[i]));
-#else
                      std::complex<double> Overlap = inner_prod(LeftOp[iL], RightEigenvectors[i])
                         * inner_prod(LeftEigenvectors[i], RightOp[iR])
-                        / (inner_prod(LeftEigenvectors[i], RightEigenvectors[i]) * IdentNormalizationFactor);
-#endif
+                        / (inner_prod(LeftEigenvectors[i], delta_shift(RightEigenvectors[i], QShift)) * IdentNormalizationFactor);
+
                      if (ShowRealPart)
                         std::cout << std::setw(20) << Overlap.real() << "  ";
                      if (ShowImagPart)

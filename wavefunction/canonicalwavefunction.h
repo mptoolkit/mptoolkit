@@ -84,6 +84,10 @@ class CanonicalWavefunctionBase
       RealDiagonalOperator lambda_l() const { return this->lambda(0); }
       RealDiagonalOperator lambda_r() const { return this->lambda(this->size()); }
 
+      // shortcuts to the density operators
+      RealDiagonalOperator density_l() const { return this->lambda(0) * this->lambda(0); }
+      RealDiagonalOperator density_r() const { return this->lambda(this->size()) * this->lambda(this->size()); }
+
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
 

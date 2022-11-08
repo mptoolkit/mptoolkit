@@ -63,16 +63,37 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
 // The string operator could have a unit cell that divides the wavefunction unit cell.
 // The eigenvectors are normalized such that inner_prod(Left, delta_shift(Right, QShift)) = 1
 // The returned left eigenvector is in the Basis1() of Psi1/Psi2.
-// The returned left eigenvector is in the Basis2() of Psi1/Psi2.
+// The returned right eigenvector is in the Basis2() of Psi1/Psi2.
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                        ProductMPO const& StringOp,
                        double tol = 1E-14, int Verbose = 0);
 
-// version that uses StringOp == identity
+// version that uses StringOp == identity in the sector q
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, QuantumNumber const& q, double tol = 1E-14, int Verbose = 0);
+
+// version that uses StringOp == identity in the identity sector
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
                        QuantumNumber const& q,
                        double tol = 1E-14, int Verbose = 0);
+
+// get the entire spectrum up to NumEigen eigenvalues.  If LeftVectors or RightVectors is not null, then
+// also calculate the left/right eigenvectors.  These are returned in the Basis1() / Basis2() respectively.
+// TODO: There is a minor problem here matching eigenvalues between the left and the right eigenvalues in the case
+// where the last eigenvalue is one of a complex conjugate pair. In that case, it is not uncommon that the final
+// left eigenvalue is the conjugate pair of the final right eigenvalue, and we get a warning that the eigenvalues
+// don't match.  The fix for this is to calculate n+1 eigenvalues, and throw the last one away at the end.
+LinearAlgebra::Vector<std::complex<double>>
+get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                    ProductMPO const& StringOp,
+                    int NumEigen, double tol = 1e-10,
+                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
+                    int ncv = 0, bool Sort = false, int Verbose = 0);
 
 #endif

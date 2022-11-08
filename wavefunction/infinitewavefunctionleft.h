@@ -152,8 +152,9 @@ left_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& 
 // Extend the unit cell of the wavefunction by repeating it Count number of times
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
-// returns a linear wavefunction that is in pure left-orthogonal form.
+// returns a linear wavefunction that is in pure left-orthogonal form, and the lambda matrix.
 // This is a very fast operation that only manipulates pvalue_handle objects.
+// The returned Lambda matrix is in the Basis2()
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 

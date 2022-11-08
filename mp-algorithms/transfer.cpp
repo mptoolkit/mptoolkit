@@ -139,8 +139,85 @@ get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const&
 }
 
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, QuantumNumber const& q, double tol, int Verbose)
+{
+   return get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol, int Verbose)
+{
+   return get_transfer_eigenpair(Psi1, Psi2, QShift, QuantumNumbers::QuantumNumber(Psi1.GetSymmetryList()), tol, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
                        QuantumNumber const& q, double tol, int Verbose)
 {
    return get_transfer_eigenpair(get_left_canonical(Psi1).first, get_left_canonical(Psi2).first, Psi1.qshift(), ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, Verbose);
+}
+
+
+LinearAlgebra::Vector<std::complex<double>>
+get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                    ProductMPO const& StringOp,
+                    int NumEigen, double tol,
+                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors,
+                    LinearAlgebra::Vector<MatrixOperator>* RightVectors,
+                    int ncv, bool Sort, int Verbose)
+{
+   PackStateComponent PackL(StringOp.Basis1(), Psi.Basis1(), Psi.Basis1());
+   PackStateComponent PackR(StringOp.Basis1(), Psi.Basis2(), Psi.Basis2());
+   int n = PackL.size();
+
+   if (Verbose >= 1)
+   {
+      std::cerr << "Calculating left eigenvalues\n";
+   }
+
+   std::vector<std::complex<double>>* OutVecL
+      = LeftVectors ? new std::vector<std::complex<double>>() : NULL;
+   LinearAlgebra::Vector<std::complex<double>>  LeftEigen =
+   LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackL, LeftMultiplyOperator(Psi, QShift, StringOp, Psi, QShift,
+      Psi.size(), Verbose-1)), n, NumEigen, tol, OutVecL, ncv, Sort, Verbose);
+
+   if (RightVectors)
+   {
+      if (Verbose >= 1)
+      {
+         std::cerr << "Calculating right eigenvalues\n";
+      }
+      std::vector<std::complex<double>>* OutVecR = new std::vector<std::complex<double>>();
+      LinearAlgebra::Vector<std::complex<double>> RightEigen =
+      LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackR, RightMultiplyOperator(Psi, QShift, StringOp, Psi, QShift,
+      Psi.size(), Verbose-1)), n, NumEigen, tol, OutVecR, ncv, Sort, Verbose);
+
+      // The right vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
+      RightEigen = conj(RightEigen);
+      *RightVectors = LinearAlgebra::Vector<MatrixOperator>(RightEigen.size());
+
+      // If we have both left & right eigenvectors, then match the corresponding eigenvalues
+      if (LeftVectors)
+         LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutVecL, RightEigen, *OutVecR, tol*10);
+
+      // Unpack the eigenvectors into the output array.
+      // note that we do not conjugate the eigenvector, since we want this to be a 'column vector',
+      // that we will use on the left-hand side of an inner product (eg inner_prod(left, right)).
+      for (unsigned i = 0; i < RightEigen.size(); ++i)
+      {
+         (*RightVectors)[i] = PackR.unpack(&((*OutVecR)[n*i]))[0];
+      }
+   }
+
+   // eigenvectors
+   if (LeftVectors)
+   {
+      *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
+      for (unsigned i = 0; i < LeftEigen.size(); ++i)
+      {
+         (*LeftVectors)[i] = PackL.unpack(&((*OutVecL)[n*i]))[0];
+      }
+   }
+
+   return LeftEigen;
 }

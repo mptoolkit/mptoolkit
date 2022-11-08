@@ -128,6 +128,13 @@ inject_left(StateComponent const& E,
             GenericMPO const& Op,
             LinearWavefunction const& Psi2);
 
+MatrixOperator
+inject_left(MatrixOperator const& m,
+            LinearWavefunction const& Psi1,
+            QuantumNumbers::QuantumNumber const& QShift,
+            GenericMPO const& Op,
+            LinearWavefunction const& Psi2);
+
 //
 // inject right variants
 //
@@ -157,6 +164,14 @@ inject_right_qshift(MatrixOperator const& m,
                     GenericMPO const& Op,
                     LinearWavefunction const& Psi,
                     QuantumNumber const& QShift);
+
+MatrixOperator
+inject_right(MatrixOperator const& m,
+            LinearWavefunction const& Psi1,
+            QuantumNumbers::QuantumNumber const& QShift,
+            GenericMPO const& Op,
+            LinearWavefunction const& Psi2);
+
 
 // Functor to inject_right with a fixed operator and wavefunction.
 // The fixed operator and wavefunction are stored by reference,
@@ -368,8 +383,8 @@ struct RightMultiplyOperator
 
    result_type operator()(argument_type const& x) const
    {
-      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis1());
-      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis1());
+      DEBUG_CHECK_EQUAL(x.Basis1(), Psi1.Basis2());
+      DEBUG_CHECK_EQUAL(x.Basis2(), Psi2.Basis2());
       StateComponent R = x;
       LinearWavefunction::const_iterator I1 = Psi1.end();
       LinearWavefunction::const_iterator I2 = Psi2.end();
@@ -383,6 +398,14 @@ struct RightMultiplyOperator
       }
       while (I1 != Psi1.begin() || I2 != Psi2.begin() || OpIter != StringOp.begin())
       {
+         if (Verbose > 1)
+         {
+            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
+                      << "x" << R.Basis1().total_dimension()
+                      << "x" << R.Basis2().total_dimension()
+                      << '\n';
+         }
+
          --n;
 
          if (I1 == Psi1.begin())
@@ -403,27 +426,6 @@ struct RightMultiplyOperator
             OpIter = StringOp.end();
          --OpIter;
 
-         if (Verbose > 1)
-         {
-            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
-                      << "x" << R.Basis1().total_dimension()
-                      << "x" << R.Basis2().total_dimension()
-                      << '\n';
-         }
-         if (I1 == Psi1.end())
-         {
-            I1 = Psi1.begin();
-            q1 = delta_shift(q1, QShift1);
-         }
-         if (I2 == Psi2.end())
-         {
-            I2 = Psi2.begin();
-            q2 = delta_shift(q2, QShift2);
-         }
-         if (OpIter == StringOp.end())
-         {
-            OpIter = StringOp.begin();
-         }
          R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R,
                                  herm(delta_shift(*I2, adjoint(q2))));
       }

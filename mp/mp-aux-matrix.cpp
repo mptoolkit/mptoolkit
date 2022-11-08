@@ -20,6 +20,7 @@
 #include "wavefunction/mpwavefunction.h"
 #include "mps/packunpack.h"
 #include "lattice/latticesite.h"
+#include "mp-algorithms/transfer.h"
 #include "wavefunction/operator_actions.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
@@ -176,57 +177,6 @@ WriteMatrixOperatorAsSparseStates(std::ostream& out, MatrixOperator const& Op, O
    }
 }
 
-template <typename Func>
-struct PackApplyFunc
-{
-   PackApplyFunc(PackStateComponent const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
-
-   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
-   {
-      StateComponent x = Pack.unpack(In);
-      x = f(x);
-      Pack.pack(x, Out);
-   }
-   PackStateComponent const& Pack;
-   Func f;
-};
-
-template <typename Func>
-PackApplyFunc<Func>
-MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
-{
-   return PackApplyFunc<Func>(Pack_, f_);
-}
-
-std::tuple<std::complex<double>, int, StateComponent>
-get_left_eigenvector(LinearWavefunction const& Psi1, QuantumNumber const& QShift1,
-                     LinearWavefunction const& Psi2, QuantumNumber const& QShift2,
-                     ProductMPO const& StringOp,
-                     double tol = 1E-14, int Verbose = 0)
-{
-   int ncv = 0;
-   int Length = statistics::lcm(Psi1.size(), Psi2.size(), StringOp.size());
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double> > OutVec;
-      LinearAlgebra::Vector<std::complex<double> > LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            LeftMultiplyOperator(Psi1, QShift1,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift2, Length, Verbose-2)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], Length, LeftVector);
-}
-
-
-
 int main(int argc, char** argv)
 {
    try
@@ -366,7 +316,7 @@ int main(int argc, char** argv)
             if (FileExists(ProductOpFile[i]))
             {
                std::cerr << "mp-aux-matrix: fatal: output file " << ProductOpFile[i]
-                         << " already exists.  Use -f option to overwrite.\n";
+                         << " already exists.  Use --force option to overwrite.\n";
                exit(1);
             }
          }
@@ -375,7 +325,7 @@ int main(int argc, char** argv)
             if (FileExists(TriangularOpFile[i]))
             {
                std::cerr << "mp-aux-matrix: fatal: output file " << TriangularOpFile[i]
-                         << " already exists.  Use -f option to overwrite.\n";
+                         << " already exists.  Use --force option to overwrite.\n";
                exit(1);
             }
          }
@@ -384,14 +334,14 @@ int main(int argc, char** argv)
             if (FileExists(FiniteOpFile[i]))
             {
                std::cerr << "mp-aux-matrix: fatal: output file " << FiniteOpFile[i]
-                         << " already exists.  Use -f option to overwrite.\n";
+                         << " already exists.  Use --force option to overwrite.\n";
                exit(1);
             }
          }
          if (!RhoFile.empty() && FileExists(RhoFile))
          {
             std::cerr << "mp-aux-matrix: fatal: output file " << RhoFile
-                      << " already exists.  Use -f option to overwrite.\n";
+                      << " already exists.  Use --force option to overwrite.\n";
                exit(1);
          }
       }
@@ -409,7 +359,7 @@ int main(int argc, char** argv)
       LinearWavefunction Psi1;
       RealDiagonalOperator D;
       std::tie(Psi1, D) = get_left_canonical(InfPsi);
-      MatrixOperator Rho = D;
+      MatrixOperator Rho = delta_shift(D, InfPsi.qshift()); // Shift Rho to Basis1()
       Rho = scalar_prod(Rho, herm(Rho));
       MatrixOperator Identity = MatrixOperator::make_identity(Psi1.Basis1());
 
@@ -578,17 +528,15 @@ int main(int argc, char** argv)
 
          // Get the matrix
          std::complex<double> e;
-         int n;
-         StateComponent v;
-         std::tie(e, n, v) = get_left_eigenvector(Psi1, InfPsi.qshift(), *Psi2, InfPsi.qshift(), StringOperator,
-                                                  Tol, Verbose);
+         int n = statistics::lcm(Psi1.size(), Psi2->size(), StringOperator.size());
+         MatrixOperator M;
+         std::tie(e, M) = get_left_transfer_eigenvector(Psi1, *Psi2, InfPsi.qshift(), StringOperator, Tol, Verbose);
 
          // Normalization
          // it might not be unitary, eg anti-unitary.  So we need to take the 4th power
-         std::complex<double> x = inner_prod(scalar_prod(herm(v), operator_prod(herm(v), v, v)), Rho);
-         v *= std::sqrt(std::sqrt(1.0 / x));
-
-         MatrixOperator M = v[0];
+         MatrixOperator M2 = M*M;
+         std::complex<double> x = inner_prod(scalar_prod(herm(M2), M2), Rho);
+         M *= std::pow(x, -0.25);
 
          // write to file
          std::ofstream Out(FileName.c_str(), std::ios::out | std::ios::trunc);

@@ -230,8 +230,6 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                      Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
 
-         DEBUG_TRACE(m)(norm_frob(E[m]))(inner_prod(E[m], Rho));
-
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {

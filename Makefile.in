@@ -524,14 +524,14 @@ mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
 mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o triangular_mpo_solver_helpers.o
-mp-aux-matrix : infinitewavefunctionleft.o packunpack.o
-mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
+mp-aux-matrix : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
+mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
-mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
+mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
 
 mp-matrix : write-matrix.o
 mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
@@ -547,7 +547,7 @@ mp-iprint : infinitewavefunctionleft.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunctionleft.o
 mp-pwfrg : triangular_operator.o match_basis.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
-mp-ispectrum : infinitewavefunctionleft.o packunpack.o arpack_wrapper.o siteoperator-parser.o
+mp-ispectrum : infinitewavefunctionleft.o packunpack.o arpack_wrapper.o siteoperator-parser.o transfer.o
 mp-ieigen : triangular_operator.o infinitewavefunctionleft.o
 mp-idump : infinitewavefunctionleft.o
 mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
