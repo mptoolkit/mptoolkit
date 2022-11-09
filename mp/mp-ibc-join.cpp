@@ -117,20 +117,31 @@ int main(int argc, char** argv)
 
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
-      // There are some situations where the first method does not work
-      // properly, so temporarily use the second method as a workaround.
+      InfiniteWavefunctionRight PsiRight;
+      if (InPsiRight->is<InfiniteWavefunctionRight>())
+         PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
+      else if (InPsiRight->is<InfiniteWavefunctionLeft>())
+      {
+         // There are some situations where the first method does not work
+         // properly, so temporarily use the second method as a workaround.
 #if 0
-      InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
+         InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
 #else
-      InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
+         InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
 
-      MatrixOperator U;
-      RealDiagonalOperator D;
-      LinearWavefunction PsiRightLinear;
-      std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
+         MatrixOperator U;
+         RealDiagonalOperator D;
+         LinearWavefunction PsiRightLinear;
+         std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
 
-      InfiniteWavefunctionRight PsiRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+         PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
 #endif
+      }
+      else
+      {
+         std::cerr << "FATAL: right_psi must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
+         return 1;
+      }
 
       // If the bases of the two boundary unit cells have only one quantum
       // number sector, manually ensure that they match.
