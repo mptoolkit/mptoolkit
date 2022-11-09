@@ -161,6 +161,21 @@ wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
                           Psi.WindowRightSites);
 }
 
+EAWavefunction
+wigner_project(EAWavefunction const& Psi, SymmetryList const& FinalSL)
+{
+   std::vector<WavefunctionSectionLeft> WindowVec = Psi.WindowVec;
+
+   for (auto& Window : WindowVec)
+      Window = wigner_project(Window, FinalSL);
+
+   return EAWavefunction(wigner_project(Psi.Left, FinalSL),
+                         WindowVec,
+                         wigner_project(Psi.Right, FinalSL),
+                         Psi.ExpIK,
+                         Psi.GSOverlap);
+}
+
 FiniteWavefunctionLeft
 wigner_project(FiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
 {
