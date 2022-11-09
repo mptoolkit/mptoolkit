@@ -66,6 +66,7 @@ int main(int argc, char** argv)
       bool Force = false;
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
       double Tol = 1E-15;
+      bool Streaming = false;
       int NumEigen = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -83,6 +84,7 @@ int main(int argc, char** argv)
          ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance of the eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
+         ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -139,7 +141,7 @@ int main(int argc, char** argv)
       }
       else
       {
-         std::cerr << "FATAL: right_psi must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
+         std::cerr << "fatal: right_psi must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
          return 1;
       }
 
@@ -208,6 +210,18 @@ int main(int argc, char** argv)
       Window = WavefunctionSectionLeft(C);
 
       IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, 0);
+
+      if (Streaming)
+      {
+         if (!InPsiRight->is<InfiniteWavefunctionRight>())
+         {
+            std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight is streaming is enabled." << std::endl;
+            return 1;
+         }
+
+         ResultPsi.WavefunctionLeftFile = InputFileLeft;
+         ResultPsi.WavefunctionRightFile = InputFileRight;
+      }
 
       MPWavefunction Result(ResultPsi);
 
