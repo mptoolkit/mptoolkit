@@ -178,7 +178,7 @@ int main(int argc, char** argv)
 
          std::vector<std::vector<std::complex<double>>> OutputVectors(NumEigen, std::vector<std::complex<double>>(Mult.P.size()));
 
-         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal, Tol, OutputVectors.data(), 0, false, Verbose-1);
+         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal, Tol, OutputVectors.data(), 0, true, Verbose-1);
 
          C = Mult.P.unpack(OutputVectors[0].data());
 

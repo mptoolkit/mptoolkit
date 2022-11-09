@@ -215,13 +215,10 @@ int main(int argc, char** argv)
                                                Tol, &EVectors, 0, true, Verbose);
 
          // Print results for this k.
-         // Note that the eigenvalues are sorted in decreasing order, so we
-         // need to iterate backwards.
-         auto E = EValues.end();
-         for (int i = 0; i < NumEigen && E != EValues.begin(); ++i)
+         auto E = EValues.begin();
+         for (int i = 0; i < NumEigen && E != EValues.end(); ++i, ++E)
          {
-            --E;
-            int Index = (NumEigen-i-1) * PackH.size();
+            int Index = i * PackH.size();
             if (Quiet < 2)
                std::cout << std::setw(20) << k;
             if (NumEigen > 1 && Quiet < 3)
