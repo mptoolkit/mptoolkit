@@ -42,6 +42,22 @@ inline std::string ToStr(WhichEigenvalues w)
    return "";
 }
 
+inline bool Compare(WhichEigenvalues w, std::complex<double> a, std::complex<double> b)
+{
+   switch (w)
+   {
+      case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
+      case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
+      case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
+      case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
+      case WhichEigenvalues::LargestImag : return std::imag(a) > std::imag(b);
+      case WhichEigenvalues::SmallestImag : return std::imag(a) < std::imag(b);
+      case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
+      case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
+      case WhichEigenvalues::BothEnds : return false; // Do not sort.
+   }
+   return false;
+}
 
 template <typename MultFunc>
 Vector<std::complex<double>>
@@ -211,7 +227,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       {
          for (unsigned j = i+1; j < Result.size(); ++j)
          {
-            if (norm_frob(Result[j]) > norm_frob(Result[i]))
+            if (Compare(which, Result[j], Result[i]))
             {
                std::swap(Result[i], Result[j]);
                if (OutputVectors)
