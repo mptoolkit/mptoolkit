@@ -302,6 +302,13 @@ int main(int argc, char** argv)
 
       IBCWavefunction PsiOut(PsiLeft.Left, PsiWindow, PsiRight.Right, PsiLeft.window_offset(), PsiLeft.WindowLeftSites, PsiRight.WindowRightSites);
 
+      // Stream the boundaries, if the input files do.
+      if (!PsiLeft.WavefunctionLeftFile.empty())
+         PsiOut.WavefunctionLeftFile = PsiLeft.WavefunctionLeftFile;
+
+      if (!PsiRight.WavefunctionRightFile.empty())
+         PsiOut.WavefunctionRightFile = PsiRight.WavefunctionRightFile;
+
       MPWavefunction Wavefunction;
       Wavefunction.Wavefunction() = std::move(PsiOut);
       Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
