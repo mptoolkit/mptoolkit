@@ -64,7 +64,8 @@ int main(int argc, char** argv)
          ;
 
       OpDescriptions.add_functions()
-         ("H_l", "Background field l")
+         //("H_l", "Background field l")
+         ("H_buyens", "Hamiltonian as used in http://dx.doi.org/10.1103/PhysRevLett.113.091601")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -97,8 +98,9 @@ int main(int argc, char** argv)
             + dot(C(0)[1], CH(1)[0])
          );
 
-      Lattice["H_m"] = 2*sum_unit(Np(0));
-      Lattice["H_ms"] = 2*sum_unit(Np(0) - I(0));
+      // We removed the factor 2 that was originally here.
+      Lattice["H_m"] = sum_unit(Np(0));
+      Lattice["H_ms"] = sum_unit(Np(0) - I(0));
 
       Lattice["H_E"] = sum_partial(2 * pow(sum_unit(Nf(0)),2),I)
          + 2 * sum_partial(sum_unit(Nf(0)),N(0)[0])
@@ -111,7 +113,16 @@ int main(int argc, char** argv)
          + sum_string(-Nf(0) - N(0)[0], I(0)[0], Nf(0))
          + sum_unit(-Nf(0)[0]*Nf(0)[1]);
 
-      Lattice.func("H_l")("l") = "l*2*(2 * sum_partial(sum_unit(Nf(0)),I) + sum_unit(2*Np(0)[0] - Np(0)[1]))";
+      // The Hamiltonian scaling as used in http://dx.doi.org/10.1103/PhysRevLett.113.091601 equation (2)
+      // g = coupling, a = lattice spacing, m = mass
+      // x == 1 / (g^2 a^2), is the continuum scaling factor
+      // mu = 2 \sqrt{x} m / g
+      // has an overall energy scaling factor of of g / (2 \sqrt{x})
+      // H = (g / (2\sqrt{x})) ( x*H_c + H_e + (mu/2)*H_m )
+      Lattice.func("H_buyens")("x","m", arg("g")=1) = "x*H_c + H_Esym + (2*sqrt(x)*m/g)*H_m";
+
+
+      //Lattice.func("H_l")("l") = "l*2*(2 * sum_partial(sum_unit(Nf(0)),I) + sum_unit(2*Np(0)[0] - Np(0)[1]))";
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
