@@ -299,6 +299,14 @@ int main(int argc, char** argv)
                                (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(),
                                (Psi.WindowRightSites + SitesRight) % PsiRight.size());
 
+      // Stream the boundaries, if the input file does.
+      // UNLESS we modify the left boundary.
+      if (!Psi.WavefunctionLeftFile.empty() && vm.count("left") == 0)
+         PsiNew.WavefunctionLeftFile = Psi.WavefunctionLeftFile;
+
+      if (!Psi.WavefunctionRightFile.empty())
+         PsiNew.WavefunctionRightFile = Psi.WavefunctionRightFile;
+
       PsiPtr.mutate()->Wavefunction() = PsiNew;
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
