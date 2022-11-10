@@ -69,6 +69,11 @@ class EAWavefunction
       // Assume that each window has the same size.
       int window_size() const { return WindowVec.front().size(); }
 
+      // Return the filename of the left/right windows.  If this is empty then the
+      // wavefunctions are stored directly in this object
+      std::string LeftWindowFile() const { return WavefunctionLeftFile; }
+      std::string RightWindowFile() const { return WavefunctionRightFile; }
+
       void SetDefaultAttributes(AttributeList& A) const;
 
       static std::string const Type;
@@ -80,6 +85,10 @@ class EAWavefunction
 
       // private:
 
+      // We can optionally save the left and right semi-infinite wavefunctions on disc by reference to a file.
+      // If these strings are non-empty then the Left and Right components are not saved when this wavefunction
+      // is streamed to disc.
+      std::string WavefunctionLeftFile, WavefunctionRightFile;
       InfiniteWavefunctionLeft Left;
       std::vector<WavefunctionSectionLeft> WindowVec;
       InfiniteWavefunctionRight Right;
