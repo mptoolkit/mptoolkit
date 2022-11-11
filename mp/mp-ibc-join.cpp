@@ -67,6 +67,7 @@ int main(int argc, char** argv)
       double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
       double Tol = 1E-15;
       bool Streaming = false;
+      bool NoStreaming = false;
       int NumEigen = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -85,6 +86,7 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
+         ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -109,6 +111,14 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      if (Streaming && NoStreaming)
+      {
+         std::cerr << "fatal: cannot use --streaming and --no-streaming simultaneously!" << std::endl;
+         return 1;
+      }
+      else if (!Streaming && !NoStreaming)
+         NoStreaming = true; // This is the current default behavior.
+
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
@@ -124,6 +134,12 @@ int main(int argc, char** argv)
          PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
       else if (InPsiRight->is<InfiniteWavefunctionLeft>())
       {
+         if (!InPsiRight->is<InfiniteWavefunctionRight>())
+         {
+            std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight if streaming is enabled." << std::endl;
+            return 1;
+         }
+
          // There are some situations where the first method does not work
          // properly, so temporarily use the second method as a workaround.
 #if 0
@@ -213,12 +229,6 @@ int main(int argc, char** argv)
 
       if (Streaming)
       {
-         if (!InPsiRight->is<InfiniteWavefunctionRight>())
-         {
-            std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight is streaming is enabled." << std::endl;
-            return 1;
-         }
-
          ResultPsi.WavefunctionLeftFile = InputFileLeft;
          ResultPsi.WavefunctionRightFile = InputFileRight;
       }
