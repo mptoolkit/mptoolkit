@@ -135,8 +135,11 @@ class IBCWavefunction
       int window_right_sites() const { return WindowRightSites; }
       int window_offset() const { return WindowOffset; }
 
-      std::string left_filename() const { return WavefunctionLeftFile; }
-      std::string right_filename() const { return WavefunctionRightFile; }
+      std::string get_left_filename() const { return WavefunctionLeftFile; }
+      std::string get_right_filename() const { return WavefunctionRightFile; }
+
+      void set_left_filename(std::string LeftFilename) { WavefunctionLeftFile = LeftFilename; }
+      void set_right_filename(std::string RightFilename) { WavefunctionRightFile = RightFilename; }
 
       InfiniteWavefunctionLeft const& left() const { return Left; }
       WavefunctionSectionLeft const& window() const { return Window; }

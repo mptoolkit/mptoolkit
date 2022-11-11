@@ -65,7 +65,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    out << "Infinite Boundary Condition wavefunction in the left/left/right orthogonal basis.\n";
    out << "Symmetry list = " << Psi.window().GetSymmetryList() << '\n';
 
-   std::string lw = Psi.left_filename();
+   std::string lw = Psi.get_left_filename();
    if (lw.empty())
       out << "Left semi-infinite strip is stored directly.\n";
    else
@@ -76,7 +76,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
       out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
 
-   std::string rw = Psi.right_filename();
+   std::string rw = Psi.get_right_filename();
    if (rw.empty())
       out << "Right semi-infinite strip is stored directly.\n";
    else

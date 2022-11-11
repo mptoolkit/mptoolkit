@@ -341,6 +341,6 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["WindowOffset"] = this->window_offset();
    A["LeftUnitCellSize"] = Left.size();
    A["RightUnitCellSize"] = Left.size();
-   A["LeftFilename"] = this->left_filename();
-   A["RightFilename"] = this->right_filename();
+   A["LeftFilename"] = this->get_left_filename();
+   A["RightFilename"] = this->get_right_filename();
 }
