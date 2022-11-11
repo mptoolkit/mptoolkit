@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 
       if (Streaming && NoStreaming)
       {
-         std::cerr << "fatal: cannot use --streaming and --no-streaming simultaneously!" << std::endl;
+         std::cerr << "fatal: Cannot use --streaming and --no-streaming simultaneously!" << std::endl;
          return 1;
       }
       else if (!Streaming && !NoStreaming)

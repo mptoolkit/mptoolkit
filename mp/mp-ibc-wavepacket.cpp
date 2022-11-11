@@ -417,7 +417,7 @@ int main(int argc, char** argv)
             std::cerr << "WARNING: 2/KYStep=" << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
          if (NY < 4)
          {
-            std::cerr << "FATAL: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis." << std::endl;
+            std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
             return 1;
          }
       }
@@ -467,7 +467,7 @@ int main(int argc, char** argv)
 
       if (!Finished)
       {
-         std::cerr << "FATAL: Cannot localize wavepacket." << std::endl;
+         std::cerr << "fatal: Cannot localize wavepacket." << std::endl;
          return 1;
       }
 

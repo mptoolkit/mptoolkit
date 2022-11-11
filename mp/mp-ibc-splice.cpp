@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 
       if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
       {
-         std::cerr << "FATAL: The overlap of two middle boundaries is significantly less than 1." << std::endl;
+         std::cerr << "fatal: The overlap of two middle boundaries is significantly less than 1." << std::endl;
          return 1;
       }
 
