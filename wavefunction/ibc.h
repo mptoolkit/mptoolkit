@@ -114,25 +114,33 @@ class IBCWavefunction
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                       WavefunctionSectionLeft const& Window_,
                       InfiniteWavefunctionRight const& Right_,
-                      int Offset = 0);
+                      int Offset = 0,
+                      int WindowLeft = 0,
+                      int WindowRight = 0);
 
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                       WavefunctionSectionLeft const& Window_,
                       InfiniteWavefunctionRight const& Right_,
-                      int Offset,
-                      int WindowLeft,
-                      int WindowRight);
+                      std::string LeftFilename,
+                      std::string RightFilename,
+                      int Offset = 0,
+                      int WindowLeft = 0,
+                      int WindowRight = 0);
 
       SymmetryList GetSymmetryList() const { return Window.GetSymmetryList(); }
 
       int window_size() const { return Window.size(); }
 
+      int window_left_sites() const { return WindowLeftSites; }
+      int window_right_sites() const { return WindowRightSites; }
       int window_offset() const { return WindowOffset; }
 
-      // Return the filename of the left/right windows.  If this is empty then the
-      // wavefunctions are stored directly in this object
-      std::string LeftWindowFile() const { return WavefunctionLeftFile; }
-      std::string RightWindowFile() const { return WavefunctionRightFile; }
+      std::string left_filename() const { return WavefunctionLeftFile; }
+      std::string right_filename() const { return WavefunctionRightFile; }
+
+      InfiniteWavefunctionLeft const& left() const { return Left; }
+      WavefunctionSectionLeft const& window() const { return Window; }
+      InfiniteWavefunctionRight const& right() const { return Right; }
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -143,7 +151,7 @@ class IBCWavefunction
       void check_structure() const;
       void debug_check_structure() const;
 
-      // private:
+      private:
 
       // Number of sites of the Left unit cell that have been incorporated into
       // the Window (from 0 .. Left.size()-1)
