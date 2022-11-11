@@ -49,7 +49,7 @@ struct HEff
 {
    HEff() {}
 
-   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
+   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
         BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
         EASettings const& Settings_);
 

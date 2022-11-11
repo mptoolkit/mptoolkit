@@ -169,20 +169,46 @@ int main(int argc, char** argv)
 
       // Initialize the effective Hamiltonian.
       HEff H;
-      InfiniteWavefunctionLeft PsiRight;
+      InfiniteWavefunctionRight PsiRight;
       if (vm.count("psi2"))
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
-         PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
+         if (InPsiRight->is<InfiniteWavefunctionRight>())
+            PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
+         else if (InPsiRight->is<InfiniteWavefunctionLeft>())
+         {
+            InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
+
+            MatrixOperator U;
+            RealDiagonalOperator D;
+            LinearWavefunction PsiRightLinear;
+            std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
+
+            PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+         }
+         else
+         {
+            std::cerr << "fatal: psi-right must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
+            return 1;
+         }
       }
       else
-         PsiRight = PsiLeft;
+      {
+         InfiniteWavefunctionLeft PsiRightLeft = PsiLeft;
+
+         MatrixOperator U;
+         RealDiagonalOperator D;
+         LinearWavefunction PsiRightLinear;
+         std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
+
+         PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+      }
 
       // Turn off momentum targeting if ky is unspecified.
       if (vm.count("ky") == 0)
          Settings.Alpha = 0.0;
 
-      H = HEff(PsiLeft, PsiLeft, HamMPO, Q, Settings);
+      H = HEff(PsiLeft, PsiRight, HamMPO, Q, Settings);
 
       // Print column headers.
       if (Quiet == 0)
@@ -242,7 +268,7 @@ int main(int argc, char** argv)
                Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
-               // Use the value of k relative to the lattice unit cell.
+
                std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)
                   FName += ".k" + formatting::format_digits(k, OutputDigits);
