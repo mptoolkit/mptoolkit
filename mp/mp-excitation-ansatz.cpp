@@ -52,6 +52,8 @@ int main(int argc, char** argv)
       std::string String;
       std::string OutputPrefix;
       int OutputDigits = -1;
+      bool Streaming = false;
+      bool NoStreaming = false;
 
       EASettings Settings;
 
@@ -78,6 +80,8 @@ int main(int argc, char** argv)
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
          ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
+         ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
+         ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("quiet,q", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum, use thrice to hide energies")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -113,6 +117,14 @@ int main(int argc, char** argv)
          std::cerr << "fatal: Please specify the cylinder translation operator using --string." << std::endl;
          return 1;
       }
+
+      if (Streaming && NoStreaming)
+      {
+         std::cerr << "fatal: Cannot use --streaming and --no-streaming simultaneously!" << std::endl;
+         return 1;
+      }
+      else if (!Streaming && !NoStreaming)
+         NoStreaming = true; // This is the current default behavior.
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
@@ -169,20 +181,61 @@ int main(int argc, char** argv)
 
       // Initialize the effective Hamiltonian.
       HEff H;
-      InfiniteWavefunctionLeft PsiRight;
+      InfiniteWavefunctionRight PsiRight;
       if (vm.count("psi2"))
       {
          pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
-         PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
+         if (InPsiRight->is<InfiniteWavefunctionRight>())
+            PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
+         else if (InPsiRight->is<InfiniteWavefunctionLeft>())
+         {
+            if (Streaming)
+            {
+               std::cerr << "fatal: psi-right must be an InfiniteWavefunctionRight if streaming is enabled." << std::endl;
+               return 1;
+            }
+
+            InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
+
+            MatrixOperator U;
+            RealDiagonalOperator D;
+            LinearWavefunction PsiRightLinear;
+            std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
+
+            PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+         }
+         else
+         {
+            std::cerr << "fatal: psi-right must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
+            return 1;
+         }
       }
       else
-         PsiRight = PsiLeft;
+      {
+         // This condition could be relaxed, in that case we would only save
+         // the left boundary by reference, but we assume that the user want
+         // both boundaries saved by reference.
+         if (Streaming)
+         {
+            std::cerr << "fatal: psi-right must be specified if streaming is enabled." << std::endl;
+            return 1;
+         }
+
+         InfiniteWavefunctionLeft PsiRightLeft = PsiLeft;
+
+         MatrixOperator U;
+         RealDiagonalOperator D;
+         LinearWavefunction PsiRightLinear;
+         std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
+
+         PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+      }
 
       // Turn off momentum targeting if ky is unspecified.
       if (vm.count("ky") == 0)
          Settings.Alpha = 0.0;
 
-      H = HEff(PsiLeft, PsiLeft, HamMPO, Q, Settings);
+      H = HEff(PsiLeft, PsiRight, HamMPO, Q, Settings);
 
       // Print column headers.
       if (Quiet == 0)
@@ -237,12 +290,18 @@ int main(int argc, char** argv)
             {
                EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
 
+               if (Streaming)
+               {
+                  PsiEA.WavefunctionLeftFile = InputFileLeft;
+                  PsiEA.WavefunctionRightFile = InputFileRight;
+               }
+
                MPWavefunction Wavefunction;
                Wavefunction.Wavefunction() = std::move(PsiEA);
                Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
-               // Use the value of k relative to the lattice unit cell.
+
                std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)
                   FName += ".k" + formatting::format_digits(k, OutputDigits);

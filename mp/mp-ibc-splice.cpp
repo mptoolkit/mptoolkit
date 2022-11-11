@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 
       if (std::abs(std::abs(Overlap) - 1.0) > OverlapTol)
       {
-         std::cerr << "FATAL: The overlap of two middle boundaries is significantly less than 1." << std::endl;
+         std::cerr << "fatal: The overlap of two middle boundaries is significantly less than 1." << std::endl;
          return 1;
       }
 
@@ -301,6 +301,13 @@ int main(int argc, char** argv)
          std::cout << "Saving wavefunction..." << std::endl;
 
       IBCWavefunction PsiOut(PsiLeft.Left, PsiWindow, PsiRight.Right, PsiLeft.window_offset(), PsiLeft.WindowLeftSites, PsiRight.WindowRightSites);
+
+      // Stream the boundaries, if the input files do.
+      if (!PsiLeft.WavefunctionLeftFile.empty())
+         PsiOut.WavefunctionLeftFile = PsiLeft.WavefunctionLeftFile;
+
+      if (!PsiRight.WavefunctionRightFile.empty())
+         PsiOut.WavefunctionRightFile = PsiRight.WavefunctionRightFile;
 
       MPWavefunction Wavefunction;
       Wavefunction.Wavefunction() = std::move(PsiOut);

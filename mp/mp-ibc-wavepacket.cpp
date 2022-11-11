@@ -232,6 +232,8 @@ int main(int argc, char** argv)
       double KYCenter = 0.0;
       int InputDigits = -1;
       double Tol = 1e-5;
+      std::string LeftBoundaryFilename;
+      std::string RightBoundaryFilename;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -306,6 +308,14 @@ int main(int argc, char** argv)
 
          pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
          EAWavefunction Psi = InPsi->get<EAWavefunction>();
+
+         // If the input streams the boundaries, then we save them so we can
+         // stream them in the output as well.
+         if (!Psi.WavefunctionLeftFile.empty())
+            LeftBoundaryFilename = Psi.WavefunctionLeftFile;
+
+         if (!Psi.WavefunctionRightFile.empty())
+            RightBoundaryFilename = Psi.WavefunctionRightFile;
 
          PsiLeft = Psi.Left;
          PsiRight = Psi.Right;
@@ -417,7 +427,7 @@ int main(int argc, char** argv)
             std::cerr << "WARNING: 2/KYStep=" << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
          if (NY < 4)
          {
-            std::cerr << "FATAL: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis." << std::endl;
+            std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
             return 1;
          }
       }
@@ -467,7 +477,7 @@ int main(int argc, char** argv)
 
       if (!Finished)
       {
-         std::cerr << "FATAL: Cannot localize wavepacket." << std::endl;
+         std::cerr << "fatal: Cannot localize wavepacket." << std::endl;
          return 1;
       }
 
@@ -543,6 +553,13 @@ int main(int argc, char** argv)
          std::cout << "Saving wavefunction..." << std::endl;
 
       IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
+
+      // Stream the boundaries, if the input files do.
+      if (!LeftBoundaryFilename.empty())
+         PsiOut.WavefunctionLeftFile = LeftBoundaryFilename;
+
+      if (!RightBoundaryFilename.empty())
+         PsiOut.WavefunctionRightFile = RightBoundaryFilename;
 
       MPWavefunction Wavefunction;
       Wavefunction.Wavefunction() = std::move(PsiOut);

@@ -263,10 +263,19 @@ int main(int argc, char** argv)
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
-            MPWavefunction Wavefunction;
+            IBCWavefunction PsiSave = tdvp.Wavefunction();
+
+            // Stream the boundaries, if the input file does.
+            if (!Psi.WavefunctionLeftFile.empty())
+               PsiSave.WavefunctionLeftFile = Psi.WavefunctionLeftFile;
+
+            if (!Psi.WavefunctionRightFile.empty())
+               PsiSave.WavefunctionRightFile = Psi.WavefunctionRightFile;
+
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            IBCWavefunction PsiSave = tdvp.Wavefunction();
+
+            MPWavefunction Wavefunction;
             Wavefunction.Wavefunction() = std::move(PsiSave);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();

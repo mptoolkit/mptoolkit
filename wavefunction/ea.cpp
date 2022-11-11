@@ -19,6 +19,7 @@
 // ENDHEADER
 
 #include "ea.h"
+#include "mpwavefunction.h"
 
 //
 // EAWavefunction
@@ -32,9 +33,18 @@
 // InfiniteWavefunctionRight Right
 // std::complex<double> ExpIK
 // std::complex<double> GSOverlap
+//
+// Version 2:
+// string WavefunctionLeftFile
+// string WavefunctionRightFile
+// InfiniteWavefunctionLeft Left (only if WavefunctionLeftFile is empty)
+// std::vector<WavefunctionSectionLeft> WindowVec
+// InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
+// std::complex<double> ExpIK
+// std::complex<double> GSOverlap
 
 PStream::VersionTag
-EAWavefunction::VersionT(1);
+EAWavefunction::VersionT(2);
 
 std::string const EAWavefunction::Type = "EAWavefunction";
 
@@ -93,11 +103,21 @@ void EAWavefunction::debug_check_structure() const
 PStream::opstream& operator<<(PStream::opstream& out, EAWavefunction const& Psi)
 {
    out << EAWavefunction::VersionT.default_version();
-   out << Psi.Left;
+
+   out << Psi.WavefunctionLeftFile;
+   out << Psi.WavefunctionRightFile;
+
+   if (Psi.WavefunctionLeftFile.empty())
+      out << Psi.Left;
+
    out << Psi.WindowVec;
-   out << Psi.Right;
+
+   if (Psi.WavefunctionRightFile.empty())
+      out << Psi.Right;
+
    out << Psi.ExpIK;
    out << Psi.GSOverlap;
+
    return out;
 }
 
@@ -106,14 +126,37 @@ PStream::ipstream& operator>>(PStream::ipstream& in, EAWavefunction& Psi)
    int Version = in.read<int>();
    PStream::VersionSentry Sentry(in, EAWavefunction::VersionT, Version);
 
-   if (Version != 1)
+   if (Version == 1)
    {
-      PANIC("This program is too old to read this wavefunction, expected version = 1")(Version);
+      in >> Psi.Left;
+      in >> Psi.WindowVec;
+      in >> Psi.Right;
+   }
+   else if (Version == 2)
+   {
+      in >> Psi.WavefunctionLeftFile;
+      in >> Psi.WavefunctionRightFile;
+      if (Psi.WavefunctionLeftFile.empty())
+         in >> Psi.Left;
+      else
+      {
+         pvalue_ptr<MPWavefunction> PsiLeft = pheap::ImportHeap(Psi.WavefunctionLeftFile);
+         Psi.Left = PsiLeft->get<InfiniteWavefunctionLeft>();
+      }
+      in >> Psi.WindowVec;
+      if (Psi.WavefunctionRightFile.empty())
+         in >> Psi.Right;
+      else
+      {
+         pvalue_ptr<MPWavefunction> PsiRight = pheap::ImportHeap(Psi.WavefunctionRightFile);
+         Psi.Right = PsiRight->get<InfiniteWavefunctionRight>();
+      }
+   }
+   else
+   {
+      PANIC("This program is too old to read this wavefunction, expected version <= 2")(Version);
    }
 
-   in >> Psi.Left;
-   in >> Psi.WindowVec;
-   in >> Psi.Right;
    in >> Psi.ExpIK;
    in >> Psi.GSOverlap;
 
@@ -149,4 +192,6 @@ EAWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["GSOverlap"] = GSOverlap;
    A["LeftUnitCellSize"] = Left.size();
    A["RightUnitCellSize"] = Left.size();
+   A["LeftWindowFile"] = this->LeftWindowFile();
+   A["RightWindowFile"] = this->RightWindowFile();
 }

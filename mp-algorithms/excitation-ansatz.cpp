@@ -33,10 +33,10 @@ double const TraceTol = 1e-8;
 // if the overlap - 1 is greater than this value.
 double const OverlapTol = 1e-8;
 
-HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft const& PsiRight_,
+HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
            BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
            EASettings const& Settings_)
-   : PsiLeft(PsiLeft_), HamMPO(HamMPO_), Q(Q_),
+   : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_), Q(Q_),
      StringOp(Settings_.StringOp), GMRESTol(Settings_.GMRESTol),
      Alpha(Settings_.Alpha), Verbose(Settings_.Verbose)
 {
@@ -45,14 +45,6 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
 
    this->SetK(Settings_.k);
    this->SetKY(Settings_.ky);
-
-   // Get PsiRight in right canonical form.
-   MatrixOperator U;
-   RealDiagonalOperator D;
-   LinearWavefunction PsiLinear;
-   std::tie(U, D, PsiLinear) = get_right_canonical(PsiRight_);
-
-   PsiRight = InfiniteWavefunctionRight(U*D, PsiLinear, PsiRight_.qshift());
 
    // Get PsiLeft and PsiRight as LinearWavefunctions.
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
@@ -142,6 +134,9 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionLeft co
    // boundary bases (even if they come from the same state, since we
    // transformed PsiRight to right canonical form), we must calculate the
    // right canonical form of PsiLeft in such a way to preserve this boundary.
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   LinearWavefunction PsiLinear;
    std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
    PsiLinear.set_front(prod(U, PsiLinear.get_front()));
 
