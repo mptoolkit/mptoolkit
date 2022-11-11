@@ -29,6 +29,8 @@
 #include "wavefunction/operator_actions.h"
 #include "pheap/pheapstream.h"
 #include "interface/attributes.h"
+#include "linearalgebra/arpack_wrapper.h"
+#include "mps/packunpack.h"
 
 // Streaming versions:
 // Note: the base class CanonicalWavefunctionBase has a separate version number.
@@ -759,55 +761,37 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count)
    return Result;
 }
 
-std::tuple<std::complex<double>, int, StateComponent>
+std::tuple<std::vector<std::complex<double>>, int>
 overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-        InfiniteWavefunctionLeft const& y,
-        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+	       InfiniteWavefunctionLeft const& y, int NumEigen,
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude, double Tol, int Verbose)
 {
    int Length = statistics::lcm(x.size(), y.size(), StringOp.size());
+
+   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
 
    LinearWavefunction xPsi = get_left_canonical(x).first;
    LinearWavefunction yPsi = get_left_canonical(y).first;
 
-   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), Sector);
+   ApplyToPackedStateComponent<LeftMultiplyOperator> Func(LeftMultiplyOperator(xPsi, x.qshift(), Str, yPsi, y.qshift(), Length),
+							  Str.Basis1(), x.Basis1(), y.Basis1());
+   int n = Func.pack_size();
+   int ncv = 0;
 
-   StateComponent Init = MakeRandomStateComponent(Str.Basis1(), x.Basis1(), y.Basis1());
+   LinearAlgebra::Vector<std::complex<double>> Eigen =
+      LinearAlgebra::DiagonalizeARPACK(Func, n, NumEigen, nullptr, Tol, nullptr, ncv, true, Verbose);
 
-   int Iterations = Iter;
-   int TotalIterations = 0;
-   double MyTol = Tol;
-   if (Verbose > 1)
-   {
-      std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
-   }
-   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
-                                                     LeftMultiplyOperator(xPsi, x.qshift(), Str,
-                                                                          yPsi, y.qshift(), Length),
-                                                     Iterations,
-                                                     MyTol,
-                                                     LinearSolvers::LargestMagnitude, false, Verbose);
-   TotalIterations += Iterations;
-   DEBUG_TRACE(Eta)(Iterations);
+	// Scale the eigenvalues by the amplitude
+	if (UseAmplitude)
+	{
+		double LogAmplitude = x.log_amplitude() * (Length/x.size()) + y.log_amplitude() * (Length/y.size());
+		for (auto& e : Eigen)
+			e *= std::exp(LogAmplitude);
+	}
 
-   while (MyTol < 0)
-   {
-      if (Verbose > 0)
-         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
-      Iterations = Iter;
-      MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyOperator(xPsi, x.qshift(), Str,
-                                                              yPsi, y.qshift(), Length),
-                                   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
-      TotalIterations += Iterations;
-      DEBUG_TRACE(Eta)(Iterations);
-   }
-   if (Verbose > 0)
-      std::cerr << "Converged.  TotalIterations=" << TotalIterations
-                << ", Tol=" << MyTol << '\n';
-
-   double LogAmplitude = x.log_amplitude() * (Length / x.size()) + y.log_amplitude() * (Length / y.size());
-   return std::make_tuple(Eta * std::exp(LogAmplitude), Length, Init);
+   return std::make_tuple(std::vector<std::complex<double>>(Eigen.begin(), Eigen.end()), Length);
 }
+
 
 #if 0
 std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
@@ -852,16 +836,6 @@ std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO c
    return Eta;
 }
 #endif
-
-std::pair<std::complex<double>, StateComponent>
-overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
-{
-   CHECK_EQUAL(x.size(), y.size());
-   std::tuple<std::complex<double>, int, StateComponent> Result =
-      overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
-   return std::make_pair(std::get<0>(Result), std::get<2>(Result));
-}
 
 InfiniteWavefunctionLeft
 reflect(InfiniteWavefunctionRight const& Psi)

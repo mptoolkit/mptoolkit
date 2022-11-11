@@ -30,6 +30,7 @@
 #include "common/statistics.h"
 #include "common/formatting.h"
 #include "tensor/tensor_eigen.h"
+#include "mp-algorithms/transfer.h"
 
 using QuantumNumbers::QuantumNumber;
 using formatting::format_complex;
@@ -178,8 +179,11 @@ int main(int argc, char** argv)
       QuantumNumber Ident = QuantumNumber(Psi1.GetSymmetryList());
 
       std::complex<double> e;
-      StateComponent Vec;
-      std::tie(e, Vec) = overlap(Psi1, Psi2, Ident, Iter, Tol, Verbose);
+      MatrixOperator X;
+      ProductMPO String = ProductMPO::make_identity(ExtractLocalBasis(Psi1), Ident);
+      LinearWavefunction P1 = get_left_canonical(Psi1).first;
+      LinearWavefunction P2 = get_left_canonical(Psi2).first;
+      std::tie(e, X) = get_left_transfer_eigenvector(P1, P2, Ident, String, Tol, Verbose);
 
       if (!Quiet)
       {
@@ -197,9 +201,6 @@ int main(int argc, char** argv)
          std::cerr <<  basename(argv[0]) << ": warning: overlap eigenvalue " << format_complex(e)
                    << " is slightly different from 1.0, results might not be reliable.\n";
       }
-
-      // Vec only has one component, in the identity sector.  It should be a unitary matrix.
-      MatrixOperator X = Vec[0];
 
       // X is the eigenvector (with eigenvalue 1) that maps the Basis1() of Psi1 with the Basis1() of Psi2,
       // which is the same as Psi1[NewUnitCellSize].Basis1().  That is, we can use X to 'wrap around' Psi1 and

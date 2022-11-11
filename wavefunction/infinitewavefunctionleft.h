@@ -186,49 +186,24 @@ ExtractLocalBasis(InfiniteWavefunctionLeft const& Psi)
 double const InverseTolDefault = 1E-7;
 extern double const InverseTol;
 
-// calculates the overlap of two iMPS, per unit cell.
-// The eigenvector can be in any allowable symmetry sector.
-// x and y must have the same size
-std::pair<std::complex<double>, StateComponent>
-overlap(InfiniteWavefunctionLeft const& x,  InfiniteWavefunctionLeft const& y,
-        QuantumNumbers::QuantumNumber const& Sector,
-        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
-
-// This version allows a string operator also.
-// This version is deprecated.
-//std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
-//                             InfiniteWavefunctionLeft const& y,
-//                             QuantumNumbers::QuantumNumber const& Sector,
-//                             int Iter = 20, double Tol = 1E-12, int Verbose = 0);
-
 // This version allows the wavefunctions and operator to have different sizes.
 // The overlap is returned as a quantity per length, which is the lowest
 // common multiple of x.size(), y.size(), StringOp.size()
 // The length is returned as the second component of the tuple
-std::tuple<std::complex<double>, int, StateComponent>
-overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-        InfiniteWavefunctionLeft const& y,
-        QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true,
-        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
-
-std::tuple<std::complex<double>, int>
-overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
-	       InfiniteWavefunctionLeft const& y,
-	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // This version calculates n eigenvalues
 std::tuple<std::vector<std::complex<double>>, int>
-overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y, int n,
-	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true, int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude = true, double Tol = 1E-12, int Verbose = 0);
 
 inline
 std::tuple<std::complex<double>, int>
-overlap_arpack(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
+overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
 	       InfiniteWavefunctionLeft const& y,
-	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude, int Iter, double Tol, int Verbose)
+	       QuantumNumbers::QuantumNumber const& Sector, bool UseAmplitude, double Tol, int Verbose)
 {
-	auto r = overlap_arpack(x, StringOp, y, 1, Sector, UseAmplitude, Iter, Tol, Verbose);
+	auto r = overlap(x, StringOp, y, 1, Sector, UseAmplitude, Tol, Verbose);
    return std::make_tuple(std::get<0>(r)[0], std::get<1>(r));  // Could be improved with C++17
 }
 

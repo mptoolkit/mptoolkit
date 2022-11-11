@@ -88,7 +88,7 @@ struct CompareEigenvalues
 
 template <typename MultFunc>
 Vector<std::complex<double>>
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol,
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, std::complex<double> const* InitialGuess, double tol,
                   std::vector<std::complex<double>>* OutputVectors,
                   int ncv, bool Sort, int Verbose)
 {
@@ -162,7 +162,11 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       int const lworkl = 3*ncv*ncv + 5*ncv;
       std::vector<std::complex<double>> workl(lworkl);
       std::vector<double> rwork(ncv);
-      int info = 0;  // no initial residual
+      if (InitialGuess)
+      {
+         std::copy(InitialGuess, InitialGuess+n, v.data());
+      }
+      int info = InitialGuess ? 1 : 0;  // this is the indicator whether to use the initial residual, or create one randomly
 
       if (Verbose >= 1)
       {

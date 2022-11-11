@@ -71,7 +71,7 @@ DISTDIR=$(PACKAGE_FULLNAME)
 
 TARDIR=$(PACKAGE_TARNAME)
 
-LIB = $(BOOST_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
+LIB = $(BOOST_LIBS) $(LIBARPACK) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBS_EXTRA)
 
 GIT_TAG_VERSION := $(shell cd $(SRCDIR) && git describe --dirty --always --tags)
 
@@ -221,11 +221,11 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-imoments mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat mp-norm mp-allcorrelation \
-        mp-irotate mp-icorrelation mp-fluctuation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
+        mp-irotate mp-icorrelation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
 				mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize
 
-experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg
+experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-fluctuation
 
 
 benchmarks = benchtripleprod
@@ -505,33 +505,31 @@ mp-simple-marshall-qmc : random_wavefunc.o
 mp-tebd : tebd.o number-parser.o
 mp-itebd : tebd.o number-parser.o
 
-mp-idmrg5 : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
-mp-idmrg5-spin2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunctionleft.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-bdmrg : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
 mp-iexpectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o
 mp-expectation : $(mpoobj) infinitewavefunctionleft.o random_wavefunc.o finitewavefunctionleft.o
-mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver_cross.o
-mp-imoments-cross : transfer.o packunpack.o
+mp-imoments mp-imoments-cross : $(mpoobj) triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver_cross.o transfer.o packunpack.o
 mp-fluctuation : $(mpoobj) triangular_mpo_solver.o momentum_operations.o infinitewavefunctionleft.o random_wavefunc.o triangular_mpo_solver.o packunpack.o triangular_mpo_solver_helpers.o
 mp-iexcitation : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-iexcitation2 : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-igradient : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
 mp-ispectral-expansion : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o
-mp-ioverlap : infinitewavefunctionleft.o infinitewavefunctionleft_arpack.o packunpack.o
+mp-ioverlap : infinitewavefunctionleft.o packunpack.o
 mp-aux-algebra : infinitewavefunctionleft.o packunpack.o matrix-parser.o transfer.o triangular_mpo_solver_helpers.o
-mp-aux-matrix : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
-mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
+mp-aux-matrix : infinitewavefunctionleft.o packunpack.o transfer.o
+mp-ies : infinitewavefunctionleft.o packunpack.o transfer.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
-mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o arpack_wrapper.o
+mp-iexpectation-cross : infinitewavefunctionleft.o packunpack.o transfer.o
+mp-idivide : packunpack.o transfer.o
 
 mp-matrix : write-matrix.o
 mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
@@ -547,22 +545,23 @@ mp-iprint : infinitewavefunctionleft.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunctionleft.o
 mp-pwfrg : triangular_operator.o match_basis.o
 mp-evolve-bonds : local-evolution.o $(expokitobj)
-mp-ispectrum : infinitewavefunctionleft.o packunpack.o arpack_wrapper.o siteoperator-parser.o transfer.o
+mp-ispectrum : infinitewavefunctionleft.o packunpack.o siteoperator-parser.o transfer.o
 mp-ieigen : triangular_operator.o infinitewavefunctionleft.o
 mp-idump : infinitewavefunctionleft.o
 mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
-LIBS_mp-ioverlap = $(LIBARPACK)
-LIBS_mp-ispectrum = $(LIBARPACK)
-LIBS_mp-aux-algebra = $(LIBARPACK)
-LIBS_mp-aux-matrix = $(LIBARPACK)
-LIBS_mp-fluctuation = $(LIBARPACK)
-LIBS_mp-ies = $(LIBARPACK)
-LIBS_mp-aux-project = $(LIBARPACK)
-LIBS_mp-iexpectation-cross = $(LIBARPACK)
-LIBS_mp-imoments-cross = $(LIBARPACK)
+# no longer required - we link against arpack for everything now
+# LIBS_mp-ioverlap = $(LIBARPACK)
+# LIBS_mp-ispectrum = $(LIBARPACK)
+# LIBS_mp-aux-algebra = $(LIBARPACK)
+# LIBS_mp-aux-matrix = $(LIBARPACK)
+# LIBS_mp-fluctuation = $(LIBARPACK)
+# LIBS_mp-ies = $(LIBARPACK)
+# LIBS_mp-aux-project = $(LIBARPACK)
+# LIBS_mp-iexpectation-cross = $(LIBARPACK)
+# LIBS_mp-imoments-cross = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

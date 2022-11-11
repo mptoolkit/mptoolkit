@@ -107,7 +107,6 @@ int main(int argc, char** argv)
       std::string LhsStr, RhsStr;
       std::vector<std::string> Sector;
       double Tol = 1E-15;
-      int Iter = 40;         // 2017-04-17: increased default from 30 to 40
       bool Sort = false;
       bool Quiet = false;
       bool Reflect = false;
@@ -165,8 +164,8 @@ int main(int argc, char** argv)
           "sort the eigenvalues by magnitude")
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
-         ("iter", prog_opt::value(&Iter),
-          FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
+         // ("iter", prog_opt::value(&Iter),
+         //  FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
          ("quiet", prog_opt::bool_switch(&Quiet),
           "don't show the column headings")
          ("print", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
@@ -422,7 +421,7 @@ int main(int argc, char** argv)
       }
       std::cout << std::left;
 
-      double ScaleFactor = 0;  // sentinel value - we set this once we get the acual length from overlap_arpack
+      double ScaleFactor = 0;  // sentinel value - we set this once we get the acual length from overlap()
 
       // Calculate the actual overlaps
       std::vector<TransEigenInfo> EigenList;
@@ -433,7 +432,7 @@ int main(int argc, char** argv)
          //BasicFiniteMPO StringOp = BasicFiniteMPO::make_identity(ExtractLocalBasis(Psi2.Psi));
          std::vector<std::complex<double>> Eigen;
          int Length;
-         std::tie(Eigen, Length) = overlap_arpack(Psi1, StringOp, Psi2, NumEigen, *I, !Scale, Iter, Tol, Verbose);
+         std::tie(Eigen, Length) = overlap(Psi1, StringOp, Psi2, NumEigen, *I, !Scale, Tol, Verbose);
          ScaleFactor = double(UnitCellSize) / double(Length);
 
          if (Sort)

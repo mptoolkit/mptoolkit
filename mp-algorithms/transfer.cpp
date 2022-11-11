@@ -24,6 +24,48 @@
 #include "wavefunction/operator_actions.h"
 #include "linearalgebra/arpack_wrapper.h"
 
+// utility functions
+
+typedef std::complex<double> complex;
+
+void swap_vectors(int n, std::complex<double>* x, std::complex<double>* y)
+{
+   std::vector<std::complex<double>> Temp(x, x+n);
+   LinearAlgebra::fast_copy(y, y+n, x);
+   LinearAlgebra::fast_copy(&Temp[0], &Temp[0]+n, y);
+}
+
+void
+MatchEigenvectors(int n,
+                  LinearAlgebra::Vector<std::complex<double> >& LeftValues,
+                  std::vector<std::complex<double> >& LeftVectors,
+                  LinearAlgebra::Vector<std::complex<double> >& RightValues,
+                  std::vector<std::complex<double> >& RightVectors, double tol, bool IgnoreFinalMismatch)
+{
+   CHECK_EQUAL(LeftValues.size(), RightValues.size());
+
+   for (unsigned i = 0; i < LeftValues.size(); ++i)
+   {
+      // find the right eigenvalue closest to LeftValues[i]
+      unsigned Pos = i;
+      double Dist = norm_frob(LeftValues[i] - RightValues[Pos]);
+      for (unsigned j = i+1; j < RightValues.size(); ++j)
+      {
+         double jDist = norm_frob(LeftValues[i] - RightValues[j]);
+         if (jDist < Dist)
+         {
+            Pos = j;
+            Dist = jDist;
+         }
+      }
+      if (Dist > tol && (i < LeftValues.size()-1 || !IgnoreFinalMismatch))
+         std::cerr << "MatchEigenvalues: warning: left & right eigenvalues differ by > tol.  Left="
+                   << LeftValues[i] << ", Right=" << RightValues[Pos] << ", delta=" << Dist << '\n';
+      std::swap(RightValues[i], RightValues[Pos]);
+      swap_vectors(n, &RightVectors[n*i], &RightVectors[n*Pos]);
+   }
+}
+
 template <typename Func>
 struct PackApplyFunc
 {
@@ -47,36 +89,7 @@ MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
 }
 
 std::tuple<std::complex<double>, MatrixOperator>
-get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
-                      ProductMPO const& StringOp,
-                      double tol, int Verbose)
-{
-   int ncv = 0;
-   CHECK_EQUAL(Psi1.size(), Psi2.size());
-   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
-   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-   int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
-   int NumEigen = 1;
-
-   std::vector<std::complex<double>> OutVec;
-      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            RightMultiplyOperator(Psi1, QShift,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
-                                          n, NumEigen, tol, &OutVec, ncv, false, Verbose);
-
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
-
-   return std::make_tuple(LeftEigen[0], LeftVector[0]);
-}
-
-std::tuple<std::complex<double>, MatrixOperator>
-get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
-                     ProductMPO const& StringOp,
-                     double tol, int Verbose)
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
 {
    int ncv = 0;
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -88,7 +101,29 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
    std::vector<std::complex<double>> OutVec;
       LinearAlgebra::Vector<std::complex<double>> LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
-            Psi1.size(), Verbose-1)), n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+            Psi1.size(), Verbose-1)), n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
+
+   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
+
+   return std::make_tuple(LeftEigen[0], LeftVector[0]);
+}
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   int ncv = 0;
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   int n = Pack.size();
+   int NumEigen = 1;
+   std::vector<std::complex<double>> Initial(n);
+   PackMatrixOperator(InitialGuess).pack(InitialGuess, Initial.data());
+
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
+            Psi1.size(), Verbose-1)), n, NumEigen, Initial.data(), tol, &OutVec, ncv, false, Verbose);
 
    StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
 
@@ -96,9 +131,7 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
 }
 
 std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
-get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
-                     ProductMPO const& StringOp,
-                     double tol, int Verbose)
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
 {
    int ncv = 0;
    CHECK_EQUAL(Psi1.size(), Psi2.size());
@@ -110,7 +143,7 @@ get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWave
    std::vector<std::complex<double>> OutVec;
       LinearAlgebra::Vector<std::complex<double>> LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
-            Psi1.size(), Verbose-1)), n, NumEigen, tol, &OutVec, ncv, false, Verbose);
+            Psi1.size(), Verbose-1)), n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
 
    std::vector<MatrixOperator> LeftVectors(N);
    for (int i = 0; i < N; ++i)
@@ -121,6 +154,92 @@ get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWave
    std::vector<std::complex<double>> Eigen(LeftEigen.begin(), LeftEigen.end());
    return std::make_tuple(Eigen, LeftVectors);
 
+}
+
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   int ncv = 0;
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   int n = Pack.size();
+   int NumEigen = N;
+   std::vector<std::complex<double>> Initial(n);
+   PackMatrixOperator(InitialGuess).pack(InitialGuess, Initial.data());
+
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
+            Psi1.size(), Verbose-1)), n, NumEigen, Initial.data(), tol, &OutVec, ncv, false, Verbose);
+
+   std::vector<MatrixOperator> LeftVectors(N);
+   for (int i = 0; i < N; ++i)
+   {
+      StateComponent C = Pack.unpack(&(OutVec[n*i]));
+      LeftVectors[i] = C[0];
+   }
+   std::vector<std::complex<double>> Eigen(LeftEigen.begin(), LeftEigen.end());
+   return std::make_tuple(Eigen, LeftVectors);
+
+}
+
+//
+// right
+//
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                      ProductMPO const& StringOp,
+                      double tol, int Verbose)
+{
+      int ncv = 0;
+      CHECK_EQUAL(Psi1.size(), Psi2.size());
+      CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+      PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+      int n = Pack.size();
+      //   double tolsave = tol;
+      //   int ncvsave = ncv;
+      int NumEigen = 1;
+
+      std::vector<std::complex<double>> OutVec;
+         LinearAlgebra::Vector<std::complex<double>> LeftEigen =
+            LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+                                                               RightMultiplyOperator(Psi1, QShift,
+                                                                                    StringOp,
+                                                                                    Psi2, QShift, Psi1.size(), Verbose-1)),
+                                             n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
+
+      StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
+
+      return std::make_tuple(LeftEigen[0], LeftVector[0]);
+}
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   int ncv = 0;
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   int n = Pack.size();
+   //   double tolsave = tol;
+   //   int ncvsave = ncv;
+   int NumEigen = 1;
+   std::vector<std::complex<double>> Initial(n);
+   PackMatrixOperator(InitialGuess).pack(InitialGuess, Initial.data());
+
+   std::vector<std::complex<double>> OutVec;
+      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+                                                            RightMultiplyOperator(Psi1, QShift,
+                                                                                 StringOp,
+                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
+                                          n, NumEigen, Initial.data(), tol, &OutVec, ncv, false, Verbose);
+
+   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
+
+   return std::make_tuple(LeftEigen[0], LeftVector[0]);
 }
 
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
@@ -168,18 +287,23 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 {
    PackStateComponent PackL(StringOp.Basis1(), Psi.Basis1(), Psi.Basis1());
    PackStateComponent PackR(StringOp.Basis1(), Psi.Basis2(), Psi.Basis2());
-   int n = PackL.size();
+   std::size_t n = PackL.size();
 
    if (Verbose >= 1)
    {
       std::cerr << "Calculating left eigenvalues\n";
    }
 
+   // There is a problem here matching eigenvalues between the left and the right eigenvalues in the case
+   // where the last eigenvalue is one of a complex conjugate pair. In that case, it is not uncommon that the final
+   // left eigenvalue is the conjugate pair of the final right eigenvalue, and we get a warning that the eigenvalues
+   // don't match.  The fix for this is to calculate n+1 eigenvalues, and throw the last one away at the end.
+   std::vector<std::complex<double>> LeftVec;
    std::vector<std::complex<double>>* OutVecL
-      = LeftVectors ? new std::vector<std::complex<double>>() : NULL;
+      = LeftVectors ? &LeftVec : NULL;
    LinearAlgebra::Vector<std::complex<double>>  LeftEigen =
    LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackL, LeftMultiplyOperator(Psi, QShift, StringOp, Psi, QShift,
-      Psi.size(), Verbose-1)), n, NumEigen, tol, OutVecL, ncv, Sort, Verbose);
+      Psi.size(), Verbose-1)), n+1, NumEigen, nullptr, tol, OutVecL, ncv, Sort, Verbose);
 
    if (RightVectors)
    {
@@ -187,10 +311,10 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
       {
          std::cerr << "Calculating right eigenvalues\n";
       }
-      std::vector<std::complex<double>>* OutVecR = new std::vector<std::complex<double>>();
+      std::vector<std::complex<double>> RightVec;
       LinearAlgebra::Vector<std::complex<double>> RightEigen =
       LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(PackR, RightMultiplyOperator(Psi, QShift, StringOp, Psi, QShift,
-      Psi.size(), Verbose-1)), n, NumEigen, tol, OutVecR, ncv, Sort, Verbose);
+      Psi.size(), Verbose-1)), n+1, NumEigen, nullptr, tol, &RightVec, ncv, Sort, Verbose);
 
       // The right vectors are the hermitian conjugate, not the transpose.  So conjugate eigenvalues
       RightEigen = conj(RightEigen);
@@ -198,14 +322,14 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 
       // If we have both left & right eigenvectors, then match the corresponding eigenvalues
       if (LeftVectors)
-         LinearAlgebra::MatchEigenvectors(n, LeftEigen, *OutVecL, RightEigen, *OutVecR, tol*10);
+         MatchEigenvectors(n, LeftEigen, *OutVecL, RightEigen, RightVec, tol*10, true);
 
       // Unpack the eigenvectors into the output array.
       // note that we do not conjugate the eigenvector, since we want this to be a 'column vector',
       // that we will use on the left-hand side of an inner product (eg inner_prod(left, right)).
-      for (unsigned i = 0; i < RightEigen.size(); ++i)
+      for (unsigned i = 0; i < std::min(n,RightEigen.size()); ++i)
       {
-         (*RightVectors)[i] = PackR.unpack(&((*OutVecR)[n*i]))[0];
+         (*RightVectors)[i] = PackR.unpack(&(RightVec[n*i]))[0];
       }
    }
 
@@ -213,11 +337,14 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
    if (LeftVectors)
    {
       *LeftVectors = LinearAlgebra::Vector<MatrixOperator>(LeftEigen.size());
-      for (unsigned i = 0; i < LeftEigen.size(); ++i)
+      for (unsigned i = 0; i < std::min(n,LeftEigen.size()); ++i)
       {
          (*LeftVectors)[i] = PackL.unpack(&((*OutVecL)[n*i]))[0];
       }
    }
+
+   delete LeftVectors;
+   delete RightVectors;
 
    return LeftEigen;
 }
