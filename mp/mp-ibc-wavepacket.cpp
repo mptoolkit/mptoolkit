@@ -226,6 +226,7 @@ int main(int argc, char** argv)
       int LatticeUCSize = 1;
       std::string InputPrefix;
       std::string OutputFilename;
+      bool Force = false;
       double Sigma = 0.0;
       double KCenter = 0.0;
       double SigmaY = 0.0;
@@ -247,6 +248,7 @@ int main(int argc, char** argv)
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Size of lattice unit cell")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
+         ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width")
          ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
@@ -276,7 +278,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      mp_pheap::InitializeTempPHeap();
+      pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
       CHECK(KNum > 1);
 
@@ -565,8 +567,9 @@ int main(int argc, char** argv)
       Wavefunction.Wavefunction() = std::move(PsiOut);
       Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
       Wavefunction.SetDefaultAttributes();
+
       pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
-      pheap::ExportHeap(OutputFilename, PsiPtr);
+      pheap::ShutdownPersistent(PsiPtr);
    }
    catch (prog_opt::error& e)
    {
@@ -577,6 +580,9 @@ int main(int argc, char** argv)
    catch (pheap::PHeapCannotCreateFile& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+      return 1;
    }
    catch (std::exception& e)
    {

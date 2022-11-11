@@ -42,6 +42,7 @@ int main(int argc, char** argv)
       std::string LeftFilename;
       std::string RightFilename;
       std::string OutputFilename;
+      bool Force = false;
       int NLeft = 0;
       int NRight = 0;
       double Tol = 1e-10;
@@ -52,6 +53,7 @@ int main(int argc, char** argv)
          ("left,l", prog_opt::value(&LeftFilename), "Left input IBC filename [required]")
          ("right,r", prog_opt::value(&RightFilename), "Right input IBC filename [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output IBC filename [required]")
+         ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance in the squared Frobenius norm of the difference of the window boundary Lambda matrix and the translationally invariant fixed point", Tol).c_str())
          ("nleft,n", prog_opt::value(&NLeft), "Number of unit cells to add to the left window")
          ("nright", prog_opt::value(&NRight), "Number of unit cells to add to the right window [if unspecified, will use --nleft if it is specified]")
@@ -77,7 +79,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      mp_pheap::InitializeTempPHeap();
+      pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
       if (NRight == 0)
          NRight = NLeft;
@@ -313,8 +315,9 @@ int main(int argc, char** argv)
       Wavefunction.Wavefunction() = std::move(PsiOut);
       Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
       Wavefunction.SetDefaultAttributes();
+
       pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
-      pheap::ExportHeap(OutputFilename, PsiPtr);
+      pheap::ShutdownPersistent(PsiPtr);
    }
    catch (prog_opt::error& e)
    {
@@ -325,6 +328,9 @@ int main(int argc, char** argv)
    catch (pheap::PHeapCannotCreateFile& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+      return 1;
    }
    catch (std::exception& e)
    {
