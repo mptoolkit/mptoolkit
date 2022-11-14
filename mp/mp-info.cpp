@@ -63,54 +63,70 @@ void ShowBasicInfo(InfiniteWavefunctionRight const& Psi, std::ostream& out)
 void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
 {
    out << "Infinite Boundary Condition wavefunction in the left/left/right orthogonal basis.\n";
-   out << "Symmetry list = " << Psi.Window.GetSymmetryList() << '\n';
+   out << "Symmetry list = " << Psi.window().GetSymmetryList() << '\n';
 
-   std::string lw = Psi.LeftWindowFile();
+   std::string lw = Psi.get_left_filename();
    if (lw.empty())
       out << "Left semi-infinite strip is stored directly.\n";
    else
       out << "Left semi-infinite strip is stored in the file \"" << lw << "\"\n";
-   out << "Left semi-infinite strip unit cell size = " << Psi.Left.size() << '\n';
-   if (!Psi.Left.empty())
+   out << "Left semi-infinite strip unit cell size = " << Psi.left().size() << '\n';
+   if (!Psi.left().empty())
    {
-      out << "Quantum number per unit cell (left) = " << Psi.Left.qshift() << '\n';
+      out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
 
-   std::string rw = Psi.RightWindowFile();
+   std::string rw = Psi.get_right_filename();
    if (rw.empty())
       out << "Right semi-infinite strip is stored directly.\n";
    else
       out << "Right semi-infinite strip is stored in the file \"" << rw << "\"\n";
-   out << "Right semi-infinite strip unit cell size = " << Psi.Right.size() << '\n';
-   if (!Psi.Right.empty())
+   out << "Right semi-infinite strip unit cell size = " << Psi.right().size() << '\n';
+   if (!Psi.right().empty())
    {
-      out << "Quantum number per unit cell (right) = " << Psi.Right.qshift() << '\n';
+      out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
    }
 
-   out << "Window size = " << Psi.Window.size() << '\n';
+   out << "Window size = " << Psi.window_size() << '\n';
    out << "Offset of first site of the window = " << Psi.window_offset() << '\n';
 
-   out << "Number of states (left edge of window) = " << Psi.Window.Basis1().total_dimension() << '\n';
+   out << "Number of states (left edge of window) = " << Psi.window().Basis1().total_dimension() << '\n';
 }
 
 // TODO
 void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
 {
    out << "Wavefunction is an excitation ansatz wavefunction in the left/left/right canonical basis.\n";
-   out << "Symmetry list = " << Psi.Left.GetSymmetryList() << '\n';
-   out << "Left semi-infinite strip unit cell size = " << Psi.Left.size() << '\n';
-   if (!Psi.Left.empty())
+   out << "Symmetry list = " << Psi.left().GetSymmetryList() << '\n';
+
+   std::string lw = Psi.get_left_filename();
+   if (lw.empty())
+      out << "Left semi-infinite strip is stored directly.\n";
+   else
+      out << "Left semi-infinite strip is stored in the file \"" << lw << "\"\n";
+   out << "Left semi-infinite strip unit cell size = " << Psi.left().size() << '\n';
+   if (!Psi.left().empty())
    {
-      out << "Quantum number per unit cell (left) = " << Psi.Left.qshift() << '\n';
+      out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
-   out << "Right semi-infinite strip unit cell size = " << Psi.Right.size() << '\n';
-   if (!Psi.Right.empty())
+
+   std::string rw = Psi.get_right_filename();
+   if (rw.empty())
+      out << "Right semi-infinite strip is stored directly.\n";
+   else
+      out << "Right semi-infinite strip is stored in the file \"" << rw << "\"\n";
+   out << "Right semi-infinite strip unit cell size = " << Psi.right().size() << '\n';
+   if (!Psi.right().empty())
    {
-      out << "Quantum number per unit cell (right) = " << Psi.Right.qshift() << '\n';
+      out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
    }
 
    out << "Window size = " << Psi.window_size() << '\n';
-   out << "ExpIK = " << Psi.ExpIK << '\n';
+   out << "ExpIK = " << Psi.exp_ik() << '\n';
+
+   if (Psi.gs_overlap() != 0.0)
+      out << "GSOverlap = " << Psi.gs_overlap() << '\n';
+
    out << std::endl;
 }
 
@@ -317,22 +333,22 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
    }
 
    if (ShowStates)
-      ShowStateInfo(Psi.Window, std::cout);
+      ShowStateInfo(Psi.window(), std::cout);
 
    if (ShowBasis)
-      ShowBasisInfo(Psi.Window, std::cout);
+      ShowBasisInfo(Psi.window(), std::cout);
 
    if (ShowEntropy)
-      ShowEntropyInfo(Psi.Window, std::cout);
+      ShowEntropyInfo(Psi.window(), std::cout);
 
    if (ShowDensity)
-      ShowDM(Psi.Window, std::cout);
+      ShowDM(Psi.window(), std::cout);
 
    if (ShowCasimir)
-      ShowCasimirInfo(Psi.Window, std::cout);
+      ShowCasimirInfo(Psi.window(), std::cout);
 
    if (ShowLocalBasis)
-      ShowLocalBasisInfo(Psi.Window, std::cout);
+      ShowLocalBasisInfo(Psi.window(), std::cout);
 }
 
 // TODO
@@ -342,28 +358,28 @@ ShowWavefunction::operator()(EAWavefunction const& Psi) const
    std::sort(Partition.begin(), Partition.end());
    if (Partition.empty())
    {
-      // all partitions in the window
-      for (int i = 0; i <= Psi.Left.size(); ++i)
+      // all partitions in the left boundary
+      for (int i = 0; i <= Psi.left().size(); ++i)
          Partition.push_back(i);
    }
 
    if (ShowStates)
-      ShowStateInfo(Psi.Left, std::cout);
+      ShowStateInfo(Psi.left(), std::cout);
 
    if (ShowBasis)
-      ShowBasisInfo(Psi.Left, std::cout);
+      ShowBasisInfo(Psi.left(), std::cout);
 
    if (ShowEntropy)
-      ShowEntropyInfo(Psi.Left, std::cout);
+      ShowEntropyInfo(Psi.left(), std::cout);
 
    if (ShowDensity)
-      ShowDM(Psi.Left, std::cout);
+      ShowDM(Psi.left(), std::cout);
 
    if (ShowCasimir)
-      ShowCasimirInfo(Psi.Left, std::cout);
+      ShowCasimirInfo(Psi.left(), std::cout);
 
    if (ShowLocalBasis)
-      ShowLocalBasisInfo(Psi.Left, std::cout);
+      ShowLocalBasisInfo(Psi.left(), std::cout);
 }
 
 void

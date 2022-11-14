@@ -69,10 +69,18 @@ class EAWavefunction
       // Assume that each window has the same size.
       int window_size() const { return WindowVec.front().size(); }
 
-      // Return the filename of the left/right windows.  If this is empty then the
-      // wavefunctions are stored directly in this object
-      std::string LeftWindowFile() const { return WavefunctionLeftFile; }
-      std::string RightWindowFile() const { return WavefunctionRightFile; }
+      std::string get_left_filename() const { return WavefunctionLeftFile; }
+      std::string get_right_filename() const { return WavefunctionRightFile; }
+
+      void set_left_filename(std::string LeftFilename) { WavefunctionLeftFile = LeftFilename; }
+      void set_right_filename(std::string RightFilename) { WavefunctionRightFile = RightFilename; }
+
+      InfiniteWavefunctionLeft const& left() const { return Left; }
+      std::vector<WavefunctionSectionLeft> const& window_vec() const { return WindowVec; }
+      InfiniteWavefunctionRight const& right() const { return Right; }
+
+      std::complex<double> exp_ik() const { return ExpIK; }
+      std::complex<double> gs_overlap() const { return GSOverlap; }
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -83,7 +91,7 @@ class EAWavefunction
       void check_structure() const;
       void debug_check_structure() const;
 
-      // private:
+      private:
 
       // We can optionally save the left and right semi-infinite wavefunctions on disc by reference to a file.
       // If these strings are non-empty then the Left and Right components are not saved when this wavefunction

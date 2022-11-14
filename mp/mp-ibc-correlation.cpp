@@ -200,7 +200,7 @@ int main(int argc, char** argv)
       // If UCSize is not specified, then we set it to the left boundary unit
       // cell size.
       if (UCSize = -1)
-         UCSize = Psi1.Left.size();
+         UCSize = Psi1.left().size();
       
       if (vm.count("string"))
       {
@@ -209,12 +209,12 @@ int main(int argc, char** argv)
       }
       else
       {
-         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi1.Left));
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi1.left()));
       }
 
       // Get the string operators representing the rotations by 0, 1, ..., YMax sites.
       std::vector<ProductMPO> StringOpVec;
-      StringOpVec.push_back(ProductMPO::make_identity(ExtractLocalBasis(Psi1.Left)));
+      StringOpVec.push_back(ProductMPO::make_identity(ExtractLocalBasis(Psi1.left())));
 
       for (int y = 1; y <= YMax; ++y)
          StringOpVec.push_back(pow(StringOp, y));
@@ -286,11 +286,11 @@ int main(int argc, char** argv)
          pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Filename);
          Psi2 = Psi2Ptr->get<IBCWavefunction>();
 
-         Psi2.WindowOffset += (XMin-1) * UCSize;
-
          for (int x = XMin; x <= XMax; ++x)
          {
-            Psi2.WindowOffset += UCSize;
+            IBCWavefunction Psi2Offset(Psi2.left(), Psi2.window(), Psi2.right(),
+                                       Psi2.window_offset() + x*UCSize,
+                                       Psi2.window_left_sites(), Psi2.window_right_sites());
 
             Op = StringOpVec.begin();
             auto E = EVec.begin();
@@ -301,7 +301,7 @@ int main(int argc, char** argv)
             {
                std::complex<double> Overlap;
 
-               Overlap = *PhaseFactor * overlap(Psi2, *Op, Psi1, *E, *F, Verbose);
+               Overlap = *PhaseFactor * overlap(Psi2Offset, *Op, Psi1, *E, *F, Verbose);
 
                if (std::real(Timestep) != 0.0)
                   std::cout << std::setw(10) << TimeStr << "    ";
@@ -322,7 +322,6 @@ int main(int argc, char** argv)
       if (Conj)
       {
          std::complex<double> FinalTime = double(N) * Timestep;
-            Psi2.WindowOffset -= XMax * UCSize;
 
          for (int tstep = 1; tstep <= N; ++tstep)
          {
@@ -348,11 +347,11 @@ int main(int argc, char** argv)
             TimeStr = formatting::format_digits(std::real(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
             BetaStr = formatting::format_digits(-std::imag(InitialTime + FinalTime + double(tstep)*Timestep), Digits);
 
-            Psi2.WindowOffset += (XMin-1) * UCSize;
-
             for (int x = XMin; x <= XMax; ++x)
             {
-               Psi2.WindowOffset += UCSize;
+               IBCWavefunction Psi2Offset(Psi2.left(), Psi2.window(), Psi2.right(),
+                                          Psi2.window_offset() + x*UCSize,
+                                          Psi2.window_left_sites(), Psi2.window_right_sites());
 
                Op = StringOpVec.begin();
                auto E = EVec.begin();
@@ -363,7 +362,7 @@ int main(int argc, char** argv)
                {
                   std::complex<double> Overlap;
 
-                  Overlap = *PhaseFactor * overlap(Psi2, *Op, Psi1, *E, *F, Verbose);
+                  Overlap = *PhaseFactor * overlap(Psi2Offset, *Op, Psi1, *E, *F, Verbose);
 
                   if (std::real(Timestep) != 0.0)
                      std::cout << std::setw(10) << TimeStr << "    ";
@@ -379,7 +378,6 @@ int main(int argc, char** argv)
                   ++Op, ++E, ++F, ++PhaseFactor;
                }
             }
-            Psi2.WindowOffset -= XMax * UCSize;
          }
       }
 

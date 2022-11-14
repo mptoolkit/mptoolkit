@@ -332,18 +332,15 @@ int main(int argc, char** argv)
 
          // If the input streams the boundaries, then we save them so we can
          // stream them in the output as well.
-         if (!Psi.WavefunctionLeftFile.empty())
-            LeftBoundaryFilename = Psi.WavefunctionLeftFile;
+         LeftBoundaryFilename = Psi.get_left_filename();
+         RightBoundaryFilename = Psi.get_right_filename();
 
-         if (!Psi.WavefunctionRightFile.empty())
-            RightBoundaryFilename = Psi.WavefunctionRightFile;
-
-         PsiLeft = Psi.Left;
-         PsiRight = Psi.Right;
+         PsiLeft = Psi.left();
+         PsiRight = Psi.right();
          UCSize = PsiLeft.size();
 
          CHECK(PsiRight.size() == UCSize);
-         CHECK(Psi.WindowVec.size() == UCSize);
+         CHECK(Psi.window_vec().size() == UCSize);
       }
 
       // A vector for each position at the unit cell, which contains a vector
@@ -372,14 +369,14 @@ int main(int argc, char** argv)
 
             // TODO: Check each wavefunction has the same left/right boundaries.
 
-            ExpIKVec.push_back(Psi.ExpIK);
+            ExpIKVec.push_back(Psi.exp_ik());
             KVec.push_back(KMin + KStep*n);
             KYVec.push_back(KYMin + KYStep*m);
 
             auto BCell = BVec.begin();
             // Here we use the left-gauge fixing condition.
 #if 1
-            for (WavefunctionSectionLeft Window : Psi.WindowVec)
+            for (WavefunctionSectionLeft Window : Psi.window_vec())
             {
                LinearWavefunction PsiLinear;
                MatrixOperator U;
@@ -404,7 +401,7 @@ int main(int argc, char** argv)
             auto NR = NullRightVec.begin();
             auto AL = PsiLinearLeft.begin();
             auto AR = PsiLinearRight.begin();
-            for (WavefunctionSectionLeft Window : Psi.WindowVec)
+            for (WavefunctionSectionLeft Window : Psi.window_vec())
             {
                LinearWavefunction PsiLinear;
                MatrixOperator U;
@@ -575,11 +572,8 @@ int main(int argc, char** argv)
       IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
 
       // Stream the boundaries, if the input files do.
-      if (!LeftBoundaryFilename.empty())
-         PsiOut.WavefunctionLeftFile = LeftBoundaryFilename;
-
-      if (!RightBoundaryFilename.empty())
-         PsiOut.WavefunctionRightFile = RightBoundaryFilename;
+      PsiOut.set_left_filename(LeftBoundaryFilename);
+      PsiOut.set_right_filename(RightBoundaryFilename);
 
       MPWavefunction Wavefunction;
       Wavefunction.Wavefunction() = std::move(PsiOut);

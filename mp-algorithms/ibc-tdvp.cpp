@@ -32,10 +32,10 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    // We do not (currently) support time dependent Hamiltonians.
    CHECK(Ham.is_time_dependent() == false);
 
-   PsiLeft = Psi_.Left;
-   PsiRight = Psi_.Right;
-   WindowLeftSites = Psi_.WindowLeftSites;
-   WindowRightSites = Psi_.WindowRightSites;
+   PsiLeft = Psi_.left();
+   PsiRight = Psi_.right();
+   WindowLeftSites = Psi_.window_left_sites();
+   WindowRightSites = Psi_.window_right_sites();
 
    if (Verbose > 0)
       std::cout << "Constructing Hamiltonian block operators..." << std::endl;
@@ -148,8 +148,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    if (Psi_.window_size() == 0)
    {
       Psi = LinearWavefunction();
-      MatrixOperator Lambda = Psi_.Window.lambda_r();
-      Lambda = Psi_.Window.LeftU() * Lambda * Psi_.Window.RightU();
+      MatrixOperator Lambda = Psi_.window().lambda_r();
+      Lambda = Psi_.window().LeftU() * Lambda * Psi_.window().RightU();
 
       HamiltonianWindow = BasicTriangularMPO();
 
@@ -183,7 +183,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    else
    {
       MatrixOperator Lambda;
-      std::tie(Psi, Lambda) = get_left_canonical(Psi_.Window);
+      std::tie(Psi, Lambda) = get_left_canonical(Psi_.window());
 
       C = Psi.begin();
 

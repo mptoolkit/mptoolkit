@@ -292,8 +292,8 @@ int main(int argc, char** argv)
 
                if (Streaming)
                {
-                  PsiEA.WavefunctionLeftFile = InputFileLeft;
-                  PsiEA.WavefunctionRightFile = InputFileRight;
+                  PsiEA.set_left_filename(InputFileLeft);
+                  PsiEA.set_right_filename(InputFileRight);
                }
 
                MPWavefunction Wavefunction;
@@ -301,6 +301,7 @@ int main(int argc, char** argv)
                Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+               Wavefunction.Attributes()["ExcitationEnergy"] = std::real(*E) + Settings.Alpha;
 
                std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)
