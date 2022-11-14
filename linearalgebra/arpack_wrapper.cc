@@ -149,9 +149,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
       char bmat = 'I'; // standard eigenvalue problem
       std::string w = ToStr(which);
       int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-      std::vector<std::complex<double> > resid(n);  // residual
+      std::vector<std::complex<double>> resid(n);  // residual
       ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
+      std::vector<std::complex<double>> v(n*ncv);   // arnoldi vectors
       int const ldv = n;
       ARPACK::iparam_t iparam;
       iparam.ishift = 1;      // exact shifts
@@ -164,7 +164,11 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
       std::vector<double> rwork(ncv);
       if (InitialGuess)
       {
-         std::copy(InitialGuess, InitialGuess+n, v.data());
+         std::copy(InitialGuess, InitialGuess+n, resid.data());
+         for (int i = 0; i < n; ++i)
+         {
+            TRACE(InitialGuess[i]);
+         }
       }
       int info = InitialGuess ? 1 : 0;  // this is the indicator whether to use the initial residual, or create one randomly
 
@@ -204,6 +208,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
             // info == -9 indicates that the starting vector is zero.  Since we have already done a matrix-vector
             // multiply, the only way this can happen is if the matrix itself is zero.  Hence we know what the
             // eigenvalues are.
+            if (Verbose >= 1)
+            {
+               std::cerr << "ARPACK early return; matrix is zero.\n";
+            }
             Result = LinearAlgebra::Vector<std::complex<double>>(nev, std::complex<double>(0.0, 0.0));
             if (OutputVectors)
             {

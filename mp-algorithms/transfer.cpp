@@ -130,6 +130,19 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
    return std::make_tuple(LeftEigen[0], LeftVector[0]);
 }
 
+std::tuple<std::complex<double>, MatrixOperator>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol, int Verbose)
+{
+   QuantumNumbers::QuantumNumber q(Psi1.GetSymmetryList());
+   return get_left_transfer_eigenvector(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   return get_left_transfer_eigenvector(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), InitialGuess.TransformsAs()), InitialGuess, tol, Verbose);
+}
+
 std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
 get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
 {
@@ -184,6 +197,19 @@ get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWave
 
 }
 
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol, int Verbose)
+{
+   return get_left_transfer_eigenvectors(N, Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1)), tol, Verbose);
+}
+
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   return get_left_transfer_eigenvectors(N, Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), InitialGuess.TransformsAs()), InitialGuess, tol, Verbose);
+}
+
+
 //
 // right
 //
@@ -198,21 +224,19 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
       CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
       PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
       int n = Pack.size();
-      //   double tolsave = tol;
-      //   int ncvsave = ncv;
       int NumEigen = 1;
 
       std::vector<std::complex<double>> OutVec;
-         LinearAlgebra::Vector<std::complex<double>> LeftEigen =
-            LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                               RightMultiplyOperator(Psi1, QShift,
-                                                                                    StringOp,
-                                                                                    Psi2, QShift, Psi1.size(), Verbose-1)),
-                                             n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
+      LinearAlgebra::Vector<std::complex<double>> RightEigen =
+         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+                                                            RightMultiplyOperator(Psi1, QShift,
+                                                                                 StringOp,
+                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
+                                          n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
 
-      StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
+      StateComponent RightVector = Pack.unpack(&(OutVec[0]));
 
-      return std::make_tuple(LeftEigen[0], LeftVector[0]);
+      return std::make_tuple(RightEigen[0], RightVector[0]);
 }
 
 std::tuple<std::complex<double>, MatrixOperator>
@@ -223,23 +247,33 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
    CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
    int n = Pack.size();
-   //   double tolsave = tol;
-   //   int ncvsave = ncv;
    int NumEigen = 1;
    std::vector<std::complex<double>> Initial(n);
    PackMatrixOperator(InitialGuess).pack(InitialGuess, Initial.data());
 
    std::vector<std::complex<double>> OutVec;
-      LinearAlgebra::Vector<std::complex<double>> LeftEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            RightMultiplyOperator(Psi1, QShift,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
+   LinearAlgebra::Vector<std::complex<double>> RightEigen =
+      LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+                                                         RightMultiplyOperator(Psi1, QShift,
+                                                                              StringOp,
+                                                                              Psi2, QShift, Psi1.size(), Verbose-1)),
                                           n, NumEigen, Initial.data(), tol, &OutVec, ncv, false, Verbose);
 
-   StateComponent LeftVector = Pack.unpack(&(OutVec[0]));
+   StateComponent RightVector = Pack.unpack(&(OutVec[0]));
 
-   return std::make_tuple(LeftEigen[0], LeftVector[0]);
+   return std::make_tuple(RightEigen[0], RightVector[0]);
+}
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol, int Verbose)
+{
+   return get_right_transfer_eigenvector(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1)), tol, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol, int Verbose)
+{
+   return get_right_transfer_eigenvector(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), InitialGuess.TransformsAs()), InitialGuess, tol, Verbose);
 }
 
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>

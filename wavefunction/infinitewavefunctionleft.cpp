@@ -4,7 +4,7 @@
 //
 // wavefunction/infinitewavefunctionleft.cpp
 //
-// Copyright (C) 2015-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "interface/attributes.h"
 #include "linearalgebra/arpack_wrapper.h"
 #include "mps/packunpack.h"
+#include "mp-algorithms/transfer.h"
 
 // Streaming versions:
 // Note: the base class CanonicalWavefunctionBase has a separate version number.
@@ -63,6 +64,8 @@ extern double const InverseTol = getenv_or_default("MP_INVERSE_TOL", 1E-7);
 
 // the tol used in the orthogonalization can apparently be a bit smaller
 extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
+
+double const UnityEpsilon = 1E-14;
 
 std::string InfiniteWavefunctionLeft::Type = "InfiniteWavefunctionLeft";
 
@@ -133,264 +136,219 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber
 }
 
 InfiniteWavefunctionLeft
-InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction const& Psi, MatrixOperator const& Lambda,
-                                                  QuantumNumbers::QuantumNumber const& QShift_,
-                                                  double LogAmplitude,
-                                                  int Verbose)
+InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction Psi, QuantumNumbers::QuantumNumber const& QShift, RealDiagonalOperator const& Lambda, double LogAmplitude, int Verbose)
 {
-   std::cerr << "warning: ConstructFromOrthogonal might not be reliable!\n";
-   InfiniteWavefunctionLeft Result(QShift_, LogAmplitude);
-   Result.Initialize(Psi, Lambda, Verbose-1);
+   InfiniteWavefunctionLeft Result(QShift, LogAmplitude);
+   Result.InitializeFromLeftOrthogonal(Psi, Lambda, Verbose-1);
    return Result;
 }
 
 InfiniteWavefunctionLeft
-InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi,
+InfiniteWavefunctionLeft::Construct(LinearWavefunction Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double LogAmplitude, int Verbose)
+{
+   left_orthogonalize(Psi, QShift, ArnoldiTol, Verbose);
+   auto Lambda = gauge_fix_left_orthogonal(Psi, QShift, ArnoldiTol, Verbose);
+   return ConstructFromOrthogonal(Psi, QShift, Lambda, LogAmplitude, Verbose);
+}
+
+InfiniteWavefunctionLeft
+InfiniteWavefunctionLeft::Construct(LinearWavefunction Psi,
                                     QuantumNumbers::QuantumNumber const& QShift_,
                                     double LogAmplitude,
                                     int Verbose)
 {
-   return InfiniteWavefunctionLeft::Construct(Psi, MatrixOperator::make_identity(Psi.Basis2()), QShift_, LogAmplitude, Verbose);
+   return InfiniteWavefunctionLeft::Construct(Psi, QShift_, MatrixOperator::make_identity(Psi.Basis2()), LogAmplitude, Verbose);
 }
 
-InfiniteWavefunctionLeft
-InfiniteWavefunctionLeft::Construct(LinearWavefunction const& Psi, MatrixOperator const& GuessRho,
-                                    QuantumNumbers::QuantumNumber const& QShift,
-                                    double LogAmplitude,
-                                    int Verbose)
+std::tuple<std::complex<double>, MatrixOperator>
+GetPrincipalTransferEigenvectorLeft(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
 {
-   LinearWavefunction PsiL = Psi;
+   std::vector<std::complex<double>> EValues;
+   std::vector<MatrixOperator> EVec;
 
-   MatrixOperator Guess = MatrixOperator::make_identity(PsiL.Basis2());
+   std::tie(EValues, EVec) = get_left_transfer_eigenvectors(2, Psi, Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
 
-   // initialize LeftEigen to a guess eigenvector.  Since L satisfies the left orthogonality
-   // constraint (except for the final matrix), we can do one iteration beyond the identity
-   // and intialize it to herm(Xu) * Xu
-   MatrixOperator LeftEigen = Guess;
-
-   if (Verbose > 0)
-      std::cout << "Obtaining left orthogonality eigenvector..." << std::endl;
-   // get the eigenmatrix.  Do some dodgy explict restarts.
-   int Iterations = 20;
-   double Tol = ArnoldiTol;
-   LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2),
-                                                      Iterations, Tol,
-                                                      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
-   while (Tol < 0)
+   // verify that the eigenvalues are non-degenerate
+   if (EValues.size() > 1 && (std::abs(EValues[0] - EValues[1]) / (std::abs(EValues[0]) + std::abs(EValues[1])) <= UnityEpsilon))
    {
-      if (Verbose > 0)
-         std::cout << "LeftEigen: Arnoldi not converged, restarting.  EValue="
-                   << EtaL << ", Tol=" << Tol << "\n";
-      Iterations = 20; Tol = ArnoldiTol;
-      LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen)); // make the eigenvector symmetric
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiL, QShift, Verbose-2), Iterations,
-                                    Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
+      std::cerr << "left_orthogonalize: error: largest eigenvalue of the transfer matrix is degenerate: "
+                << EValues[0] << " and " << EValues[1] << '\n';
+      std::abort(); //TODO: it would be better to throw an exception at this point
    }
 
-   CHECK(EtaL.real() > 0)("Eigenvalue must be positive")(EtaL);
-
-   DEBUG_TRACE(EtaL);
-
-   // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
-   std::complex<double> Alpha = std::conj(trace(LeftEigen));
-   Alpha *= 1.0 / norm_frob(Alpha);
-   LeftEigen *= Alpha;
-
-   //TRACE(LeftEigen)(EigenvaluesHermitian(LeftEigen));
-
-   DEBUG_CHECK(norm_frob(LeftEigen - adjoint(LeftEigen)) < 1e-12)
-      (norm_frob(LeftEigen - adjoint(LeftEigen)));
-
-   //   DEBUG_TRACE(EigenvaluesHermitian(RightEigen));
-   //   DEBUG_TRACE(EigenvaluesHermitian(LeftEigen));
-
-   // Do the Cholesky factorization of the eigenmatrices.
-   // Actually a SVD is much more stable here
-   //   MatrixOperator A = CholeskyFactorizeUpper(LeftEigen);
-   //   MatrixOperator B = CholeskyFactorizeUpper(RightEigen);
-
-   MatrixOperator D = LeftEigen;
-   MatrixOperator U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
-   MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
-
-   // At this point, any matrix elements in D that are smaller than OrthoTol can be removed
-   // from the basis, because they have negligible weight in the wavefunction.
-   // However, we should be able to cope with states in the basis that have zero weight;
-   // we can still orthogonalize the basis, and the matrix elements of any unitary that
-   // act in the direction of small elements of D are arbitary, so we can set them to whatever is
-   // needed to canonicalize the state.
-   // If we are orthogonalizing the state as an intermediate step and expecting to continue calculations,
-   // then we should keep all states even if they have small (or zero) weight.  But if this is the final calculation
-   // then we should remove small elements as they have no effect on the final wavefunction.
-
-   // LeftEigen = triple_prod(U, D*D, herm(U))
-   DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)))(D)(DInv);
-
-   MatrixOperator A = delta_shift(D * U, QShift);
-   MatrixOperator AInv = adjoint(U) * DInv;
-
-#if 1
-   // Explicitly re-othogonalize.  In principle this is not necessary,
-   // but it gives some more robustness
-   A = left_orthogonalize(A, PsiL);
-   PsiL.set_back(prod(PsiL.get_back(), A*AInv));
-#else
-   PsiL.set_front(prod(A, PsiL.get_front()));
-   PsiL.set_back(prod(PsiL.get_back(), AInv));
-#endif
-
-   // At this point, the left eigenvector is the identity matrix.
-#if !defined(NDEBUG)
-   MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
-   MatrixOperator R = delta_shift(D*D, QShift);
-   A = delta_shift(LeftMultiply(PsiL, QShift)(delta_shift(I, adjoint(QShift))), QShift);
-   CHECK(norm_frob(inner_prod(A-EtaL*I, R)) < 10*A.Basis1().total_dimension() * ArnoldiTol)(norm_frob(A-EtaL*I))(A)(I)(D);
-   TRACE(norm_frob(inner_prod(A-EtaL*I, R)));
-#endif
-
-   // same for the right eigenvector, which will be the density matrix
-
-   // initialize the guess eigenvector
-   MatrixOperator RightEigen = GuessRho;
-
-   if (Verbose > 0)
-      std::cout << "Obtaining right orthogonality eigenvector..." << std::endl;
-   // get the eigenmatrix
-   Iterations = 20; Tol = ArnoldiTol;
-   RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2),
-                                                      Iterations, Tol,
-                                                      LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
-   //   DEBUG_TRACE(norm_frob(RightEigen - adjoint(RightEigen)));
-   while (Tol < 0)
-   {
-      if (Verbose > 0)
-         std::cout << "RightEigen: Arnoldi not converged, restarting.  EValue="
-                   << EtaR << ", Tol=" << Tol << "\n";
-      Iterations = 20; Tol = ArnoldiTol;
-      RightEigen = 0.5 * (RightEigen + adjoint(RightEigen));
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiL, QShift, Verbose-2),
-                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false, Verbose-1);
-   }
-   DEBUG_TRACE(EtaR);
-
-   // Adjust the phase of the eigenvector to maximize the trace (ie, make it positive)
-   Alpha = std::conj(trace(RightEigen));
-   Alpha *= 1.0 / norm_frob(Alpha);
-   RightEigen *= Alpha;
-
-   //TRACE(trace(RightEigen));
-
-   DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
-      (norm_frob(RightEigen - adjoint(RightEigen)))(RightEigen);
-
-   D = RightEigen;
-   U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
-
-   // normalize
-   D *= 1.0 / norm_frob(D);
-
-#if 1
-   // incorporate U into the MPS
-
-   PsiL.set_back(prod(PsiL.get_back(), adjoint(U)));
-   PsiL.set_front(prod(delta_shift(U, QShift), PsiL.get_front()));
-
-   // D is now the Lambda matrix.  Check that
-#if !defined(NDEBUG)
-   MatrixOperator Rho = D*D;
-   A = RightMultiply(PsiL, QShift)(Rho);
-   CHECK(norm_frob(A-EtaR*Rho) < 10*A.Basis2().total_dimension() * ArnoldiTol);
-#endif
-
-
-#else
-
-
-   DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
-
-   // RightEigen = triple_prod(U, D*D, herm*U)
-
-   A = delta_shift(U, QShift);
-   AInv = adjoint(U);
-
-   //   PsiL = inject_left_old_interface(A, PsiL);
-   //   PsiL.set_back(prod(PsiL.get_back(), A * AInv));
-
-   AInv = right_orthogonalize(PsiL, AInv);
-   PsiL.set_front(prod(A*AInv, PsiL.get_front()));
-
-   //   PsiL.set_back(prod(PsiL.get_back(), adjoint(U)));
-   //   PsiL.set_front(prod(delta_shift(U, QShift), PsiL.get_front()));
-
-
-
-   // orthonormalize each component of PsiL
-   MatrixOperator I = MatrixOperator::make_identity(PsiL.Basis1());
-   I = left_orthogonalize(I, PsiL);
-   // now I should be unitary (or even an identity operator).  Normalize it and fold it back into the last component
-   I *= 1.0 / std::sqrt(EtaR.real());
-   PsiL.set_back(prod(PsiL.get_back(), I));
-#endif
-
-   return InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, D, QShift, LogAmplitude, Verbose-1);
+   return std::tie(EValues[0], EVec[0]);
 }
 
 void
-InfiniteWavefunctionLeft::Initialize(LinearWavefunction const& Psi_, MatrixOperator const& Lambda, int Verbose)
+left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
+{
+   // Strategy:
+   // 1. Calculate the two largest left transfer matrix eigenvalues.
+   // 2. Check and see if they are degenerate.  If they are, use the degeneracy algorithm.
+   // 3. (non-degenerate case): Scale the eigenmatrix X to be hermitian
+   // 4. Diagonalize it: X = U D U^\dagger
+   // 5. Obtain the decompositon L = U \sqrt(D) so that L L^\dagger = X
+   // 6. Do a sequence of SVD's from left to right
+   // 7. Check that the final D matrix matches the initial
+
+   std::complex<double> EVal;
+   MatrixOperator X;
+   std::tie(EVal, X) = GetPrincipalTransferEigenvectorLeft(Psi, QShift, tol, Verbose);
+
+   // scale X so that it is Hermitian, and positive
+   auto x = trace(X*X);   // TODO: this isn't as efficient as it should be
+   X *= std::pow(x, -0.5);
+   if (trace(X).real() < 0)
+      X = -X;
+
+   MatrixOperator U0;
+   RealDiagonalOperator D0;
+   std::tie(D0, U0) = DiagonalizeHermitian(X); // Now X = U^\dagger D U
+
+   D0 = SqrtDiagonal(D0);
+
+   MatrixOperator U = U0;
+   RealDiagonalOperator D = D0;
+
+   // Do a sequence of SVD's to orthogonalize Psi
+   for (auto& A : Psi)
+   {
+      X = D*U;
+      A = X*A;
+      std::tie(D, U) = OrthogonalizeBasis2(A);
+   }
+   // Incorporate the final unitaries.  This ensures that the final basis doesn't change.
+   Psi.set_front(herm(U0) * Psi.get_front());
+   Psi.set_back(Psi.get_back() * U);
+
+   // Verify that the final D matrices are similar.  We need to scale by the eigenvalue.
+   MatrixOperator Dr = herm(U) * (D * U);
+   Dr = delta_shift(Dr, QShift);
+   MatrixOperator Dl = herm(U0) * (D0 * U0);
+   Dl *= std::sqrt(EVal.real());
+
+   TRACE(norm_frob(Dr-Dl));
+   CHECK(norm_frob(Dr-Dl) < 1E-10*Dr.Basis1().total_dimension());
+}
+
+RealDiagonalOperator
+gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double tol, int Verbose)
+{
+   // 8. Calculate the right transfer matrix eigenvector (density operator) \rho
+   // 9. Diagonalize \rho and obtain U_L \Lambda_L^2 U_L^\dagger
+   // 10. Gauge fix the left side with U_L^\dagger
+   // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
+
+   std::complex<double> EValue;
+   MatrixOperator Y;
+   std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, std::move(GuessRho), tol, Verbose);
+   // scale Y so it is Hermitian
+   auto y = trace(Y*Y);  // TODO: fixme
+   Y *= std::pow(y, -0.5);
+   if (trace(Y).real() < 0)
+      Y = -Y;
+
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   std::tie(D, U) = DiagonalizeHermitian(Y); // Now Y = U^\dagger D U
+
+   Psi.set_front(U * Psi.get_front());
+   Psi.set_back(Psi.get_back() * herm(U));
+
+   return SqrtDiagonal(D);
+}
+
+RealDiagonalOperator
+gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
+{
+   // 8. Calculate the right transfer matrix eigenvector (density operator) \rho
+   // 9. Diagonalize \rho and obtain U_L \Lambda_L^2 U_L^\dagger
+   // 10. Gauge fix the left side with U_L^\dagger
+   // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
+
+   std::complex<double> EValue;
+   MatrixOperator Y;
+   std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose);
+   // scale Y so it is Hermitian
+   auto y = trace(Y*Y);  // TODO: fixme
+   Y *= std::pow(y, -0.5);
+   // make the trace of Y = 1
+   Y *= 1.0 / trace(Y).real();
+
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   std::tie(D, U) = DiagonalizeHermitian(Y); // Now Y = U^\dagger D U
+
+   Psi.set_front(U * Psi.get_front());
+   Psi.set_back(Psi.get_back() * herm(U));
+
+   return SqrtDiagonal(D);
+}
+
+void
+InfiniteWavefunctionLeft::InitializeFromLeftOrthogonal(LinearWavefunction Psi, RealDiagonalOperator Lambda, int Verbose)
 {
    if (Verbose > 0)
    {
-      std::cout << "Constructing canonical wavefunction..." << std::endl;
-      std::cout << "Constructing right ortho matrices..." << std::endl;
+      std::cout << "Constructing Lambda matrices..." << std::endl;
    }
 
-   LinearWavefunction Psi = Psi_;
-   MatrixOperator M = right_orthogonalize(Psi, Lambda, Verbose-1);
-   // normalize
-   M *= 1.0 / norm_frob(M);
+   MatrixOperator U1 = MatrixOperator::make_identity(Lambda.Basis1());
 
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   // we can't initialize lambda_l yet, as we don't have it in the correct (diagonal) basis.
-   // We will only get this at the end, when we obtain lambda_r.  So just set it to a dummy
-   this->push_back_lambda(D);
+   RealDiagonalOperator Lambda0 = delta_shift(Lambda, this->QShift);
 
-   if (Verbose > 0)
-      std::cout << "Constructing left ortho matrices..." << std::endl;
+   std::deque<RealDiagonalOperator> LambdaMatrices;
+   LambdaMatrices.push_front(Lambda);
 
-   int n = 0;
-   for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
+   LinearWavefunction::iterator I = Psi.end();
+   while (I != Psi.begin())
    {
-      if (Verbose > 1)
-         std::cout << "orthogonalizing site " << n << std::endl;
-      StateComponent A = prod(M, *I);
-      M = ExpandBasis2(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      this->push_back(prod(A, U));
-      this->push_back_lambda(D);
-      M = D*Vh;
+      --I;
+
+      StateComponent A = *I;
+
+      A = A * (U1 * Lambda);
+      MatrixOperator U0;
+      std::tie(U0, Lambda) = OrthogonalizeBasis1(A);
+
+      *I = triple_prod(herm(U0), *I, U1);
+      LambdaMatrices.push_front(Lambda);
+      U1 = U0;
    }
 
-   Vh = delta_shift(Vh, QShift);
-   this->set(0, prod(Vh, this->operator[](0)));
-   this->setBasis1(Vh.Basis1());
-   this->set_lambda(0, delta_shift(D, QShift));
-   this->setBasis2(D.Basis1());
+   // Now we have a choice as to which basis we use at the edge of the unit cell.  We can either use
+   // Lambda, which means we need to incorporate U1 at the right edge, or we could use Lambda0, and
+   // incorporate U1 at the left edge.  We will use Lambda0, since that preserves the existing basis.
+   LambdaMatrices.front() = Lambda0;
+   Psi.set_front(U1 * Psi.get_front());  // TODO: multiplying by herm(U0) and then by U0 is not ideal
+
+   //#if !defined(NDEBUG)
+   // check that Lambda0 and Lambda are the same (up to a delta_shift, and epsilon).
+   MatrixOperator L0 = Lambda0;
+   MatrixOperator L = U1 * Lambda * herm(U1);
+   TRACE(norm_frob(L0-L));
+   CHECK(norm_frob(L0 - L) < Lambda.Basis1().total_dimension() * std::sqrt(Psi.size()) * 1E-14);
+   //#endif
+
+   this->set_A_matrices_from_handle(Psi.base_begin(), Psi.base_end());
+   this->set_lambda_matrices(LambdaMatrices.begin(), LambdaMatrices.end());
+
+   this->setBasis1(Psi.Basis1());
+   this->setBasis2(Psi.Basis2());
 
    if (Verbose > 0)
-      std::cout << "Finished constructing canonical wavefunction." << std::endl;
+      std::cout << "Finished constructing left canonical wavefunction." << std::endl;
+
+   this->check_structure();
 }
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Version)
 {
    if (Version == 1)
    {
+      PANIC("This wavefunction is too old.");
+      // ConstructFromOrthogonal now takes a RealDiagonalOperator.
+      // So we just construct with C_right*C_right as an initial guess for the density matrix.
       MatrixOperator C_old;
       QuantumNumbers::QuantumNumber QShift;
       LinearWavefunction PsiLinear;
@@ -405,7 +363,7 @@ void read_version(PStream::ipstream& in, InfiniteWavefunctionLeft& Psi, int Vers
       in >> C_right;
       in >> Attr;
 
-      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLinear, C_right, QShift);
+      Psi = InfiniteWavefunctionLeft::Construct(PsiLinear, QShift, C_right*C_right);
    }
    else
    {
@@ -792,50 +750,6 @@ overlap(InfiniteWavefunctionLeft const& x, ProductMPO const& StringOp,
    return std::make_tuple(std::vector<std::complex<double>>(Eigen.begin(), Eigen.end()), Length);
 }
 
-
-#if 0
-std::complex<double> overlap(InfiniteWavefunctionLeft const& x, BasicFiniteMPO const& StringOp,
-                             InfiniteWavefunctionLeft const& y,
-                             QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
-{
-   CHECK_EQUAL(x.qshift(), y.qshift())("The wavefunctions must have the same quantum number per unit cell");
-
-   LinearWavefunction xPsi = get_left_canonical(x).first;
-   LinearWavefunction yPsi = get_left_canonical(y).first;
-
-   MatrixOperator Init = MakeRandomMatrixOperator(x.Basis1(), y.Basis1(), Sector);
-
-   int Iterations = Iter;
-   int TotalIterations = 0;
-   double MyTol = Tol;
-   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
-                LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
-                                   yPsi, x.qshift()),
-                                                     Iterations,
-                                                     MyTol,
-                                                     LinearSolvers::LargestMagnitude, false, Verbose);
-   TotalIterations += Iterations;
-   DEBUG_TRACE(Eta)(Iterations);
-
-   while (MyTol < 0)
-   {
-      if (Verbose > 0)
-         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
-      Iterations = Iter;
-      MyTol = Tol;
-      Eta = LinearSolvers::Arnoldi(Init, LeftMultiplyString(xPsi, StringOp * MakeIdentityFrom(StringOp, Sector),
-                                                            yPsi, x.qshift()),
-                                   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
-      TotalIterations += Iterations;
-      DEBUG_TRACE(Eta)(Iterations);
-   }
-   if (Verbose > 0)
-      std::cerr << "Converged.  TotalIterations=" << TotalIterations
-                << ", Tol=" << MyTol << '\n';
-
-   return Eta;
-}
-#endif
 
 InfiniteWavefunctionLeft
 reflect(InfiniteWavefunctionRight const& Psi)

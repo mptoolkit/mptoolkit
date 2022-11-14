@@ -70,29 +70,29 @@ struct LeftMultiply
    QuantumNumber QShift;
 };
 
-struct RightMultiply
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_)
-      : R(R_), QShift(QShift_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = x;
-      LinearWavefunction::const_iterator I = R.end();
-      while (I != R.begin())
-      {
-         --I;
-         r = operator_prod(*I, r, herm(*I));
-      }
-      return delta_shift(r, adjoint(QShift));
-   }
-
-   LinearWavefunction const& R;
-   QuantumNumber QShift;
-};
+// struct RightMultiply
+// {
+//    typedef MatrixOperator argument_type;
+//    typedef MatrixOperator result_type;
+//
+//    RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_)
+//       : R(R_), QShift(QShift_) {}
+//
+//    result_type operator()(argument_type const& x) const
+//    {
+//       result_type r = x;
+//       LinearWavefunction::const_iterator I = R.end();
+//       while (I != R.begin())
+//       {
+//          --I;
+//          r = operator_prod(*I, r, herm(*I));
+//       }
+//       return delta_shift(r, adjoint(QShift));
+//    }
+//
+//    LinearWavefunction const& R;
+//    QuantumNumber QShift;
+// };
 
 } // namespace
 
@@ -200,8 +200,8 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
       (norm_frob(RightEigen - adjoint(RightEigen)));
 
    MatrixOperator D = RightEigen;
-   MatrixOperator U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
+   MatrixOperator U; // = DiagonalizeHermitian(D);
+   //D = SqrtDiagonal(D, OrthoTol);
    MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
 
    // RightEigen = triple_prod(U, D*D, herm(U))
@@ -237,8 +237,8 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& P
    }
 
    D = LeftEigen;
-   U = DiagonalizeHermitian(D);
-   D = SqrtDiagonal(D, OrthoTol);
+   //U = DiagonalizeHermitian(D);
+   //D = SqrtDiagonal(D, OrthoTol);
 
    // normalize
    D *= 1.0 / norm_frob(D);

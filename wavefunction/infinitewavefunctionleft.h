@@ -40,18 +40,17 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 
       // named constructors
 
-      // construction from a LinearWavefunction (in left-canonical form with lambda
-      // matrix on the right)
+      // construction from a LinearWavefunction that is in left orthogonal form with a diagonal right Lambda matrix
       static
-      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction const& Psi,
-                                                       MatrixOperator const& Lambda,
+      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction Psi,
                                                        QuantumNumbers::QuantumNumber const& QShift_,
+                                                       RealDiagonalOperator const& Lambda,
                                                        double LogAmplitude = 0.0,
                                                        int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
+      InfiniteWavefunctionLeft Construct(LinearWavefunction Psi,
                                          QuantumNumbers::QuantumNumber const& QShift,
                                          double LogAmplitude = 0.0,
                                          int Verbose = 0);
@@ -59,9 +58,9 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // construct and orthogonalize from a LinearWavefunction, with an approximation
       // for the right-most density matrix
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction const& Psi,
-                                         MatrixOperator const& GuessRho,
+      InfiniteWavefunctionLeft Construct(LinearWavefunction Psi,
                                          QuantumNumbers::QuantumNumber const& QShift,
+                                         MatrixOperator GuessRho,
                                          double LogAmplitude = 0.0,
                                          int Verbose = 0);
 
@@ -108,7 +107,8 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
    private:
       explicit InfiniteWavefunctionLeft(QuantumNumber const& QShift_, double LogAmplitude_);
 
-      void Initialize(LinearWavefunction const& Psi, MatrixOperator const& Lambda, int Verbose);
+      // Complete the initialization, given an input Psi that satisfies the left ortho constraint, and a diagonal Lamba_r matrix
+      void InitializeFromLeftOrthogonal(LinearWavefunction Psi, RealDiagonalOperator Lambda, int Verbose);
 
       // The quantum number shift per unit cell
       QuantumNumber QShift;
@@ -144,10 +144,15 @@ InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex
 
 class InfiniteWavefunctionRight;
 
-// Convert a, infinite wavefunction to left-canonical form,
-// and returns the Lambda matrix on the right-hand-side.
+// Convert an infinite wavefunction to left-orthogonal form.
+// This function leaves the left and right basis invariant.
+void
+left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
+// Take a wavefunction that is already in left orthogonal form, and gauge fix it so that the right
+// transfer matrix eigenvector is diagonal.  Return value is the Lambda matrix on the right-hand-side.
 RealDiagonalOperator
-left_canonicalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift);
+gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
 
 // Extend the unit cell of the wavefunction by repeating it Count number of times
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);

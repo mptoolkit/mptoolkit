@@ -48,6 +48,13 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
 std::tuple<std::complex<double>, MatrixOperator>
 get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
 
+// Identity sector
+std::tuple<std::complex<double>, MatrixOperator>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
+
 // this version gets the N largest magnitude eigenvectors.  Parameter N comes first to avoid confusion with default
 // arguments and get_left_transfer_eigenvector
 std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
@@ -56,6 +63,13 @@ get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWave
 // version that takes an intitial guess
 std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
 get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
+
+// Identity sector
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
+std::tuple<std::vector<std::complex<double>>, std::vector<MatrixOperator>>
+get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
 
 //
 // Right eigenvectors
@@ -67,6 +81,13 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
 
 std::tuple<std::complex<double>, MatrixOperator>
 get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
+
+// Identity sector
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, MatrixOperator InitialGuess, double tol = 1E-14, int Verbose = 0);
 
 // Gets the principal left/right eigenpair of the transfer matrix.
 // The string operator could have a unit cell that divides the wavefunction unit cell.

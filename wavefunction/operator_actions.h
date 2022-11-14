@@ -359,6 +359,38 @@ struct LeftMultiplyOperator
 };
 
 
+struct RightMultiply
+{
+   typedef MatrixOperator argument_type;
+   typedef MatrixOperator result_type;
+
+   RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_, int Verbose_ = 0)
+      : R(R_), QShift(QShift_), Verbose(Verbose_) {}
+
+   result_type operator()(argument_type const& x) const
+   {
+      result_type r = x;
+      int s = R.size();
+      LinearWavefunction::const_iterator I = R.end();
+      while (I != R.begin())
+      {
+         --s;
+         if (Verbose > 0)
+            std::cout << "site " << s << std::endl;
+         --I;
+         r = operator_prod(*I, r, herm(*I));
+      }
+      return delta_shift(r, adjoint(QShift));
+   }
+
+   LinearWavefunction const& R;
+   QuantumNumber QShift;
+   int Verbose;
+};
+
+
+
+
 struct RightMultiplyOperator
 {
    typedef StateComponent argument_type;
@@ -400,7 +432,7 @@ struct RightMultiplyOperator
       {
          if (Verbose > 1)
          {
-            std::cerr << "Site " << n << ", E-matrix dimension " << R.size()
+            std::cerr << "Site " << n << ", F-matrix dimension " << R.size()
                       << "x" << R.Basis1().total_dimension()
                       << "x" << R.Basis2().total_dimension()
                       << '\n';
@@ -428,6 +460,7 @@ struct RightMultiplyOperator
 
          R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R,
                                  herm(delta_shift(*I2, adjoint(q2))));
+         TRACE(R);
       }
       q1 = delta_shift(q1, adjoint(QShift1));
       q2 = delta_shift(q2, adjoint(QShift2));

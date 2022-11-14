@@ -159,6 +159,27 @@ class CanonicalWavefunctionBase
       void set_back(mps_type const& A) { Data.back() = new mps_type(A); }
       void set_lambda(int i, lambda_type const& L) { Lambda[i] = new lambda_type(L); }
 
+      // set the A-matrices from a container
+      template <typename I1, typename I2>
+      void set_A_matrices_from_handle(I1 first, I2 last)
+      {
+         Data = mps_container_type(first, last);
+      }
+
+      // set the Lambda-matrices from a container
+      template <typename I1, typename I2>
+      void set_lambda_matrices(I1 first, I2 last)
+      {
+         Lambda = lambda_container_type(last-first);
+         int i = 0;
+         while (first != last)
+         {
+            this->set_lambda(i, *first);
+            ++i;
+            ++first;
+         }
+      }
+
       void setBasis1(VectorBasis const& B) { Basis1_ = B; }
       void setBasis2(VectorBasis const& B) { Basis2_ = B; }
 
