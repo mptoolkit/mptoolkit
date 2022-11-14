@@ -44,11 +44,17 @@ WrappedGaussian(double x, double mu, double sigma)
    return 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(x-mu)),(0.5*std::pow(sigma,2))/math_const::pi);
 #else
    // jacobi_theta.hpp is not in versions of Boost before 1.75, so we perform
-   // the sum from j = -10 to 10, which should give the same result for any
-   // reasonably small sigma.
+   // the sum until machine epsilon is reached, which will not be very
+   // expensive for small sigma.
+
+   int JMax = std::ceil(std::sqrt(-2.0*std::log(std::numeric_limits<double>::epsilon())*sigma));
+   if (JMax > 10000)
+      WARNING("Attempting to calculate WrappedGaussian with JMax > 10000!");
+
    double Result = 0;
-   for (int j = -10; j <= 10; ++j)
-      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma*std::exp(-1.0/2.0/std::pow(sigma, 2)*(std::pow(math_const::pi*(fmod(x-mu+1.0,2.0)-1.0+2.0*j),2)));
+   for (int j = -JMax; j <= JMax; ++j)
+      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma*std::exp(-1.0/2.0/std::pow(sigma, 2)*(std::pow(math_const::pi*(std::fmod(x-mu+1.0,2.0)-1.0+2.0*j),2)));
+
    return Result;
 #endif
 }
