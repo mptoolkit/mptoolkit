@@ -229,8 +229,8 @@ int main(int argc, char** argv)
 
       if (Streaming)
       {
-         ResultPsi.WavefunctionLeftFile = InputFileLeft;
-         ResultPsi.WavefunctionRightFile = InputFileRight;
+         ResultPsi.set_left_filename(InputFileLeft);
+         ResultPsi.set_right_filename(InputFileRight);
       }
 
       MPWavefunction Result(ResultPsi);

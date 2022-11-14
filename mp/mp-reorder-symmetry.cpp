@@ -109,16 +109,16 @@ IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& 
 
 EAWavefunction ReorderSymmetry(EAWavefunction const& Psi, SymmetryList const& NewSL)
 {
-   std::vector<WavefunctionSectionLeft> WindowVec = Psi.WindowVec;
+   std::vector<WavefunctionSectionLeft> WindowVec = Psi.window_vec();
 
    for (auto& Window : WindowVec)
       Window = ReorderSymmetry(Window, NewSL);
 
-   return EAWavefunction(ReorderSymmetry(Psi.Left, NewSL),
+   return EAWavefunction(ReorderSymmetry(Psi.left(), NewSL),
                          WindowVec,
-                         ReorderSymmetry(Psi.Right, NewSL),
-                         Psi.ExpIK,
-                         Psi.GSOverlap);
+                         ReorderSymmetry(Psi.right(), NewSL),
+                         Psi.exp_ik(),
+                         Psi.gs_overlap());
 }
 
 FiniteWavefunctionLeft ReorderSymmetry(FiniteWavefunctionLeft const& Psi, SymmetryList const& NewSL)

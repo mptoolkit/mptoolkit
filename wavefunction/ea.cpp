@@ -192,6 +192,6 @@ EAWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["GSOverlap"] = GSOverlap;
    A["LeftUnitCellSize"] = Left.size();
    A["RightUnitCellSize"] = Left.size();
-   A["LeftWindowFile"] = this->LeftWindowFile();
-   A["RightWindowFile"] = this->RightWindowFile();
+   A["LeftFilename"] = this->get_left_filename();
+   A["RightFilename"] = this->get_right_filename();
 }

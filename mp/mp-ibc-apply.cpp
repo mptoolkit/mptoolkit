@@ -105,9 +105,9 @@ int main(int argc, char** argv)
       }
 
       IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
-      InfiniteWavefunctionLeft PsiLeft = Psi.Left;
-      InfiniteWavefunctionRight PsiRight = Psi.Right;
-      MatrixOperator Vh = MatrixOperator::make_identity(Psi.Left.Basis1());
+      InfiniteWavefunctionLeft PsiLeft = Psi.left();
+      InfiniteWavefunctionRight PsiRight = Psi.right();
+      MatrixOperator Vh = MatrixOperator::make_identity(PsiLeft.Basis1());
 
       if (vm.count("left") > 0) {
          if (Verbose > 0)
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 
       int NewOffset = Psi.window_offset();
 
-      WavefunctionSectionLeft PsiWindow = Psi.Window;
+      WavefunctionSectionLeft PsiWindow = Psi.window();
 
       LinearWavefunction PsiWindowLinear;
       MatrixOperator Lambda;
@@ -193,8 +193,8 @@ int main(int argc, char** argv)
          SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
 
          // Ensure that the window starts and ends at the operator unit cell boundaries.
-         SitesLeft += (Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size();
-         SitesRight += (Psi.Right.size() - Psi.WindowRightSites) % Op.unit_cell_size();
+         SitesLeft += (PsiLeft.size() - Psi.window_left_sites()) % Op.unit_cell_size();
+         SitesRight += (PsiRight.size() - Psi.window_right_sites()) % Op.unit_cell_size();
 
          // The new window offset.
          NewOffset = Psi.window_offset() - SitesLeft;
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 
          auto CLeft = PsiLeft.end();
 
-         for (int i = 0; i < Psi.WindowLeftSites; ++i)
+         for (int i = 0; i < Psi.window_left_sites(); ++i)
             --CLeft;
 
          for (int i = 0; i < SitesLeft; ++i)
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 
          auto CRight = PsiRight.begin();
 
-         for (int i = 0; i < Psi.WindowRightSites; ++i)
+         for (int i = 0; i < Psi.window_right_sites(); ++i)
             ++CRight;
 
          for (int i = 0; i < SitesRight; ++i)
@@ -296,16 +296,15 @@ int main(int argc, char** argv)
 
       IBCWavefunction PsiNew;
       PsiNew = IBCWavefunction(PsiLeft, PsiWindow, PsiRight, NewOffset,
-                               (Psi.WindowLeftSites + SitesLeft) % PsiLeft.size(),
-                               (Psi.WindowRightSites + SitesRight) % PsiRight.size());
+                               (Psi.window_left_sites() + SitesLeft) % PsiLeft.size(),
+                               (Psi.window_right_sites() + SitesRight) % PsiRight.size());
 
       // Stream the boundaries, if the input file does.
       // UNLESS we modify the left boundary.
-      if (!Psi.WavefunctionLeftFile.empty() && vm.count("left") == 0)
-         PsiNew.WavefunctionLeftFile = Psi.WavefunctionLeftFile;
+      if (!Psi.get_left_filename().empty() && vm.count("left") == 0)
+         PsiNew.set_left_filename(Psi.get_left_filename());
 
-      if (!Psi.WavefunctionRightFile.empty())
-         PsiNew.WavefunctionRightFile = Psi.WavefunctionRightFile;
+      PsiNew.set_right_filename(Psi.get_right_filename());
 
       PsiPtr.mutate()->Wavefunction() = PsiNew;
 

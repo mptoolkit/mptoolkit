@@ -93,25 +93,25 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(RightFilename);
       IBCWavefunction PsiRight = InPsiRight->get<IBCWavefunction>();
 
-      CHECK(PsiLeft.Right.qshift() == PsiRight.Left.qshift());
-      QuantumNumber QShift = PsiLeft.Right.qshift();;
+      CHECK(PsiLeft.right().qshift() == PsiRight.left().qshift());
+      QuantumNumber QShift = PsiLeft.right().qshift();
 
       // Get the middle boundary from PsiLeft in right orthogonal form.
       // (NB LambdaLeft is the Lambda matrix for the translationally invariant
       // fixed point, and will not usually be valid near the window.)
       MatrixOperator LambdaLeft;
       LinearWavefunction BoundaryLeft;
-      std::tie(LambdaLeft, BoundaryLeft) = get_right_canonical(PsiLeft.Right);
+      std::tie(LambdaLeft, BoundaryLeft) = get_right_canonical(PsiLeft.right());
 
       // Get the middle boundary from PsiRight in left orthogonal form.
       MatrixOperator LambdaRight;
       LinearWavefunction BoundaryRight;
-      std::tie(BoundaryRight, LambdaRight) = get_left_canonical(PsiRight.Left);
+      std::tie(BoundaryRight, LambdaRight) = get_left_canonical(PsiRight.left());
 
       // Get the middle boundary from PsiLeft in LEFT orthogonal form.
       MatrixOperator ULeft_LO;
       LinearWavefunction BoundaryLeft_LO;
-      std::tie(BoundaryLeft_LO, std::ignore, ULeft_LO) = get_left_canonical(PsiLeft.Right);
+      std::tie(BoundaryLeft_LO, std::ignore, ULeft_LO) = get_left_canonical(PsiLeft.right());
       BoundaryLeft_LO.set_back(prod(BoundaryLeft_LO.get_back(), delta_shift(ULeft_LO, adjoint(QShift))));
 
       if (Verbose > 1)
@@ -143,16 +143,16 @@ int main(int argc, char** argv)
 
       LinearWavefunction WindowLeft;
       MatrixOperator DLeft;
-      std::tie(WindowLeft, DLeft) = get_left_canonical(PsiLeft.Window);
+      std::tie(WindowLeft, DLeft) = get_left_canonical(PsiLeft.window());
 
-      if (PsiLeft.WindowRightSites != 0)
+      if (PsiLeft.window_right_sites() != 0)
       {
          // TODO: Check that this works properly.
          if (Verbose > 1)
             std::cout << "Adding sites to fill the right unit cell of the left window..." << std::endl;
 
          auto C = BoundaryLeft.begin();
-         for (int i = 0; i < PsiLeft.WindowRightSites; ++i)
+         for (int i = 0; i < PsiLeft.window_right_sites(); ++i)
             ++C;
 
          MatrixOperator U, Vh;
@@ -173,8 +173,8 @@ int main(int argc, char** argv)
       else
       {
          // Make DLeft square.
-         WindowLeft.set_back(prod(WindowLeft.get_back(), PsiLeft.Window.RightU()));
-         DLeft = adjoint(PsiLeft.Window.RightU()) * DLeft;
+         WindowLeft.set_back(prod(WindowLeft.get_back(), PsiLeft.window().RightU()));
+         DLeft = adjoint(PsiLeft.window().RightU()) * DLeft;
       }
 
       if (Verbose > 0)
@@ -216,16 +216,16 @@ int main(int argc, char** argv)
 
       LinearWavefunction WindowRight;
       MatrixOperator DRight;
-      std::tie(WindowRight, DRight) = get_left_canonical(PsiRight.Window);
+      std::tie(WindowRight, DRight) = get_left_canonical(PsiRight.window());
       DRight = right_orthogonalize(WindowRight, DRight, Verbose-2);
 
-      if (PsiRight.WindowLeftSites != 0)
+      if (PsiRight.window_left_sites() != 0)
       {
          if (Verbose > 1)
             std::cout << "Adding sites to fill the left unit cell of the right window..." << std::endl;
 
          auto C = BoundaryRight.end();
-         for (int i = 0; i < PsiRight.WindowLeftSites; ++i)
+         for (int i = 0; i < PsiRight.window_left_sites(); ++i)
             --C;
 
          MatrixOperator U, Vh;
@@ -302,14 +302,12 @@ int main(int argc, char** argv)
       if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
 
-      IBCWavefunction PsiOut(PsiLeft.Left, PsiWindow, PsiRight.Right, PsiLeft.window_offset(), PsiLeft.WindowLeftSites, PsiRight.WindowRightSites);
+      IBCWavefunction PsiOut(PsiLeft.left(), PsiWindow, PsiRight.right(),
+                             PsiLeft.window_offset(), PsiLeft.window_left_sites(), PsiRight.window_right_sites());
 
       // Stream the boundaries, if the input files do.
-      if (!PsiLeft.WavefunctionLeftFile.empty())
-         PsiOut.WavefunctionLeftFile = PsiLeft.WavefunctionLeftFile;
-
-      if (!PsiRight.WavefunctionRightFile.empty())
-         PsiOut.WavefunctionRightFile = PsiRight.WavefunctionRightFile;
+      PsiOut.set_left_filename(PsiLeft.get_left_filename());
+      PsiOut.set_right_filename(PsiRight.get_right_filename());
 
       MPWavefunction Wavefunction;
       Wavefunction.Wavefunction() = std::move(PsiOut);

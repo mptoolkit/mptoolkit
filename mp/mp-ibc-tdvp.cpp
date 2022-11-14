@@ -266,11 +266,8 @@ int main(int argc, char** argv)
             IBCWavefunction PsiSave = tdvp.Wavefunction();
 
             // Stream the boundaries, if the input file does.
-            if (!Psi.WavefunctionLeftFile.empty())
-               PsiSave.WavefunctionLeftFile = Psi.WavefunctionLeftFile;
-
-            if (!Psi.WavefunctionRightFile.empty())
-               PsiSave.WavefunctionRightFile = Psi.WavefunctionRightFile;
+            PsiSave.set_left_filename(Psi.get_left_filename());
+            PsiSave.set_right_filename(Psi.get_right_filename());
 
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);

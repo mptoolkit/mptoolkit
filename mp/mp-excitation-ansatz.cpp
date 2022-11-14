@@ -292,8 +292,8 @@ int main(int argc, char** argv)
 
                if (Streaming)
                {
-                  PsiEA.WavefunctionLeftFile = InputFileLeft;
-                  PsiEA.WavefunctionRightFile = InputFileRight;
+                  PsiEA.set_left_filename(InputFileLeft);
+                  PsiEA.set_right_filename(InputFileRight);
                }
 
                MPWavefunction Wavefunction;

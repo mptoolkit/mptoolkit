@@ -193,7 +193,10 @@ int main(int argc, char** argv)
 
       if (Verbose)
          std::cout << "Translating Psi2 left by " << Rotate << " sites..." << std::endl;
-      Psi2.WindowOffset -= Rotate;
+
+      Psi2 = IBCWavefunction(Psi2.left(), Psi2.window(), Psi2.right(),
+                             Psi2.window_offset() - Rotate,
+                             Psi2.window_left_sites(), Psi2.window_right_sites());
 
       if (Reflect)
       {
@@ -217,7 +220,7 @@ int main(int argc, char** argv)
       }
       else
       {
-         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left));
+         StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi2.left()));
       }
 
       if (!Quiet)

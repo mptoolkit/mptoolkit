@@ -164,16 +164,16 @@ wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
 EAWavefunction
 wigner_project(EAWavefunction const& Psi, SymmetryList const& FinalSL)
 {
-   std::vector<WavefunctionSectionLeft> WindowVec = Psi.WindowVec;
+   std::vector<WavefunctionSectionLeft> WindowVec = Psi.window_vec();
 
    for (auto& Window : WindowVec)
       Window = wigner_project(Window, FinalSL);
 
-   return EAWavefunction(wigner_project(Psi.Left, FinalSL),
+   return EAWavefunction(wigner_project(Psi.left(), FinalSL),
                          WindowVec,
-                         wigner_project(Psi.Right, FinalSL),
-                         Psi.ExpIK,
-                         Psi.GSOverlap);
+                         wigner_project(Psi.right(), FinalSL),
+                         Psi.exp_ik(),
+                         Psi.gs_overlap());
 }
 
 FiniteWavefunctionLeft
