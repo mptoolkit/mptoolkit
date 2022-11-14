@@ -458,9 +458,7 @@ struct RightMultiplyOperator
             OpIter = StringOp.end();
          --OpIter;
 
-         R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R,
-                                 herm(delta_shift(*I2, adjoint(q2))));
-         TRACE(R);
+         R = contract_from_right(herm(*OpIter), delta_shift(*I1, adjoint(q1)), R, herm(delta_shift(*I2, adjoint(q2))));
       }
       q1 = delta_shift(q1, adjoint(QShift1));
       q2 = delta_shift(q2, adjoint(QShift2));

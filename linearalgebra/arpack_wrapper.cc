@@ -165,10 +165,6 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
       if (InitialGuess)
       {
          std::copy(InitialGuess, InitialGuess+n, resid.data());
-         for (int i = 0; i < n; ++i)
-         {
-            TRACE(InitialGuess[i]);
-         }
       }
       int info = InitialGuess ? 1 : 0;  // this is the indicator whether to use the initial residual, or create one randomly
 
