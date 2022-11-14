@@ -27,7 +27,10 @@
 #include "linearalgebra/eigen.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 107500
 #include <boost/math/special_functions/jacobi_theta.hpp>
+#endif
 
 namespace prog_opt = boost::program_options;
 
@@ -37,7 +40,17 @@ namespace prog_opt = boost::program_options;
 double
 WrappedGaussian(double x, double mu, double sigma)
 {
+#if BOOST_VERSION >= 107500
    return 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(x-mu)),(0.5*std::pow(sigma,2))/math_const::pi);
+#else
+   // jacobi_theta.hpp is not in versions of Boost before 1.75, so we perform
+   // the sum from j = -10 to 10, which should give the same result for any
+   // reasonably small sigma.
+   double Result = 0;
+   for (int j = -10; j <= 10; ++j)
+      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma*std::exp(-1.0/2.0/std::pow(sigma, 2)*(std::pow(math_const::pi*(fmod(x-mu+1.0,2.0)-1.0+2.0*j),2)));
+   return Result;
+#endif
 }
 
 // Calculate the B-matrices for a wavepacket using sampling function FVec.
@@ -492,7 +505,6 @@ int main(int argc, char** argv)
          auto F = FVec.begin();
          while (K != KVec.end())
          {
-            //*F *= std::exp(1/2.0/std::pow(Sigma, 2)*(std::pow(math_const::pi*(*K-KCenter),2)));
             // Since we have a periodic domain in momentum space, we cannot
             // just use a normal Gaussian, so we use the "wrapped Gaussian",
             // which is defined on a periodic domain.
