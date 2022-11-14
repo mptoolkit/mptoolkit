@@ -221,8 +221,10 @@ IBCWavefunction::IBCWavefunction()
 IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                                  WavefunctionSectionLeft const& Window_,
                                  InfiniteWavefunctionRight const& Right_,
-                                 int Offset)
-   : WindowLeftSites(0), WindowRightSites(0), WindowOffset(Offset),
+                                 int Offset,
+                                 int WindowLeft,
+                                 int WindowRight)
+   : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
      Left(Left_), Window(Window_), Right(Right_)
 {
 }
@@ -230,10 +232,13 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
 IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                                  WavefunctionSectionLeft const& Window_,
                                  InfiniteWavefunctionRight const& Right_,
+                                 std::string LeftFilename,
+                                 std::string RightFilename,
                                  int Offset,
                                  int WindowLeft,
                                  int WindowRight)
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
+     WavefunctionLeftFile(LeftFilename), WavefunctionRightFile(RightFilename),
      Left(Left_), Window(Window_), Right(Right_)
 {
 }
@@ -355,8 +360,8 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["WindowOffset"] = this->window_offset();
    A["LeftUnitCellSize"] = Left.size();
    A["RightUnitCellSize"] = Left.size();
-   A["LeftWindowFile"] = this->LeftWindowFile();
-   A["RightWindowFile"] = this->RightWindowFile();
+   A["LeftFilename"] = this->get_left_filename();
+   A["RightFilename"] = this->get_right_filename();
 }
 
 // This class provides an "iterator" which runs over the A-matrices in an IBC

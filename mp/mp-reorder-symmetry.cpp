@@ -99,12 +99,12 @@ WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, Symm
 
 IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& NewSL)
 {
-   return IBCWavefunction(ReorderSymmetry(Psi.Left, NewSL),
-                          ReorderSymmetry(Psi.Window, NewSL),
-                          ReorderSymmetry(Psi.Right, NewSL),
+   return IBCWavefunction(ReorderSymmetry(Psi.left(), NewSL),
+                          ReorderSymmetry(Psi.window(), NewSL),
+                          ReorderSymmetry(Psi.right(), NewSL),
                           Psi.window_offset(),
-                          Psi.WindowLeftSites,
-                          Psi.WindowRightSites);
+                          Psi.window_left_sites(),
+                          Psi.window_right_sites());
 }
 
 EAWavefunction ReorderSymmetry(EAWavefunction const& Psi, SymmetryList const& NewSL)
