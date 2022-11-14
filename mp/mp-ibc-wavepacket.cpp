@@ -47,7 +47,7 @@ WrappedGaussian(double x, double mu, double sigma)
    // the sum until machine epsilon is reached, which will not be very
    // expensive for small sigma.
 
-   int JMax = std::ceil(std::sqrt(-2.0*std::log(std::numeric_limits<double>::epsilon())*sigma));
+   int JMax = std::ceil(std::sqrt(-2.0*std::log(std::numeric_limits<double>::epsilon()))*sigma);
    if (JMax > 10000)
       WARNING("Attempting to calculate WrappedGaussian with JMax > 10000!");
 
