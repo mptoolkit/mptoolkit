@@ -375,8 +375,8 @@ class ConstIBCIterator
       ConstIBCIterator(IBCWavefunction const& Psi_, int Index_)
          : Psi(Psi_), Index(Index_)
       {
-         PsiLeft = Psi.Left;
-         PsiRight = Psi.Right;
+         PsiLeft = Psi.left();
+         PsiRight = Psi.right();
 
          WindowLeftIndex = Psi.window_offset();
          WindowRightIndex = Psi.window_size() + Psi.window_offset() - 1;
@@ -385,11 +385,11 @@ class ConstIBCIterator
          {
             int IndexDiff = WindowLeftIndex - Index;
 
-            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) / PsiLeft.size(); ++i)
+            for (int i = 0; i < (Psi.window_left_sites() + IndexDiff) / PsiLeft.size(); ++i)
                inplace_qshift(PsiLeft, PsiLeft.qshift());
 
             C = PsiLeft.end();
-            for (int i = 0; i < (Psi.WindowLeftSites + IndexDiff) % PsiLeft.size(); ++i)
+            for (int i = 0; i < (Psi.window_left_sites() + IndexDiff) % PsiLeft.size(); ++i)
                --C;
             
             if (C == PsiLeft.end())
@@ -402,18 +402,18 @@ class ConstIBCIterator
          {
             int IndexDiff = Index - WindowRightIndex - 1;
 
-            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) / PsiRight.size(); ++i)
+            for (int i = 0; i < (Psi.window_right_sites() + IndexDiff) / PsiRight.size(); ++i)
                inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
 
             C = PsiRight.begin();
-            for (int i = 0; i < (Psi.WindowRightSites + IndexDiff) % PsiRight.size(); ++i)
+            for (int i = 0; i < (Psi.window_right_sites() + IndexDiff) % PsiRight.size(); ++i)
                ++C;
          }
          else
          {
             int IndexDiff = Index - WindowLeftIndex;
 
-            C = Psi.Window.begin();
+            C = Psi.window().begin();
             for (int i = 0; i < IndexDiff; ++i)
                ++C;
          }
@@ -424,10 +424,10 @@ class ConstIBCIterator
          StateComponent Result = *C;
 
          if (Index == WindowRightIndex + 1)
-            Result = Psi.Window.lambda_r() * Psi.Window.RightU() * Result;
+            Result = Psi.window().lambda_r() * Psi.window().RightU() * Result;
 
          if (Index == WindowLeftIndex)
-            Result = Psi.Window.LeftU() * Result;
+            Result = Psi.window().LeftU() * Result;
 
          return Result;
       }
@@ -447,11 +447,11 @@ class ConstIBCIterator
          else if (Index == WindowRightIndex + 1)
          {
             C = PsiRight.begin();
-            for (int i = 0; i < Psi.WindowRightSites; ++i)
+            for (int i = 0; i < Psi.window_right_sites(); ++i)
                ++C;
          }
          else if (Index == WindowLeftIndex)
-            C = Psi.Window.begin();
+            C = Psi.window().begin();
          else if (Index <= WindowRightIndex)
             ++C;
          else if (Index > WindowRightIndex + 1)
@@ -482,9 +482,9 @@ expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose)
 {
    // We choose IndexLeft/IndexRight such that it is the first/last site in the
    // operator unit cell, in order for Op.ExtendToCover to work correctly.
-   int IndexLeft = std::min(Psi.window_offset() - ((Psi.Left.size() - Psi.WindowLeftSites) % Op.unit_cell_size()),
+   int IndexLeft = std::min(Psi.window_offset() - ((Psi.left().size() - Psi.window_left_sites()) % Op.unit_cell_size()),
                             Op.offset());
-   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.Right.size() - Psi.WindowRightSites - 1) % Op.unit_cell_size()),
+   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.right().size() - Psi.window_right_sites() - 1) % Op.unit_cell_size()),
                              Op.size() + Op.offset() - 1);
 
    if (Verbose > 0)
@@ -550,33 +550,33 @@ std::tuple<StateComponent, StateComponent>
 get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
                                    IBCWavefunction const& Psi2, int Verbose)
 {
-   CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
-   CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
+   CHECK_EQUAL(Psi1.left().size(), Psi2.left().size());
+   CHECK_EQUAL(Psi1.right().size(), Psi2.right().size());
 
-   int LeftSize = Psi1.Left.size();
-   int RightSize = Psi1.Right.size();
+   int LeftSize = Psi1.left().size();
+   int RightSize = Psi1.right().size();
 
-   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.WindowLeftSites) % LeftSize);
-   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.WindowLeftSites) % LeftSize);
+   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.window_left_sites()) % LeftSize);
+   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.window_left_sites()) % LeftSize);
    int IndexLeft = std::min(IndexLeft1, IndexLeft2);
 
-   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.WindowRightSites - 1) % RightSize);
-   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.WindowRightSites - 1) % RightSize);
+   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.window_right_sites() - 1) % RightSize);
+   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.window_right_sites() - 1) % RightSize);
    int IndexRight = std::max(IndexRight1, IndexRight2);
 
    // Ensure that the semi-infinite boundaries have the same quantum numbers.
-   InfiniteWavefunctionLeft Psi1Left = Psi1.Left;
+   InfiniteWavefunctionLeft Psi1Left = Psi1.left();
    for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
-      inplace_qshift(Psi1Left, Psi1.Left.qshift());
+      inplace_qshift(Psi1Left, Psi1Left.qshift());
 
-   InfiniteWavefunctionLeft Psi2Left = Psi2.Left;
+   InfiniteWavefunctionLeft Psi2Left = Psi2.left();
    for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
-      inplace_qshift(Psi2Left, Psi2.Left.qshift());
+      inplace_qshift(Psi2Left, Psi2Left.qshift());
 
    // Calculate the left eigenvector of the left semi-infinite boundary.
    std::complex<double> OverlapL;
    MatrixOperator EL, ER;
-   std::tie(OverlapL, EL, ER) = get_transfer_eigenpair(get_left_canonical(Psi1Left).first, get_left_canonical(Psi2Left).first, Psi1.Left.qshift(), StringOp);
+   std::tie(OverlapL, EL, ER) = get_transfer_eigenpair(get_left_canonical(Psi1Left).first, get_left_canonical(Psi2Left).first, Psi1Left.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
    if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
@@ -588,25 +588,25 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    SingularValueDecomposition(ER, U, D, Vh);
 
    ER *= 1.0 / trace(D);
-   EL *= 1.0 / inner_prod(delta_shift(ER, Psi1.Left.qshift()), EL);
+   EL *= 1.0 / inner_prod(delta_shift(ER, Psi1Left.qshift()), EL);
 
    StateComponent E(StringOp.Basis1(), EL.Basis1(), EL.Basis2());
    E.front() = EL;
 
-   E = delta_shift(E, adjoint(Psi1.Left.qshift()));
+   E = delta_shift(E, adjoint(Psi1Left.qshift()));
 
-   InfiniteWavefunctionRight Psi1Right = Psi1.Right;
+   InfiniteWavefunctionRight Psi1Right = Psi1.right();
    for (int i = 0; i < (IndexRight - IndexRight1) / RightSize; ++i)
-      inplace_qshift(Psi1Right, adjoint(Psi1.Right.qshift()));
+      inplace_qshift(Psi1Right, adjoint(Psi1Right.qshift()));
 
-   InfiniteWavefunctionRight Psi2Right = Psi2.Right;
+   InfiniteWavefunctionRight Psi2Right = Psi2.right();
    for (int i = 0; i < (IndexRight - IndexRight2) / RightSize; ++i)
-      inplace_qshift(Psi2Right, adjoint(Psi2.Right.qshift()));
+      inplace_qshift(Psi2Right, adjoint(Psi2Right.qshift()));
 
    // Calculate the right eigenvector of the right semi-infinite boundary.
    std::complex<double> OverlapR;
    MatrixOperator FL, FR;
-   std::tie(OverlapR, FL, FR) = get_transfer_eigenpair(get_right_canonical(Psi1Right).second, get_right_canonical(Psi2Right).second, Psi1.Right.qshift(), StringOp);
+   std::tie(OverlapR, FL, FR) = get_transfer_eigenpair(get_right_canonical(Psi1Right).second, get_right_canonical(Psi2Right).second, Psi1Right.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
    if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
@@ -616,7 +616,7 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    SingularValueDecomposition(FL, U, D, Vh);
 
    FL *= 1.0 / trace(D);
-   FR *= 1.0 / inner_prod(delta_shift(FR, Psi1.Right.qshift()), FL);
+   FR *= 1.0 / inner_prod(delta_shift(FR, Psi1Right.qshift()), FL);
 
    StateComponent F(StringOp.Basis1(), FR.Basis1(), FR.Basis2());
    F.front() = FR;
@@ -662,25 +662,25 @@ overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
 {
-   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left)), Psi2, Verbose);
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, Verbose);
 }
 
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,
         StateComponent const& E_, StateComponent const& F_, int Verbose)
 {
-   CHECK_EQUAL(Psi1.Left.size(), Psi2.Left.size());
-   CHECK_EQUAL(Psi1.Right.size(), Psi2.Right.size());
+   CHECK_EQUAL(Psi1.left().size(), Psi2.left().size());
+   CHECK_EQUAL(Psi1.right().size(), Psi2.right().size());
 
-   int LeftSize = Psi1.Left.size();
-   int RightSize = Psi1.Right.size();
+   int LeftSize = Psi1.left().size();
+   int RightSize = Psi1.right().size();
 
-   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.WindowLeftSites) % LeftSize);
-   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.WindowLeftSites) % LeftSize);
+   int IndexLeft1 = Psi1.window_offset() - ((LeftSize - Psi1.window_left_sites()) % LeftSize);
+   int IndexLeft2 = Psi2.window_offset() - ((LeftSize - Psi2.window_left_sites()) % LeftSize);
    int IndexLeft = std::min(IndexLeft1, IndexLeft2);
 
-   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.WindowRightSites - 1) % RightSize);
-   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.WindowRightSites - 1) % RightSize);
+   int IndexRight1 = Psi1.window_size() + Psi1.window_offset() + ((RightSize - Psi1.window_right_sites() - 1) % RightSize);
+   int IndexRight2 = Psi2.window_size() + Psi2.window_offset() + ((RightSize - Psi2.window_right_sites() - 1) % RightSize);
    int IndexRight = std::max(IndexRight1, IndexRight2);
 
    if (Verbose > 0)
@@ -722,5 +722,5 @@ std::complex<double>
 overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
         StateComponent const& E, StateComponent const& F, int Verbose)
 {
-   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.Left)), Psi2, E, F, Verbose);
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, E, F, Verbose);
 }
