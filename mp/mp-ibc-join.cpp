@@ -134,7 +134,7 @@ int main(int argc, char** argv)
          PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
       else if (InPsiRight->is<InfiniteWavefunctionLeft>())
       {
-         if (!InPsiRight->is<InfiniteWavefunctionRight>())
+         if (!InPsiRight->is<InfiniteWavefunctionRight>() && Streaming)
          {
             std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight if streaming is enabled." << std::endl;
             return 1;
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
          StateComponent BlockHamL = Initial_E(HamMPOLeft, PsiLeft.Basis1());
          std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPOLeft, GMRESTol, Verbose);
          std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
-         BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
+         //BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
          HamMPORight = HamMPO;
          if (HamMPORight.size() < PsiRight.size())
@@ -202,6 +202,7 @@ int main(int argc, char** argv)
          std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPORight, GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
+         TRACE(BlockHamL.Basis2())(BlockHamR.Basis2());
 
          CMultiply Mult(BlockHamL, BlockHamR);
 
@@ -225,7 +226,7 @@ int main(int argc, char** argv)
       // Make the window from our centre matrix
       Window = WavefunctionSectionLeft(C);
 
-      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, 0);
+      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight);
 
       if (Streaming)
       {

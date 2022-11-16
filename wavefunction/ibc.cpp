@@ -383,6 +383,8 @@ class ConstIBCIterator
 
          if (Index < WindowLeftIndex)
          {
+            inplace_qshift(PsiLeft, PsiLeft.qshift());
+
             int IndexDiff = WindowLeftIndex - Index;
 
             for (int i = 0; i < (Psi.window_left_sites() + IndexDiff) / PsiLeft.size(); ++i)

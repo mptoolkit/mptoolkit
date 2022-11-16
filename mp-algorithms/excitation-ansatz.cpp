@@ -40,8 +40,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
      StringOp(Settings_.StringOp), GMRESTol(Settings_.GMRESTol),
      Alpha(Settings_.Alpha), Verbose(Settings_.Verbose)
 {
-   CHECK_EQUAL(PsiLeft.size(), PsiRight_.size());
-   CHECK_EQUAL(PsiLeft.qshift(), PsiRight_.qshift());
+   CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
+   CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
 
    this->SetK(Settings_.k);
    this->SetKY(Settings_.ky);
@@ -59,12 +59,12 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    std::complex<double> OverlapLR, OverlapRL;
 
    std::tie(OverlapLR, RhoLRLeft, RhoLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift());
-   RhoLRRight = delta_shift(RhoLRRight, PsiLeft.qshift());
+   RhoLRLeft = delta_shift(RhoLRLeft, adjoint(PsiLeft.qshift()));
    if (Verbose > 1)
       std::cout << "LR overlap = " << OverlapLR << std::endl;
 
    std::tie(OverlapRL, RhoRLLeft, RhoRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift());
-   RhoRLLeft = delta_shift(RhoRLLeft, adjoint(PsiRight.qshift()));
+   RhoRLRight = delta_shift(RhoRLRight, PsiRight.qshift());
    if (Verbose > 1)
       std::cout << "RL overlap = " << OverlapRL << std::endl;
 
@@ -116,7 +116,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
-   BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
+   //BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
    // Solve the right Hamiltonian environment.
    BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
@@ -279,9 +279,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    StateComponent BlockHamLTri, BlockHamRTri;
 
    SolveFirstOrderMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiLeft.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
+                              PsiLeft.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
    SolveFirstOrderMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                               PsiRight.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
+                               PsiRight.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
 
    // Shift the phases by one unit cell.
    BlockHamLTri *= ExpIK;
