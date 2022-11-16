@@ -34,9 +34,8 @@ double const TraceTol = 1e-8;
 double const OverlapTol = 1e-8;
 
 HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
-           BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-           EASettings const& Settings_)
-   : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_), Q(Q_),
+           BasicTriangularMPO const& HamMPO_, EASettings const& Settings_)
+   : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_),
      StringOp(Settings_.StringOp), GMRESTol(Settings_.GMRESTol),
      Alpha(Settings_.Alpha), Verbose(Settings_.Verbose)
 {
@@ -145,7 +144,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
    SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
-   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
+   BlockHamLR = delta_shift(BlockHamLR, PsiLeft.qshift());
+   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_l(), prod(BlockHamL, PsiLeft.lambda_l())), BlockHamLR);
 
    // An alternate way to calculate the bond energy using only the right
    // block Hamiltonian by essentially setting the upper-right element in
@@ -491,7 +491,7 @@ HEff::InitialGuess() const
    auto CR = PsiLinearRight.begin();
    while (NL != NullLeftDeque.end())
    {
-      MatrixOperator C = MakeRandomMatrixOperator((*NL).Basis2(), (*CR).Basis2(), Q);
+      MatrixOperator C = MakeRandomMatrixOperator((*NL).Basis2(), (*CR).Basis2());
       C *= 1.0 / norm_frob(C);
       Result.push_back(C);
       ++NL, ++CR;
@@ -508,7 +508,7 @@ HEff::PackInitialize() const
    auto CR = PsiLinearRight.begin();
    while (NL != NullLeftDeque.end())
    {
-      Result.push_back(PackMatrixOperator((*NL).Basis2(), (*CR).Basis2(), Q));
+      Result.push_back(PackMatrixOperator(MatrixOperator((*NL).Basis2(), (*CR).Basis2())));
       ++NL, ++CR;
    }
 

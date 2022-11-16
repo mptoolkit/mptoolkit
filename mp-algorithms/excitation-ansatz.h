@@ -50,8 +50,7 @@ struct HEff
    HEff() {}
 
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-        EASettings const& Settings_);
+        BasicTriangularMPO const& HamMPO_, EASettings const& Settings_);
 
    // Apply the effective Hamiltonian to XDeque.
    std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque) const;
@@ -85,7 +84,6 @@ struct HEff
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionRight PsiRight;
    BasicTriangularMPO HamMPO;
-   QuantumNumbers::QuantumNumber Q;
    ProductMPO StringOp;
    double GMRESTol;
    int Verbose;
