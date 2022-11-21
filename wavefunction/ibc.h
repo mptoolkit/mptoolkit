@@ -125,8 +125,8 @@ class IBCWavefunction
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                       WavefunctionSectionLeft const& Window_,
                       InfiniteWavefunctionRight const& Right_,
-                      std::string LeftFilename,
-                      std::string RightFilename,
+                      QuantumNumbers::QuantumNumber LeftQShift_,
+                      QuantumNumbers::QuantumNumber RightQShift_,
                       int Offset = 0,
                       int WindowLeft = 0,
                       int WindowRight = 0);
@@ -148,6 +148,9 @@ class IBCWavefunction
       InfiniteWavefunctionLeft const& left() const { return Left; }
       WavefunctionSectionLeft const& window() const { return Window; }
       InfiniteWavefunctionRight const& right() const { return Right; }
+
+      QuantumNumbers::QuantumNumber const& left_qshift() const { return LeftQShift; }
+      QuantumNumbers::QuantumNumber const& right_qshift() const { return RightQShift; }
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -177,6 +180,11 @@ class IBCWavefunction
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;
+
+      // If we need to shift the left and right boundaries, we save the qshift
+      // separately so we can keep the boundary wavefunctions read-only.
+      QuantumNumbers::QuantumNumber LeftQShift;
+      QuantumNumbers::QuantumNumber RightQShift;
 
       friend void inplace_reflect(IBCWavefunction& Psi);
       friend void inplace_conj(IBCWavefunction& Psi);

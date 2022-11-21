@@ -207,9 +207,21 @@ WavefunctionSectionLeft::check_structure() const
 // InfiniteWavefunctionLeft Left (only if WavefunctionLeftFile is empty)
 // WavefunctionSectionLeft Window
 // InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
+//
+// Version 3:
+// int WindowLeftSites
+// int WindowRightSites
+// int WindowOffset
+// string WavefunctionLeftFile
+// string WavefunctionRightFile
+// InfiniteWavefunctionLeft Left (only if WavefunctionLeftFile is empty)
+// WavefunctionSectionLeft Window
+// InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
+// QuantumNumber LeftQShift
+// QuantumNumber RightQShift
 
 PStream::VersionTag
-IBCWavefunction::VersionT(2);
+IBCWavefunction::VersionT(3);
 
 std::string const IBCWavefunction::Type = "IBCWavefunction";
 
@@ -232,13 +244,13 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
 IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                                  WavefunctionSectionLeft const& Window_,
                                  InfiniteWavefunctionRight const& Right_,
-                                 std::string LeftFilename,
-                                 std::string RightFilename,
+                                 QuantumNumbers::QuantumNumber LeftQShift_,
+                                 QuantumNumbers::QuantumNumber RightQShift_,
                                  int Offset,
                                  int WindowLeft,
                                  int WindowRight)
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
-     WavefunctionLeftFile(LeftFilename), WavefunctionRightFile(RightFilename),
+     LeftQShift(LeftQShift_), RightQShift(RightQShift_),
      Left(Left_), Window(Window_), Right(Right_)
 {
 }
@@ -250,11 +262,11 @@ void IBCWavefunction::check_structure() const
    Right.check_structure();
    if (!Left.empty())
    {
-      CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+      CHECK_EQUAL(delta_shift(Left.Basis2(), LeftQShift), Window.LeftU().Basis1());
    }
    if (!Right.empty())
    {
-      CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+      CHECK_EQUAL(Window.RightU().Basis2(), delta_shift(Right.Basis1(), RightQShift));
    }
 }
 
@@ -265,11 +277,11 @@ void IBCWavefunction::debug_check_structure() const
    Right.debug_check_structure();
    if (!Left.empty())
    {
-      DEBUG_CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+      DEBUG_CHECK_EQUAL(delta_shift(Left.Basis2(), LeftQShift), Window.LeftU().Basis1());
    }
    if (!Right.empty())
    {
-      DEBUG_CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+      DEBUG_CHECK_EQUAL(Window.RightU().Basis2(), delta_shift(Right.Basis1(), RightQShift));
    }
 }
 
@@ -290,6 +302,9 @@ PStream::opstream& operator<<(PStream::opstream& out, IBCWavefunction const& Psi
    if (Psi.WavefunctionRightFile.empty())
       out << Psi.Right;
 
+   out << Psi.LeftQShift;
+   out << Psi.RightQShift;
+
    return out;
 }
 
@@ -307,7 +322,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi)
       in >> Psi.Window;
       in >> Psi.Right;
    }
-   else if (Version == 2)
+   else if (Version == 2 || Version == 3)
    {
       in >> Psi.WavefunctionLeftFile;
       in >> Psi.WavefunctionRightFile;
@@ -326,10 +341,15 @@ PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi)
          pvalue_ptr<MPWavefunction> PsiRight = pheap::ImportHeap(Psi.WavefunctionRightFile);
          Psi.Right = PsiRight->get<InfiniteWavefunctionRight>();
       }
+      if (Version == 3)
+      {
+         in >> Psi.LeftQShift;
+         in >> Psi.RightQShift;
+      }
    }
    else
    {
-      PANIC("This program is too old to read this wavefunction, expected version <= 2")(Version);
+      PANIC("This program is too old to read this wavefunction, expected version <= 3")(Version);
    }
 
    return in;
@@ -359,7 +379,7 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["WindowSize"] = this->window_size();
    A["WindowOffset"] = this->window_offset();
    A["LeftUnitCellSize"] = Left.size();
-   A["RightUnitCellSize"] = Left.size();
+   A["RightUnitCellSize"] = Right.size();
    A["LeftFilename"] = this->get_left_filename();
    A["RightFilename"] = this->get_right_filename();
 }
@@ -470,7 +490,7 @@ class ConstIBCIterator
       }
 
    private:
-      IBCWavefunction Psi;
+      const IBCWavefunction Psi;
       InfiniteWavefunctionLeft PsiLeft;
       InfiniteWavefunctionRight PsiRight;
       CanonicalWavefunctionBase::const_mps_iterator C;
