@@ -49,6 +49,20 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
    std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
 
+   // Check that there are compatible quantum number sectors between PsiLeft
+   // and PsiRight at the unit cell boundary.
+   {
+      auto Test = PackMatrixOperator(MatrixOperator(PsiLinearLeft.Basis1(), PsiLinearRight.Basis1()));
+      if (Test.size() == 0)
+      {
+         std::cerr << "fatal: The effetive Hamiltonian has dimension zero. "
+                   << "This probably means the bases of the left and right wavefunction have incompatible quantum number sectors: "
+                   // This error message may be confusing if this code is ever reused for a tool other than mp-excitation-ansatz.
+                   << "try using a different value for the option --quantumnumber." << std::endl;
+         std::abort();
+      }
+   }
+
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
    // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
    // If the leading eigenvalue of the left/right mixed transfer matrix
@@ -82,13 +96,13 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    {
       // Calculate the left/right eigenvectors of the mixed transfer
       // matrices with the string operator corresponding to Ty.
-      std::tie(std::ignore, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
-      TyLRRight = delta_shift(TyLRRight, PsiLeft.qshift());
+      std::tie(OverlapLR, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
+      TyLRLeft = delta_shift(TyLRLeft, adjoint(PsiLeft.qshift()));
       if (Verbose > 1)
          std::cout << "TyLR overlap = " << OverlapLR << std::endl;
 
-      std::tie(std::ignore, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
-      TyRLLeft = delta_shift(TyRLLeft, adjoint(PsiRight.qshift()));
+      std::tie(OverlapRL, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
+      TyRLRight = delta_shift(TyRLRight, PsiRight.qshift());
       if (Verbose > 1)
          std::cout << "TyRL overlap = " << OverlapRL << std::endl;
 
@@ -348,9 +362,9 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    {
       MatrixOperator E, F;
       SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                             PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+                             PsiLeft.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
       SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+                              PsiRight.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
 
       E *= ExpIK;
       F *= ExpIK;
@@ -425,9 +439,9 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque) const
 
    MatrixOperator E, F;
    SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                        PsiLeft.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+                          PsiLeft.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
    SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                         PsiRight.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+                           PsiRight.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
 
    E *= ExpIK;
    F *= ExpIK;
