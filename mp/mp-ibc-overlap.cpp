@@ -195,6 +195,7 @@ int main(int argc, char** argv)
          std::cout << "Translating Psi2 left by " << Rotate << " sites..." << std::endl;
 
       Psi2 = IBCWavefunction(Psi2.left(), Psi2.window(), Psi2.right(),
+                             Psi2.left_qshift(), Psi2.right_qshift(),
                              Psi2.window_offset() - Rotate,
                              Psi2.window_left_sites(), Psi2.window_right_sites());
 

@@ -75,6 +75,8 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    {
       out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
+   if (!is_scalar(Psi.left_qshift()))
+      out << "Left QShift = " << Psi.left_qshift() << '\n';
 
    std::string rw = Psi.get_right_filename();
    if (rw.empty())
@@ -86,6 +88,8 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    {
       out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
    }
+   if (!is_scalar(Psi.right_qshift()))
+      out << "Right QShift = " << Psi.right_qshift() << '\n';
 
    out << "Window size = " << Psi.window_size() << '\n';
    out << "Offset of first site of the window = " << Psi.window_offset() << '\n';

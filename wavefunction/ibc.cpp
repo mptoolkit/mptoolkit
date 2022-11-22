@@ -237,7 +237,8 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                                  int WindowLeft,
                                  int WindowRight)
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
-     Left(Left_), Window(Window_), Right(Right_)
+     Left(Left_), Window(Window_), Right(Right_),
+     LeftQShift(QuantumNumber(Left.GetSymmetryList())), RightQShift(QuantumNumber(Right.GetSymmetryList()))
 {
 }
 
@@ -250,8 +251,8 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                                  int WindowLeft,
                                  int WindowRight)
    : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
-     LeftQShift(LeftQShift_), RightQShift(RightQShift_),
-     Left(Left_), Window(Window_), Right(Right_)
+     Left(Left_), Window(Window_), Right(Right_),
+     LeftQShift(LeftQShift_), RightQShift(RightQShift_)
 {
 }
 
@@ -362,6 +363,7 @@ inplace_reflect(IBCWavefunction& Psi)
    Psi.Left = reflect(Psi.Right);
    Psi.Right = Temp;
    inplace_reflect(Psi.Window);
+   std::swap(Psi.LeftQShift, Psi.RightQShift);
 }
 
 void
@@ -398,13 +400,14 @@ class ConstIBCIterator
          PsiLeft = Psi.left();
          PsiRight = Psi.right();
 
+         inplace_qshift(PsiLeft, Psi.left_qshift());
+         inplace_qshift(PsiRight, Psi.right_qshift());
+
          WindowLeftIndex = Psi.window_offset();
          WindowRightIndex = Psi.window_size() + Psi.window_offset() - 1;
 
          if (Index < WindowLeftIndex)
          {
-            inplace_qshift(PsiLeft, PsiLeft.qshift());
-
             int IndexDiff = WindowLeftIndex - Index;
 
             for (int i = 0; i < (Psi.window_left_sites() + IndexDiff) / PsiLeft.size(); ++i)
@@ -588,10 +591,12 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
 
    // Ensure that the semi-infinite boundaries have the same quantum numbers.
    InfiniteWavefunctionLeft Psi1Left = Psi1.left();
+   inplace_qshift(Psi1Left, Psi1.left_qshift());
    for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
       inplace_qshift(Psi1Left, Psi1Left.qshift());
 
    InfiniteWavefunctionLeft Psi2Left = Psi2.left();
+   inplace_qshift(Psi2Left, Psi2.left_qshift());
    for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
       inplace_qshift(Psi2Left, Psi2Left.qshift());
 
@@ -618,10 +623,12 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    E = delta_shift(E, adjoint(Psi1Left.qshift()));
 
    InfiniteWavefunctionRight Psi1Right = Psi1.right();
+   inplace_qshift(Psi1Right, Psi1.right_qshift());
    for (int i = 0; i < (IndexRight - IndexRight1) / RightSize; ++i)
       inplace_qshift(Psi1Right, adjoint(Psi1Right.qshift()));
 
    InfiniteWavefunctionRight Psi2Right = Psi2.right();
+   inplace_qshift(Psi2Right, Psi2.right_qshift());
    for (int i = 0; i < (IndexRight - IndexRight2) / RightSize; ++i)
       inplace_qshift(Psi2Right, adjoint(Psi2Right.qshift()));
 

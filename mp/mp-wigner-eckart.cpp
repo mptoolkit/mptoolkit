@@ -153,9 +153,14 @@ wigner_project(WavefunctionSectionLeft const& Psi, SymmetryList const& FinalSL)
 IBCWavefunction
 wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
 {
+   QuantumNumber LeftQShift = map_projection_to_quantum(enumerate_projections(Psi.left_qshift())[0], FinalSL);
+   QuantumNumber RightQShift = map_projection_to_quantum(enumerate_projections(Psi.left_qshift())[0], FinalSL);
+
    return IBCWavefunction(wigner_project(Psi.left(), FinalSL),
                           wigner_project(Psi.window(), FinalSL),
                           wigner_project(Psi.right(), FinalSL),
+                          LeftQShift,
+                          RightQShift,
                           Psi.window_offset(),
                           Psi.window_left_sites(),
                           Psi.window_right_sites());

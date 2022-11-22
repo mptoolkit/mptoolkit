@@ -102,6 +102,8 @@ IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& 
    return IBCWavefunction(ReorderSymmetry(Psi.left(), NewSL),
                           ReorderSymmetry(Psi.window(), NewSL),
                           ReorderSymmetry(Psi.right(), NewSL),
+                          CoerceSymmetryList(Psi.left_qshift(), NewSL),
+                          CoerceSymmetryList(Psi.right_qshift(), NewSL),
                           Psi.window_offset(),
                           Psi.window_left_sites(),
                           Psi.window_right_sites());

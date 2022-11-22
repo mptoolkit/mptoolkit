@@ -202,7 +202,6 @@ int main(int argc, char** argv)
          std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPORight, GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << RightEnergy << std::endl;
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
-         TRACE(BlockHamL.Basis2())(BlockHamR.Basis2());
 
          CMultiply Mult(BlockHamL, BlockHamR);
 
@@ -226,7 +225,7 @@ int main(int argc, char** argv)
       // Make the window from our centre matrix
       Window = WavefunctionSectionLeft(C);
 
-      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight);
+      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, PsiLeft.qshift(), QuantumNumbers::QuantumNumber(PsiRight.GetSymmetryList()));
 
       if (Streaming)
       {

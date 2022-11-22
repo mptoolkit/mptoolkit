@@ -106,7 +106,9 @@ int main(int argc, char** argv)
 
       IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
       InfiniteWavefunctionLeft PsiLeft = Psi.left();
+      QuantumNumbers::QuantumNumber LeftQShift = Psi.left_qshift();
       InfiniteWavefunctionRight PsiRight = Psi.right();
+      QuantumNumbers::QuantumNumber RightQShift = Psi.right_qshift();
       MatrixOperator Vh = MatrixOperator::make_identity(PsiLeft.Basis1());
 
       if (vm.count("left") > 0) {
@@ -213,11 +215,11 @@ int main(int argc, char** argv)
          {
             if (CLeft == PsiLeft.begin())
             {
-               inplace_qshift(PsiLeft, PsiLeft.qshift());
+               LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
                CLeft = PsiLeft.end();
             }
             --CLeft;
-            PsiWindowLinear.push_front(*CLeft);
+            PsiWindowLinear.push_front(delta_shift(*CLeft, LeftQShift));
          }
 
          // If the initial window had no sites and we just added sites from the
@@ -240,10 +242,10 @@ int main(int argc, char** argv)
          {
             if (CRight == PsiRight.end())
             {
-               inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+               RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
                CRight = PsiRight.begin();
             }
-            PsiWindowLinear.push_back(*CRight);
+            PsiWindowLinear.push_back(delta_shift(*CRight, RightQShift));
             ++CRight;
          }
 
@@ -262,7 +264,7 @@ int main(int argc, char** argv)
 
          // Handle the case where the MPO has a nontrivial quantum number shift.
          // (This only works when Op.Basis1.size() == 1).
-         inplace_qshift(PsiLeft, Op.qn1());
+         LeftQShift = delta_shift(LeftQShift, Op.qn1());
 
          if (Verbose > 0)
             std::cout << "Finished applying operator to window..." << std::endl;
@@ -295,7 +297,7 @@ int main(int argc, char** argv)
       }
 
       IBCWavefunction PsiNew;
-      PsiNew = IBCWavefunction(PsiLeft, PsiWindow, PsiRight, NewOffset,
+      PsiNew = IBCWavefunction(PsiLeft, PsiWindow, PsiRight, LeftQShift, RightQShift, NewOffset,
                                (Psi.window_left_sites() + SitesLeft) % PsiLeft.size(),
                                (Psi.window_right_sites() + SitesRight) % PsiRight.size());
 
