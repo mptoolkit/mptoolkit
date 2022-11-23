@@ -39,8 +39,8 @@
 // with diagonal Lambda matrices on both boundaries.  Beyond these boundaries, there is necessarily
 // a unitary matrix to connect this to the basis of the semi-infinite strips.
 
-#if !defined(MPTOOLKIT_WAVFUNCTION_IBC_H)
-#define MPTOOLKIT_WAVFUNCTION_IBC_H
+#if !defined(MPTOOLKIT_WAVEFUNCTION_IBC_H)
+#define MPTOOLKIT_WAVEFUNCTION_IBC_H
 
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"

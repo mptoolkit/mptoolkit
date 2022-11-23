@@ -97,10 +97,9 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    out << "Number of states (left edge of window) = " << Psi.window().Basis1().total_dimension() << '\n';
 }
 
-// TODO
 void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
 {
-   out << "Wavefunction is an excitation ansatz wavefunction in the left/left/right canonical basis.\n";
+   out << "Excitation Ansatz wavefunction in the left/left/right orthogonal basis.\n";
    out << "Symmetry list = " << Psi.left().GetSymmetryList() << '\n';
 
    std::string lw = Psi.get_left_filename();
@@ -359,7 +358,8 @@ ShowWavefunction::operator()(IBCWavefunction const& Psi) const
       ShowLocalBasisInfo(Psi.window(), std::cout);
 }
 
-// TODO
+// TODO: We will eventually want to be able to look at each of the windows, but
+// it is not currently obvious how to do this.
 void
 ShowWavefunction::operator()(EAWavefunction const& Psi) const
 {

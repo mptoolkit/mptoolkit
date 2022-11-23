@@ -113,6 +113,8 @@ void EAWavefunction::check_structure() const
       CHECK_EQUAL(Window.Basis2(), Right.Basis1());
    }
 #endif
+   CHECK_EQUAL(Left.size(), Right.size());
+   CHECK_EQUAL(Left.size(), WindowVec.size());
    CHECK(LeftIndex >= 0)(LeftIndex < Left.size());
    CHECK(RightIndex >= 0)(RightIndex < Right.size());
 }
@@ -134,6 +136,8 @@ void EAWavefunction::debug_check_structure() const
       DEBUG_CHECK_EQUAL(Window.Basis2(), Right.Basis1());
    }
 #endif
+   DEBUG_CHECK_EQUAL(Left.size(), Right.size());
+   DEBUG_CHECK_EQUAL(Left.size(), WindowVec.size());
    DEBUG_CHECK(LeftIndex >= 0)(LeftIndex < Left.size());
    DEBUG_CHECK(RightIndex >= 0)(RightIndex < Right.size());
 }

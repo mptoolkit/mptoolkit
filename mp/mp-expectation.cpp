@@ -207,7 +207,7 @@ int main(int argc, char** argv)
       }
       else
       {
-         std::cerr << "mp-expectation: fatal: unknown wavefunction type.\n";
+         std::cerr << "mp-expectation: fatal: unsupported wavefunction type.\n";
          return 1;
       }
 
