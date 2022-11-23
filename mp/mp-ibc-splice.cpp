@@ -102,17 +102,19 @@ int main(int argc, char** argv)
       MatrixOperator LambdaLeft;
       LinearWavefunction BoundaryLeft;
       std::tie(LambdaLeft, BoundaryLeft) = get_right_canonical(PsiLeft.right());
+      QuantumNumber LeftQShift = PsiLeft.right_qshift();
 
       // Get the middle boundary from PsiRight in left orthogonal form.
       MatrixOperator LambdaRight;
       LinearWavefunction BoundaryRight;
       std::tie(BoundaryRight, LambdaRight) = get_left_canonical(PsiRight.left());
+      QuantumNumber RightQShift = PsiRight.left_qshift();
 
       // Get the middle boundary from PsiLeft in LEFT orthogonal form.
       MatrixOperator ULeft_LO;
       LinearWavefunction BoundaryLeft_LO;
       std::tie(BoundaryLeft_LO, std::ignore, ULeft_LO) = get_left_canonical(PsiLeft.right());
-      BoundaryLeft_LO.set_back(prod(BoundaryLeft_LO.get_back(), delta_shift(ULeft_LO, adjoint(QShift))));
+      BoundaryLeft_LO.set_back(prod(BoundaryLeft_LO.get_back(), ULeft_LO));
 
       if (Verbose > 1)
          std::cout << "Calculating overlap of middle boudaries..." << std::endl;
@@ -147,7 +149,6 @@ int main(int argc, char** argv)
 
       if (PsiLeft.window_right_sites() != 0)
       {
-         // TODO: Check that this works properly.
          if (Verbose > 1)
             std::cout << "Adding sites to fill the right unit cell of the left window..." << std::endl;
 
@@ -159,13 +160,15 @@ int main(int argc, char** argv)
          RealDiagonalOperator D;
          while (C != BoundaryLeft.end())
          {
-            StateComponent CL = prod(DLeft, *C);
+            StateComponent CL = prod(DLeft, delta_shift(*C, LeftQShift));
             MatrixOperator M = ExpandBasis2(CL);
             SingularValueDecomposition(M, U, D, Vh);
             WindowLeft.push_back(prod(CL, U));
             DLeft = D * Vh;
             ++C;
          }
+         LeftQShift = delta_shift(LeftQShift, adjoint(QShift));
+
          // Make DLeft square.
          WindowLeft.set_back(prod(WindowLeft.get_back(), Vh));
          DLeft = adjoint(Vh) * DLeft;
@@ -178,11 +181,11 @@ int main(int argc, char** argv)
       }
 
       if (Verbose > 0)
-         std::cout << "NLeft=0 EpsilonLeftSq=" << norm_frob_sq(DLeft - LambdaLeft) << std::endl;
+         std::cout << "NLeft=0 EpsilonLeftSq=" << norm_frob_sq(DLeft - delta_shift(LambdaLeft, LeftQShift)) << std::endl;
 
       int Iter = 0;
       // If NLeft is unspecified, loop until we reach tolerance, otherwise add NLeft unit cells.
-      while (NLeft == 0 ? norm_frob_sq(DLeft - LambdaLeft) > Tol : Iter < NLeft)
+      while (NLeft == 0 ? norm_frob_sq(DLeft - delta_shift(LambdaLeft, LeftQShift)) > Tol : Iter < NLeft)
       {
          ++Iter;
 
@@ -191,24 +194,26 @@ int main(int argc, char** argv)
          auto C = BoundaryLeft.begin();
          while (C != BoundaryLeft.end())
          {
-            StateComponent CL = prod(DLeft, *C);
+            StateComponent CL = prod(DLeft, delta_shift(*C, LeftQShift));
             MatrixOperator M = ExpandBasis2(CL);
             SingularValueDecomposition(M, U, D, Vh);
             WindowLeft.push_back(prod(CL, U));
             DLeft = D * Vh;
             ++C;
          }
+         LeftQShift = delta_shift(LeftQShift, adjoint(QShift));
+
          // Make DLeft square.
          WindowLeft.set_back(prod(WindowLeft.get_back(), Vh));
          DLeft = adjoint(Vh) * DLeft;
 
          if (Verbose > 0)
             std::cout << "NLeft=" << Iter
-                      << " EpsilonLeftSq=" << norm_frob_sq(DLeft - LambdaLeft) << std::endl;
+                      << " EpsilonLeftSq=" << norm_frob_sq(DLeft - delta_shift(LambdaLeft, LeftQShift)) << std::endl;
       }
 
-      if (norm_frob_sq(DLeft - LambdaLeft) > Tol)
-         std::cerr << "WARNING: EpsilonLeft=" << norm_frob_sq(DLeft - LambdaLeft)
+      if (norm_frob_sq(DLeft - delta_shift(LambdaLeft, LeftQShift)) > Tol)
+         std::cerr << "WARNING: EpsilonLeft=" << norm_frob_sq(DLeft - delta_shift(LambdaLeft, LeftQShift))
                    << " is above tolerance!" << std::endl;
 
       if (Verbose > 1)
@@ -233,12 +238,14 @@ int main(int argc, char** argv)
          while (C != BoundaryRight.begin())
          {
             --C;
-            StateComponent CR = prod(*C, DRight);
+            StateComponent CR = prod(delta_shift(*C, RightQShift), DRight);
             MatrixOperator M = ExpandBasis1(CR);
             SingularValueDecomposition(M, U, D, Vh);
             WindowRight.push_front(prod(Vh, CR));
             DRight = U * D;
          }
+         RightQShift = delta_shift(RightQShift, PsiRight.left().qshift());
+
          // Make DRight square.
          WindowRight.set_front(prod(U, WindowRight.get_front()));
          DRight = DRight * adjoint(U);
@@ -257,10 +264,10 @@ int main(int argc, char** argv)
       }
 
       if (Verbose > 0)
-         std::cout << "NRight=0 EpsilonRightSq=" << norm_frob_sq(DRight - LambdaRight) << std::endl;
+         std::cout << "NRight=0 EpsilonRightSq=" << norm_frob_sq(DRight - delta_shift(LambdaRight, RightQShift)) << std::endl;
 
       Iter = 0;
-      while (NRight == 0 ? norm_frob_sq(DRight - LambdaRight) > Tol : Iter < NRight)
+      while (NRight == 0 ? norm_frob_sq(DRight - delta_shift(LambdaRight, RightQShift)) > Tol : Iter < NRight)
       {
          ++Iter;
 
@@ -270,31 +277,39 @@ int main(int argc, char** argv)
          while (C != BoundaryRight.begin())
          {
             --C;
-            StateComponent CR = prod(*C, DRight);
+            StateComponent CR = prod(delta_shift(*C, RightQShift), DRight);
             MatrixOperator M = ExpandBasis1(CR);
             SingularValueDecomposition(M, U, D, Vh);
             WindowRight.push_front(prod(Vh, CR));
             DRight = U * D;
          }
+         RightQShift = delta_shift(RightQShift, PsiRight.left().qshift());
+
          // Make DRight square.
          WindowRight.set_front(prod(U, WindowRight.get_front()));
          DRight = DRight * adjoint(U);
 
          if (Verbose > 0)
             std::cout << "NRight=" << Iter
-                      << " EpsilonRightSq=" << norm_frob_sq(DRight - LambdaRight) << std::endl;
+                      << " EpsilonRightSq=" << norm_frob_sq(DRight - delta_shift(LambdaRight, RightQShift)) << std::endl;
       }
 
-      if (norm_frob_sq(DRight - LambdaRight) > Tol)
-         std::cerr << "WARNING: EpsilonRight=" << norm_frob_sq(DRight - LambdaRight)
+      if (norm_frob_sq(DRight - delta_shift(LambdaRight, RightQShift)) > Tol)
+         std::cerr << "WARNING: EpsilonRight=" << norm_frob_sq(DRight - delta_shift(LambdaRight, RightQShift))
                    << " is above tolerance!" << std::endl;
 
       if (Verbose > 1)
          std::cout << "Building spliced window..." << std::endl;
 
-      LinearWavefunction Window = WindowLeft;
+      LinearWavefunction Window;
+      for (auto const& C : WindowLeft)
+         Window.push_back(delta_shift(C, adjoint(LeftQShift)));
+
       Window.set_back(prod(Window.get_back(), LambdaLeft * ULR));
-      Window.push_back(WindowRight);
+
+      RightQShift = delta_shift(RightQShift, adjoint(QShift));
+      for (auto const& C : WindowRight)
+         Window.push_back(delta_shift(C, adjoint(RightQShift)));
 
       MatrixOperator I = MatrixOperator::make_identity(Window.Basis2());
       WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Window), I, Verbose-1);
@@ -303,6 +318,8 @@ int main(int argc, char** argv)
          std::cout << "Saving wavefunction..." << std::endl;
 
       IBCWavefunction PsiOut(PsiLeft.left(), PsiWindow, PsiRight.right(),
+                             delta_shift(PsiLeft.left_qshift(), adjoint(LeftQShift)),
+                             delta_shift(PsiRight.right_qshift(), adjoint(RightQShift)),
                              PsiLeft.window_offset(), PsiLeft.window_left_sites(), PsiRight.window_right_sites());
 
       // Stream the boundaries, if the input files do.
