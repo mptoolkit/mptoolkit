@@ -461,16 +461,16 @@ int main(int argc, char** argv)
 
       // The number of Fourier modes in our momentum space (note that this does
       // not match KNum since we may have missing parts of the spectrum).
-      int N = std::round(2.0/KStep);
-      if (N*KStep/2.0 - 1.0 > std::numeric_limits<double>::epsilon())
-         std::cerr << "WARNING: 2/KStep=" << 2.0/KStep << " is noninteger! Trying N=" << N << std::endl;
+      int N = std::round(2.0/KStep * LatticeUCSize/UCSize);
+      if (std::abs(N*KStep/2.0 * UCSize/LatticeUCSize - 1.0) > 0.0)
+         std::cerr << "WARNING: Number of Fourier modes " << 2.0/KStep * LatticeUCSize/UCSize << " is noninteger! Trying N=" << N << std::endl;
 
       int NY;
       if (vm.count("kynum"))
       {
          NY = std::round(2.0/KYStep);
-         if (NY*KYStep/2.0 - 1.0 > std::numeric_limits<double>::epsilon())
-            std::cerr << "WARNING: 2/KYStep=" << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
+         if (std::abs(NY*KYStep/2.0 - 1.0) > 0.0)
+            std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
          if (NY < 4)
          {
             std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
@@ -480,7 +480,6 @@ int main(int argc, char** argv)
       else
          // This makes it such that each Lambda is calculated once.
          NY = 4;
-
 
       std::vector<std::complex<double>> FVec;
       std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
