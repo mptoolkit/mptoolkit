@@ -119,6 +119,10 @@ EAWavefunction ReorderSymmetry(EAWavefunction const& Psi, SymmetryList const& Ne
    return EAWavefunction(ReorderSymmetry(Psi.left(), NewSL),
                          WindowVec,
                          ReorderSymmetry(Psi.right(), NewSL),
+                         CoerceSymmetryList(Psi.left_qshift(), NewSL),
+                         CoerceSymmetryList(Psi.right_qshift(), NewSL),
+                         Psi.left_index(),
+                         Psi.right_index(),
                          Psi.exp_ik(),
                          Psi.gs_overlap());
 }
