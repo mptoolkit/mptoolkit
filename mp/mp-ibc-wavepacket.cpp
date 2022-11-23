@@ -98,14 +98,16 @@ LinearWavefunction
 ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight PsiRight,
                    std::vector<std::vector<StateComponent>> const& WPVec)
 {
-   int UCSize = WPVec.front().size(); // The GS wavefunction unit cell size.
-   int WindowSize = WPVec.size(); // In terms of unit cells.
+   int UCSize = WPVec.size(); // The GS wavefunction unit cell size.
+   int WindowSize = WPVec.front().size(); // In terms of unit cells.
 
-   std::vector<LinearWavefunction> PsiWindowVec(UCSize);
+   std::vector<LinearWavefunction> PsiWindowVec(WindowSize);
 
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
    std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
+
+   QuantumNumber QShift(PsiLeft.GetSymmetryList());
 
    // Just in case we somehow have a single site window.
    if (UCSize == 1 && WindowSize == 1)
@@ -124,6 +126,8 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
       PsiWindow->push_back(tensor_row_sum(*CL, *WP, NewBasisFront));
       ++WP, ++PsiWindow;
 
+      QShift = delta_shift(QShift, adjoint(PsiLeft.qshift()));
+
       // Handle all of the middle sites: these are of the form
       // (A B)
       // (0 C)
@@ -131,22 +135,31 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
       {
          if (WP == WPCell->end())
          {
+            QShift = QuantumNumber(PsiLeft.GetSymmetryList());
             ++WPCell, ++CL, ++CR;
             WP = WPCell->begin();
             PsiWindow = PsiWindowVec.begin();
          }
-         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*WP).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-         PsiWindow->push_back(tensor_col_sum(tensor_row_sum(*CL, *WP, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+         StateComponent CLShift = delta_shift(*CL, QShift);
+         StateComponent WPShift = delta_shift(*WP, QShift);
+         StateComponent CRShift = delta_shift(*CR, QShift);
+
+         StateComponent Z = StateComponent(CLShift.LocalBasis(), CRShift.Basis1(), CLShift.Basis2());
+         SumBasis<VectorBasis> NewBasis1(CLShift.Basis2(), WPShift.Basis2());
+         SumBasis<VectorBasis> NewBasis2(CLShift.Basis1(), CRShift.Basis1());
+         PsiWindow->push_back(tensor_col_sum(tensor_row_sum(CLShift, WPShift, NewBasis1), tensor_row_sum(Z, CRShift, NewBasis1), NewBasis2));
+
          ++WP, ++PsiWindow;
+         QShift = delta_shift(QShift, adjoint(PsiLeft.qshift()));
       }
 
       // Handle the last site separately: this is of the form
       // (B)
       // (C)
-      SumBasis<VectorBasis> NewBasisBack((*WP).Basis1(), (*CR).Basis1());
-      PsiWindow->push_back(tensor_col_sum(*WP, *CR, NewBasisBack));
+      StateComponent CRShift = delta_shift(*CR, QShift);
+      StateComponent WPShift = delta_shift(*WP, QShift);
+      SumBasis<VectorBasis> NewBasisBack(WPShift.Basis1(), CRShift.Basis1());
+      PsiWindow->push_back(tensor_col_sum(WPShift, CRShift, NewBasisBack));
    }
 
    // Concatenate PsiWindowVec.
@@ -178,7 +191,7 @@ CalculateNLambda(std::vector<std::vector<std::vector<std::complex<double>>>> con
          {
             std::complex<double> Coeff = 0.0;
             // If LambdaY < m % LatticeUCSize < LatticeUCSize - LambdaY,
-            // calculate the contriution for all x, otherwise, only use the
+            // calculate the contribution for all x, otherwise, only use the
             // contribution from Lambda < x < N - Lambda.
             if ((m % LatticeUCSize) > LambdaY && (m % LatticeUCSize) < LatticeUCSize - LambdaY)
                for (int j = 0; j < N; ++j)
@@ -316,9 +329,10 @@ int main(int argc, char** argv)
 
       // Load first wavefunction: we do this to get the left and right
       // boundaries and the unit cell size.
-      InfiniteWavefunctionLeft PsiLeft;
-      InfiniteWavefunctionRight PsiRight;
-      int UCSize;
+      InfiniteWavefunctionLeft PsiLeft, PsiLeftOriginal;
+      InfiniteWavefunctionRight PsiRight, PsiRightOriginal;
+      QuantumNumber LeftQShift, RightQShift;
+      int LeftIndex, RightIndex, UCSize;
       {
          std::string InputFilename = InputPrefix;
          if (vm.count("kynum") == 0)
@@ -335,12 +349,26 @@ int main(int argc, char** argv)
          LeftBoundaryFilename = Psi.get_left_filename();
          RightBoundaryFilename = Psi.get_right_filename();
 
+         PsiLeftOriginal = Psi.left();
+         PsiRightOriginal = Psi.right();
+         LeftQShift = Psi.left_qshift();
+         RightQShift = Psi.right_qshift();
+         LeftIndex = Psi.left_index();
+         RightIndex = Psi.right_index();
+
          PsiLeft = Psi.left();
+         inplace_qshift(PsiLeft, Psi.left_qshift());
+         PsiLeft.rotate_left(Psi.left_index());
+
          PsiRight = Psi.right();
+         inplace_qshift(PsiRight, Psi.right_qshift());
+         PsiRight.rotate_left(Psi.right_index());
+
          UCSize = PsiLeft.size();
 
          CHECK(PsiRight.size() == UCSize);
          CHECK(Psi.window_vec().size() == UCSize);
+         CHECK(PsiLeft.qshift() == PsiRight.qshift());
       }
 
       // A vector for each position at the unit cell, which contains a vector
@@ -569,7 +597,13 @@ int main(int argc, char** argv)
       if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
 
-      IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
+      LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
+
+      for (int i = 0; i < WPVec.front().size(); ++i)
+         RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
+
+      IBCWavefunction PsiOut(PsiLeftOriginal, PsiWindow, PsiRightOriginal, LeftQShift, RightQShift, -Lambda*UCSize,
+                             (PsiLeft.size() - LeftIndex) % PsiLeft.size(), RightIndex);
 
       // Stream the boundaries, if the input files do.
       PsiOut.set_left_filename(LeftBoundaryFilename);

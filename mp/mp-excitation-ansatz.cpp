@@ -239,7 +239,12 @@ int main(int argc, char** argv)
          inplace_qshift(PsiLeft, Q);
       }
 
-      // Rotate PsiRight.
+      // Rotate PsiRight: making sure that Rotate is in [0, PsiRight.size()-1].
+      if (Rotate < 0)
+         Rotate = Rotate % PsiRight.size() + PsiRight.size();
+      else
+         Rotate = Rotate % PsiRight.size();
+
       PsiRight.rotate_left(Rotate);
 
       // Turn off momentum targeting if ky is unspecified.

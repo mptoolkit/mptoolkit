@@ -113,6 +113,8 @@ void EAWavefunction::check_structure() const
       CHECK_EQUAL(Window.Basis2(), Right.Basis1());
    }
 #endif
+   CHECK(LeftIndex >= 0)(LeftIndex < Left.size());
+   CHECK(RightIndex >= 0)(RightIndex < Right.size());
 }
 
 void EAWavefunction::debug_check_structure() const
@@ -132,6 +134,8 @@ void EAWavefunction::debug_check_structure() const
       DEBUG_CHECK_EQUAL(Window.Basis2(), Right.Basis1());
    }
 #endif
+   DEBUG_CHECK(LeftIndex >= 0)(LeftIndex < Left.size());
+   DEBUG_CHECK(RightIndex >= 0)(RightIndex < Right.size());
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, EAWavefunction const& Psi)

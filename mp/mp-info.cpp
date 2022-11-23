@@ -71,6 +71,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    else
       out << "Left semi-infinite strip is stored in the file \"" << lw << "\"\n";
    out << "Left semi-infinite strip unit cell size = " << Psi.left().size() << '\n';
+   out << "Sites incorporated into the window from the left unit cell = " << Psi.window_left_sites() << '\n';
    if (!Psi.left().empty())
    {
       out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
@@ -83,6 +84,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    else
       out << "Right semi-infinite strip is stored in the file \"" << rw << "\"\n";
    out << "Right semi-infinite strip unit cell size = " << Psi.right().size() << '\n';
+   out << "Sites incorporated into the window from the right unit cell = " << Psi.window_right_sites() << '\n';
    if (!Psi.right().empty())
    {
       out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
