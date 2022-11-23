@@ -75,8 +75,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    {
       out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
-   if (!is_scalar(Psi.left_qshift()))
-      out << "Left QShift = " << Psi.left_qshift() << '\n';
+   out << "Left quantum number shift = " << Psi.left_qshift() << '\n';
 
    std::string rw = Psi.get_right_filename();
    if (rw.empty())
@@ -88,8 +87,7 @@ void ShowBasicInfo(IBCWavefunction const& Psi, std::ostream& out)
    {
       out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
    }
-   if (!is_scalar(Psi.right_qshift()))
-      out << "Right QShift = " << Psi.right_qshift() << '\n';
+   out << "Right quantum number shift = " << Psi.right_qshift() << '\n';
 
    out << "Window size = " << Psi.window_size() << '\n';
    out << "Offset of first site of the window = " << Psi.window_offset() << '\n';
@@ -109,10 +107,12 @@ void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
    else
       out << "Left semi-infinite strip is stored in the file \"" << lw << "\"\n";
    out << "Left semi-infinite strip unit cell size = " << Psi.left().size() << '\n';
+   out << "Left unit cell starting index = " << Psi.left_index() << '\n';
    if (!Psi.left().empty())
    {
       out << "Quantum number per unit cell (left) = " << Psi.left().qshift() << '\n';
    }
+   out << "Left quantum number shift = " << Psi.left_qshift() << '\n';
 
    std::string rw = Psi.get_right_filename();
    if (rw.empty())
@@ -120,10 +120,12 @@ void ShowBasicInfo(EAWavefunction const& Psi, std::ostream& out)
    else
       out << "Right semi-infinite strip is stored in the file \"" << rw << "\"\n";
    out << "Right semi-infinite strip unit cell size = " << Psi.right().size() << '\n';
+   out << "Right unit cell starting index = " << Psi.right_index() << '\n';
    if (!Psi.right().empty())
    {
       out << "Quantum number per unit cell (right) = " << Psi.right().qshift() << '\n';
    }
+   out << "Right quantum number shift = " << Psi.right_qshift() << '\n';
 
    out << "Window size = " << Psi.window_size() << '\n';
    out << "ExpIK = " << Psi.exp_ik() << '\n';

@@ -78,8 +78,8 @@ struct HEff
    // Update the value of ky.
    void SetKY(double k);
 
-   // Construct an EAWavefunction for the supplied X-matrices.
-   EAWavefunction ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const;
+   // Construct a vector of windows for the supplied X-matrices.
+   std::vector<WavefunctionSectionLeft> ConstructWindowVec(std::deque<MatrixOperator> XDeque) const;
 
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionRight PsiRight;

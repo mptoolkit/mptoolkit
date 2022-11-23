@@ -294,11 +294,12 @@ void
 IBC_TDVP::ExpandWindowLeftUC()
 {
    // Add the unit cell to the window.
-   LinearWavefunction PsiCell;
-   std::tie(PsiCell, std::ignore) = get_left_canonical(PsiLeft);
-
-   // TODO: delta_shift PsiCell
-   Psi.push_front(PsiCell);
+   auto CAdd = PsiLeft.end();
+   while (CAdd != PsiLeft.begin())
+   {
+      --CAdd;
+      Psi.push_front(delta_shift(*CAdd, LeftQShift));
+   }
 
    // Change the leftmost index.
    Offset -= PsiLeft.size();
@@ -332,11 +333,12 @@ void
 IBC_TDVP::ExpandWindowRightUC()
 {
    // Add the unit cell to the window.
-   LinearWavefunction PsiCell;
-   std::tie(std::ignore, PsiCell) = get_right_canonical(PsiRight);
-
-   // TODO: delta_shift PsiCell
-   Psi.push_back(PsiCell);
+   auto CAdd = PsiRight.begin();
+   while (CAdd != PsiRight.end())
+   {
+      Psi.push_back(delta_shift(*CAdd, RightQShift));
+      ++CAdd;
+   }
 
    // Change the rightmost index.
    RightStop += PsiRight.size();

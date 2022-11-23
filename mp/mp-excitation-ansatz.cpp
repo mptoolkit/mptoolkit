@@ -48,6 +48,7 @@ int main(int argc, char** argv)
       double Tol = 1e-10;
       int NumEigen = 1;
       std::string QuantumNumber;
+      int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
       int OutputDigits = -1;
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
          ("quantumnumber,q", prog_opt::value(&QuantumNumber),
           "The quantum number sector for the excitation [default identity]")
+         ("rotate,r", prog_opt::value(&Rotate), "Rotate the right boundary by this many sites to the left")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
@@ -124,12 +126,6 @@ int main(int argc, char** argv)
       }
       else if (!Streaming && !NoStreaming)
          NoStreaming = true; // This is the current default behavior.
-
-      if (Streaming && vm.count("quantumnumber"))
-      {
-         std::cerr << "fatal: Streaming is not yet supported if the quantum number is specified." << std::endl;
-         return 1;
-      }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
@@ -230,12 +226,21 @@ int main(int argc, char** argv)
          PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
       }
 
+      // Save the original read-only input wavefunctions for the output files.
+      InfiniteWavefunctionLeft PsiLeftOriginal = PsiLeft;
+      InfiniteWavefunctionRight PsiRightOriginal = PsiRight;
+
       // Shift the left boundary if we want a different quantum number for the excitation.
+      QuantumNumbers::QuantumNumber I(HamMPO[0].GetSymmetryList()); // The identity quantum number.
+      QuantumNumbers::QuantumNumber Q = I;
       if (vm.count("quantumnumber"))
       {
-         QuantumNumbers::QuantumNumber Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), QuantumNumber);
+         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), QuantumNumber);
          inplace_qshift(PsiLeft, Q);
       }
+
+      // Rotate PsiRight.
+      PsiRight.rotate_left(Rotate);
 
       // Turn off momentum targeting if ky is unspecified.
       if (vm.count("ky") == 0)
@@ -293,7 +298,8 @@ int main(int argc, char** argv)
             // Save wavefunction.
             if (OutputPrefix != "")
             {
-               EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+               std::vector<WavefunctionSectionLeft> WindowVec = H.ConstructWindowVec(PackH.unpack(&(EVectors[Index])));
+               EAWavefunction PsiEA(PsiLeftOriginal, WindowVec, PsiRightOriginal, Q, I, 0, Rotate, H.ExpIK);
 
                if (Streaming)
                {
@@ -307,6 +313,7 @@ int main(int argc, char** argv)
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
                Wavefunction.Attributes()["ExcitationEnergy"] = std::real(*E) + Settings.Alpha;
+               Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
                std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)

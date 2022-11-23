@@ -529,8 +529,8 @@ HEff::PackInitialize() const
    return Result;
 }
 
-EAWavefunction
-HEff::ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const
+std::vector<WavefunctionSectionLeft>
+HEff::ConstructWindowVec(std::deque<MatrixOperator> XDeque) const
 {
    std::vector<WavefunctionSectionLeft> WindowVec;
    auto NL = NullLeftDeque.begin();
@@ -543,7 +543,7 @@ HEff::ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const
       ++NL, ++X;
    }
 
-   return EAWavefunction(PsiLeft, WindowVec, PsiRight, ExpIK);
+   return WindowVec;
 }
 
 void

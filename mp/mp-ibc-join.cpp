@@ -225,7 +225,7 @@ int main(int argc, char** argv)
       // Make the window from our centre matrix
       Window = WavefunctionSectionLeft(C);
 
-      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, PsiLeft.qshift(), QuantumNumbers::QuantumNumber(PsiRight.GetSymmetryList()));
+      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, PsiLeft.qshift(), QuantumNumber(PsiRight.GetSymmetryList()));
 
       if (Streaming)
       {

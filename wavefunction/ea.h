@@ -61,6 +61,18 @@ class EAWavefunction
       EAWavefunction(InfiniteWavefunctionLeft const& Left_,
                      std::vector<WavefunctionSectionLeft> const& WindowVec_,
                      InfiniteWavefunctionRight const& Right_,
+                     int LeftIndex = 0,
+                     int RightIndex = 0,
+                     std::complex<double> ExpIK = 1.0,
+                     std::complex<double> GSOverlap = 0.0);
+
+      EAWavefunction(InfiniteWavefunctionLeft const& Left_,
+                     std::vector<WavefunctionSectionLeft> const& WindowVec_,
+                     InfiniteWavefunctionRight const& Right_,
+                     QuantumNumber LeftQShift_,
+                     QuantumNumber RightQShift_,
+                     int LeftIndex = 0,
+                     int RightIndex = 0,
                      std::complex<double> ExpIK = 1.0,
                      std::complex<double> GSOverlap = 0.0);
 
@@ -78,6 +90,12 @@ class EAWavefunction
       InfiniteWavefunctionLeft const& left() const { return Left; }
       std::vector<WavefunctionSectionLeft> const& window_vec() const { return WindowVec; }
       InfiniteWavefunctionRight const& right() const { return Right; }
+
+      int const left_index() const { return LeftIndex; }
+      int const right_index() const { return RightIndex; }
+
+      QuantumNumber const left_qshift() const { return LeftQShift; }
+      QuantumNumber const right_qshift() const { return RightQShift; }
 
       std::complex<double> exp_ik() const { return ExpIK; }
       std::complex<double> gs_overlap() const { return GSOverlap; }
@@ -100,6 +118,15 @@ class EAWavefunction
       InfiniteWavefunctionLeft Left;
       std::vector<WavefunctionSectionLeft> WindowVec;
       InfiniteWavefunctionRight Right;
+
+      // The indices that the left and right boundary unit cells start.
+      int LeftIndex;
+      int RightIndex;
+
+      // If we need to shift the left and right boundaries, we save the qshift
+      // separately so we can keep the boundary wavefunctions read-only.
+      QuantumNumber LeftQShift;
+      QuantumNumber RightQShift;
 
       std::complex<double> ExpIK;
       std::complex<double> GSOverlap;

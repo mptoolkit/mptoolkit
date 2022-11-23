@@ -42,23 +42,57 @@
 // InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
 // std::complex<double> ExpIK
 // std::complex<double> GSOverlap
+//
+// Version 3:
+// string WavefunctionLeftFile
+// string WavefunctionRightFile
+// InfiniteWavefunctionLeft Left (only if WavefunctionLeftFile is empty)
+// std::vector<WavefunctionSectionLeft> WindowVec
+// InfiniteWavefunctionRight Right (only if WavefunctionRightFile is empty)
+// int LeftIndex
+// int RightIndex
+// QuantumNumber LeftQShift
+// QuantumNumber RightQShift
+// std::complex<double> ExpIK
+// std::complex<double> GSOverlap
 
 PStream::VersionTag
-EAWavefunction::VersionT(2);
+EAWavefunction::VersionT(3);
 
 std::string const EAWavefunction::Type = "EAWavefunction";
 
 EAWavefunction::EAWavefunction()
-   : ExpIK(1.0), GSOverlap(0.0)
+   : LeftIndex(0), RightIndex(0), ExpIK(1.0), GSOverlap(0.0)
 {
 }
 
 EAWavefunction::EAWavefunction(InfiniteWavefunctionLeft const& Left_,
                                std::vector<WavefunctionSectionLeft> const& WindowVec_,
                                InfiniteWavefunctionRight const& Right_,
+                               int LeftIndex_,
+                               int RightIndex_,
                                std::complex<double> ExpIK_,
                                std::complex<double> GSOverlap_)
-   : Left(Left_), WindowVec(WindowVec_), Right(Right_), ExpIK(ExpIK_), GSOverlap(GSOverlap_)
+   : Left(Left_), WindowVec(WindowVec_), Right(Right_),
+     LeftIndex(LeftIndex_), RightIndex(RightIndex_),
+     ExpIK(ExpIK_), GSOverlap(GSOverlap_),
+     LeftQShift(QuantumNumber(Left.GetSymmetryList())), RightQShift(QuantumNumber(Right.GetSymmetryList()))
+{
+}
+
+EAWavefunction::EAWavefunction(InfiniteWavefunctionLeft const& Left_,
+                               std::vector<WavefunctionSectionLeft> const& WindowVec_,
+                               InfiniteWavefunctionRight const& Right_,
+                               QuantumNumber LeftQShift_,
+                               QuantumNumber RightQShift_,
+                               int LeftIndex_,
+                               int RightIndex_,
+                               std::complex<double> ExpIK_,
+                               std::complex<double> GSOverlap_)
+   : Left(Left_), WindowVec(WindowVec_), Right(Right_),
+     LeftIndex(LeftIndex_), RightIndex(RightIndex_),
+     ExpIK(ExpIK_), GSOverlap(GSOverlap_),
+     LeftQShift(LeftQShift_), RightQShift(RightQShift_)
 {
 }
 
@@ -115,6 +149,12 @@ PStream::opstream& operator<<(PStream::opstream& out, EAWavefunction const& Psi)
    if (Psi.WavefunctionRightFile.empty())
       out << Psi.Right;
 
+   out << Psi.LeftIndex;
+   out << Psi.RightIndex;
+
+   out << Psi.LeftQShift;
+   out << Psi.RightQShift;
+
    out << Psi.ExpIK;
    out << Psi.GSOverlap;
 
@@ -132,7 +172,7 @@ PStream::ipstream& operator>>(PStream::ipstream& in, EAWavefunction& Psi)
       in >> Psi.WindowVec;
       in >> Psi.Right;
    }
-   else if (Version == 2)
+   else if (Version == 2 || Version == 3)
    {
       in >> Psi.WavefunctionLeftFile;
       in >> Psi.WavefunctionRightFile;
@@ -151,10 +191,18 @@ PStream::ipstream& operator>>(PStream::ipstream& in, EAWavefunction& Psi)
          pvalue_ptr<MPWavefunction> PsiRight = pheap::ImportHeap(Psi.WavefunctionRightFile);
          Psi.Right = PsiRight->get<InfiniteWavefunctionRight>();
       }
+      if (Version == 3)
+      {
+         in >> Psi.LeftIndex;
+         in >> Psi.RightIndex;
+
+         in >> Psi.LeftQShift;
+         in >> Psi.RightQShift;
+      }
    }
    else
    {
-      PANIC("This program is too old to read this wavefunction, expected version <= 2")(Version);
+      PANIC("This program is too old to read this wavefunction, expected version <= 3")(Version);
    }
 
    in >> Psi.ExpIK;
@@ -172,6 +220,7 @@ inplace_reflect(EAWavefunction& Psi)
    Psi.Right = Temp;
    for (auto& Window : Psi.WindowVec)
       inplace_reflect(Window);
+   std::swap(Psi.LeftQShift, Psi.RightQShift);
 }
 
 void
@@ -191,7 +240,7 @@ EAWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["ExpIK"] = ExpIK;
    A["GSOverlap"] = GSOverlap;
    A["LeftUnitCellSize"] = Left.size();
-   A["RightUnitCellSize"] = Left.size();
+   A["RightUnitCellSize"] = Right.size();
    A["LeftFilename"] = this->get_left_filename();
    A["RightFilename"] = this->get_right_filename();
 }
