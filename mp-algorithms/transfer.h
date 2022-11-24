@@ -127,6 +127,9 @@ get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
 // and re-ordering the output arrays so that the corresponding eigenvectors
 // are in the same array index.
 // If the eigenvalues differ in absolute magnitude by more than tol, then print a warning message to cerr.
+// If IgnoreFinalMismatch is true, then don't print a warning if the final eigenvalues are mismatched.
+// This is for the case where there might be a complex conjugate pair, and we want to avoid splitting them.  The
+// basic idea is to get one additional eigenvalue, match them, and then throw away the final one.
 void
 MatchEigenvectors(int n,
                  LinearAlgebra::Vector<std::complex<double>>& LeftValues,

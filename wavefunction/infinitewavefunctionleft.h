@@ -154,6 +154,10 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
 
+// This version takes a guess density operator
+RealDiagonalOperator
+gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double tol = 1E-14, int Verbose = 0);
+
 // Extend the unit cell of the wavefunction by repeating it Count number of times
 InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 
@@ -162,6 +166,10 @@ InfiniteWavefunctionLeft repeat(InfiniteWavefunctionLeft const& Psi, int Count);
 // The returned Lambda matrix is in the Basis2()
 std::pair<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionLeft const& Psi);
+
+// N into 1 coarse-graining of a wavefunction.  The wavefunction size must be a multiple of N.
+InfiniteWavefunctionLeft
+coarse_grain(InfiniteWavefunctionLeft const& Psi, int N);
 
 // returns a linear wavefunction that is in pure right-orthogonal form.
 // The asymmetry in the return type between get_left_canonical and get_right_canonical

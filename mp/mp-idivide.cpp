@@ -246,7 +246,7 @@ int main(int argc, char** argv)
       MatrixOperator GuessRho = Psi1.lambda_l();
       GuessRho = scalar_prod(herm(GuessRho), GuessRho);
 
-      InfiniteWavefunctionLeft PsiOut = InfiniteWavefunctionLeft::Construct(PsiNew, GuessRho, QShift, Verbose);
+      InfiniteWavefunctionLeft PsiOut = InfiniteWavefunctionLeft::Construct(PsiNew, QShift, GuessRho, Verbose);
       Psi1 = InfiniteWavefunctionLeft();
       Psi2 = Psi1;
 

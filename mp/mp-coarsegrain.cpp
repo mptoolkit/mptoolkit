@@ -95,11 +95,7 @@ int main(int argc, char** argv)
          Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
       }
 
-      LinearWavefunction PsiL;
-      RealDiagonalOperator Lambda;
-      std::tie(PsiL, Lambda) = get_left_canonical(Psi);
-
-      Psi = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, Coarsegrain), Lambda, Psi.qshift());
+      Psi = coarse_grain(Psi, Coarsegrain);
 
       PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

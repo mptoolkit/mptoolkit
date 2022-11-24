@@ -126,9 +126,11 @@ int main(int argc, char** argv)
       }
 
       // load the wavefunction
+      InfiniteWavefunctionLeft PsiL = PsiPtr->get<InfiniteWavefunctionLeft>();
+
       LinearWavefunction Psi;
       RealDiagonalOperator Lambda;
-      std::tie(Psi, Lambda) = get_left_canonical(PsiPtr->get<InfiniteWavefunctionLeft>());
+      std::tie(Psi, Lambda) = get_left_canonical(PsiL);
       QuantumNumbers::QuantumNumber QShift = PsiPtr->get<InfiniteWavefunctionLeft>().qshift();
 
       // load the lattice and get the list of basis
@@ -156,7 +158,7 @@ int main(int argc, char** argv)
       M = Lambda;
 
       M = herm(M) * M; // convert to a density matrix
-      auto PsiL = InfiniteWavefunctionLeft::Construct(Psi, M, QShift, Verbose-1);
+      PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, M, PsiL.log_amplitude()/Finegrain, Verbose-1);
       Psi = LinearWavefunction(); // destroy it, we don't need it anymore
 
       PsiPtr.mutate()->Wavefunction() = PsiL;

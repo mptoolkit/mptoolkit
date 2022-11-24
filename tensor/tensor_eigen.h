@@ -164,11 +164,11 @@ InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
 // for a slightly negative entry (within -tol)
 IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double>>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
 SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double>>,
-             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-15);
+             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-14);
 
 IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
 SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
-             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-15);
+             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-14);
 
 // Cholesky factorization of a hermitian positive definite matrix.  We assume here that
 // Basis1 == Basis2

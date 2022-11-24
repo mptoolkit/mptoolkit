@@ -21,7 +21,7 @@
 
 // maximum number of iterations used in GMRES.  In some cases of slow convergence
 // it is necessary to increase this.
-int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 50000);
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.

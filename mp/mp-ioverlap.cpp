@@ -251,15 +251,11 @@ int main(int argc, char** argv)
       {
          if (Psi1.size() % CoarseGrain1 != 0)
          {
-            std::cerr << "Wavefunction 1 size is not a multiple of the coarsegran size, expanding...\n";
+            std::cerr << "Wavefunction 1 size is not a multiple of the coarsegrain size, expanding...\n";
             Psi1 = repeat(Psi1, statistics::lcm(Psi1.size(), CoarseGrain1) / Psi1.size());
          }
 
-         LinearWavefunction PsiL;
-         RealDiagonalOperator Lambda;
-         std::tie(PsiL, Lambda) = get_left_canonical(Psi1);
-
-         Psi1 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain1), Lambda, Psi1.qshift());
+         Psi1 = coarse_grain(Psi1, CoarseGrain1);
       }
 
       int Size = Psi1.size();
@@ -274,17 +270,13 @@ int main(int argc, char** argv)
 
          if (CoarseGrain2 != 1)
          {
-            if (Psi2.size() % CoarseGrain1 != 0)
+            if (Psi2.size() % CoarseGrain2 != 0)
             {
-               std::cerr << "Wavefunction 2 size is not a multiple of the coarsegran size, expanding...\n";
+               std::cerr << "Wavefunction 2 size is not a multiple of the coarsegrain size, expanding...\n";
                Psi2 = repeat(Psi1, statistics::lcm(Psi2.size(), CoarseGrain2) / Psi2.size());
             }
 
-            LinearWavefunction PsiL;
-            RealDiagonalOperator Lambda;
-            std::tie(PsiL, Lambda) = get_left_canonical(Psi2);
-
-            Psi2 = InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, CoarseGrain2), Lambda, Psi2.qshift());
+            Psi2 = coarse_grain(Psi2, CoarseGrain2);
          }
       }
 
