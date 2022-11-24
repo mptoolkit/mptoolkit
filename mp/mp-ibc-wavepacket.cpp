@@ -41,7 +41,7 @@ double
 WrappedGaussian(double x, double mu, double sigma)
 {
 #if BOOST_VERSION >= 107500
-   return 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(x-mu)),(0.5*std::pow(sigma,2))/math_const::pi);
+   return 1.0/(2.0*math_const::pi) * boost::math::jacobi_theta3tau(0.5*(x-mu), (0.5*std::pow(sigma,2))/math_const::pi);
 #else
    // jacobi_theta.hpp is not in versions of Boost before 1.75, so we perform
    // the sum until machine epsilon is reached, which will not be very
@@ -53,7 +53,8 @@ WrappedGaussian(double x, double mu, double sigma)
 
    double Result = 0;
    for (int j = -JMax; j <= JMax; ++j)
-      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma*std::exp(-1.0/2.0/std::pow(sigma, 2)*(std::pow(math_const::pi*(std::fmod(x-mu+1.0,2.0)-1.0+2.0*j),2)));
+      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma
+         * std::exp(-1.0/2.0/std::pow(sigma,2) * std::pow(std::fmod(x-mu+math_const::pi,2.0*math_const::pi)+(-1.0+2.0*j)*math_const::pi, 2));
 
    return Result;
 #endif
@@ -271,21 +272,21 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to use [required]")
-         ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (divided by pi)", KYMax).c_str())
-         ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (divided by pi)", KYMin).c_str())
+         ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (in units of pi)", KYMax).c_str())
+         ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (in units of pi)", KYMin).c_str())
          ("kynum", prog_opt::value(&KYNum), "Number of y-momentum steps to use")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Size of lattice unit cell")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
-         ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width")
-         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
-         ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width")
-         ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian", KCenter).c_str())
+         ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width (in units of pi)")
+         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
+         ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width (in units of pi)")
+         ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", Tol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -538,7 +539,7 @@ int main(int argc, char** argv)
             // Since we have a periodic domain in momentum space, we cannot
             // just use a normal Gaussian, so we use the "wrapped Gaussian",
             // which is defined on a periodic domain.
-            *F *= WrappedGaussian(*K, KCenter, Sigma);
+            *F *= WrappedGaussian(math_const::pi*(*K), math_const::pi*KCenter, math_const::pi*Sigma);
             ++K, ++F;
          }
       }
@@ -552,7 +553,7 @@ int main(int argc, char** argv)
          auto F = FVec.begin();
          while (KY != KYVec.end())
          {
-            *F *= WrappedGaussian(*KY, KYCenter, SigmaY);
+            *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
             ++KY, ++F;
          }
       }
