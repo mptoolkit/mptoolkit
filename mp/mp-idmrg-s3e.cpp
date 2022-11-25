@@ -1469,7 +1469,7 @@ int main(int argc, char** argv)
 
       // finished the iterations.
       std::cout << "Orthogonalizing wavefunction...\n";
-      Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift, 0, Verbose);
+      Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift, 0, Verbose+1);
 
       std::cerr << "Orthogonalization finished.\n";
 

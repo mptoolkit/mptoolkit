@@ -24,6 +24,8 @@
 #if !defined(MPTOOLKIT_COMMON_OPENMP_DUMMY_H)
 #define MPTOOLKIT_COMMON_OPENMP_DUMMY_H
 
+#include <iostream>
+
 namespace omp
 {
 

@@ -95,7 +95,7 @@ int main(int argc, char** argv)
          Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
       }
 
-      Psi = coarse_grain(Psi, Coarsegrain);
+      Psi = coarse_grain(Psi, Coarsegrain, Verbose);
 
       PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

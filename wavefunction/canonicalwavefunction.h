@@ -127,10 +127,12 @@ class CanonicalWavefunctionBase
 
    protected:
       // don't allow construction except via derived classes
-      CanonicalWavefunctionBase() {}
-      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi);
+      CanonicalWavefunctionBase() = default;
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) = default;
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase&& Psi) = default;
 
-      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi);
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) = default;
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase&& Psi) = default;
 
       // non-const iterators.  Note the final underscore to prevent mismatches with the const versions
 

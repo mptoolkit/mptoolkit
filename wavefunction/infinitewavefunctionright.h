@@ -65,9 +65,6 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // it to the left
       void rotate_right(int Count);
 
-      // returns the orthogonality fidelity.  Normally this should be epsilon
-      double orthogonality_fidelity() const;
-
       void SetDefaultAttributes(AttributeList& A) const;
 
       static std::string Type;

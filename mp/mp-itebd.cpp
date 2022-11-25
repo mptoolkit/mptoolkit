@@ -55,10 +55,11 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    // A (Lambda) B C (Lambda) D E (Lambda) ...
    unsigned Sz = Psi.size();
    int MaxStates = 0;
-   #pragma omp parallel for shared(Psi, Lambda, UEven, SInfo)
+   double DeltaLogAmplitude = 0;
+   #pragma omp parallel for reduction(+:DeltaLogAmplitude)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UEven[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], DeltaLogAmplitude, UEven[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << (i+1)
@@ -70,6 +71,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
       #pragma omp critical
          MaxStates = std::max(MaxStates, Info.KeptStates());
    }
+   LogAmplitude += DeltaLogAmplitude;
    std::cout << "Even slice finished, max states=" << MaxStates << '\n';
    std::cout << std::flush;
 }
@@ -92,7 +94,8 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    Psi.push_front(delta_shift(Psi.back(), QShift));
    Psi.pop_back();
    int MaxStates = 0;
-   #pragma omp parallel for shared(Psi, Lambda, UOdd, SInfo)
+   double DeltaLogAmplitude = 0;
+   #pragma omp parallel for reduction(+:DeltaLogAmplitude)
    for (unsigned i = 0; i < Sz; i += 2)
    {
       TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UOdd[i/2], SInfo);
@@ -107,6 +110,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
       #pragma omp critical
          MaxStates = std::max(MaxStates, Info.KeptStates());
    }
+   LogAmplitude += DeltaLogAmplitude;
    std::cout << "Odd slice finished, max states=" << MaxStates << '\n';
    std::cout << std::flush;
 
@@ -158,7 +162,7 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
 
    // Exponentiate the bond operators and split into even and odd slices
    std::vector<std::vector<SimpleOperator>> EvenU;
-   for (auto x : decomp.a_)
+   for (auto x : decomp.a())
    {
       std::vector<SimpleOperator> Terms;
       for (int i = 0; i < BondH.size(); i += 2)
@@ -172,7 +176,7 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
    // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
    // This means that the first odd-bond operator we need is the one that wraps around, which is at the end of the list.
    // To allow for this, we reserve the first element of the Terms vector and move the last element to the front
-   for (auto x : decomp.b_)
+   for (auto x : decomp.b())
    {
       std::vector<SimpleOperator> Terms;
       Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-2]));
@@ -186,9 +190,9 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
    // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
    // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
    std::vector<SimpleOperator> EvenContinuation;
-   if (decomp.a_.size() == decomp.b_.size()+1)
+   if (decomp.a().size() == decomp.b().size()+1)
    {
-      double x = decomp.a_.front() + decomp.a_.back();
+      double x = decomp.a().front() + decomp.a().back();
       for (int i = 0; i < BondH.size(); i += 2)
       {
          EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
@@ -225,6 +229,7 @@ int main(int argc, char** argv)
       std::string TimeVar = "t";
       std::string DecompositionStr = "optimized4-11";
       bool TimeDependent = false;
+      bool Quiet = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -249,8 +254,8 @@ int main(int argc, char** argv)
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
-         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
-         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default if timestep is real]")
+         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction [default if the timestep is complex]")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -268,7 +273,7 @@ int main(int argc, char** argv)
          std::cerr << "\nAvailable decompositions:\n";
          for (auto const& d : Decompositions)
          {
-            std::cerr << d.first << " : " << d.second.Description_ << '\n';
+            std::cerr << d.first << " : " << d.second.description() << '\n';
          }
          return 1;
       }
@@ -283,7 +288,7 @@ int main(int argc, char** argv)
          if (d.first == DecompositionStr)
             decomp = d.second;
       }
-      if (decomp.Order_ == 0)
+      if (decomp.order() == 0)
       {
          std::cerr << "mp-itebd: fatal: invalid decomposition\n";
          return 1;
@@ -333,7 +338,11 @@ int main(int argc, char** argv)
       if (NoNormalize)
          Normalize = false;
 
-      TRACE(Timestep)(Normalize);
+      if (!Quiet)
+         print_preamble(std::cout, argc, argv);
+
+      std::cout << "Starting iTEBD.\nTrotter-Suziki decomposition is " << DecompositionStr << "(" << decomp.description() << ")\n"
+                << "Timestep = " << formatting::format_complex(Timestep) << '\n';
 
       if (OutputDigits == 0)
       {
@@ -404,7 +413,6 @@ int main(int argc, char** argv)
       if (!TimeDependent)
       {
          Gates = AssembleHamiltonian(HamMPO, Timestep, decomp);
-         std::cout << "Using decomposition " << DecompositionStr << '\n';
          if (Verbose > 0)
          {
             std::cout << "Number of even slices: " << Gates.EvenU.size() << '\n';
@@ -505,6 +513,7 @@ int main(int argc, char** argv)
          {
             LinearWavefunction Psi;
             double ThisLogAmplitude = LogAmplitude;
+            RealDiagonalOperator LambdaR = Lambda.back();
             if (Gates.EvenU.size() > Gates.OddU.size())
             {
                CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
@@ -515,6 +524,7 @@ int main(int argc, char** argv)
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
                DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
+               LambdaR = LambdaSave.back();
             }
             else
                Psi = LinearWavefunction::FromContainer(PsiVec.begin(), PsiVec.end());
@@ -522,11 +532,17 @@ int main(int argc, char** argv)
             // save the wavefunction
             std::cout << "Saving wavefunction\n";
             MPWavefunction Wavefunction;
-            if (Normalize)
-               ThisLogAmplitude = 0.0;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-            InfiniteWavefunctionLeft PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, ThisLogAmplitude);
+            InfiniteWavefunctionLeft PsiL;
+            if (Normalize)
+            {
+               PsiL = InfiniteWavefunctionLeft::Construct(Psi, QShift, LambdaR*LambdaR, 0.0, Verbose);
+            }
+            else
+            {
+               PsiL = InfiniteWavefunctionLeft::ConstructPreserveAmplitude(Psi, QShift, LambdaR*LambdaR, ThisLogAmplitude, Verbose);
+            }
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();

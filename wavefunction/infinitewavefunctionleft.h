@@ -36,39 +36,65 @@ class AttributeList;
 class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 {
    public:
-      InfiniteWavefunctionLeft() {}
+      InfiniteWavefunctionLeft() = default;
 
       // named constructors
 
       // construction from a LinearWavefunction that is in left orthogonal form with a diagonal right Lambda matrix
       static
-      InfiniteWavefunctionLeft ConstructFromOrthogonal(LinearWavefunction Psi,
-                                                       QuantumNumbers::QuantumNumber const& QShift_,
-                                                       RealDiagonalOperator const& Lambda,
-                                                       double LogAmplitude = 0.0,
-                                                       int Verbose = 0);
+      InfiniteWavefunctionLeft
+      ConstructFromOrthogonal(LinearWavefunction Psi,
+                              QuantumNumbers::QuantumNumber const& QShift_,
+                              RealDiagonalOperator const& Lambda,
+                              double LogAmplitude = 0.0,
+                              int Verbose = 0);
 
-      // construct and orthogonalize from a LinearWavefunction
+      // construct and orthogonalize from a LinearWavefunction.  The amplitude of Psi isn't used,
+      // the final amplitude is set by the LogAmplitude.
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction Psi,
-                                         QuantumNumbers::QuantumNumber const& QShift,
-                                         double LogAmplitude = 0.0,
-                                         int Verbose = 0);
+      InfiniteWavefunctionLeft
+      Construct(LinearWavefunction Psi,
+                QuantumNumbers::QuantumNumber const& QShift,
+                double LogAmplitude = 0.0,
+                int Verbose = 0);
 
       // construct and orthogonalize from a LinearWavefunction, with an approximation
       // for the right-most density matrix
       static
-      InfiniteWavefunctionLeft Construct(LinearWavefunction Psi,
-                                         QuantumNumbers::QuantumNumber const& QShift,
-                                         MatrixOperator GuessRho,
-                                         double LogAmplitude = 0.0,
-                                         int Verbose = 0);
+      InfiniteWavefunctionLeft
+      Construct(LinearWavefunction Psi,
+               QuantumNumbers::QuantumNumber const& QShift,
+               MatrixOperator GuessRho,
+               double LogAmplitude = 0.0,
+               int Verbose = 0);
+
+      // construct and orthogonalize from a LinearWavefunction, and incorporate the transfer matrix eigenvalue
+      // into the LogAmplitude
+      static
+      InfiniteWavefunctionLeft
+      ConstructPreserveAmplitude(LinearWavefunction Psi,
+                                 QuantumNumbers::QuantumNumber const& QShift,
+                                 double LogAmplitude,
+                                 int Verbose = 0);
+
+      // construct and orthogonalize from a LinearWavefunction, with an approximation
+      // for the right-most density matrix
+      static
+      InfiniteWavefunctionLeft
+      ConstructPreserveAmplitude(LinearWavefunction Psi,
+                                 QuantumNumbers::QuantumNumber const& QShift,
+                                 MatrixOperator GuessRho,
+                                 double LogAmplitude,
+                                 int Verbose = 0);
 
       InfiniteWavefunctionLeft(InfiniteWavefunctionLeft const& Psi)
          : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift), LogAmplitude(Psi.LogAmplitude) {}
 
       InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft const& Psi)
       { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; LogAmplitude = Psi.LogAmplitude; return *this; }
+
+      InfiniteWavefunctionLeft& operator=(InfiniteWavefunctionLeft&& Psi)
+      { CanonicalWavefunctionBase::operator=(std::move(Psi)); QShift = Psi.QShift; LogAmplitude = Psi.LogAmplitude; return *this; }
 
       QuantumNumber qshift() const { return QShift; }
 
@@ -86,9 +112,6 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // Rotates the wavefunction to the left, by taking the right-most site
       // and moving it to the left
       void rotate_right(int Count);
-
-      // returns the orthogonality fidelity.  Normally this should be epsilon
-      double orthogonality_fidelity() const;
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -146,7 +169,8 @@ class InfiniteWavefunctionRight;
 
 // Convert an infinite wavefunction to left-orthogonal form.
 // This function leaves the left and right basis invariant.
-void
+// Return value is the log amplitude from the transfer matrix eigenvalue, Result' = log(sqrt(evalue))
+double
 left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
 
 // Take a wavefunction that is already in left orthogonal form, and gauge fix it so that the right
@@ -169,7 +193,7 @@ get_left_canonical(InfiniteWavefunctionLeft const& Psi);
 
 // N into 1 coarse-graining of a wavefunction.  The wavefunction size must be a multiple of N.
 InfiniteWavefunctionLeft
-coarse_grain(InfiniteWavefunctionLeft const& Psi, int N);
+coarse_grain(InfiniteWavefunctionLeft const& Psi, int N, int Verbose = 0);
 
 // returns a linear wavefunction that is in pure right-orthogonal form.
 // The asymmetry in the return type between get_left_canonical and get_right_canonical
