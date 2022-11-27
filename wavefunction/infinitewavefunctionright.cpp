@@ -45,219 +45,35 @@ std::string InfiniteWavefunctionRight::Type = "InfiniteWavefunctionRight";
 PStream::VersionTag
 InfiniteWavefunctionRight::VersionT(1);
 
-namespace
-{
-
-struct LeftMultiply
-{
-   typedef MatrixOperator argument_type;
-   typedef MatrixOperator result_type;
-
-   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
-      : L(L_), QShift(QShift_) {}
-
-   result_type operator()(argument_type const& x) const
-   {
-      result_type r = delta_shift(x, QShift);
-      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
-      {
-         r = operator_prod(herm(*I), r, *I);
-      }
-      return r;
-   }
-
-   LinearWavefunction const& L;
-   QuantumNumber QShift;
-};
-
-// struct RightMultiply
-// {
-//    typedef MatrixOperator argument_type;
-//    typedef MatrixOperator result_type;
-//
-//    RightMultiply(LinearWavefunction const& R_, QuantumNumber const& QShift_)
-//       : R(R_), QShift(QShift_) {}
-//
-//    result_type operator()(argument_type const& x) const
-//    {
-//       result_type r = x;
-//       LinearWavefunction::const_iterator I = R.end();
-//       while (I != R.begin())
-//       {
-//          --I;
-//          r = operator_prod(*I, r, herm(*I));
-//       }
-//       return delta_shift(r, adjoint(QShift));
-//    }
-//
-//    LinearWavefunction const& R;
-//    QuantumNumber QShift;
-// };
-
-} // namespace
-
-InfiniteWavefunctionRight::InfiniteWavefunctionRight(MatrixOperator const& Lambda,
-                                                     LinearWavefunction const& Psi,
-                                                     QuantumNumbers::QuantumNumber const& QShift_)
-   : QShift(QShift_)
-{
-   this->Initialize(Lambda, Psi);
-}
-
-void
-InfiniteWavefunctionRight::Initialize(MatrixOperator const& Lambda,
-                                      LinearWavefunction const& Psi_)
-{
-   LinearWavefunction Psi = Psi_;
-   MatrixOperator M = left_orthogonalize(Lambda, Psi);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   // we need to assemble the MPS in reverse order, so make a temporary container
-   std::list<StateComponent> AMat;
-   std::list<RealDiagonalOperator> Lam;
-
-   LinearWavefunction::const_iterator I = Psi.end();
-   while (I != Psi.begin())
-   {
-      --I;
-      StateComponent A = prod(*I, M);
-      M = ExpandBasis1(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      AMat.push_front(prod(Vh, A));
-      Lam.push_front(D);
-      M = U*D;
-   }
-   U = delta_shift(U, adjoint(QShift));
-   AMat.back() = prod(AMat.back(), U);
-   Lam.push_back(delta_shift(D, adjoint(QShift)));
-
-   for (auto const& A : AMat)
-   {
-      this->push_back(A);
-   }
-
-   for (auto const& L : Lam)
-   {
-      this->push_back_lambda(L);
-   }
-
-   this->setBasis1(D.Basis1());
-   this->setBasis2(U.Basis2());
-
-
-#if !defined(NDEBUG)
-   // check
-   LinearWavefunction PsiCheck(this->base_begin(), this->base_end());
-   MatrixOperator II = MatrixOperator::make_identity(this->Basis2());
-   MatrixOperator ICheck = delta_shift(inject_right(II, PsiCheck), adjoint(QShift));
-   TRACE(norm_frob(II-ICheck))("Identity - should be epsilon");
-
-   MatrixOperator Rho = this->lambda(0)*this->lambda(0);
-   MatrixOperator RhoCheck = inject_left(Rho, PsiCheck);
-   RhoCheck = delta_shift(RhoCheck, QShift);
-   TRACE(norm_frob(Rho-RhoCheck))("Rho - should be epsilon");
-#endif
-
-   this->debug_check_structure();
-}
-
-InfiniteWavefunctionRight::InfiniteWavefunctionRight(LinearWavefunction const& Psi,
-                                                     QuantumNumbers::QuantumNumber const& QShift_)
-   : QShift(QShift_)
-{
-   LinearWavefunction PsiR = Psi;
-
-   MatrixOperator Guess = MatrixOperator::make_identity(PsiR.Basis2());
-
-   MatrixOperator RightEigen = Guess;
-
-   // get the eigenmatrix.  Do some dodgy explict restarts.
-   int Iterations = 20;
-   double Tol = ArnoldiTol;
-   RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-   std::complex<double> EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift),
-                                                      Iterations, Tol,
-                                                      LinearSolvers::LargestAlgebraicReal, false);
-   while (Tol < 0)
-   {
-      std::cerr << "RightEigen: Arnoldi not converged, restarting.  EValue="
-                << EtaR << ", Tol=" << Tol << "\n";
-      Iterations = 20; Tol = ArnoldiTol;
-      RightEigen = 0.5 * (RightEigen + adjoint(RightEigen)); // make the eigenvector symmetric
-      EtaR = LinearSolvers::Arnoldi(RightEigen, RightMultiply(PsiR, QShift),
-                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
-   }
-
-   CHECK(EtaR.real() > 0)("Eigenvalue must be positive");
-
-   DEBUG_TRACE(EtaR);
-
-   if (trace(RightEigen).real() < 0)
-      RightEigen = -RightEigen;
-
-   DEBUG_CHECK(norm_frob(RightEigen - adjoint(RightEigen)) < 1e-12)
-      (norm_frob(RightEigen - adjoint(RightEigen)));
-
-   MatrixOperator D = RightEigen;
-   MatrixOperator U; // = DiagonalizeHermitian(D);
-   //D = SqrtDiagonal(D, OrthoTol);
-   MatrixOperator DInv = InvertDiagonal(D, OrthoTol);
-
-   // RightEigen = triple_prod(U, D*D, herm(U))
-   DEBUG_CHECK(norm_frob(RightEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(RightEigen - triple_prod(herm(U), D*D, U)));
-
-   MatrixOperator R = adjoint(U)*D;
-   MatrixOperator RInv = delta_shift(DInv * U, QShift);
-
-   // Incorporate into the MPS: PsiR -> R^{-1} * PsiR * R
-   // We don't need to actually right-orthogonalize everything, that is done in Initialize() anyway
-   PsiR.set_back(prod(PsiR.get_back(), R));
-   PsiR.set_front(prod(RInv, PsiR.get_front()));
-
-   // Get the left eigenvector, which is the density matrix
-   MatrixOperator LeftEigen = Guess;
-
-   // get the eigenmatrix
-   Iterations = 20; Tol = ArnoldiTol;
-   LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
-   std::complex<double> EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift),
-                                                      Iterations, Tol,
-                                                      LinearSolvers::LargestAlgebraicReal, false);
-   //   DEBUG_TRACE(norm_frob(LeftEigen - adjoint(LeftEigen)));
-   while (Tol < 0)
-   {
-      std::cerr << "LeftEigen: Arnoldi not converged, restarting.  EValue="
-                << EtaL << ", Tol=" << Tol << "\n";
-      Iterations = 20; Tol = ArnoldiTol;
-      LeftEigen = 0.5 * (LeftEigen + adjoint(LeftEigen));
-      EtaL = LinearSolvers::Arnoldi(LeftEigen, LeftMultiply(PsiR, QShift),
-                                    Iterations, Tol, LinearSolvers::LargestAlgebraicReal, false);
-   }
-
-   D = LeftEigen;
-   //U = DiagonalizeHermitian(D);
-   //D = SqrtDiagonal(D, OrthoTol);
-
-   // normalize
-   D *= 1.0 / norm_frob(D);
-
-   DEBUG_CHECK(norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)) < 1e-10)
-      (norm_frob(LeftEigen - triple_prod(herm(U), D*D, U)));
-
-   // incorporate U into the MPS
-
-   PsiR.set_front(prod(U, PsiR.get_front()));
-   PsiR.set_back(prod(PsiR.get_back(), adjoint(U)));
-
-   // And now we have the right-orthogonalized form and the left-most lambda matrix
-   this->Initialize(D, PsiR);
-}
-
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi)
-   : InfiniteWavefunctionRight(LinearWavefunction(Psi.base_begin(), Psi.base_end()), Psi.qshift())
 {
+   this->setBasis1(Psi.Basis1());
+   this->setBasis2(Psi.Basis2());
+   QShift = Psi.qshift();
+
+   auto PsiI = Psi.begin();
+   auto LambdaI = Psi.lambda_begin();
+   ++LambdaI; // skip to the first bond within the unit cell
+   while (PsiI != Psi.end())
+   {
+      StateComponent A = (*PsiI) * (*LambdaI);
+      MatrixOperator U;
+      RealDiagonalOperator Lambda;
+      std::tie(U, Lambda) = OrthogonalizeBasis1(A);
+      A = U*A;
+      MatrixOperator LambdaP = U*Lambda*herm(U);
+      Lambda = ExtractRealDiagonal(LambdaP);
+      // if (norm_frob(LambdaP-Lambda) > 1E-14)
+      // {
+      //    std::cerr << "get_right_canonical: warning: Lambda matrix isn't diagonal, difference = " << norm_frob(LambdaP-Lambda) << '\n';
+      // }
+      this->push_back(A);
+      this->push_back_lambda(Lambda);
+      ++PsiI;
+      ++LambdaI;
+   }
+   this->push_back_lambda(delta_shift(this->lambda(0), adjoint(QShift)));
+   this->check_structure();
 }
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version)
@@ -348,6 +164,7 @@ InfiniteWavefunctionRight::rotate_left(int Count)
    {
       I->delta_shift(adjoint(this->qshift()));
    }
+
    // and rotate
    std::rotate(this->lambda_base_begin_(), this->lambda_base_begin_()+Count,
                this->lambda_base_end_());

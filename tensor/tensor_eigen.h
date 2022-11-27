@@ -159,6 +159,15 @@ IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
                VectorBasis, VectorBasis> const& Op);
 
+// Take the diagonal part of a tensor
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractDiagonal(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> A);
+
+// Take the real diagonal part of a tensor
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<T>>, VectorBasis, VectorBasis> A);
 
 // takes the square root of a positive diagonal matrix, with some allowance
 // for a slightly negative entry (within -tol)

@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "infinitewavefunctionleft.h"
+#include "infinitewavefunctionright.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/arnoldi.h"
 #include "common/environment.h"
@@ -137,6 +138,39 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(QuantumNumbers::QuantumNumber
 {
 }
 
+InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(InfiniteWavefunctionRight const& Psi)
+{
+   this->setBasis1(Psi.Basis1());
+   this->setBasis2(Psi.Basis2());
+   QShift = Psi.qshift();
+
+   // place-holder for the edge Lambda matrix (although in principle it doesn't change)
+   this->push_back_lambda(Psi.lambda(0));
+
+   auto PsiI = Psi.begin();
+   auto LambdaI = Psi.lambda_begin();
+   while (PsiI != Psi.end())
+   {
+      StateComponent A = (*LambdaI) * (*PsiI);
+      MatrixOperator Vh;
+      RealDiagonalOperator Lambda;
+      std::tie(Lambda, Vh) = OrthogonalizeBasis2(A);
+      A = A*Vh;
+      MatrixOperator LambdaP = herm(Vh)*(Lambda*Vh);
+      Lambda = ExtractRealDiagonal(LambdaP);
+      // if (norm_frob(LambdaP-Lambda) > 1E-14)
+      // {
+      //    std::cerr << "get_right_canonical: warning: Lambda matrix isn't diagonal, difference = " << norm_frob(LambdaP-Lambda) << '\n';
+      // }
+      this->push_back(A);
+      this->push_back_lambda(Lambda);
+      ++PsiI;
+      ++LambdaI;
+   }
+   this->set_lambda(0, delta_shift(this->lambda_r(), QShift));
+   this->check_structure();
+}
+
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructFromOrthogonal(LinearWavefunction Psi, QuantumNumbers::QuantumNumber const& QShift, RealDiagonalOperator const& Lambda, double LogAmplitude, int Verbose)
 {
@@ -224,7 +258,7 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    double e = norm_frob(X-Xh);
    if (e > 1E-14)
    {
-      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^\dagger = " << e << '\n';
+      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^dagger = " << e << '\n';
    }
 
    MatrixOperator U0;
@@ -240,12 +274,11 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    for (auto& A : Psi)
    {
       A = X*A;
-      //X = TruncateBasis2(A);
       std::tie(D, U) = OrthogonalizeBasis2(A);
       X = D*U;
    }
    // Incorporate the final unitaries.  This ensures that the final basis doesn't change.
-   //Psi.set_front(herm(U0) * Psi.get_front());
+   //Psi.set_front(herm(U0) * Psi.get_front()); // This would be the alternative; incorporate the unitary into the front instead
    Psi.set_back(Psi.get_back() * U);
 
    // Verify that the final eigenvector matrices are similar.  We need to scale by the eigenvalue.
@@ -510,26 +543,35 @@ coarse_grain(InfiniteWavefunctionLeft const& Psi, int N, int Verbose)
    return InfiniteWavefunctionLeft::ConstructFromOrthogonal(coarse_grain(PsiL, N), Psi.qshift(), Lambda, Psi.log_amplitude()*N, Verbose);
 }
 
-
-std::tuple<MatrixOperator, RealDiagonalOperator, LinearWavefunction>
+std::tuple<RealDiagonalOperator, LinearWavefunction>
 get_right_canonical(InfiniteWavefunctionLeft const& Psi)
 {
+   // this could be parallelised to do all sites at once
    LinearWavefunction Result;
-   RealDiagonalOperator D = Psi.lambda_r();
-   MatrixOperator U = MatrixOperator::make_identity(D.Basis1());
-   MatrixOperator Vh;
-   InfiniteWavefunctionLeft::const_mps_iterator I = Psi.end();
-   while (I != Psi.begin())
+   RealDiagonalOperator D;
+   auto PsiI = Psi.begin();
+   auto LambdaI = Psi.lambda_begin();
+   ++LambdaI; // skip to the first bond within the unit cell
+   while (PsiI != Psi.end())
    {
-      --I;
-
-      StateComponent A = prod(*I, U*D);
-      MatrixOperator M = ExpandBasis1(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      Result.push_front(prod(Vh, A));
+      StateComponent A = (*PsiI) * (*LambdaI);
+      MatrixOperator U;
+      RealDiagonalOperator Lambda;
+      std::tie(U, Lambda) = OrthogonalizeBasis1(A);
+      A = U*A;
+      MatrixOperator LambdaP = U*Lambda*herm(U);
+      Lambda = ExtractRealDiagonal(LambdaP);
+      // if (norm_frob(LambdaP-Lambda) > 1E-14)
+      // {
+      //    std::cerr << "get_right_canonical: warning: Lambda matrix isn't diagonal, difference = " << norm_frob(LambdaP-Lambda) << '\n';
+      // }
+      Result.push_back(A);
+      if (PsiI == Psi.begin())
+         D = Lambda;
+      ++PsiI;
+      ++LambdaI;
    }
-
-   return std::make_tuple(U, D, Result);
+   return std::make_tuple(D, Result);
 }
 
 void InfiniteWavefunctionLeft::scale(std::complex<double> x)

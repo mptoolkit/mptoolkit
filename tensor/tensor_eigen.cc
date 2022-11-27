@@ -17,6 +17,8 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "linearalgebra/matrix_utility.h"
+
 namespace Tensor
 {
 
@@ -53,6 +55,34 @@ InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
                VectorBasis, VectorBasis> const& Op)
 {
    return InvertDiagonal(Op, std::sqrt(std::numeric_limits<double>::epsilon()));
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractDiagonal(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> A)
+{
+   DEBUG_CHECK_EQUAL(A.Basis1(), A.Basis2());
+   CHECK(is_scalar(A.TransformsAs()));
+   IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(A.Basis1(), A.Basis2());
+   for (int i = 0; i < A.Basis1().size(); ++i)
+   {
+      Result(i,i).diagonal() = diagonal_vector(A(i,i));
+   }
+   return Result;
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractRealDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<T>>, VectorBasis, VectorBasis> A)
+{
+   DEBUG_CHECK_EQUAL(A.Basis1(), A.Basis2());
+   CHECK(is_scalar(A.TransformsAs()));
+   IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(A.Basis1(), A.Basis2());
+   for (int i = 0; i < A.Basis1().size(); ++i)
+   {
+      Result(i,i).diagonal() = real_diagonal_vector(A(i,i));
+   }
+   return Result;
 }
 
 } // namespace Tensor
