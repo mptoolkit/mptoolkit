@@ -64,6 +64,8 @@ int main(int argc, char** argv)
          ("H_V"    , "nearest-neighbour Coulomb repulsion")
          ("H_delta", "QLM gauge site potential", "QLM enabled",
          [&QLM]()->bool{return QLM;})
+         ("H_V2g"  , "next-nearest-neighbour gauge site Coulomb repulsion", "QLM enabled",
+         [&QLM]()->bool{return QLM;})
          ;
       OpDescriptions.add_functions()
          ("H_J"    , "nearest-neighbor complex hopping")
@@ -93,7 +95,11 @@ int main(int argc, char** argv)
       Lattice["H_U"] = sum_unit(0.5*N2(0));
       Lattice["H_V"] = sum_unit(N(0)*N(1));
 
-      Lattice["H_delta"] = sum_unit(N(1), 2);
+      if (QLM)
+      {
+         Lattice["H_delta"] = sum_unit(N(1), 2);
+         Lattice["H_V2g"] = sum_unit(N(1)*N(3), 2);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
