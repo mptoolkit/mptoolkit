@@ -59,7 +59,7 @@ struct CompareEigenvalues
          case WhichEigenvalues::SmallestImag : return false;
          case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
          case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
-         case WhichEigenvalues::BothEnds : return a < b; // Do not sort.
+         case WhichEigenvalues::BothEnds : return a < b;
       }
       return false;
    }
@@ -77,7 +77,7 @@ struct CompareEigenvalues
          case WhichEigenvalues::SmallestImag : return std::imag(a) < std::imag(b);
          case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
          case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
-         case WhichEigenvalues::BothEnds : PANIC("undefined"); return false; // Do not sort.
+         case WhichEigenvalues::BothEnds : PANIC("undefined"); return false;
       }
       PANIC("invalid");
       return false;
