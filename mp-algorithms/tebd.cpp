@@ -138,46 +138,6 @@ Decompositions = {
                                                      0.12837035888423653774, -0.84315275357471264676})}};
 
 
-#if 0
-void DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
-            SimpleOperator const& U, StatesInfo const& Info)
-{
-   // Algorithm avoids matrix inversion.  Let A,B be left-orthogonalized.
-   // Let C^{s1,s2} = A^{s1} B^{s2}
-   // Let C'^{s1,s2} = U(C^{s1,s2}) is the unitary gate applied to C
-
-   // Let X^{s1,s2} = C'^{s1,s2} lambda_2
-
-   // Do an SVD of X.  X^{s1,s2} = A'{s1} lambda_1 B'{s2}
-   // Use orthogonality of A': sum_{s1} A'\dagger{s1} A'{s1} = I
-   // sum_{s1} A'\dagger{s1} C'{s1,s2} = lambda_1 B'{s2} lambda_2^{-1} = G^{s2}
-
-   // Then form D^{s2,s1} = G^{s2} A^{s1}
-   // and so on
-
-   StateComponent C = local_tensor_prod(A,B);
-   StateComponent Cu = local_prod(U, C);
-
-   StateComponent X = Cu * Lambda;
-   AMatSVD SL(X, Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(), B.LocalBasis()));
-   TruncationInfo Info;
-   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(),
-                                                               SInfo, Info);
-   std::cout << " Entropy=" << Info.TotalEntropy()
-             << " States=" << Info.KeptStates()
-             << " Trunc=" << Info.TruncationError()
-             << std::endl;
-
-   SL.ConstructMatrices(SL.begin(), Cutoff, A, Lambda, B);
-
-   StateComponent G = partial_prod(herm(A), Cu,
-                                   Tensor::ProductBasis<BasisList, BasisList>(A.LocalBasis(),
-                                                                              B.LocalBasis()));
-
-   B = A;
-   A = Lambda*G;
-}
-#else
 LinearAlgebra::DiagonalMatrix<double>
 InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-15)
 {
@@ -253,4 +213,3 @@ DoTEBD(StateComponent& A, StateComponent& B, RealDiagonalOperator& Lambda,
 
    return Info;
 }
-#endif

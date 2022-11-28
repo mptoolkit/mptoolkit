@@ -67,7 +67,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>" << std::endl;
          std::cerr << desc << std::endl;
-         std::cerr << "This tool transforms an iMPS from left-canonical form to right-canonical form." << std::endl;
+         std::cerr << "This tool transforms an iMPS from right-canonical form to left-canonical form." << std::endl;
          return 1;
       }
 
@@ -86,17 +86,17 @@ int main(int argc, char** argv)
          PsiPtr = pheap::ImportHeap(InputFile);
       }
 
-      InfiniteWavefunctionLeft PsiLeft = PsiPtr->get<InfiniteWavefunctionLeft>();
+      InfiniteWavefunctionRight PsiRight = PsiPtr->get<InfiniteWavefunctionRight>();
 
       if (Verbose > 0)
-         std::cout << "Right-canonicalizing wavefunction..." << std::endl;
+         std::cout << "Left-canonicalizing wavefunction..." << std::endl;
 
-      InfiniteWavefunctionRight PsiRight(PsiLeft);
+      InfiniteWavefunctionLeft PsiLeft(PsiRight);
 
       if (Verbose > 0)
          std::cout << "Saving wavefunction..." << std::endl;
 
-      PsiPtr.mutate()->Wavefunction() = PsiRight;
+      PsiPtr.mutate()->Wavefunction() = PsiLeft;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 

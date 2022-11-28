@@ -34,6 +34,7 @@
 #include "common/prog_options.h"
 #include "lattice/infinite-parser.h"
 #include "interface/inittemp.h"
+#include "common/openmp.h"
 #include "tensor/reducible.h"
 #include <cctype>
 
@@ -135,6 +136,7 @@ int main(int argc, char** argv)
       int OutputDigits = 0;
       int Coarsegrain = 1;
       std::string DecompositionStr = "optimized4-11";
+      bool Quiet = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -175,11 +177,12 @@ int main(int argc, char** argv)
          std::cerr << "Available decompositions:\n";
          for (auto const& d : Decompositions)
          {
-            std::cerr << d.first << " : " << d.second.Description_ << '\n';
+            std::cerr << d.first << " : " << d.second.description() << '\n';
          }
          return 1;
       }
 
+      omp::initialize(Verbose);
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
@@ -189,7 +192,7 @@ int main(int argc, char** argv)
          if (d.first == DecompositionStr)
             decomp = d.second;
       }
-      if (decomp.Order_ == 0)
+      if (decomp.order() == 0)
       {
          std::cerr << "mp-itebd: fatal: invalid decomposition\n";
          return 1;
@@ -232,6 +235,12 @@ int main(int argc, char** argv)
          Timestep += ParseNumber(TimestepStr);
       if (!BetastepStr.empty())
          Timestep += std::complex<double>(0.0,-1.0)* ParseNumber(BetastepStr);
+
+      if (!Quiet)
+         print_preamble(std::cout, argc, argv);
+
+      std::cout << "Starting TEBD.\nTrotter-Suziki decomposition is " << DecompositionStr << "(" << decomp.description() << ")\n"
+                << "Timestep = " << formatting::format_complex(Timestep) << '\n';
 
       if (OutputDigits == 0)
       {
@@ -307,7 +316,7 @@ int main(int argc, char** argv)
       }
 
       std::vector<std::vector<SimpleOperator>> EvenU;
-      for (auto x : decomp.a_)
+      for (auto x : decomp.a())
       {
          std::vector<SimpleOperator> Terms;
          for (int i = 0; i < BondH.size(); i += 2)
@@ -318,7 +327,7 @@ int main(int argc, char** argv)
       }
 
       std::vector<std::vector<SimpleOperator>> OddU;
-      for (auto x : decomp.b_)
+      for (auto x : decomp.b())
       {
          std::vector<SimpleOperator> Terms;
          for (int i = 1; i < BondH.size(); i += 2)
@@ -331,9 +340,9 @@ int main(int argc, char** argv)
       // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
       // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
       std::vector<SimpleOperator> EvenContinuation;
-      if (decomp.a_.size() == decomp.b_.size()+1)
+      if (decomp.a().size() == decomp.b().size()+1)
       {
-         double x = decomp.a_.front() + decomp.a_.back();
+         double x = decomp.a().front() + decomp.a().back();
           for (int i = 0; i < BondH.size(); i += 2)
          {
             EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
