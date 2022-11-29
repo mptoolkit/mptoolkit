@@ -240,11 +240,7 @@ int main(int argc, char** argv)
       }
 
       // Rotate PsiRight: making sure that Rotate is in [0, PsiRight.size()-1].
-      if (Rotate < 0)
-         Rotate = Rotate % PsiRight.size() + PsiRight.size();
-      else
-         Rotate = Rotate % PsiRight.size();
-
+      Rotate = numerics::divp(Rotate, PsiRight.size()).rem;
       PsiRight.rotate_left(Rotate);
 
       // Turn off momentum targeting if ky is unspecified.
