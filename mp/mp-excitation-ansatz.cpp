@@ -48,7 +48,7 @@ int main(int argc, char** argv)
       double Tol = 1e-10;
       int NumEigen = 1;
       std::string QuantumNumber;
-      QuantumNumbers::QuantumNumber Q;
+      int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
       int OutputDigits = -1;
@@ -62,8 +62,8 @@ int main(int argc, char** argv)
          ("help", "Show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
-         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
          ("ky", prog_opt::value(&Settings.ky), "Target this value of the y-momentum [2D cylinders]")
          ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
@@ -74,15 +74,16 @@ int main(int argc, char** argv)
          ("gmrestol", prog_opt::value(&Settings.GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random seed")
-         //("quantumnumber", prog_opt::value(&QuantumNumber),
-         // "The quantum number sector for the excitation [default identity]")
+         ("quantumnumber,q", prog_opt::value(&QuantumNumber),
+          "The quantum number sector for the excitation [default identity]")
+         ("rotate,r", prog_opt::value(&Rotate), "Rotate the right boundary by this many sites to the left")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
          ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
-         ("quiet,q", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum, use thrice to hide energies")
+         ("quiet", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -153,12 +154,6 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice;
       BasicTriangularMPO HamMPO;
       std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-
-      // TODO: Add support for excitations with quantum numbers other than the identity.
-      if (vm.count("quantumnumber"))
-         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), QuantumNumber);
-      else
-         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList());
 
       if (vm.count("string"))
       {
@@ -231,11 +226,28 @@ int main(int argc, char** argv)
          PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
       }
 
+      // Save the original read-only input wavefunctions for the output files.
+      InfiniteWavefunctionLeft PsiLeftOriginal = PsiLeft;
+      InfiniteWavefunctionRight PsiRightOriginal = PsiRight;
+
+      // Shift the left boundary if we want a different quantum number for the excitation.
+      QuantumNumbers::QuantumNumber I(HamMPO[0].GetSymmetryList()); // The identity quantum number.
+      QuantumNumbers::QuantumNumber Q = I;
+      if (vm.count("quantumnumber"))
+      {
+         Q = QuantumNumbers::QuantumNumber(HamMPO[0].GetSymmetryList(), QuantumNumber);
+         inplace_qshift(PsiLeft, Q);
+      }
+
+      // Rotate PsiRight: making sure that Rotate is in [0, PsiRight.size()-1].
+      Rotate = numerics::divp(Rotate, PsiRight.size()).rem;
+      PsiRight.rotate_left(Rotate);
+
       // Turn off momentum targeting if ky is unspecified.
       if (vm.count("ky") == 0)
          Settings.Alpha = 0.0;
 
-      H = HEff(PsiLeft, PsiRight, HamMPO, Q, Settings);
+      H = HEff(PsiLeft, PsiRight, HamMPO, Settings);
 
       // Print column headers.
       if (Quiet == 0)
@@ -274,7 +286,7 @@ int main(int argc, char** argv)
             int Index = i * PackH.size();
             if (Quiet < 2)
                std::cout << std::setw(20) << k;
-            if (NumEigen > 1 && Quiet < 3)
+            if (NumEigen > 1)
                std::cout << std::setw(10) << i;
             if (vm.count("string") && Quiet < 2)
             {
@@ -282,13 +294,13 @@ int main(int argc, char** argv)
                std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi
                          << std::setw(20) << std::abs(H.Ty(XDeque));
             }
-            if (Quiet < 3)
-               std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
+            std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
 
             // Save wavefunction.
             if (OutputPrefix != "")
             {
-               EAWavefunction PsiEA = H.ConstructEAWavefunction(PackH.unpack(&(EVectors[Index])));
+               std::vector<WavefunctionSectionLeft> WindowVec = H.ConstructWindowVec(PackH.unpack(&(EVectors[Index])));
+               EAWavefunction PsiEA(PsiLeftOriginal, WindowVec, PsiRightOriginal, Q, I, 0, Rotate, H.ExpIK);
 
                if (Streaming)
                {
@@ -302,6 +314,7 @@ int main(int argc, char** argv)
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
                Wavefunction.Attributes()["ExcitationEnergy"] = std::real(*E) + Settings.Alpha;
+               Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
                std::string FName = OutputPrefix;
                if (vm.count("ky") == 0)

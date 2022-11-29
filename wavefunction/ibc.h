@@ -39,8 +39,8 @@
 // with diagonal Lambda matrices on both boundaries.  Beyond these boundaries, there is necessarily
 // a unitary matrix to connect this to the basis of the semi-infinite strips.
 
-#if !defined(MPTOOLKIT_WAVFUNCTION_IBC_H)
-#define MPTOOLKIT_WAVFUNCTION_IBC_H
+#if !defined(MPTOOLKIT_WAVEFUNCTION_IBC_H)
+#define MPTOOLKIT_WAVEFUNCTION_IBC_H
 
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"
@@ -125,8 +125,8 @@ class IBCWavefunction
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                       WavefunctionSectionLeft const& Window_,
                       InfiniteWavefunctionRight const& Right_,
-                      std::string LeftFilename,
-                      std::string RightFilename,
+                      QuantumNumber LeftQShift_,
+                      QuantumNumber RightQShift_,
                       int Offset = 0,
                       int WindowLeft = 0,
                       int WindowRight = 0);
@@ -148,6 +148,9 @@ class IBCWavefunction
       InfiniteWavefunctionLeft const& left() const { return Left; }
       WavefunctionSectionLeft const& window() const { return Window; }
       InfiniteWavefunctionRight const& right() const { return Right; }
+
+      QuantumNumber const left_qshift() const { return LeftQShift; }
+      QuantumNumber const right_qshift() const { return RightQShift; }
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -177,6 +180,11 @@ class IBCWavefunction
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;
+
+      // If we need to shift the left and right boundaries, we save the qshift
+      // separately so we can keep the boundary wavefunctions read-only.
+      QuantumNumber LeftQShift;
+      QuantumNumber RightQShift;
 
       friend void inplace_reflect(IBCWavefunction& Psi);
       friend void inplace_conj(IBCWavefunction& Psi);

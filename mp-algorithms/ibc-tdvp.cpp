@@ -27,13 +27,14 @@
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
    : TDVP(Ham_, Settings_),
    GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), LambdaTol(Settings_.LambdaTol),
-   UCExpand(Settings_.UCExpand), NExpand(Settings_.NExpand), Comoving(Settings_.Comoving)
+   UCExpand(Settings_.UCExpand), NExpand(Settings_.NExpand), Comoving(Settings_.Comoving),
+   PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
    // We do not (currently) support time dependent Hamiltonians.
    CHECK(Ham.is_time_dependent() == false);
 
-   PsiLeft = Psi_.left();
-   PsiRight = Psi_.right();
+   LeftQShift = Psi_.left_qshift();
+   RightQShift = Psi_.right_qshift();
    WindowLeftSites = Psi_.window_left_sites();
    WindowRightSites = Psi_.window_right_sites();
 
@@ -56,6 +57,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    StateComponent BlockHamL = Initial_E(HamiltonianLeft, PsiLeft.Basis1());
    std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamiltonianLeft,
                                                               GMRESTol, Verbose-1);
+
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
@@ -81,6 +83,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
    BlockHamL.back() -= BondEnergy * BlockHamL.front();
 
+   // After calculating the bond energy, we apply the left qshift to the E matrix.
+   BlockHamL = delta_shift(BlockHamL, LeftQShift);
+
    // Calculate the left Hamiltonian environments for each position in the unit cell.
    HamLeftUC.push_back(BlockHamL);
 
@@ -88,8 +93,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    CLeft = PsiLeft.begin();
    while (CLeft != PsiLeft.end())
    {
-      HamLeftUC.push_back(contract_from_left(*HLeft, herm(*CLeft), HamLeftUC.back(), *CLeft));
-      MaxStates = std::max(MaxStates, (*CLeft).Basis2().total_dimension());
+      StateComponent CShift = delta_shift(*CLeft, LeftQShift);
+      HamLeftUC.push_back(contract_from_left(*HLeft, herm(CShift), HamLeftUC.back(), CShift));
+      MaxStates = std::max(MaxStates, CShift.Basis2().total_dimension());
       ++HLeft, ++CLeft;
    }
 
@@ -100,6 +106,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 
+   BlockHamR = delta_shift(BlockHamR, RightQShift);
+
    // Calculate the right Hamiltonian environments for each position in the unit cell.
    HamRightUC.push_front(BlockHamR);
 
@@ -108,8 +116,9 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    while (CRight != PsiRight.begin())
    {
       --HRight, --CRight;
-      HamRightUC.push_front(contract_from_right(herm(*HRight), *CRight, HamRightUC.front(), herm(*CRight)));
-      MaxStates = std::max(MaxStates, (*CRight).Basis1().total_dimension());
+      StateComponent CShift = delta_shift(*CRight, RightQShift);
+      HamRightUC.push_front(contract_from_right(herm(*HRight), CShift, HamRightUC.front(), herm(CShift)));
+      MaxStates = std::max(MaxStates, CShift.Basis1().total_dimension());
    }
 
    // Initialize the boundaries for the window Hamiltonian environment.
@@ -278,17 +287,19 @@ IBC_TDVP::Wavefunction() const
    MatrixOperator I = MatrixOperator::make_identity(Psi.Basis2());
    WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(Psi), I, Verbose-1);
 
-   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, Offset, WindowLeftSites, WindowRightSites);
+   return IBCWavefunction(PsiLeft, PsiWindow, PsiRight, LeftQShift, RightQShift, Offset, WindowLeftSites, WindowRightSites);
 }
 
 void
 IBC_TDVP::ExpandWindowLeftUC()
 {
    // Add the unit cell to the window.
-   LinearWavefunction PsiCell;
-   std::tie(PsiCell, std::ignore) = get_left_canonical(PsiLeft);
-
-   Psi.push_front(PsiCell);
+   auto CAdd = PsiLeft.end();
+   while (CAdd != PsiLeft.begin())
+   {
+      --CAdd;
+      Psi.push_front(delta_shift(*CAdd, LeftQShift));
+   }
 
    // Change the leftmost index.
    Offset -= PsiLeft.size();
@@ -312,7 +323,7 @@ IBC_TDVP::ExpandWindowLeftUC()
       ++C, ++H;
 
    // Shift the quantum number of the boundary unit cell.
-   inplace_qshift(PsiLeft, PsiLeft.qshift());
+   LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
 
    for (StateComponent& I : HamLeftUC)
       I = delta_shift(I, PsiLeft.qshift());
@@ -322,10 +333,12 @@ void
 IBC_TDVP::ExpandWindowRightUC()
 {
    // Add the unit cell to the window.
-   LinearWavefunction PsiCell;
-   std::tie(std::ignore, PsiCell) = get_right_canonical(PsiRight);
-
-   Psi.push_back(PsiCell);
+   auto CAdd = PsiRight.begin();
+   while (CAdd != PsiRight.end())
+   {
+      Psi.push_back(delta_shift(*CAdd, RightQShift));
+      ++CAdd;
+   }
 
    // Change the rightmost index.
    RightStop += PsiRight.size();
@@ -349,7 +362,7 @@ IBC_TDVP::ExpandWindowRightUC()
       --C, --H;
 
    // Shift the quantum number of the boundary unit cell.
-   inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+   RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
 
    for (StateComponent& I : HamRightUC)
       I = delta_shift(I, adjoint(PsiRight.qshift()));
@@ -361,7 +374,7 @@ IBC_TDVP::ExpandWindowLeftSite()
    --HLeft, --CLeft, --HamLeft;
 
    // Add the site to the window.
-   Psi.push_front(*CLeft);
+   Psi.push_front(delta_shift(*CLeft, LeftQShift));
 
    --Offset;
    if (Comoving == 0)
@@ -386,7 +399,7 @@ IBC_TDVP::ExpandWindowLeftSite()
    if (CLeft == PsiLeft.begin())
    {
       // Shift the quantum number of the boundary unit cell.
-      inplace_qshift(PsiLeft, PsiLeft.qshift());
+      LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
 
       for (StateComponent& I : HamLeftUC)
          I = delta_shift(I, PsiLeft.qshift());
@@ -404,7 +417,7 @@ void
 IBC_TDVP::ExpandWindowRightSite()
 {
    // Add the site to the window.
-   Psi.push_back(*CRight);
+   Psi.push_back(delta_shift(*CRight, RightQShift));
 
    ++RightStop;
    if (Comoving != 0)
@@ -430,7 +443,7 @@ IBC_TDVP::ExpandWindowRightSite()
    if (CRight == PsiRight.end())
    {
       // Shift the quantum number of the boundary unit cell.
-      inplace_qshift(PsiRight, adjoint(PsiRight.qshift()));
+      RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
 
       for (StateComponent& I : HamRightUC)
          I = delta_shift(I, adjoint(PsiRight.qshift()));
@@ -470,6 +483,7 @@ IBC_TDVP::CalculateFidelityLossLeft()
       CL = delta_shift(PsiLeft[0], adjoint(PsiLeft.qshift()));
    else
       CL = *CLeft;
+   CL = delta_shift(CL, LeftQShift);
 
    return 1.0 - norm_frob_sq(scalar_prod(herm(CL), *C));
 }
@@ -486,6 +500,7 @@ IBC_TDVP::CalculateFidelityLossRight()
       CR = *CRight;
       ++CRight;
    }
+   CR = delta_shift(CR, RightQShift);
 
    return 1.0 - norm_frob_sq(scalar_prod(*C, herm(CR)));
 }
@@ -505,6 +520,7 @@ IBC_TDVP::CalculateLambdaDiffLeft()
    MatrixOperator LambdaL = (U*D)*herm(U);
 
    MatrixOperator LambdaLeft = PsiLeft.lambda(PsiLeft.size() - WindowLeftSites);
+   LambdaLeft = delta_shift(LambdaLeft, LeftQShift);
 
    return norm_frob_sq(LambdaL - LambdaLeft);
 }
@@ -524,6 +540,7 @@ IBC_TDVP::CalculateLambdaDiffRight()
    MatrixOperator LambdaR = herm(Vh)*(D*Vh);
 
    MatrixOperator LambdaRight = PsiRight.lambda(WindowRightSites);
+   LambdaRight = delta_shift(LambdaRight, RightQShift);
 
    return norm_frob_sq(LambdaR - LambdaRight);
 }

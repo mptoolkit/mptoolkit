@@ -63,7 +63,7 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
 // The string operator could have a unit cell that divides the wavefunction unit cell.
 // The eigenvectors are normalized such that inner_prod(Left, delta_shift(Right, QShift)) = 1
 // The returned left eigenvector is in the Basis1() of Psi1/Psi2.
-// The returned left eigenvector is in the Basis2() of Psi1/Psi2.
+// The returned right eigenvector is in the Basis2() of Psi1/Psi2.
 std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
 get_transfer_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                        ProductMPO const& StringOp,

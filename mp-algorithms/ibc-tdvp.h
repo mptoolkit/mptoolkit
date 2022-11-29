@@ -89,8 +89,10 @@ class IBC_TDVP : public TDVP
       int NExpand;
       int Comoving;
 
-      InfiniteWavefunctionLeft PsiLeft;
-      InfiniteWavefunctionRight PsiRight;
+      const InfiniteWavefunctionLeft PsiLeft;
+      const InfiniteWavefunctionRight PsiRight;
+      QuantumNumber LeftQShift;
+      QuantumNumber RightQShift;
       BasicTriangularMPO HamiltonianWindow;
       BasicTriangularMPO HamiltonianLeft;
       BasicTriangularMPO HamiltonianRight;

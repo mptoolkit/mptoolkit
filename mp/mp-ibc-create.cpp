@@ -89,20 +89,27 @@ int main(int argc, char** argv)
          PANIC("FIXME: currently the window size must be a multiple of the wavefunction unit cell.");
       }
 
+      InfiniteWavefunctionLeft PsiShift = Psi;
+      for (int i = 0; i < WindowSize / Psi.size(); ++i)
+         inplace_qshift(PsiShift, adjoint(Psi.qshift()));
+
       WavefunctionSectionLeft Window;
       if (WindowSize == 0)
          Window = WavefunctionSectionLeft(Psi.lambda_r());
       else
-         Window = WavefunctionSectionLeft(repeat(Psi, WindowSize / Psi.size()));
+         Window = WavefunctionSectionLeft(repeat(PsiShift, WindowSize / Psi.size()));
+
+      inplace_qshift(PsiShift, adjoint(Psi.qshift()));
+
 #if 0
-      InfiniteWavefunctionRight Right(Psi);
+      InfiniteWavefunctionRight Right(PsiShift);
 #else
       // This version works around the change in basis at the unit cell edge
       // when transforming to right canonical form.
       MatrixOperator U;
       RealDiagonalOperator D;
       LinearWavefunction RightLinear;
-      std::tie(U, D, RightLinear) = get_right_canonical(Psi);
+      std::tie(U, D, RightLinear) = get_right_canonical(PsiShift);
 
       MatrixOperator UEdge;
       InfiniteWavefunctionRight Right(U*D, RightLinear, Psi.qshift(), UEdge);

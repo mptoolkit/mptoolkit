@@ -50,8 +50,7 @@ struct HEff
    HEff() {}
 
    HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, QuantumNumbers::QuantumNumber const& Q_,
-        EASettings const& Settings_);
+        BasicTriangularMPO const& HamMPO_, EASettings const& Settings_);
 
    // Apply the effective Hamiltonian to XDeque.
    std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque) const;
@@ -79,13 +78,12 @@ struct HEff
    // Update the value of ky.
    void SetKY(double k);
 
-   // Construct an EAWavefunction for the supplied X-matrices.
-   EAWavefunction ConstructEAWavefunction(std::deque<MatrixOperator> XDeque) const;
+   // Construct a vector of windows for the supplied X-matrices.
+   std::vector<WavefunctionSectionLeft> ConstructWindowVec(std::deque<MatrixOperator> XDeque) const;
 
    InfiniteWavefunctionLeft PsiLeft;
    InfiniteWavefunctionRight PsiRight;
    BasicTriangularMPO HamMPO;
-   QuantumNumbers::QuantumNumber Q;
    ProductMPO StringOp;
    double GMRESTol;
    int Verbose;

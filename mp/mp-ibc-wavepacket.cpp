@@ -41,7 +41,7 @@ double
 WrappedGaussian(double x, double mu, double sigma)
 {
 #if BOOST_VERSION >= 107500
-   return 1.0/(2.0*math_const::pi)*boost::math::jacobi_theta3tau(0.5*(math_const::pi*(x-mu)),(0.5*std::pow(sigma,2))/math_const::pi);
+   return 1.0/(2.0*math_const::pi) * boost::math::jacobi_theta3tau(0.5*(x-mu), (0.5*std::pow(sigma,2))/math_const::pi);
 #else
    // jacobi_theta.hpp is not in versions of Boost before 1.75, so we perform
    // the sum until machine epsilon is reached, which will not be very
@@ -53,7 +53,8 @@ WrappedGaussian(double x, double mu, double sigma)
 
    double Result = 0;
    for (int j = -JMax; j <= JMax; ++j)
-      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma*std::exp(-1.0/2.0/std::pow(sigma, 2)*(std::pow(math_const::pi*(std::fmod(x-mu+1.0,2.0)-1.0+2.0*j),2)));
+      Result += 1.0/std::sqrt(2.0*math_const::pi)/sigma
+         * std::exp(-1.0/2.0/std::pow(sigma,2) * std::pow(std::fmod(x-mu+math_const::pi,2.0*math_const::pi)+(-1.0+2.0*j)*math_const::pi, 2));
 
    return Result;
 #endif
@@ -98,14 +99,16 @@ LinearWavefunction
 ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight PsiRight,
                    std::vector<std::vector<StateComponent>> const& WPVec)
 {
-   int UCSize = WPVec.front().size(); // The GS wavefunction unit cell size.
-   int WindowSize = WPVec.size(); // In terms of unit cells.
+   int UCSize = WPVec.size(); // The GS wavefunction unit cell size.
+   int WindowSize = WPVec.front().size(); // In terms of unit cells.
 
-   std::vector<LinearWavefunction> PsiWindowVec(UCSize);
+   std::vector<LinearWavefunction> PsiWindowVec(WindowSize);
 
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
    std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(PsiLeft);
    std::tie(std::ignore, PsiLinearRight) = get_right_canonical(PsiRight);
+
+   QuantumNumber QShift(PsiLeft.GetSymmetryList());
 
    // Just in case we somehow have a single site window.
    if (UCSize == 1 && WindowSize == 1)
@@ -124,6 +127,8 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
       PsiWindow->push_back(tensor_row_sum(*CL, *WP, NewBasisFront));
       ++WP, ++PsiWindow;
 
+      QShift = delta_shift(QShift, adjoint(PsiLeft.qshift()));
+
       // Handle all of the middle sites: these are of the form
       // (A B)
       // (0 C)
@@ -131,22 +136,31 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
       {
          if (WP == WPCell->end())
          {
+            QShift = QuantumNumber(PsiLeft.GetSymmetryList());
             ++WPCell, ++CL, ++CR;
             WP = WPCell->begin();
             PsiWindow = PsiWindowVec.begin();
          }
-         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*WP).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-         PsiWindow->push_back(tensor_col_sum(tensor_row_sum(*CL, *WP, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+         StateComponent CLShift = delta_shift(*CL, QShift);
+         StateComponent WPShift = delta_shift(*WP, QShift);
+         StateComponent CRShift = delta_shift(*CR, QShift);
+
+         StateComponent Z = StateComponent(CLShift.LocalBasis(), CRShift.Basis1(), CLShift.Basis2());
+         SumBasis<VectorBasis> NewBasis1(CLShift.Basis2(), WPShift.Basis2());
+         SumBasis<VectorBasis> NewBasis2(CLShift.Basis1(), CRShift.Basis1());
+         PsiWindow->push_back(tensor_col_sum(tensor_row_sum(CLShift, WPShift, NewBasis1), tensor_row_sum(Z, CRShift, NewBasis1), NewBasis2));
+
          ++WP, ++PsiWindow;
+         QShift = delta_shift(QShift, adjoint(PsiLeft.qshift()));
       }
 
       // Handle the last site separately: this is of the form
       // (B)
       // (C)
-      SumBasis<VectorBasis> NewBasisBack((*WP).Basis1(), (*CR).Basis1());
-      PsiWindow->push_back(tensor_col_sum(*WP, *CR, NewBasisBack));
+      StateComponent CRShift = delta_shift(*CR, QShift);
+      StateComponent WPShift = delta_shift(*WP, QShift);
+      SumBasis<VectorBasis> NewBasisBack(WPShift.Basis1(), CRShift.Basis1());
+      PsiWindow->push_back(tensor_col_sum(WPShift, CRShift, NewBasisBack));
    }
 
    // Concatenate PsiWindowVec.
@@ -178,7 +192,7 @@ CalculateNLambda(std::vector<std::vector<std::vector<std::complex<double>>>> con
          {
             std::complex<double> Coeff = 0.0;
             // If LambdaY < m % LatticeUCSize < LatticeUCSize - LambdaY,
-            // calculate the contriution for all x, otherwise, only use the
+            // calculate the contribution for all x, otherwise, only use the
             // contribution from Lambda < x < N - Lambda.
             if ((m % LatticeUCSize) > LambdaY && (m % LatticeUCSize) < LatticeUCSize - LambdaY)
                for (int j = 0; j < N; ++j)
@@ -258,21 +272,21 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (divided by pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (divided by pi)", KMin).c_str())
+         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
+         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to use [required]")
-         ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (divided by pi)", KYMax).c_str())
-         ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (divided by pi)", KYMin).c_str())
+         ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (in units of pi)", KYMax).c_str())
+         ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (in units of pi)", KYMin).c_str())
          ("kynum", prog_opt::value(&KYNum), "Number of y-momentum steps to use")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Size of lattice unit cell")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
-         ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width")
-         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian", KCenter).c_str())
-         ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width")
-         ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian", KCenter).c_str())
+         ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width (in units of pi)")
+         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
+         ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width (in units of pi)")
+         ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", Tol).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -316,9 +330,10 @@ int main(int argc, char** argv)
 
       // Load first wavefunction: we do this to get the left and right
       // boundaries and the unit cell size.
-      InfiniteWavefunctionLeft PsiLeft;
-      InfiniteWavefunctionRight PsiRight;
-      int UCSize;
+      InfiniteWavefunctionLeft PsiLeft, PsiLeftOriginal;
+      InfiniteWavefunctionRight PsiRight, PsiRightOriginal;
+      QuantumNumber LeftQShift, RightQShift;
+      int LeftIndex, RightIndex, UCSize;
       {
          std::string InputFilename = InputPrefix;
          if (vm.count("kynum") == 0)
@@ -335,12 +350,26 @@ int main(int argc, char** argv)
          LeftBoundaryFilename = Psi.get_left_filename();
          RightBoundaryFilename = Psi.get_right_filename();
 
+         PsiLeftOriginal = Psi.left();
+         PsiRightOriginal = Psi.right();
+         LeftQShift = Psi.left_qshift();
+         RightQShift = Psi.right_qshift();
+         LeftIndex = Psi.left_index();
+         RightIndex = Psi.right_index();
+
          PsiLeft = Psi.left();
+         inplace_qshift(PsiLeft, Psi.left_qshift());
+         PsiLeft.rotate_left(Psi.left_index());
+
          PsiRight = Psi.right();
+         inplace_qshift(PsiRight, Psi.right_qshift());
+         PsiRight.rotate_left(Psi.right_index());
+
          UCSize = PsiLeft.size();
 
          CHECK(PsiRight.size() == UCSize);
          CHECK(Psi.window_vec().size() == UCSize);
+         CHECK(PsiLeft.qshift() == PsiRight.qshift());
       }
 
       // A vector for each position at the unit cell, which contains a vector
@@ -433,16 +462,16 @@ int main(int argc, char** argv)
 
       // The number of Fourier modes in our momentum space (note that this does
       // not match KNum since we may have missing parts of the spectrum).
-      int N = std::round(2.0/KStep);
-      if (N*KStep/2.0 - 1.0 > std::numeric_limits<double>::epsilon())
-         std::cerr << "WARNING: 2/KStep=" << 2.0/KStep << " is noninteger! Trying N=" << N << std::endl;
+      int N = std::round(2.0/KStep * LatticeUCSize/UCSize);
+      if (std::abs(N*KStep/2.0 * UCSize/LatticeUCSize - 1.0) > 0.0)
+         std::cerr << "WARNING: Number of Fourier modes " << 2.0/KStep * LatticeUCSize/UCSize << " is noninteger! Trying N=" << N << std::endl;
 
       int NY;
       if (vm.count("kynum"))
       {
          NY = std::round(2.0/KYStep);
-         if (NY*KYStep/2.0 - 1.0 > std::numeric_limits<double>::epsilon())
-            std::cerr << "WARNING: 2/KYStep=" << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
+         if (std::abs(NY*KYStep/2.0 - 1.0) > 0.0)
+            std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
          if (NY < 4)
          {
             std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
@@ -452,7 +481,6 @@ int main(int argc, char** argv)
       else
          // This makes it such that each Lambda is calculated once.
          NY = 4;
-
 
       std::vector<std::complex<double>> FVec;
       std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
@@ -511,7 +539,7 @@ int main(int argc, char** argv)
             // Since we have a periodic domain in momentum space, we cannot
             // just use a normal Gaussian, so we use the "wrapped Gaussian",
             // which is defined on a periodic domain.
-            *F *= WrappedGaussian(*K, KCenter, Sigma);
+            *F *= WrappedGaussian(math_const::pi*(*K), math_const::pi*KCenter, math_const::pi*Sigma);
             ++K, ++F;
          }
       }
@@ -525,7 +553,7 @@ int main(int argc, char** argv)
          auto F = FVec.begin();
          while (KY != KYVec.end())
          {
-            *F *= WrappedGaussian(*KY, KYCenter, SigmaY);
+            *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
             ++KY, ++F;
          }
       }
@@ -569,7 +597,13 @@ int main(int argc, char** argv)
       if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
 
-      IBCWavefunction PsiOut(PsiLeft, PsiWindow, PsiRight, -Lambda*UCSize);
+      LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
+
+      for (int i = 0; i < WPVec.front().size(); ++i)
+         RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
+
+      IBCWavefunction PsiOut(PsiLeftOriginal, PsiWindow, PsiRightOriginal, LeftQShift, RightQShift, -Lambda*UCSize,
+                             (PsiLeft.size() - LeftIndex) % PsiLeft.size(), RightIndex);
 
       // Stream the boundaries, if the input files do.
       PsiOut.set_left_filename(LeftBoundaryFilename);
