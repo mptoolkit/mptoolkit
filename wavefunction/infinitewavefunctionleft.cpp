@@ -713,6 +713,7 @@ void inplace_reflect(InfiniteWavefunctionLeft& Psi)
 
    Result.setBasis1(Result[0].Basis1());
    Result.setBasis2(Result[Size-1].Basis2());
+   Result.LogAmplitude = Psi.LogAmplitude;
 #else
    // old code that used the D basis (and hence introduces a gauge transformation)
    Result.set_lambda(0, delta_shift(flip_conj(D), Psi.qshift()));
