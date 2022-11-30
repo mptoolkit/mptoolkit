@@ -139,13 +139,14 @@ int main(int argc, char** argv)
 
       if (AssumeOrthogonal)
       {
-         MatrixOperator Rho = Psi.lambda_r();
-         Rho = scalar_prod(herm(Rho), Rho);
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Rho, Psi.qshift(), Verbose);
+         RealDiagonalOperator Lambda = Psi.lambda_r();
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Psi.qshift(), Lambda, Psi.log_amplitude(), Verbose);
       }
       else
       {
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Verbose);
+         RealDiagonalOperator Lambda = Psi.lambda_r();
+         MatrixOperator Rho = Lambda*Lambda;
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Rho, Psi.log_amplitude(), Verbose);
       }
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

@@ -4,7 +4,7 @@
 //
 // mp/copyright.cpp
 //
-// Copyright (C) 2002-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2002-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
-      "Copyright (C) Ian McCulloch 1999-2020\n"
+      "Copyright (C) Ian McCulloch 1999-2022\n"
       "Contact: " PACKAGE_BUGREPORT "\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"

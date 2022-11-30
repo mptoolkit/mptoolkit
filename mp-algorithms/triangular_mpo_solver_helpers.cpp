@@ -21,7 +21,7 @@
 
 // maximum number of iterations used in GMRES.  In some cases of slow convergence
 // it is necessary to increase this.
-int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 50000);
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
@@ -229,8 +229,6 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
                      Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
-
-         DEBUG_TRACE(m)(norm_frob(E[m]))(inner_prod(E[m], Rho));
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())

@@ -39,32 +39,62 @@ inline std::string ToStr(WhichEigenvalues w)
       case WhichEigenvalues::SmallestAlgebraic : return "SA";
       case WhichEigenvalues::BothEnds : return "BE";
    }
-   return "";
+   return "(unknown)";
 }
 
-inline bool Compare(WhichEigenvalues w, std::complex<double> a, std::complex<double> b)
+struct CompareEigenvalues
 {
-   switch (w)
+   CompareEigenvalues(WhichEigenvalues w_) : w(w_) {}
+
+   template <typename T>
+   bool operator()(T a, T b)
    {
-      case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
-      case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
-      case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
-      case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
-      case WhichEigenvalues::LargestImag : return std::imag(a) > std::imag(b);
-      case WhichEigenvalues::SmallestImag : return std::imag(a) < std::imag(b);
-      case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
-      case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
-      case WhichEigenvalues::BothEnds : return false; // Do not sort.
+      switch (w)
+      {
+         case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
+         case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
+         case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
+         case WhichEigenvalues::LargestImag : return false;
+         case WhichEigenvalues::SmallestImag : return false;
+         case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
+         case WhichEigenvalues::BothEnds : return a < b;
+      }
+      return false;
    }
-   return false;
-}
+
+   template <typename T>
+   bool operator()(std::complex<T> a, std::complex<T> b)
+   {
+      switch (w)
+      {
+         case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
+         case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
+         case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
+         case WhichEigenvalues::LargestImag : return std::imag(a) > std::imag(b);
+         case WhichEigenvalues::SmallestImag : return std::imag(a) < std::imag(b);
+         case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
+         case WhichEigenvalues::BothEnds : PANIC("undefined"); return false;
+      }
+      PANIC("invalid");
+      return false;
+   }
+
+   WhichEigenvalues w;
+};
 
 template <typename MultFunc>
 Vector<std::complex<double>>
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol,
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, std::complex<double> const* InitialGuess, double tol,
                   std::vector<std::complex<double>>* OutputVectors,
                   int ncv, bool Sort, int Verbose)
 {
+   std::set<WhichEigenvalues> ValidEigenvaluesComplex = { WhichEigenvalues::LargestMagnitude, WhichEigenvalues::SmallestMagnitude, WhichEigenvalues::LargestReal, WhichEigenvalues::SmallestReal, WhichEigenvalues::LargestImag, WhichEigenvalues::SmallestImag };
+
+   CHECK(ValidEigenvaluesComplex.count(which))("Invalid eigenvalue selection for DiagonalizeARPACK<complex>()");
    if (Verbose >= 1)
    {
       std::cerr << "Total dimension = " << n << std::endl;
@@ -119,9 +149,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       char bmat = 'I'; // standard eigenvalue problem
       std::string w = ToStr(which);
       int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-      std::vector<std::complex<double> > resid(n);  // residual
+      std::vector<std::complex<double>> resid(n);  // residual
       ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
+      std::vector<std::complex<double>> v(n*ncv);   // arnoldi vectors
       int const ldv = n;
       ARPACK::iparam_t iparam;
       iparam.ishift = 1;      // exact shifts
@@ -132,7 +162,11 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
       int const lworkl = 3*ncv*ncv + 5*ncv;
       std::vector<std::complex<double>> workl(lworkl);
       std::vector<double> rwork(ncv);
-      int info = 0;  // no initial residual
+      if (InitialGuess)
+      {
+         std::copy(InitialGuess, InitialGuess+n, resid.data());
+      }
+      int info = InitialGuess ? 1 : 0;  // this is the indicator whether to use the initial residual, or create one randomly
 
       if (Verbose >= 1)
       {
@@ -170,6 +204,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
             // info == -9 indicates that the starting vector is zero.  Since we have already done a matrix-vector
             // multiply, the only way this can happen is if the matrix itself is zero.  Hence we know what the
             // eigenvalues are.
+            if (Verbose >= 1)
+            {
+               std::cerr << "ARPACK early return; matrix is zero.\n";
+            }
             Result = LinearAlgebra::Vector<std::complex<double>>(nev, std::complex<double>(0.0, 0.0));
             if (OutputVectors)
             {
@@ -222,12 +260,13 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, do
 
    if (Sort)
    {
+      CompareEigenvalues C(which);
       // a simple exchange sort
       for (unsigned i = 0; i < Result.size()-1; ++i)
       {
          for (unsigned j = i+1; j < Result.size(); ++j)
          {
-            if (Compare(which, Result[j], Result[i]))
+            if (C(Result[j], Result[i]))
             {
                std::swap(Result[i], Result[j]);
                if (OutputVectors)

@@ -102,6 +102,7 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
+// **DEPRECATED**
 template <typename T>
 std::complex<double>
 FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)

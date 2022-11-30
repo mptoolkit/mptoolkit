@@ -62,6 +62,7 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
+         ("H_chi", "background field")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -83,15 +84,18 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO t, m;
+      UnitCellMPO t, m, chi;
 
       t += Sp(0)[1] * dot(CH(0)[0], C(0)[2]) + Sm(0)[1] * dot(CH(0)[2], C(0)[0]);
       t += Sp(0)[3] * dot(CH(0)[2], C(1)[0]) + Sm(0)[3] * dot(CH(1)[0], C(0)[2]);
 
       m += N(0)[0] - N(0)[2];
 
+      chi += Sz(0)[1] + Sz(0)[3];
+
       Lattice["H_t"] = sum_unit(t);
       Lattice["H_m"] = sum_unit(m);
+      Lattice["H_chi"] = sum_unit(chi);
 
       // Gauss' law operators.
       UnitCellOperator G0(Cell, "G0"), G2(Cell, "G2");

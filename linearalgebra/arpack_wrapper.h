@@ -51,36 +51,21 @@ std::string ToStr(WhichEigenvalues);
 
 // For generic problems, WhichEigenvalues must be one of
 // LargestMagnitude, SmallestMagnitude, LargestReal, SmallestReal, LargestImag, SmallestImag
+// if InitialGuess is nullptr, then let ARPACK choose the initial residual randomly
 template <typename MultFunc>
 Vector<std::complex<double>>
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, double tol = 1e-10,
-                  std::vector<std::complex<double>>* OutputVectors = NULL,
-                  int ncv = 0, bool Sort = false, int Verbose = 0);
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, std::complex<double> const* InitialGuess, double tol = 1e-10, std::vector<std::complex<double>>* OutputVectors = NULL, int ncv = 0, bool Sort = false, int Verbose = 0);
 
-// For backwards compatibility, target the eigenvalues with the largest magnitude if unspecified.
+// Get the eigenvalues with the largest magnitude
 template <typename MultFunc>
 Vector<std::complex<double>>
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol = 1e-10,
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, std::complex<double> const* InitialGuess, double tol = 1e-10,
                   std::vector<std::complex<double>>* OutputVectors = NULL,
                   int ncv = 0, bool Sort = false, int Verbose = 0)
 {
-   return DiagonalizeARPACK(Mult, n, NumEigen, WhichEigenvalues::LargestMagnitude, tol,
+   return DiagonalizeARPACK(Mult, n, NumEigen, WhichEigenvalues::LargestMagnitude, InitialGuess, tol,
                   OutputVectors, ncv, Sort, Verbose);
 }
-
-// Match left and right eigenvectors to the correct complex eigenvalues.
-// This works by finding a pairing of numerically identical eigenvalues,
-// and re-ordering the output arrays so that the corresponding eigenvectors
-// are in the same array index.
-// If the eigenvalues differ in absolute magnitude by more than tol, then print a warning message to cerr.
-// TODO: this doesn't handle degeneracies properly.
-
-void
-MatchEigenvectors(int n,
-                  Vector<std::complex<double>>& LeftValues,
-                  std::vector<std::complex<double>>& LeftVectors,
-                  Vector<std::complex<double>>& RightValues,
-                  std::vector<std::complex<double>>& RightVextors, double tol = 1e-10);
 
 } // namespace LinearAlgebra
 
