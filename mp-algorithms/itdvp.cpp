@@ -415,13 +415,10 @@ iTDVP::CalculateEps()
    while (Site > LeftStop)
    {
       // Perform SVD to right-orthogonalize current site.
-      MatrixOperator M = ExpandBasis1(*C);
-      MatrixOperator U, Vh;
+      MatrixOperator U;
       RealDiagonalOperator D;
 
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *C = prod(Vh, *C);
+      std::tie(U, D) = OrthogonalizeBasis1(*C);
 
       // Update the effective Hamiltonian.
       HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
@@ -438,14 +435,8 @@ iTDVP::CalculateEps()
 
    {
       // Perform SVD to right-orthogonalize current site for NullSpace1.
-      MatrixOperator M = ExpandBasis1(*C);
-      MatrixOperator U, Vh;
-      RealDiagonalOperator D;
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      StateComponent CRightOrtho = prod(Vh, *C);
-      *C = prod(U*D*Vh, *C);
+      StateComponent CRightOrtho = *C;
+      OrthogonalizeBasis1(CRightOrtho);
 
       // Calculate the right half of epsilon_2 for the left end of the unit cell.
       Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
@@ -454,13 +445,10 @@ iTDVP::CalculateEps()
    while (Site < RightStop)
    {
       // Perform SVD to left-orthogonalize current site.
-      MatrixOperator M = ExpandBasis2(*C);
-      MatrixOperator U, Vh;
+      MatrixOperator Vh;
       RealDiagonalOperator D;
 
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *C = prod(*C, U);
+      std::tie(D, Vh) = OrthogonalizeBasis2(*C);
 
       // Calculate the left half of epsilon_2.
       X.push_back(contract_from_left(*H, herm(NullSpace2(*C)), HamL.back(), *C));
@@ -503,14 +491,13 @@ iTDVP::CalculateEps()
    E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 
    // Perform SVD to left-orthogonalize the rightmost site.
-   MatrixOperator M = ExpandBasis2(*C);
-   MatrixOperator U, Vh;
+   MatrixOperator Vh;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
+   std::tie(D, Vh) = OrthogonalizeBasis2(*C);
 
    // Ensure that the left and right bases of LambdaR are the same.
-   *C = prod(*C, U*Vh);
+   *C = prod(*C, Vh);
    LambdaR = herm(Vh)*(D*Vh);
 
    // Update left block Hamiltonian.

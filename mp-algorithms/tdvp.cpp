@@ -250,13 +250,10 @@ void
 TDVP::IterateLeft(std::complex<double> Tau)
 {
    // Perform SVD to right-orthogonalize current site.
-   MatrixOperator M = ExpandBasis1(*C);
-   MatrixOperator U, Vh;
+   MatrixOperator U;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
-
-   *C = prod(Vh, *C);
+   std::tie(U, D) = OrthogonalizeBasis1(*C);
 
    // Update the effective Hamiltonian.
    HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
@@ -291,13 +288,10 @@ void
 TDVP::IterateRight(std::complex<double> Tau)
 {
    // Perform SVD to left-orthogonalize current site.
-   MatrixOperator M = ExpandBasis2(*C);
-   MatrixOperator U, Vh;
+   MatrixOperator Vh;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
-
-   *C = prod(*C, U);
+   std::tie(D, Vh) = OrthogonalizeBasis2(*C);
 
    // Update the effective Hamiltonian.
    HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
@@ -386,14 +380,8 @@ TDVP::CalculateEps12()
    HamL.push_back(HamLBack);
 
    // Perform SVD to right-orthogonalize current site for NullSpace1.
-   MatrixOperator M = ExpandBasis1(*C);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   StateComponent CRightOrtho = prod(Vh, *C);
-   *C = prod(U*D*Vh, *C);
+   StateComponent CRightOrtho = *C;
+   OrthogonalizeBasis1(CRightOrtho);
 
    // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
    StateComponent Y = contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C));
@@ -481,14 +469,8 @@ TDVP::ExpandLeftBond()
    StateComponent NL = NullSpace2(*CNext);
 
    // Perform SVD to right-orthogonalize current site for NullSpace1.
-   MatrixOperator M = ExpandBasis1(*C);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   StateComponent CRightOrtho = prod(Vh, *C);
-   *C = prod(U*D*Vh, *C);
+   StateComponent CRightOrtho = *C;
+   OrthogonalizeBasis1(CRightOrtho);
 
    StateComponent NR = NullSpace1(CRightOrtho);
 
@@ -513,6 +495,8 @@ TDVP::ExpandLeftBond()
    else
       Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
 
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
 
    // Construct new basis.
@@ -806,8 +790,11 @@ TDVP::Evolve2()
       ++Gamma;
 
       this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      ++H;
-      HamR.pop_front();
+      if (Ham.is_time_dependent())
+      {
+         ++H;
+         HamR.pop_front();
+      }
 
       this->SweepRight2((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
@@ -836,14 +823,8 @@ TDVP::CalculateEps()
    int SiteLocal = RightStop;
 
    // Perform SVD to left-orthogonalize current site for NullSpace2.
-   MatrixOperator M = ExpandBasis2(*CLocal);
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-
-   SingularValueDecomposition(M, U, D, Vh);
-
-   StateComponent CLeftOrtho = prod(*CLocal, U);
-   *CLocal = prod(*CLocal, U*D*Vh);
+   StateComponent CLeftOrtho = *CLocal;
+   OrthogonalizeBasis2(CLeftOrtho);
 
    // Calculate error measure epsilon_1 and add to sum.
    StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(CLeftOrtho)), HamLLocal.back(), *CLocal);
@@ -861,11 +842,9 @@ TDVP::CalculateEps()
    while (SiteLocal > LeftStop)
    {
       // Perform SVD to right-orthogonalize current site.
-      M = ExpandBasis1(*CLocal);
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *CLocal = prod(Vh, *CLocal);
+      MatrixOperator U;
+      RealDiagonalOperator D;
+      std::tie(U, D) = OrthogonalizeBasis1(*CLocal);
 
       // Calculate the right half of epsilon_2 (see below).
       StateComponent Y = contract_from_right(herm(*HLocal), NullSpace1(*CLocal), HamRLocal.front(), herm(*CLocal));
@@ -883,12 +862,8 @@ TDVP::CalculateEps()
       HamLLocal.pop_back();
 
       // Perform SVD to left-orthogonalize current site for NullSpace2.
-      M = ExpandBasis2(*CLocal);
-
-      SingularValueDecomposition(M, U, D, Vh);
-
-      CLeftOrtho = prod(*CLocal, U);
-      *CLocal = prod(*CLocal, U*D*Vh);
+      CLeftOrtho = *CLocal;
+      OrthogonalizeBasis2(CLeftOrtho);
 
       // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
       StateComponent X = contract_from_left(*HLocal, herm(NullSpace2(CLeftOrtho)), HamLLocal.back(), *CLocal);
