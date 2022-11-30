@@ -34,12 +34,15 @@ int main(int argc, char** argv)
    {
       std::string FileName;
       int MaxN = DefaultMaxN;
+      bool QLM = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("NumBosons,N", prog_opt::value(&MaxN),
           FormatDefault("Maximum number of bosons per site", MaxN).c_str())
+         ("qlm", prog_opt::bool_switch(&QLM),
+          "include terms for the mapping of the QLM")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -54,9 +57,18 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) Bose-Hubbard model");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J"    , "nearest-neighbor hopping\n")
-         ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2\n")
-         ("H_V"    , "nearest-neighbour Coulomb repulsion\n")
+         ("H_J"    , "nearest-neighbor hopping")
+         ("H_Jm"   , "nearest-neighbor hopping in negative direction")
+         ("H_Jp"   , "nearest-neighbor hopping in positive direction")
+         ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2")
+         ("H_V"    , "nearest-neighbour Coulomb repulsion")
+         ("H_delta", "QLM gauge site potential", "QLM enabled",
+         [&QLM]()->bool{return QLM;})
+         ("H_V2g"  , "next-nearest-neighbour gauge site Coulomb repulsion", "QLM enabled",
+         [&QLM]()->bool{return QLM;})
+         ;
+      OpDescriptions.add_functions()
+         ("H_J"    , "nearest-neighbor complex hopping")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -75,8 +87,19 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
 
       Lattice["H_J"] = sum_unit(BH(0)*B(1) + B(0)*BH(1));
+
+      Lattice["H_Jm"] = sum_unit(BH(0)*B(1));
+      Lattice["H_Jp"] = sum_unit(B(0)*BH(1));
+      Lattice.func("H_J")(arg("theta")) = "exp(-i*theta)*H_Jm + exp(i*theta)*H_Jp";
+
       Lattice["H_U"] = sum_unit(0.5*N2(0));
       Lattice["H_V"] = sum_unit(N(0)*N(1));
+
+      if (QLM)
+      {
+         Lattice["H_delta"] = sum_unit(N(1), 2);
+         Lattice["H_V2g"] = sum_unit(N(1)*N(3), 2);
+      }
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

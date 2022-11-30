@@ -26,7 +26,7 @@ namespace Tensor
 {
 
 IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x)
+DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x)
 {
    typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
       TensorType;
@@ -51,7 +51,7 @@ DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, Vec
 
 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                      VectorBasis, VectorBasis>& x)
 {
    typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
@@ -69,7 +69,7 @@ DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
       IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
          M = triple_prod(U, x, herm(U));
       IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-         Result = DiagonalizeHermitian(M);
+         Result = DiagonalizeHermitianInPlace(M);
       x = triple_prod(herm(U), M, U);
       return triple_prod(herm(U), Result, U);
    }
@@ -86,6 +86,67 @@ DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    }
 
    return Result;
+}
+
+std::tuple<IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>,
+           IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>>
+DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> x)
+{
+   typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
+      TensorType;
+
+   DEBUG_CHECK(is_scalar(x.TransformsAs()));
+   DEBUG_CHECK_EQUAL(x.Basis1(), x.Basis2());
+   DEBUG_CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
+
+   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> EValues(x.Basis1(), x.Basis2());
+
+   for (iterator<TensorType>::type I = iterate(x); I; ++I)
+   {
+      for (inner_iterator<TensorType>::type J = iterate(I); J; ++J)
+      {
+         DEBUG_CHECK_EQUAL(J.index1(), J.index2());
+         LinearAlgebra::Vector<double> EVal = LinearAlgebra::DiagonalizeHermitian(*J);
+         EValues(J.index1(), J.index2()) = LinearAlgebra::diagonal_matrix(EVal);
+      }
+   }
+
+   return std::make_tuple(EValues, x);
+}
+
+std::tuple<IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>,
+           IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> x)
+{
+   DEBUG_CHECK(is_scalar(x.TransformsAs()));
+   DEBUG_CHECK_EQUAL(x.Basis1(), x.Basis2());
+   //DEBUG_CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
+
+   // handle the case of a non-regular basis
+   if (!is_regular_basis(x.Basis1()))
+   {
+      auto U = Regularize(x.Basis1());
+      x = triple_prod(U, x, herm(U));
+      auto Result = DiagonalizeHermitian(x);
+      std::get<1>(Result) = triple_prod(herm(U), std::get<1>(Result), U);
+      PANIC("Not implemented");
+      //std::get<0>(Result) = triple_prod(herm(U), std::get<0>(Result), U);
+      return Result;
+   }
+
+   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> EValues(x.Basis1(), x.Basis2());
+
+   for (auto I = iterate(x); I; ++I)
+   {
+      for (auto J = iterate(I); J; ++J)
+      {
+         DEBUG_CHECK_EQUAL(J.index1(), J.index2());
+         LinearAlgebra::Vector<double> EVal = LinearAlgebra::DiagonalizeHermitian(*J);
+         EValues(J.index1(), J.index2()).diagonal() = EVal;
+      }
+   }
+
+   return std::make_tuple(EValues, x);
 }
 
 LinearAlgebra::Vector<double>
@@ -758,30 +819,85 @@ InvertDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    return InvertDiagonal(Op, std::sqrt(std::numeric_limits<double>::epsilon()));
 }
 
-IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-SqrtDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-               VectorBasis, VectorBasis> const& Op, double Tol)
+// IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+// SqrtDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+//                VectorBasis, VectorBasis> const& Op, double Tol)
+// {
+//    IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+//       Result(Op.Basis2(), Op.Basis1());
+//
+//    for (unsigned i = 0; i < Op.Basis1().size(); ++i)
+//    {
+//       if (iterate_at(Op.data(), i, i))
+//       {
+//          Result(i,i) = LinearAlgebra::Matrix<double>(Op.Basis2().dim(i), Op.Basis1().dim(i), 0.0);
+//          for (int j = 0; j < std::min(Op.Basis1().dim(i), Op.Basis2().dim(i)); ++j)
+//          {
+//             std::complex<double> x = Op(i,i)(j,j);
+//             CHECK(LinearAlgebra::norm_frob(x.imag()) <= Tol);
+//             if (x.real() <= 0)
+//             {
+//                CHECK(norm_frob(x.real()) <= Tol)(x.real())(Tol)(Op);
+//                Result(i,i)(j,j) = 0.0;
+//             }
+//             else
+//                Result(i,i)(j,j) = std::sqrt(x.real());
+//          }
+//       }
+//       //TRACE(Result(i,i));
+//    }
+//
+//    return Result;
+// }
+
+IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double> >, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double> >,
+               VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol)
 {
-   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-      Result(Op.Basis2(), Op.Basis1());
+   IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double>>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+      Result(Op.Basis1(), Op.Basis2());
 
    for (unsigned i = 0; i < Op.Basis1().size(); ++i)
    {
-      if (iterate_at(Op.data(), i, i))
+      Result(i,i) = LinearAlgebra::DiagonalMatrix<double>(Op.Basis1().dim(i), Op.Basis2().dim(i), 0.0);
+      for (int j = 0; j < std::min(Op.Basis1().dim(i), Op.Basis2().dim(i)); ++j)
       {
-         Result(i,i) = LinearAlgebra::Matrix<double>(Op.Basis2().dim(i), Op.Basis1().dim(i), 0.0);
-         for (int j = 0; j < std::min(Op.Basis1().dim(i), Op.Basis2().dim(i)); ++j)
+         std::complex<double> x = Op(i,i)(j,j);
+         CHECK(LinearAlgebra::norm_frob(x.imag()) <= Tol);
+         if (x.real() <= 0)
          {
-            std::complex<double> x = Op(i,i)(j,j);
-            CHECK(LinearAlgebra::norm_frob(x.imag()) <= Tol);
-            if (x.real() <= 0)
-            {
-               CHECK(norm_frob(x.real()) <= Tol)(x.real())(Tol)(Op);
-               Result(i,i)(j,j) = 0.0;
-            }
-            else
-               Result(i,i)(j,j) = std::sqrt(x.real());
+            CHECK(norm_frob(x.real()) <= Tol)(x.real())(Tol)(Op);
+            Result(i,i)(j,j) = 0.0;
          }
+         else
+            Result(i,i)(j,j) = std::sqrt(x.real());
+      }
+      //TRACE(Result(i,i));
+   }
+
+   return Result;
+}
+
+IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
+               VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol)
+{
+   IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+      Result(Op.Basis1(), Op.Basis2());
+
+   for (unsigned i = 0; i < Op.Basis1().size(); ++i)
+   {
+      Result(i,i) = LinearAlgebra::DiagonalMatrix<double>(Op.Basis1().dim(i), Op.Basis2().dim(i), 0.0);
+      for (int j = 0; j < std::min(Op.Basis1().dim(i), Op.Basis2().dim(i)); ++j)
+      {
+         double x = Op(i,i)(j,j);
+         if (x <= 0)
+         {
+            CHECK(std::abs(x) <= Tol)(x)(Tol)(Op);
+            Result(i,i)(j,j) = 0.0;
+         }
+         else
+            Result(i,i)(j,j) = std::sqrt(x);
       }
       //TRACE(Result(i,i));
    }

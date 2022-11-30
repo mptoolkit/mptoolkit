@@ -1312,9 +1312,8 @@ int main(int argc, char** argv)
       if (StartFromFixedPoint)
       {
          LinearWavefunction PsiR;
-         MatrixOperator U;
          RealDiagonalOperator D;
-         std::tie(U, D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
+         std::tie(D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 
          //TRACE(norm_frob(delta_shift(R,QShift)*U - U*D));
 
@@ -1329,7 +1328,7 @@ int main(int argc, char** argv)
          L = triple_prod(U,L,herm(U));
          PsiR.set_front(prod(U, PsiR.get_front()));
 #else
-         PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+         //PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
 #endif
 
          BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
@@ -1363,7 +1362,8 @@ int main(int argc, char** argv)
          //TRACE(norm_frob(delta_shift(MatrixOperator(R),QShift) - triple_prod(U,L,herm(U))));
          //      TRACE(MatrixOperator(R) - triple_prod(U,L,herm(U)));
 
-#if 1
+#if 0
+         MatrixOperator U;
          U = delta_shift(U, adjoint(QShift));
          BlockHamR = prod(prod(U, BlockHamR), herm(U));
 
@@ -1469,7 +1469,7 @@ int main(int argc, char** argv)
 
       // finished the iterations.
       std::cout << "Orthogonalizing wavefunction...\n";
-      Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift, 0, Verbose);
+      Wavefunction.Wavefunction() = InfiniteWavefunctionLeft::Construct(idmrg.Wavefunction(), idmrg.QShift, 0, Verbose+1);
 
       std::cerr << "Orthogonalization finished.\n";
 

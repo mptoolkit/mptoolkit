@@ -36,29 +36,14 @@ class InfiniteWavefunctionLeft;
 class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 {
    public:
-      InfiniteWavefunctionRight() {}
+      InfiniteWavefunctionRight() = default;
+      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& x) = default;
+      InfiniteWavefunctionRight(InfiniteWavefunctionRight&& x) = default;
+      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight const& Psi) = default;
+      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight&& Psi) = default;
 
-      // construction from a LinearWavefunction (in right-canonical form with
-      // lambda matrix on the left)
-      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
-                                QuantumNumbers::QuantumNumber const& QShift_);
-
-      // version of the above which returns the matrix (U) transforming Basis2
-      // of the old wavefunction to the new one
-      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
-                                QuantumNumbers::QuantumNumber const& QShift_, MatrixOperator& U);
-
-      // constructs and canonicalizes the wavefunction
-      InfiniteWavefunctionRight(LinearWavefunction const& Psi,
-                                QuantumNumbers::QuantumNumber const& QShift_);
-
-      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& Psi)
-         : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
-
-      InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
-
-      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight const& Psi)
-      { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
+      // Construction from an InfiniteWavefunctionLeft
+      explicit InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
 
       QuantumNumber qshift() const { return QShift; }
 
@@ -69,9 +54,6 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // Rotates the wavefunction to the left, by taking the right-most site and moving
       // it to the left
       void rotate_right(int Count);
-
-      // returns the orthogonality fidelity.  Normally this should be epsilon
-      double orthogonality_fidelity() const;
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -89,7 +71,7 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      MatrixOperator Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
+      void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
 
       QuantumNumber QShift;
 

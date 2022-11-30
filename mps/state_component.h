@@ -527,6 +527,30 @@ StateComponent prod(MatrixOperator const& Op, StateComponent const& A);
 
 StateComponent prod(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A);
 
+inline
+StateComponent operator*(StateComponent const& A, MatrixOperator const& Op)
+{
+   return prod(A, Op);
+}
+
+inline
+StateComponent operator*(StateComponent const& A, HermitianProxy<MatrixOperator> const& Op)
+{
+   return prod(A, Op);
+}
+
+inline
+StateComponent operator*(MatrixOperator const& Op, StateComponent const& A)
+{
+   return prod(Op, A);
+}
+
+inline
+StateComponent operator*(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A)
+{
+   return prod(Op, A);
+}
+
 namespace LinearAlgebra
 {
 

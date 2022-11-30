@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// common/openmp.h
+// linearalgebra/vectortransform.h
 //
-// Copyright (C) 2017 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,19 +17,15 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(MPTOOLKIT_COMMON_OPENMP_THREAD_H)
-#define MPTOOLKIT_COMMON_OPENMP_THREAD_H
+#if !defined(MPTOOLKIT_LINEARALGEBRA_SIMDIAG_H)
+#define MPTOOLKIT_LINEARALGEBRA_SIMDIAG_H
 
-#include <omp.h>
-#include <string>
+#include "linearalgebra/matrix.h"
+#include <complex>
 
-namespace omp
-{
+// Algorithm to simultaneously diagonalize a set of Hermitian matrices
 
-void initialize(int Verbose = 0);
-
-int threads_to_use(int Request);
-
-} // namespace omp
+std::tuple<LinearAlgebra::Matrix<std::complex<double>>, std::vector<LinearAlgebra::Vector<double>>>
+SimultaneousDiagonalizeHermitian(std::vector<LinearAlgebra::Matrix<std::complex<double>>> M);
 
 #endif
