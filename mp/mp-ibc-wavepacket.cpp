@@ -527,6 +527,22 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      if (Verbose > 2)
+      {
+         // Print the F vector beforeconvolution.
+         std::cout << "Printing F before convolution..." << std::endl;
+         std::cout << "#kx ky F" << std::endl;
+         auto K = KVec.begin();
+         auto KY = KYVec.begin();
+         auto F = FVec.begin();
+         while (K != KVec.end())
+         {
+            std::cout << *K << " " << *KY << " "
+                      << formatting::format_complex(*F) << std::endl;
+            ++K, ++KY, ++F;
+         }
+      }
+
       // Convolute with momentum space Gaussian.
       if (Sigma != 0.0)
       {
@@ -555,6 +571,22 @@ int main(int argc, char** argv)
          {
             *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
             ++KY, ++F;
+         }
+      }
+
+      if (Verbose > 2)
+      {
+         // Print the F vector after convolution.
+         std::cout << "Printing F after convolution..." << std::endl;
+         std::cout << "#kx ky F" << std::endl;
+         auto K = KVec.begin();
+         auto KY = KYVec.begin();
+         auto F = FVec.begin();
+         while (K != KVec.end())
+         {
+            std::cout << *K << " " << *KY << " "
+                      << formatting::format_complex(*F) << std::endl;
+            ++K, ++KY, ++F;
          }
       }
 
