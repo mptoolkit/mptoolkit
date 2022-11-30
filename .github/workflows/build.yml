@@ -18,7 +18,7 @@ jobs:
        sudo apt-get -y update
        sudo apt-get -y install libboost-all-dev libarpack2-dev
     - name: configure
-      run: ./configure --with-openmp
+      run: CXXFLAGS=-O0 ./configure --with-openmp
     - name: make
       run: make
     - name: make models
