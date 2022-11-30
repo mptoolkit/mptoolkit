@@ -96,19 +96,13 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 
    // Calculate initial right Hamiltonian.
    LinearWavefunction PsiR;
-   MatrixOperator U;
    RealDiagonalOperator D;
-   std::tie(U, D, PsiR) = get_right_canonical(PsiCanonical);
-
-   PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
+   std::tie(D, PsiR) = get_right_canonical(PsiCanonical);
 
    BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
    Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(QShift));
    SolveHamiltonianMPO_Right(BlockHamR, PsiR, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
-
-   U = delta_shift(U, adjoint(QShift));
-   BlockHamR = prod(prod(U, BlockHamR), herm(U));
 
    HamR.push_front(BlockHamR);
    BlockHamR = delta_shift(BlockHamR, QShift);
