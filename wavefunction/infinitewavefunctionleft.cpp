@@ -50,7 +50,7 @@
 //      CanonicalWavefunctionBase (base class)
 //      QuantumNumber              QShift
 //
-// Version 3:
+// Version 3 adds:
 //      double                     Amplitude
 // Version 4:
 //      remove 'Amplitude', replace by
@@ -143,6 +143,7 @@ InfiniteWavefunctionLeft::InfiniteWavefunctionLeft(InfiniteWavefunctionRight con
    this->setBasis1(Psi.Basis1());
    this->setBasis2(Psi.Basis2());
    QShift = Psi.qshift();
+   LogAmplitude = Psi.log_amplitude();
 
    // place-holder for the edge Lambda matrix (although in principle it doesn't change)
    this->push_back_lambda(Psi.lambda(0));

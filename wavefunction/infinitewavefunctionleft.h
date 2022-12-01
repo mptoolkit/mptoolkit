@@ -164,8 +164,6 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
 // Multiplication by a scalar does the same as psi.scale(x)
 InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x);
 
-class InfiniteWavefunctionRight;
-
 // Convert an infinite wavefunction to left-orthogonal form.
 // This function leaves the left and right basis invariant.
 // Return value is the log amplitude from the transfer matrix eigenvalue, Result' = log(sqrt(evalue))
