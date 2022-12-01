@@ -109,7 +109,7 @@ int main(int argc, char** argv)
           "Use this string MPO representation for the cylinder translation operator")
 	 ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input wavefunctions")
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep")
-	 ("precision", prog_opt::value(&Digits), "Decimal precision in time value of the filenames")
+	 ("digits", prog_opt::value(&Digits), "Number of decimal places in the time value of the filenames")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps", N).c_str())
 	 ("xmin", prog_opt::value(&XMin), FormatDefault("Minimum value of x", XMin).c_str())
 	 ("xmax,x", prog_opt::value(&XMax), FormatDefault("Maximum value of x", XMax).c_str())
@@ -196,6 +196,12 @@ int main(int argc, char** argv)
          Psi1Ptr = pheap::OpenPersistent(InitialFilename, mp_pheap::CacheSize(), true);
       }
       IBCWavefunction Psi1 = Psi1Ptr->get<IBCWavefunction>();
+
+      if (!is_scalar(Psi1.left().qshift()) || !is_scalar(Psi1.right().qshift()))
+      {
+         std::cerr << "fatal: Cannot handle nontrivial qshifts on the boundaries." << std::endl;
+         return 1;
+      }
 
       // If UCSize is not specified, then we set it to the left boundary unit
       // cell size.
@@ -350,6 +356,7 @@ int main(int argc, char** argv)
             for (int x = XMin; x <= XMax; ++x)
             {
                IBCWavefunction Psi2Offset(Psi2.left(), Psi2.window(), Psi2.right(),
+                                          Psi2.left_qshift(), Psi2.right_qshift(),
                                           Psi2.window_offset() + x*UCSize,
                                           Psi2.window_left_sites(), Psi2.window_right_sites());
 

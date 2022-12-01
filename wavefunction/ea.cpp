@@ -216,6 +216,17 @@ PStream::ipstream& operator>>(PStream::ipstream& in, EAWavefunction& Psi)
    in >> Psi.ExpIK;
    in >> Psi.GSOverlap;
 
+   if (Version < 3)
+   {
+      Psi.LeftIndex = 0;
+      Psi.RightIndex = 0;
+
+      if (!Psi.left().empty())
+         Psi.LeftQShift = QuantumNumber(Psi.Left.GetSymmetryList());
+      if (!Psi.right().empty())
+         Psi.RightQShift = QuantumNumber(Psi.Right.GetSymmetryList());
+   }
+
    return in;
 }
 

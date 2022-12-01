@@ -353,6 +353,14 @@ PStream::ipstream& operator>>(PStream::ipstream& in, IBCWavefunction& Psi)
       PANIC("This program is too old to read this wavefunction, expected version <= 3")(Version);
    }
 
+   if (Version < 3)
+   {
+      if (!Psi.left().empty())
+         Psi.LeftQShift = QuantumNumber(Psi.Left.GetSymmetryList());
+      if (!Psi.right().empty())
+         Psi.RightQShift = QuantumNumber(Psi.Right.GetSymmetryList());
+   }
+
    return in;
 }
 
@@ -594,10 +602,14 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    inplace_qshift(Psi1Left, Psi1.left_qshift());
    for (int i = 0; i < (IndexLeft1 - IndexLeft) / LeftSize; ++i)
       inplace_qshift(Psi1Left, Psi1Left.qshift());
+   if (Psi1.window_left_sites() > 0)
+      inplace_qshift(Psi1Left, Psi1Left.qshift());
 
    InfiniteWavefunctionLeft Psi2Left = Psi2.left();
    inplace_qshift(Psi2Left, Psi2.left_qshift());
    for (int i = 0; i < (IndexLeft2 - IndexLeft) / LeftSize; ++i)
+      inplace_qshift(Psi2Left, Psi2Left.qshift());
+   if (Psi2.window_left_sites() > 0)
       inplace_qshift(Psi2Left, Psi2Left.qshift());
 
    // Calculate the left eigenvector of the left semi-infinite boundary.

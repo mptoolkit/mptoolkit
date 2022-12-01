@@ -156,14 +156,13 @@ int main(int argc, char** argv)
          for (int i = 0; i < PsiLeft.window_right_sites(); ++i)
             ++C;
 
-         MatrixOperator U, Vh;
+         MatrixOperator Vh;
          RealDiagonalOperator D;
          while (C != BoundaryLeft.end())
          {
             StateComponent CL = prod(DLeft, delta_shift(*C, LeftQShift));
-            MatrixOperator M = ExpandBasis2(CL);
-            SingularValueDecomposition(M, U, D, Vh);
-            WindowLeft.push_back(prod(CL, U));
+            std::tie(D, Vh) = OrthogonalizeBasis2(CL);
+            WindowLeft.push_back(CL);
             DLeft = D * Vh;
             ++C;
          }
@@ -189,15 +188,14 @@ int main(int argc, char** argv)
       {
          ++Iter;
 
-         MatrixOperator U, Vh;
+         MatrixOperator Vh;
          RealDiagonalOperator D;
          auto C = BoundaryLeft.begin();
          while (C != BoundaryLeft.end())
          {
             StateComponent CL = prod(DLeft, delta_shift(*C, LeftQShift));
-            MatrixOperator M = ExpandBasis2(CL);
-            SingularValueDecomposition(M, U, D, Vh);
-            WindowLeft.push_back(prod(CL, U));
+            std::tie(D, Vh) = OrthogonalizeBasis2(CL);
+            WindowLeft.push_back(CL);
             DLeft = D * Vh;
             ++C;
          }
@@ -233,15 +231,14 @@ int main(int argc, char** argv)
          for (int i = 0; i < PsiRight.window_left_sites(); ++i)
             --C;
 
-         MatrixOperator U, Vh;
+         MatrixOperator U;
          RealDiagonalOperator D;
          while (C != BoundaryRight.begin())
          {
             --C;
             StateComponent CR = prod(delta_shift(*C, RightQShift), DRight);
-            MatrixOperator M = ExpandBasis1(CR);
-            SingularValueDecomposition(M, U, D, Vh);
-            WindowRight.push_front(prod(Vh, CR));
+            std::tie(U, D) = OrthogonalizeBasis1(CR);
+            WindowRight.push_front(CR);
             DRight = U * D;
          }
          RightQShift = delta_shift(RightQShift, PsiRight.left().qshift());
@@ -254,12 +251,11 @@ int main(int argc, char** argv)
       else
       {
          // Make DRight square.
-         StateComponent CR = prod(DRight, WindowRight.get_front());
-         MatrixOperator M = ExpandBasis1(CR);
-         MatrixOperator U, Vh;
+         MatrixOperator U;
          RealDiagonalOperator D;
-         SingularValueDecomposition(M, U, D, Vh);
-         WindowRight.set_front(prod(U*Vh, CR));
+         StateComponent CR = prod(DRight, WindowRight.get_front());
+         std::tie(U, D) = OrthogonalizeBasis1(CR);
+         WindowRight.set_front(prod(U, CR));
          DRight = U * D * adjoint(U);
       }
 
@@ -271,16 +267,15 @@ int main(int argc, char** argv)
       {
          ++Iter;
 
-         MatrixOperator U, Vh;
+         MatrixOperator U;
          RealDiagonalOperator D;
          auto C = BoundaryRight.end();
          while (C != BoundaryRight.begin())
          {
             --C;
             StateComponent CR = prod(delta_shift(*C, RightQShift), DRight);
-            MatrixOperator M = ExpandBasis1(CR);
-            SingularValueDecomposition(M, U, D, Vh);
-            WindowRight.push_front(prod(Vh, CR));
+            std::tie(U, D) = OrthogonalizeBasis1(CR);
+            WindowRight.push_front(CR);
             DRight = U * D;
          }
          RightQShift = delta_shift(RightQShift, PsiRight.left().qshift());

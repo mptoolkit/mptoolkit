@@ -190,14 +190,7 @@ int main(int argc, char** argv)
                return 1;
             }
 
-            InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
-
-            MatrixOperator U;
-            RealDiagonalOperator D;
-            LinearWavefunction PsiRightLinear;
-            std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
-
-            PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+            PsiRight = InfiniteWavefunctionRight(InPsiRight->get<InfiniteWavefunctionLeft>());
          }
          else
          {
@@ -216,14 +209,7 @@ int main(int argc, char** argv)
             return 1;
          }
 
-         InfiniteWavefunctionLeft PsiRightLeft = PsiLeft;
-
-         MatrixOperator U;
-         RealDiagonalOperator D;
-         LinearWavefunction PsiRightLinear;
-         std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
-
-         PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
+         PsiRight = InfiniteWavefunctionRight(PsiLeft);
       }
 
       // Save the original read-only input wavefunctions for the output files.
@@ -275,9 +261,8 @@ int main(int argc, char** argv)
          std::vector<std::complex<double>> EVectors;
 
          LinearAlgebra::Vector<std::complex<double>> EValues
-            = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen,
-                                               LinearAlgebra::WhichEigenvalues::SmallestReal,
-                                               Tol, &EVectors, 0, true, Verbose);
+            = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal,
+                                               nullptr, Tol, &EVectors, 0, true, Verbose);
 
          // Print results for this k.
          auto E = EValues.begin();

@@ -66,13 +66,11 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    // bond at a unit cell boundary. To calculate this, we need the right
    // Hamiltonian environment for PsiLeft.
    LinearWavefunction PsiLinear;
-   MatrixOperator U;
    RealDiagonalOperator D;
-   std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
-   PsiLinear.set_front(prod(U, PsiLinear.get_front()));
+   std::tie(D, PsiLinear) = get_right_canonical(PsiLeft);
 
    StateComponent BlockHamLR = Initial_F(HamiltonianLeft, PsiLinear.Basis2());
-   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+   MatrixOperator Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
    SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamiltonianLeft, Rho, GMRESTol, Verbose-1);
@@ -260,12 +258,10 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    while (Site < RightStop)
    {
       // Perform SVD to left-orthogonalize current site.
-      MatrixOperator M = ExpandBasis2(*C);
       MatrixOperator Vh;
+      RealDiagonalOperator D;
 
-      SingularValueDecomposition(M, U, D, Vh);
-
-      *C = prod(*C, U);
+      std::tie(D, Vh) = OrthogonalizeBasis2(*C);
 
       // Update the effective Hamiltonian.
       HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
@@ -509,12 +505,11 @@ double
 IBC_TDVP::CalculateLambdaDiffLeft()
 {
    // Right-orthogonalize current site to find LambdaL.
-   StateComponent CCopy = *C;
-   MatrixOperator M = ExpandBasis1(CCopy);
-   MatrixOperator U, Vh;
+   StateComponent CRightOrtho = *C;
+   MatrixOperator U;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
+   std::tie(U, D) = OrthogonalizeBasis1(CRightOrtho);
 
    // Ensure that the left and right bases of LambdaL are the same.
    MatrixOperator LambdaL = (U*D)*herm(U);
@@ -529,12 +524,11 @@ double
 IBC_TDVP::CalculateLambdaDiffRight()
 {
    // Left-orthogonalize current site to find LambdaR.
-   StateComponent CCopy = *C;
-   MatrixOperator M = ExpandBasis2(CCopy);
-   MatrixOperator U, Vh;
+   StateComponent CLeftOrtho = *C;
+   MatrixOperator Vh;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
+   std::tie(D, Vh) = OrthogonalizeBasis2(CLeftOrtho);
 
    // Ensure that the left and right bases of LambdaR are the same.
    MatrixOperator LambdaR = herm(Vh)*(D*Vh);

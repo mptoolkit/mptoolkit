@@ -140,20 +140,7 @@ int main(int argc, char** argv)
             return 1;
          }
 
-         // There are some situations where the first method does not work
-         // properly, so temporarily use the second method as a workaround.
-#if 0
-         InfiniteWavefunctionRight PsiRight = InPsiRight->get<InfiniteWavefunctionLeft>();
-#else
-         InfiniteWavefunctionLeft PsiRightLeft = InPsiRight->get<InfiniteWavefunctionLeft>();
-
-         MatrixOperator U;
-         RealDiagonalOperator D;
-         LinearWavefunction PsiRightLinear;
-         std::tie(U, D, PsiRightLinear) = get_right_canonical(PsiRightLeft);
-
-         PsiRight = InfiniteWavefunctionRight(U*D, PsiRightLinear, PsiRightLeft.qshift());
-#endif
+         PsiRight = InfiniteWavefunctionRight(InPsiRight->get<InfiniteWavefunctionLeft>());
       }
       else
       {
@@ -164,8 +151,14 @@ int main(int argc, char** argv)
       // If the bases of the two boundary unit cells have only one quantum
       // number sector, manually ensure that they match.
       // FIXME: This workaround probably will not work for non-Abelian symmetries.
-      if (PsiLeft.Basis2().size() == 1 && PsiRight.Basis1().size() == 1)
-         inplace_qshift(PsiRight, delta_shift(PsiLeft.Basis2()[0], adjoint(PsiRight.Basis1()[0])));
+      QuantumNumber QRight(PsiRight.GetSymmetryList());
+      if (PsiLeft.Basis1().size() == 1 && PsiRight.Basis1().size() == 1)
+      {
+         QRight = delta_shift(PsiLeft.Basis1()[0], adjoint(PsiRight.Basis1()[0]));
+         if (Verbose > 0)
+            std::cout << "Shifting PsiRight by " << QRight << std::endl;
+         inplace_qshift(PsiRight, QRight);
+      }
 
       WavefunctionSectionLeft Window;
 
@@ -192,7 +185,6 @@ int main(int argc, char** argv)
          StateComponent BlockHamL = Initial_E(HamMPOLeft, PsiLeft.Basis1());
          std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPOLeft, GMRESTol, Verbose);
          std::cout << "Starting energy (left eigenvalue) = " << LeftEnergy << std::endl;
-         //BlockHamL = delta_shift(BlockHamL, adjoint(PsiLeft.qshift()));
 
          HamMPORight = HamMPO;
          if (HamMPORight.size() < PsiRight.size())
@@ -207,7 +199,8 @@ int main(int argc, char** argv)
 
          std::vector<std::vector<std::complex<double>>> OutputVectors(NumEigen, std::vector<std::complex<double>>(Mult.P.size()));
 
-         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal, Tol, OutputVectors.data(), 0, true, Verbose-1);
+         auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal,
+                                                      nullptr, Tol, OutputVectors.data(), 0, true, Verbose-1);
 
          C = Mult.P.unpack(OutputVectors[0].data());
 
@@ -225,7 +218,9 @@ int main(int argc, char** argv)
       // Make the window from our centre matrix
       Window = WavefunctionSectionLeft(C);
 
-      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, PsiLeft.qshift(), QuantumNumber(PsiRight.GetSymmetryList()));
+      inplace_qshift(PsiRight, adjoint(QRight));
+
+      IBCWavefunction ResultPsi(PsiLeft, Window, PsiRight, PsiLeft.qshift(), QRight);
 
       if (Streaming)
       {

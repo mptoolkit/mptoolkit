@@ -109,7 +109,6 @@ int main(int argc, char** argv)
       QuantumNumbers::QuantumNumber LeftQShift = Psi.left_qshift();
       InfiniteWavefunctionRight PsiRight = Psi.right();
       QuantumNumbers::QuantumNumber RightQShift = Psi.right_qshift();
-      MatrixOperator Vh = MatrixOperator::make_identity(PsiLeft.Basis1());
 
       if (vm.count("left") > 0) {
          if (Verbose > 0)
@@ -149,9 +148,8 @@ int main(int argc, char** argv)
 #if 0
          PsiLeft = InfiniteWavefunctionLeft::Construct(PsiLeftLinear, PsiLeft.qshift(), Verbose);
 #else
-         PsiLeft = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLeftLinear, PsiLeft.lambda_r(), PsiLeft.qshift(), Vh, Verbose);
+         PsiLeft = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLeftLinear, PsiLeft.qshift(), PsiLeft.lambda_r(), Verbose);
 #endif
-         Vh = delta_shift(Vh, adjoint(PsiLeft.qshift()));
 
          if (Verbose > 0)
             std::cout << "Finished applying operator to left semi-infinite boundary..." << std::endl;
@@ -173,12 +171,11 @@ int main(int argc, char** argv)
       {
          std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
          PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), Lambda));
-         PsiWindowLinear.set_front(prod(Vh, PsiWindowLinear.get_front()));
       }
       else
       {
          PsiWindowLinear = LinearWavefunction();
-         Lambda = Vh * PsiWindow.LeftU() * PsiWindow.lambda_r() * PsiWindow.RightU();
+         Lambda = PsiWindow.LeftU() * PsiWindow.lambda_r() * PsiWindow.RightU();
       }
 
       if (vm.count("window") > 0) {

@@ -37,7 +37,7 @@ struct IBC_TDVPSettings : TDVPSettings
 class IBC_TDVP : public TDVP
 {
    public:
-      IBC_TDVP() {}
+      IBC_TDVP() = default;
 
       IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_);
 

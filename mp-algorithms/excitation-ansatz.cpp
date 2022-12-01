@@ -147,14 +147,12 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    // boundary bases (even if they come from the same state, since we
    // transformed PsiRight to right canonical form), we must calculate the
    // right canonical form of PsiLeft in such a way to preserve this boundary.
-   MatrixOperator U;
    RealDiagonalOperator D;
    LinearWavefunction PsiLinear;
-   std::tie(U, D, PsiLinear) = get_right_canonical(PsiLeft);
-   PsiLinear.set_front(prod(U, PsiLinear.get_front()));
+   std::tie(D, PsiLinear) = get_right_canonical(PsiLeft);
 
    StateComponent BlockHamLR = Initial_F(HamMPO, PsiLinear.Basis2());
-   MatrixOperator Rho = scalar_prod(U*D*herm(U), herm(U*D*herm(U)));
+   MatrixOperator Rho = scalar_prod(D, herm(D));
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
    SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
