@@ -52,6 +52,7 @@ int main(int argc, char** argv)
       std::string String;
       std::string OutputPrefix;
       int OutputDigits = -1;
+      bool Random = false;
       bool Streaming = false;
       bool NoStreaming = false;
 
@@ -69,11 +70,6 @@ int main(int argc, char** argv)
          ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
           FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
-         ("tol", prog_opt::value(&Tol),
-          FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
-         ("gmrestol", prog_opt::value(&Settings.GMRESTol),
-          FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
-         ("seed", prog_opt::value<unsigned long>(), "Random seed")
          ("quantumnumber,q", prog_opt::value(&QuantumNumber),
           "The quantum number sector for the excitation [default identity]")
          ("rotate,r", prog_opt::value(&Rotate), "Rotate the right boundary by this many sites to the left")
@@ -81,6 +77,12 @@ int main(int argc, char** argv)
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
          ("digits", prog_opt::value(&OutputDigits), "Manually use this number of decimal places for the filenames")
+         ("tol", prog_opt::value(&Tol),
+          FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
+         ("gmrestol", prog_opt::value(&Settings.GMRESTol),
+          FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
+         ("seed", prog_opt::value<unsigned long>(), "Random number generator seed")
+         ("random", prog_opt::bool_switch(&Random), "Use a random initial state for each momentum (otherwise, use the previous result as an initial guess)")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("quiet", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum")
@@ -250,6 +252,8 @@ int main(int argc, char** argv)
       }
       std::cout << std::left;
 
+      std::vector<std::complex<double>> Guess;
+
       // Calculate the excitation spectrum for each k desired.
       for (int n = 0; n < KNum; ++n)
       {
@@ -262,7 +266,14 @@ int main(int argc, char** argv)
 
          LinearAlgebra::Vector<std::complex<double>> EValues
             = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal,
-                                               nullptr, Tol, &EVectors, 0, true, Verbose);
+                                               Guess.data(), Tol, &EVectors, 0, true, Verbose);
+
+         if (!Random && n < KNum-1)
+         {
+            // Save the smallest eigenvector as the initial guess for the next iteration.
+            Guess = std::vector<std::complex<double>>(PackH.size());
+            std::copy(&(EVectors[0]), &(EVectors[PackH.size()]), Guess.data());
+         }
 
          // Print results for this k.
          auto E = EValues.begin();
