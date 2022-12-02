@@ -46,7 +46,6 @@ int main(int argc, char** argv)
       int N = 1;
       int SaveEvery = 1;
       bool Expand = false;
-      double Eps2SqTol = std::numeric_limits<double>::infinity();
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -83,9 +82,7 @@ int main(int argc, char** argv)
          ("trunc,r", prog_opt::value(&Settings.SInfo.TruncationCutoff),
           FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
-          FormatDefault("Cutoff threshold for density matrix eigenvalues", Settings.SInfo.EigenvalueCutoff).c_str())
-         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
-         ("eps2sqtol,e", prog_opt::value(&Eps2SqTol), "Expand the bond dimension in the next step if Eps2SqSum rises above this value")
+          FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
          ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
           FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", Settings.LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),
@@ -101,15 +98,23 @@ int main(int argc, char** argv)
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
+      // Bond expansion is turned on automatically if an option which uses it
+      // is specified, so this option is redundant now. It is kept as a hidden
+      // option to ensure compatibility with old scripts.
+      prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
+         ;
+
       prog_opt::options_description opt;
-      opt.add(desc);
+      opt.add(desc).add(hidden);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0)
+      if (vm.count("help"))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
@@ -117,6 +122,18 @@ int main(int argc, char** argv)
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
             std::cerr << c.first << " : " << c.second.Description << std::endl;
+         return 1;
+      }
+
+      if (vm.count("wavefunction") == 0)
+      {
+         std::cerr << "fatal: No wavefunction specified." << std::endl;
+         return 1;
+      }
+
+      if (vm.count("timestep") == 0)
+      {
+         std::cerr << "fatal: No timestep specified." << std::endl;
          return 1;
       }
 
@@ -138,7 +155,7 @@ int main(int argc, char** argv)
       }
       if (Settings.Comp.Order == 0)
       {
-         std::cerr << "fatal: invalid composition" << std::endl;
+         std::cerr << "fatal: Invalid composition" << std::endl;
          return 1;
       }
 
@@ -195,7 +212,7 @@ int main(int argc, char** argv)
          {
             if (PsiPtr->Attributes().count("Hamiltonian") == 0)
             {
-               std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute EvolutionHamiltonian." << std::endl;
+               std::cerr << "fatal: No Hamiltonian specified, use -H option or set wavefunction attribute EvolutionHamiltonian." << std::endl;
                return 1;
             }
             HamStr = PsiPtr->Attributes()["Hamiltonian"].as<std::string>();
@@ -214,17 +231,16 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of sweeps: " << Settings.MaxSweeps << std::endl;
       std::cout << "Error tolerance for LambdaR: " << Settings.LambdaTol << std::endl;
 
-      // If we are forcing bond dimension expansion, make sure it is turned on as well.
-      if (Settings.ForceExpand)
+      // Turn on bond expansion if trunc or eigen-cutoff have been specified,
+      // or if forced bond expansion is specified.
+      if (vm.count("trunc") || vm.count("eigen-cutoff") || Settings.ForceExpand)
          Expand = true;
 
-      if (Expand || Eps2SqTol != std::numeric_limits<double>::infinity())
+      if (Expand)
          std::cout << Settings.SInfo << std::endl;
 
-      // Make sure calculation of Eps2Sq is turned on if we are using it to
-      // determine whether to expand the bonds, or if we are calculating EpsNSq
-      // for N > 2.
-      if (Eps2SqTol != std::numeric_limits<double>::infinity() || Settings.NEps > 2)
+      // Make sure calculation of Eps2Sq is turned on if we are calculating EpsNSq for N > 2.
+      if (Settings.NEps > 2)
          Settings.Epsilon = true;
 
       iTDVP itdvp(Psi, Ham, Settings);
@@ -251,13 +267,7 @@ int main(int argc, char** argv)
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
-         if (itdvp.Eps2SqSum > Eps2SqTol)
-         {
-            if (Verbose > 0)
-               std::cout << "Eps2Sq tolerance reached, expanding bond dimension..." << std::endl;
-            itdvp.ExpandBonds();
-         }
-         else if (Expand)
+         if (Expand)
             itdvp.ExpandBonds();
 
          itdvp.Evolve();

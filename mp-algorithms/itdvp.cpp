@@ -130,14 +130,13 @@ iTDVP::OrthogonalizeLeftmostSite()
    E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
 
    // Right-orthogonalize current site.
-   MatrixOperator M = ExpandBasis1(*C);
-   MatrixOperator U, Vh;
+   MatrixOperator U;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
+   std::tie(U, D) = OrthogonalizeBasis1(*C);
 
    // Ensure that the left and right bases of LambdaR are the same.
-   *C = prod(U*Vh, *C);
+   *C = prod(U, *C);
    LambdaR = (U*D)*herm(U);
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
 
@@ -153,14 +152,13 @@ iTDVP::OrthogonalizeRightmostSite()
    E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 
    // Left-orthogonalize current site.
-   MatrixOperator M = ExpandBasis2(*C);
-   MatrixOperator U, Vh;
+   MatrixOperator Vh;
    RealDiagonalOperator D;
 
-   SingularValueDecomposition(M, U, D, Vh);
+   std::tie(D, Vh) = OrthogonalizeBasis2(*C);
 
    // Ensure that the left and right bases of LambdaR are the same.
-   *C = prod(*C, U*Vh);
+   *C = prod(*C, Vh);
    LambdaR = herm(Vh)*(D*Vh);
    LambdaR = delta_shift(LambdaR, QShift);
 
@@ -607,8 +605,8 @@ iTDVP::ExpandRightBond()
 {
    if ((*C).Basis2().total_dimension() < SInfo.MaxStates)
    {
-      // Take the truncated SVD of P_2 H|Psi>.
-      CMatSVD SL(scalar_prod(X.front(), herm(Y.front())));
+      // Take the truncated SVD of P_2 H |Psi>.
+      CMatSVD P2H(scalar_prod(X.front(), herm(Y.front())));
       TruncationInfo Info;
       StatesInfo SInfoLocal = SInfo;
       // Subtract the current bond dimension from the number of additional states to be added.
@@ -618,16 +616,16 @@ iTDVP::ExpandRightBond()
       CMatSVD::const_iterator Cutoff;
       if (ForceExpand)
       {
-         Cutoff = SL.begin();
-         for (int i = 0; Cutoff != SL.end() && i < SInfoLocal.MaxStates; ++i)
+         Cutoff = P2H.begin();
+         for (int i = 0; Cutoff != P2H.end() && i < SInfoLocal.MaxStates; ++i)
             ++Cutoff;
       }
       else
-         Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+         Cutoff = TruncateFixTruncationError(P2H.begin(), P2H.end(), SInfoLocal, Info);
 
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
-      SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
+      P2H.ConstructMatrices(P2H.begin(), Cutoff, U, D, Vh);
 
       // Construct new basis.
       SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());

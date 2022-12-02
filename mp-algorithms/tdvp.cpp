@@ -477,8 +477,8 @@ TDVP::ExpandLeftBond()
    StateComponent X = contract_from_left(*HNext, herm(NL), HamL.back(), *CNext);
    StateComponent Y = contract_from_right(herm(*H), NR, HamR.front(), herm(*C));
 
-   // Take the truncated SVD of P_2 H|Psi>.
-   CMatSVD SL(scalar_prod(X, herm(Y)));
+   // Take the truncated SVD of P_2 H |Psi>.
+   CMatSVD P2H(scalar_prod(X, herm(Y)));
    TruncationInfo Info;
    StatesInfo SInfoLocal = SInfo;
    // Subtract the current bond dimension from the number of additional states to be added.
@@ -488,16 +488,16 @@ TDVP::ExpandLeftBond()
    CMatSVD::const_iterator Cutoff;
    if (ForceExpand)
    {
-      Cutoff = SL.begin();
-      for (int i = 0; Cutoff != SL.end() && i < SInfoLocal.MaxStates; ++i)
+      Cutoff = P2H.begin();
+      for (int i = 0; Cutoff != P2H.end() && i < SInfoLocal.MaxStates; ++i)
          ++Cutoff;
    }
    else
-      Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfoLocal, Info);
+      Cutoff = TruncateFixTruncationErrorAbsolute(P2H.begin(), P2H.end(), SInfoLocal, Info);
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   SL.ConstructMatrices(SL.begin(), Cutoff, U, D, Vh);
+   P2H.ConstructMatrices(P2H.begin(), Cutoff, U, D, Vh);
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis((*CNext).Basis2(), U.Basis2());
@@ -607,7 +607,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*C).LocalBasis(), (*CPrev).LocalBasis()));
    TruncationInfo Info;
-   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfo, Info);
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationErrorAbsolute(SL.begin(), SL.end(), SInfo, Info);
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, *C, D, *CPrev);
    *C = prod(*C, D);
@@ -667,7 +667,7 @@ TDVP::EvolveLeftmostSite2(std::complex<double> Tau)
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
    TruncationInfo Info;
-   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfo, Info);
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationErrorAbsolute(SL.begin(), SL.end(), SInfo, Info);
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, *CPrev, D, *C);
    *C = prod(D, *C);
@@ -730,7 +730,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
    // Perform SVD on new C2.
    AMatSVD SL(C2, Tensor::ProductBasis<BasisList, BasisList>((*CPrev).LocalBasis(), (*C).LocalBasis()));
    TruncationInfo Info;
-   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfo, Info);
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationErrorAbsolute(SL.begin(), SL.end(), SInfo, Info);
    RealDiagonalOperator D;
    SL.ConstructMatrices(SL.begin(), Cutoff, *CPrev, D, *C);
    *C = prod(D, *C);
@@ -810,6 +810,10 @@ TDVP::CalculateEps()
 {
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
+
+   // Handle corner case where we have a one-site MPS (e.g. an IBC with a one-site window).
+   if (LeftStop == RightStop)
+      return;
 
    // Create a local copy so we can perform a single right-to-left sweep
    // without having to go back to the right.
