@@ -711,7 +711,7 @@ IBC_TDVP::Evolve()
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   while(Gamma != GammaEnd)
+   while (Gamma != GammaEnd)
    {
       this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
@@ -754,7 +754,7 @@ IBC_TDVP::EvolveExpand()
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   while(Gamma != GammaEnd)
+   while (Gamma != GammaEnd)
    {
       this->SweepRightEW((*Gamma)*Timestep);
       ++Gamma;
@@ -794,7 +794,7 @@ IBC_TDVP::Evolve2()
    this->SweepRight2((*Gamma)*Timestep);
    ++Gamma;
 
-   while(Gamma != Comp.Gamma.cend())
+   while (Gamma != Comp.Gamma.cend())
    {
       this->SweepLeft2((*Gamma)*Timestep);
       ++Gamma;
