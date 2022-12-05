@@ -432,7 +432,7 @@ TDVP::Evolve()
    Time += (*Gamma)*Timestep;
    ++Gamma;
 
-   while(Gamma != GammaEnd)
+   while (Gamma != GammaEnd)
    {
       this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
       this->SweepRight((*Gamma)*Timestep);
@@ -781,7 +781,7 @@ TDVP::Evolve2()
 
    std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
 
-   while(Gamma != Comp.Gamma.cend())
+   while (Gamma != Comp.Gamma.cend())
    {
       this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
 

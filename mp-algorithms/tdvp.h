@@ -79,7 +79,7 @@ struct TDVPSettings
    std::complex<double> InitialTime;
    std::complex<double> Timestep;
    Composition Comp;
-   int MaxIter = 20;
+   int MaxIter = 10;
    double ErrTol = 1e-16;
    StatesInfo SInfo;
    bool Epsilon = false;
