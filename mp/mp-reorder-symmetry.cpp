@@ -59,6 +59,7 @@ InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, Sy
 
    Result.setBasis1(Result.lambda_l().Basis1());
    Result.setBasis2(Result.lambda_r().Basis2());
+   Result.LogAmplitude = Psi.LogAmplitude;
 
    return Result;
 }
@@ -78,6 +79,8 @@ InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi, 
 
    Result.setBasis1(Result.lambda_l().Basis1());
    Result.setBasis2(Result.lambda_r().Basis2());
+   //Result.LogAmplitude = Psi.LogAmplitude;
+
    return Result;
 }
 
