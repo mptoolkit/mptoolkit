@@ -111,10 +111,8 @@ int main(int argc, char** argv)
       QuantumNumber RightQShift = PsiRight.left_qshift();
 
       // Get the middle boundary from PsiLeft in LEFT orthogonal form.
-      MatrixOperator ULeft_LO;
       LinearWavefunction BoundaryLeft_LO;
-      std::tie(BoundaryLeft_LO, std::ignore, ULeft_LO) = get_left_canonical(PsiLeft.right());
-      BoundaryLeft_LO.set_back(prod(BoundaryLeft_LO.get_back(), ULeft_LO));
+      std::tie(BoundaryLeft_LO, std::ignore) = get_left_canonical(PsiLeft.right());
 
       if (Verbose > 1)
          std::cout << "Calculating overlap of middle boudaries..." << std::endl;
