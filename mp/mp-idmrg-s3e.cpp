@@ -4,7 +4,7 @@
 //
 // mp/mp-idmrg-s3e.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1200,9 +1200,6 @@ int main(int argc, char** argv)
          SingularValueDecomposition(X, U, R, UR);
          x = prod(x, U);
          Psi.set_back(x);
-
-
-         //      L = delta_shift(R, QShift);
       }
       else if (Create)
       {
@@ -1281,7 +1278,6 @@ int main(int argc, char** argv)
       CHECK_EQUAL(int(HamMPO.size()), WavefuncUnitCellSize);
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
-      // Check that the local basis for the wavefunction and hamiltonian are compatible
       if (ExtractLocalBasis(Psi) != ExtractLocalBasis1(HamMPO))
       {
          std::cerr << "fatal: Hamiltonian is defined on a different local basis to the wavefunction.\n";
@@ -1315,22 +1311,6 @@ int main(int argc, char** argv)
          RealDiagonalOperator D;
          std::tie(D, PsiR) = get_right_canonical(Wavefunction.get<InfiniteWavefunctionLeft>());
 
-         //TRACE(norm_frob(delta_shift(R,QShift)*U - U*D));
-
-         // D and R are the 'same' matrix, but the basis may be in a different order
-         //      TRACE(1.0-inner_prod(MatrixOperator(delta_shift(R,QShift)),MatrixOperator(D)));
-         // TRACE(norm_frob(MatrixOperator(delta_shift(R,QShift))-MatrixOperator(D)));
-         //TRACE(R)(D);
-
-         MatrixOperator L = D;
-
-#if 0
-         L = triple_prod(U,L,herm(U));
-         PsiR.set_front(prod(U, PsiR.get_front()));
-#else
-         //PsiR.set_back(prod(PsiR.get_back(), delta_shift(U, adjoint(QShift))));
-#endif
-
          BlockHamR = Initial_F(HamMPO, PsiR.Basis2());
 
          // check that we are orthogonalized
@@ -1340,17 +1320,13 @@ int main(int argc, char** argv)
          CHECK(norm_frob(X - MatrixOperator::make_identity(PsiR.Basis1())) < 1E-12)(X);
 #endif
 
-         MatrixOperator Rho = L;
-         Rho = D;
-         //         MatrixOperator Rho = R;
-         Rho = scalar_prod(Rho, herm(Rho));
+         MatrixOperator Rho = D*D;
+
 #if !defined(NDEBUG)
          MatrixOperator XX = Rho;
          XX = inject_left(XX, PsiR);
          CHECK(norm_frob(delta_shift(XX,QShift) - Rho) < 1E-12)(norm_frob(delta_shift(XX,QShift) - Rho) )(XX)(Rho);
 #endif
-
-         //      BlockHamL.back() = triple_prod(herm(U), BlockHamL.back(), U);
 
          // We obtained Rho from the left side, so we need to delta shift to the right basis
          Rho = delta_shift(Rho, adjoint(QShift));
@@ -1358,54 +1334,6 @@ int main(int argc, char** argv)
          std::complex<double> Energy = SolveHamiltonianMPO_Right(BlockHamR, PsiR, QShift, HamMPO,
                                                                  Rho, GMRESTol, Verbose);
          std::cout << "Starting energy (right eigenvalue) = " << Energy << std::endl;
-
-         //TRACE(norm_frob(delta_shift(MatrixOperator(R),QShift) - triple_prod(U,L,herm(U))));
-         //      TRACE(MatrixOperator(R) - triple_prod(U,L,herm(U)));
-
-#if 0
-         MatrixOperator U;
-         U = delta_shift(U, adjoint(QShift));
-         BlockHamR = prod(prod(U, BlockHamR), herm(U));
-
-#if 0
-         BlockHamL = triple_prod(herm(U), BlockHamL, U);
-         Psi.set_back(prod(Psi.get_back(), U));
-         Psi.set_front(prod(adjoint(U), Psi.get_front()));
-         R = D;
-
-#if 1
-         StateComponent BlockHamLCheck = BlockHamL;
-
-         BlockHamL = Initial_E(HamMPO , Psi.Basis1());
-         Rho = scalar_prod(R, herm(R));
-         InitialEnergy = MPO_EigenvaluesLeft(BlockHamL, Psi, QShift, HamMPO, Rho);
-         std::cout << "Starting energy (left eigenvalue) = " << InitialEnergy << std::endl;
-
-         BlockHamL = delta_shift(BlockHamL, QShift);
-
-         TRACE(inner_prod(BlockHamLCheck - BlockHamL, Rho));
-#endif
-#endif
-#endif
-
-         //      TRACE(norm_frob(BlockHamL.back() - BlockHamR.front()));
-         //TRACE(inner_prod(BlockHamL.back() - BlockHamR.front(), Rho));
-
-         // Check the energy
-#if 0
-         MatrixOperator Cn = delta_shift(D, adjoint(QShift)); // center matrix
-         Cn = U*Cn*adjoint(U);
-         TRACE(norm_frob(Cn));
-         Cn *= 1.0 / norm_frob(Cn);
-         MatrixOperator Cnp = operator_prod(BlockHamL, Cn, herm(BlockHamR));
-         std::complex<double> e = inner_prod(Cn, Cnp);
-         TRACE(e);
-         TRACE(norm_frob(e*Cn - Cnp));
-         TRACE(inner_prod(e*Cn - Cnp, Cn));
-         TRACE(norm_frob(conj(e)*Cn - Cnp));
-#endif
-
-
 
       }
 

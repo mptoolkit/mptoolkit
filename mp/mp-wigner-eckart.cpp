@@ -100,6 +100,7 @@ wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
    Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
    Result.setBasis2(W2.AbelianBasis());
+   Result.LogAmplitude = Psi.LogAmplitude;
 
    Result.check_structure();
 
@@ -138,6 +139,7 @@ wigner_project(InfiniteWavefunctionRight const& Psi, SymmetryList const& FinalSL
    Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
    Result.setBasis2(W2.AbelianBasis());
+   //Result.LogAmplitude = Psi.LogAmplitude;
 
    Result.check_structure();
 

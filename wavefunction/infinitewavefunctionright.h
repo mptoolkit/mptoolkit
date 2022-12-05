@@ -47,6 +47,13 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 
       QuantumNumber qshift() const { return QShift; }
 
+      double log_amplitude() const { return LogAmplitude; }
+
+      // Scale the wavefunction by the complex number x.  This has the effect of adding
+      // log(x).real() to the log_amplitude, and rotating the first matrix of the unit cell by
+      // x / |x|
+      void scale(std::complex<double> x);
+
       // Rotates the wavefunction to the left, by taking the left-most site and moving
       // it to the right
       void rotate_left(int Count);
@@ -71,9 +78,11 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
-
+      // The quantum number shift per unit cell
       QuantumNumber QShift;
+
+      // The wavefunction amplitude (log) per unit cell
+      double LogAmplitude;
 
       // All functions that can modify the internal representation but preserve the canonical form
       // are friend functions.  This is so that we have a central list of such functions,
@@ -89,6 +98,9 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 };
 
 class InfiniteWavefunctionLeft;
+
+// Multiplication by a scalar does the same as psi.scale(x)
+InfiniteWavefunctionRight& operator*=(InfiniteWavefunctionRight& psi, std::complex<double> x);
 
 // Convert a, infinite wavefunction to right-canonical form,
 // and returns the Lambda matrix on the right-hand-side.
@@ -115,7 +127,7 @@ get_right_canonical(InfiniteWavefunctionRight const& Psi);
 // herm(U)*lambda*(U) and transform Psi as Psi*U.  This makes lambda no longer a diagonal operator.
 // The other alternative is to keep lambda as diagonal, but change the basis at the unit cell
 // boundary.  To do this, transform Psi as U*Psi.
-std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
+std::tuple<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi);
 
 // function to extract the local basis (as a vector of BasisList) from a wavefunction

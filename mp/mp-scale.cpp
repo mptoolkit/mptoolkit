@@ -106,6 +106,20 @@ int main(int argc, char** argv)
          }
          Psi.mutate()->get<InfiniteWavefunctionLeft>() *= x;
       }
+      else if (Psi->is<InfiniteWavefunctionRight>())
+      {
+         if (vm.count("unitcell"))
+         {
+            int u = Psi->get<InfiniteWavefunctionRight>().size();
+            x = std::pow(x, double(u) / double(UnitCell));
+            if (Verbose > 0)
+            {
+               std::cout << "Rescaling to unit cell " << UnitCell << " with scaling factor "
+                  << format_complex(x) << '\n';
+            }
+         }
+         Psi.mutate()->get<InfiniteWavefunctionRight>() *= x;
+      }
       else
       {
          std::cerr << "mp-scale: fatal: wavefunction type " << Psi->Type() << " is not supported.\n";

@@ -35,6 +35,9 @@
 // Version 1:
 //      CanonicalWavefunctionBase (base class)
 //      QuantumNumber              QShift
+//
+// Version 2 adds:
+//      double                     LogAmplitude
 
 extern double const ArnoldiTol;
 extern double const InverseTol;
@@ -43,13 +46,14 @@ extern double const OrthoTol;
 std::string InfiniteWavefunctionRight::Type = "InfiniteWavefunctionRight";
 
 PStream::VersionTag
-InfiniteWavefunctionRight::VersionT(1);
+InfiniteWavefunctionRight::VersionT(2);
 
 InfiniteWavefunctionRight::InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi)
 {
    this->setBasis1(Psi.Basis1());
    this->setBasis2(Psi.Basis2());
    QShift = Psi.qshift();
+   LogAmplitude = Psi.log_amplitude();
 
    auto PsiI = Psi.begin();
    auto LambdaI = Psi.lambda_begin();
@@ -78,17 +82,21 @@ InfiniteWavefunctionRight::InfiniteWavefunctionRight(InfiniteWavefunctionLeft co
 
 void read_version(PStream::ipstream& in, InfiniteWavefunctionRight& Psi, int Version)
 {
+   int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
+   CHECK(BaseVersion >= 3);
+   in >> Psi.QShift;
    if (Version == 1)
    {
-      int BaseVersion = Psi.CanonicalWavefunctionBase::ReadStream(in);
-      in >> Psi.QShift;
-      CHECK(BaseVersion >= 3);
+      Psi.LogAmplitude = 0;
+   }
+   else if (Version == 2)
+   {
+      in >> Psi.LogAmplitude;
    }
    else
    {
       PANIC("This program is too old to read this wavefunction, expected Version <= 2")(Version);
    }
-
    Psi.debug_check_structure();
 }
 
@@ -108,6 +116,7 @@ PStream::opstream& operator<<(PStream::opstream& out, InfiniteWavefunctionRight 
    Psi.CanonicalWavefunctionBase::WriteStream(out);
 
    out << Psi.QShift;
+   out << Psi.LogAmplitude;
 
    return out;
 }
@@ -118,20 +127,49 @@ get_right_canonical(InfiniteWavefunctionRight const& Psi)
    return std::make_pair(Psi.lambda(0), LinearWavefunction(Psi.base_begin(), Psi.base_end()));
 }
 
-std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
+std::tuple<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi)
 {
    LinearWavefunction Result;
-   RealDiagonalOperator D = Psi.lambda_l();
-   MatrixOperator Vh = MatrixOperator::make_identity(D.Basis2());
-   for (auto const& I : Psi)
+   RealDiagonalOperator Lambda;
+   auto PsiI = Psi.begin();
+   auto LambdaI = Psi.lambda_begin();
+   while (PsiI != Psi.end())
    {
-      StateComponent A = prod(D*Vh, I);
-      std::tie(D,Vh) = OrthogonalizeBasis2(A);
+      StateComponent A = (*LambdaI) * (*PsiI);
+      MatrixOperator Vh;
+      std::tie(Lambda, Vh) = OrthogonalizeBasis2(A);
+      A = A*Vh;
+      MatrixOperator LambdaP = herm(Vh)*(Lambda*Vh);
+      Lambda = ExtractRealDiagonal(LambdaP);
+      // if (norm_frob(LambdaP-Lambda) > 1E-14)
+      // {
+      //    std::cerr << "get_right_canonical: warning: Lambda matrix isn't diagonal, difference = " << norm_frob(LambdaP-Lambda) << '\n';
+      // }
       Result.push_back(A);
+      ++PsiI;
+      ++LambdaI;
    }
+   return std::make_tuple(Result, Lambda);
+}
 
-   return std::make_tuple(Result, D, Vh);
+void InfiniteWavefunctionRight::scale(std::complex<double> x)
+{
+   double Amplitude = std::abs(x);
+   x = x / Amplitude;  // x is now the phase
+   LogAmplitude += std::log(Amplitude);
+   // Because the components have value semantics we can't directly load() the pvalue_ptr
+   // and then mutate it, because pvalue_handle's are immutable - we would end up referring
+   // do a different object.
+   pvalue_ptr<StateComponent> s = this->base_begin_()->load();
+   *s.mutate() *= x;
+   *this->base_begin_() = s;
+}
+
+InfiniteWavefunctionRight& operator*=(InfiniteWavefunctionRight& psi, std::complex<double> x)
+{
+   psi.scale(x);
+   return psi;
 }
 
 void
