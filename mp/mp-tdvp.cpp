@@ -105,26 +105,14 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help"))
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("timestep") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]" << std::endl;
          std::cerr << desc << std::endl;
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
             std::cerr << c.first << " : " << c.second.Description << std::endl;
-         return 1;
-      }
-
-      if (vm.count("wavefunction") == 0)
-      {
-         std::cerr << "fatal: No wavefunction specified." << std::endl;
-         return 1;
-      }
-
-      if (vm.count("timestep") == 0)
-      {
-         std::cerr << "fatal: No timestep specified." << std::endl;
          return 1;
       }
 
