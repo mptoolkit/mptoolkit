@@ -18,18 +18,106 @@
 // ENDHEADER
 
 #include "common/environment.h"
-#include "common/formatting.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
 #include "common/terminal.h"
-#include "common/unique.h"
 #include "interface/inittemp.h"
 #include "lattice/infinitelattice.h"
-#include "linearalgebra/eigen.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
 
 namespace prog_opt = boost::program_options;
+
+int
+GetNextBasisState(std::string States, int& Pos, SiteBasis LocalBasis)
+{
+   // Read the local state label.
+   int End = States.find_last_not_of(":( ", Pos);
+   int Start = States.find_last_of(":) ", End);
+   std::string Label = States.substr(Start+1, End-Start);
+
+   int Index;
+
+   // If there is only one local basis state, we do not require it to be specified.
+   if (Label == "" && LocalBasis.size() == 1)
+      Index = 0;
+   else
+   {
+      Index = LocalBasis.LookupOrNeg(Label);
+      // If Label is invalid.
+      if (Index < 0)
+      {
+         std::string ErrorMessage = "fatal: Invalid basis state:\n" + States + '\n';
+         for (int i = 0; i <= Start; ++i)
+            ErrorMessage += ' ';
+         for (int i = 0; i < End-Start; ++i)
+            ErrorMessage += '^';
+         ErrorMessage += "\nThe valid basis states are:";
+         for (int i = 0; i < LocalBasis.size(); ++i)
+            ErrorMessage += ' ' + LocalBasis.Label(i);
+
+         throw std::runtime_error(ErrorMessage);
+      }
+   }
+
+   Pos = Start;
+
+   return Index;
+}
+
+QuantumNumber
+GetNextBoundaryQN(std::string States, int& Pos, SymmetryList SL, QuantumNumberList QL)
+{
+   // Read the quantum number label.
+   int End = States.find_last_not_of(") ", Pos);
+   int Start = States.find_last_of("( ", End);
+   std::string Label = States.substr(Start+1, End-Start);
+
+   Pos = States.find_last_not_of("( ", Start) + 1;
+
+   QuantumNumber Q;
+   bool Valid = false;
+   try
+   {
+      // If the QN is unspecified and there is only one allowed option, use that.
+      if (Label == "" && QL.size() == 1)
+         Q = QL[0];
+      else
+         Q = QuantumNumber(SL, Label);
+
+      // Check whether this is a valid QN by checking against the allowed QNs in QL.
+      for (auto const& I : QL)
+         if (Q == I)
+            Valid = true;
+
+      // If we do not provide a QL (e.g. for the first bond), treat the QN as valid.
+      if (QL.size() == 0)
+         Valid = true;
+   }
+   catch (invalid_string_conversion& e)
+   {
+      Valid = false;
+   }
+
+   if (!Valid)
+   {
+      std::string ErrorMessage = "fatal: Invalid quantum number:\n" + States + '\n';
+      for (int i = 0; i <= Start; ++i)
+         ErrorMessage += ' ';
+      for (int i = 0; i < End-Start; ++i)
+         ErrorMessage += '^';
+      if (QL.size() > 0)
+      {
+         ErrorMessage += "\nThe allowed quantum numbers at this bond (given the state and quantum number to the right) are:";
+         for (auto const& I : QL)
+            ErrorMessage += ' ' + I.ToString();
+      }
+
+      throw std::runtime_error(ErrorMessage);
+   }
+
+   return Q;
+}
 
 int main(int argc, char** argv)
 {
@@ -102,99 +190,61 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      // This flag tells us which type of string we are parsing,
+      // i.e. one with () separators if true, or : separators if false.
+      bool ExplicitQNs = States.find_first_of("()") != -1;
+
+      int Pos = -1;
+
       QuantumNumber QLast(SL);
       QuantumNumber QPrev = QLast;
 
+      // Get the first quantum number if it is specified.
+      if (ExplicitQNs)
+      {
+         QLast = GetNextBoundaryQN(States, Pos, SL, QuantumNumberList());
+         QPrev = QLast;
+      }
+
+      VectorBasis BasisPrev(SL);
+      BasisPrev.push_back(QPrev, 1);
+
       auto Site = Lattice->GetUnitCell().end();
 
-      if (States.find_first_of("()") != -1)
+      // Iterate backwards from the end.
+      do
       {
-         // Parse strings with separators (), which specify the bond quantum numbers explicitly.
-         // Read the quantum number of the last bond.
-         int End = States.find_last_not_of(") ");
-         int Start = States.find_last_of("( ", End);
-         std::string Label = States.substr(Start+1, End-Start);
+         --Site;
 
-         QLast = QuantumNumber(SL, Label);
-         QPrev = QLast;
+         // Read the local state label.
+         SiteBasis LocalBasis = Site->Basis2();
+         int Index = GetNextBasisState(States, Pos, LocalBasis);
 
-         VectorBasis BasisPrev(SL);
-         BasisPrev.push_back(QPrev, 1);
-
-         // Iterate backwards from the end.
-         while (States.find_last_not_of("( ", Start) != -1)
+         // Get bond quantum number.
+         QuantumNumber Q;
+         if (ExplicitQNs)
          {
-            --Site;
-
-            // Read the local state label.
-            End = States.find_last_not_of("( ", Start);
-            Start = States.find_last_of(") ", End);
-            Label = States.substr(Start+1, End-Start);
-
-            SiteBasis LocalBasis = Site->Basis2();
-            int Index = LocalBasis.Lookup(Label);
-
-            // Read the bond quantum number label.
-            End = States.find_last_not_of(") ", Start);
-            Start = States.find_last_of("( ", End);
-            Label = States.substr(Start+1, End-Start);
-
-            QuantumNumber Q(SL, Label);
-
-            VectorBasis Basis(SL);
-            Basis.push_back(Q, 1);
-
-            // Form the local A-matrix.
-            StateComponent A(LocalBasis, Basis, BasisPrev);
-            A[Index](0,0) = LinearAlgebra::Matrix<double>(1,1,1.0);
-            Psi.push_front(A);
-
-            QPrev = Q;
-            BasisPrev = Basis;
-            if (Site == Lattice->GetUnitCell().begin())
-               Site = Lattice->GetUnitCell().end();
+            // The allowed quantum numbers for this bond.
+            QuantumNumberList QL = transform_targets(QPrev, LocalBasis.qn(Index));
+            Q = GetNextBoundaryQN(States, Pos, SL, QL);
          }
+         else
+            Q = delta_shift(QPrev, LocalBasis.qn(Index));
+
+         VectorBasis Basis(SL);
+         Basis.push_back(Q, 1);
+
+         // Form the local A-matrix.
+         StateComponent A(LocalBasis, Basis, BasisPrev);
+         A[Index](0,0) = LinearAlgebra::Matrix<double>(1,1,1.0);
+         Psi.push_front(A);
+
+         QPrev = Q;
+         BasisPrev = Basis;
+         if (Site == Lattice->GetUnitCell().begin())
+            Site = Lattice->GetUnitCell().end();
       }
-      else
-      {
-         // Parse strings with separator : (or just whitespaces.)
-         int End = 0;
-         int Start = -1;
-
-         VectorBasis BasisPrev(SL);
-         BasisPrev.push_back(QPrev, 1);
-
-         // Iterate backwards from the end.
-         do
-         {
-            --Site;
-
-            // Read the local state label.
-            End = States.find_last_not_of(": ", Start);
-            Start = States.find_last_of(": ", End);
-            std::string Label = States.substr(Start+1, End-Start);
-
-            SiteBasis LocalBasis = Site->Basis2();
-            int Index = LocalBasis.Lookup(Label);
-
-            // The next quantum number is found using the previous one and the local state.
-            QuantumNumber Q = delta_shift(QPrev, LocalBasis.qn(Index));
-
-            VectorBasis Basis(SL);
-            Basis.push_back(Q, 1);
-
-            // Form the local A-matrix.
-            StateComponent A(LocalBasis, Basis, BasisPrev);
-            A[Index](0,0) = LinearAlgebra::Matrix<double>(1,1,1.0);
-            Psi.push_front(A);
-
-            QPrev = Q;
-            BasisPrev = Basis;
-            if (Site == Lattice->GetUnitCell().begin())
-               Site = Lattice->GetUnitCell().end();
-         }
-         while (Start != -1);
-      }
+      while (Pos > 0);
 
       if (Site != Lattice->GetUnitCell().end())
       {
@@ -215,7 +265,7 @@ int main(int argc, char** argv)
          // If they are non-Abelian, then we require that the first and last quantum number are the same.
          QuantumNumber QShift(SL);
          QuantumNumberList QL = transform_targets(QPrev, adjoint(QLast));
-         if (QL.size() == 1)
+         if (QL.size() == 1 && QL[0].degree() == 1)
             QShift = QL[0];
          else if (QPrev != QLast)
          {
