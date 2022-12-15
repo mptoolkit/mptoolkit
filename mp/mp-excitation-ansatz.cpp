@@ -258,8 +258,7 @@ int main(int argc, char** argv)
       for (int n = 0; n < KNum; ++n)
       {
          double k = KNum > 1 ? KMin + KStep*n : KMax;
-         if (KNum > 1)
-            H.SetK(k * LatticeUCsPerPsiUC);
+         H.SetK(k * LatticeUCsPerPsiUC);
 
          PackHEff PackH = PackHEff(H);
          std::vector<std::complex<double>> EVectors;

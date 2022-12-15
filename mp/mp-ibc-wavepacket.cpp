@@ -253,6 +253,7 @@ int main(int argc, char** argv)
       double KMax = 1.0;
       double KMin = 0.0;
       int KNum = 1;
+      double KSMA = 0.0;
       double KYMax = 1.0;
       double KYMin = 0.0;
       int KYNum = 1;
@@ -275,6 +276,7 @@ int main(int argc, char** argv)
          ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
          ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
          ("knum", prog_opt::value(&KNum), "Number of momentum steps to use [required]")
+         ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi)")
          ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (in units of pi)", KYMax).c_str())
          ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (in units of pi)", KYMin).c_str())
          ("kynum", prog_opt::value(&KYNum), "Number of y-momentum steps to use")
@@ -300,7 +302,7 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || vm.count("knum") == 0)
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || (vm.count("knum") == 0) == (vm.count("sma") == 0))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
@@ -313,10 +315,29 @@ int main(int argc, char** argv)
 
       pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
-      CHECK(KNum > 1);
+      if (KNum <= 1 && vm.count("sma") == 0)
+      {
+         std::cerr << "fatal: knum must be greater than one." << std::endl;
+         return 1;
+      }
 
       double KStep = (KMax-KMin)/(KNum-1);
       double KYStep = KYNum == 1 ? 0.0 : (KYMax-KYMin)/(KYNum-1);
+
+      if (vm.count("sma"))
+      {
+         // TODO: We might want to be able to use a different SMA for each y-momentum.
+         CHECK(KYNum == 1);
+
+         if (Sigma == 0.0)
+         {
+            std::cerr << "fatal: --sigma must be specified if using --sma." << std::endl;
+            return 1;
+         }
+
+         KMin = KSMA;
+         KStep = 0.0; // This would be NaN otherwise.
+      }
 
       if (InputDigits == -1)
       {
@@ -371,6 +392,9 @@ int main(int argc, char** argv)
          CHECK(Psi.window_vec().size() == UCSize);
          CHECK(PsiLeft.qshift() == PsiRight.qshift());
       }
+
+      // The number of lattice unit cells in Psi.
+      int LatticeUCsPerPsiUC = UCSize / LatticeUCSize;
 
       // A vector for each position at the unit cell, which contains a vector
       // of each B matrix for that unit cell position.
@@ -457,159 +481,196 @@ int main(int argc, char** argv)
          }
       }
 
-      if (Verbose > 1)
-         std::cout << "Localizing wavepacket..." << std::endl;
+      std::vector<std::vector<StateComponent>> WPVec;
+      int L; // The final width of the window.
 
-      // The number of Fourier modes in our momentum space (note that this does
-      // not match KNum since we may have missing parts of the spectrum).
-      int N = std::round(2.0/KStep * LatticeUCSize/UCSize);
-      if (std::abs(N*KStep/2.0 * UCSize/LatticeUCSize - 1.0) > 0.0)
-         std::cerr << "WARNING: Number of Fourier modes " << 2.0/KStep * LatticeUCSize/UCSize << " is noninteger! Trying N=" << N << std::endl;
-
-      int NY;
-      if (vm.count("kynum"))
+      // If we are using a different B-matrix for each momentum, we need to
+      // find the optimal wavepacket numerically.
+      if (!vm.count("sma"))
       {
-         NY = std::round(2.0/KYStep);
-         if (std::abs(NY*KYStep/2.0 - 1.0) > 0.0)
-            std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
-         if (NY < 4)
+         if (Verbose > 1)
+            std::cout << "Localizing wavepacket..." << std::endl;
+
+         // The number of Fourier modes in our momentum space (note that this does
+         // not match KNum since we may have missing parts of the spectrum).
+         int N = std::round(2.0/KStep/LatticeUCsPerPsiUC);
+         if (std::abs(N*KStep/2.0 * LatticeUCsPerPsiUC - 1.0) > 0.0)
+            std::cerr << "WARNING: Number of Fourier modes " << 2.0/KStep/LatticeUCsPerPsiUC << " is noninteger! Trying N=" << N << std::endl;
+
+         int NY;
+         if (vm.count("kynum"))
          {
-            std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
+            NY = std::round(2.0/KYStep);
+            if (std::abs(NY*KYStep/2.0 - 1.0) > 0.0)
+               std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
+            if (NY < 4)
+            {
+               std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
+               return 1;
+            }
+         }
+         else
+            // This makes it such that each Lambda is calculated once.
+            NY = 4;
+
+         std::vector<std::complex<double>> FVec;
+         std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
+         // Number of different Fourier modes that we optimize over.
+         int Size = KNum*KYNum;
+
+         int Lambda = 1;
+         bool Finished = false;
+         while (Lambda < N/2 && !Finished)
+         {
+            int LambdaY = 1;
+            // Only try values of LambdaY up to the current value of Lambda.
+            // If we aren't localising along the y-axis, then this loop will only
+            // run once, since we set NY/2 = 2.
+            while (LambdaY < std::min(Lambda+1, NY/2) && !Finished)
+            {
+               LinearAlgebra::Matrix<std::complex<double>> NLambdaMat = CalculateNLambda(BBVec, ExpIKVec, N, Lambda, LambdaY, LatticeUCSize);
+               LinearAlgebra::Vector<double> EValues = LinearAlgebra::DiagonalizeHermitian(NLambdaMat);
+
+               if (Verbose > 0)
+               {
+                  std::cout << "Lambda=" << Lambda;
+                  if (vm.count("kynum"))
+                     std::cout << " LambdaY=" << LambdaY;
+                  std::cout << " ExternalWeight=" << std::real(EValues[0])
+                            << std::endl;
+               }
+
+               if (std::real(EValues[0]) < Tol)
+               {
+                  Finished = true;
+                  // Extract the smallest eigenvector.
+                  FVec = std::vector<std::complex<double>>(NLambdaMat.data(), NLambdaMat.data()+Size);
+               }
+
+               ++LambdaY;
+            }
+            ++Lambda;
+         }
+
+         if (!Finished)
+         {
+            std::cerr << "fatal: Cannot localize wavepacket." << std::endl;
             return 1;
          }
+
+         if (Verbose > 2)
+         {
+            // Print the F vector before convolution.
+            std::cout << "Printing F before convolution..." << std::endl;
+            std::cout << "#kx ky F" << std::endl;
+            auto K = KVec.begin();
+            auto KY = KYVec.begin();
+            auto F = FVec.begin();
+            while (K != KVec.end())
+            {
+               std::cout << *K << " " << *KY << " "
+                         << formatting::format_complex(*F) << std::endl;
+               ++K, ++KY, ++F;
+            }
+         }
+
+         // Convolute with momentum space Gaussian.
+         if (Sigma != 0.0)
+         {
+            if (Verbose > 1)
+               std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
+            auto K = KVec.begin();
+            auto F = FVec.begin();
+            while (K != KVec.end())
+            {
+               // Since we have a periodic domain in momentum space, we cannot
+               // just use a normal Gaussian, so we use the "wrapped Gaussian",
+               // which is defined on a periodic domain.
+               *F *= WrappedGaussian(math_const::pi*(*K), math_const::pi*KCenter, math_const::pi*Sigma);
+               ++K, ++F;
+            }
+         }
+
+         // Convolute with y-momentum space Gaussian.
+         if (SigmaY != 0.0)
+         {
+            if (Verbose > 1)
+               std::cout << "Convoluting with y-momentum space Gaussian..." << std::endl;
+            auto KY = KYVec.begin();
+            auto F = FVec.begin();
+            while (KY != KYVec.end())
+            {
+               *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
+               ++KY, ++F;
+            }
+         }
+
+         if (Verbose > 2)
+         {
+            // Print the F vector after convolution.
+            std::cout << "Printing F after convolution..." << std::endl;
+            std::cout << "#kx ky F" << std::endl;
+            auto K = KVec.begin();
+            auto KY = KYVec.begin();
+            auto F = FVec.begin();
+            while (K != KVec.end())
+            {
+               std::cout << *K << " " << *KY << " "
+                         << formatting::format_complex(*F) << std::endl;
+               ++K, ++KY, ++F;
+            }
+         }
+
+         if (Verbose > 1)
+         {
+            // Print the norm of the B-matrices in WPVec for each unit cell.
+            std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BVec, ExpIKVec, FVec, N/2);
+            std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
+            std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
+            int i = 0;
+            for (auto const& WPCell : WPVec)
+            {
+               int j = -N/2;
+               for (auto const& WP : WPCell)
+                  std::cout << i << " " << j++ << " " << norm_frob(WP) << std::endl;
+               ++i;
+            }
+         }
+
+         if (Verbose > 1)
+            std::cout << "Constructing window..." << std::endl;
+
+         WPVec = CalculateWPVec(BVec, ExpIKVec, FVec, Lambda);
+         L = Lambda;
       }
+      // If we are using the single-mode approximation, the B-matrix is the
+      // same for each momentum, and we can localize the wavepacket exactly.
       else
-         // This makes it such that each Lambda is calculated once.
-         NY = 4;
-
-      std::vector<std::complex<double>> FVec;
-      std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
-      // Number of different Fourier modes that we optimize over.
-      int Size = KNum*KYNum;
-
-      int Lambda = 1;
-      bool Finished = false;
-      while (Lambda < N/2 && !Finished)
       {
-         int LambdaY = 1;
-         // Only try values of LambdaY up to the current value of Lambda.
-         // If we aren't localising along the y-axis, then this loop will only
-         // run once, since we set NY/2 = 2.
-         while (LambdaY < std::min(Lambda+1, NY/2) && !Finished)
-         {
-            LinearAlgebra::Matrix<std::complex<double>> NLambdaMat = CalculateNLambda(BBVec, ExpIKVec, N, Lambda, LambdaY, LatticeUCSize);
-            LinearAlgebra::Vector<double> EValues = LinearAlgebra::DiagonalizeHermitian(NLambdaMat);
+         // Scale Sigma and KCenter by pi and the number of lattice unit cells in Psi.
+         double SigmaScale = math_const::pi * LatticeUCsPerPsiUC * Sigma;
+         double KCenterScale = math_const::pi * LatticeUCsPerPsiUC * KCenter;
 
-            if (Verbose > 0)
-            {
-               std::cout << "Lambda=" << Lambda;
-               if (vm.count("kynum"))
-                  std::cout << " LambdaY=" << LambdaY;
-               std::cout << " ExternalWeight=" << std::real(EValues[0])
-                         << std::endl;
-            }
+         // The number of Psi unit cells in the window.
+         L = std::ceil(std::sqrt(-2.0*std::log(Tol))/SigmaScale);
 
-            if (std::real(EValues[0]) < Tol)
-            {
-               Finished = true;
-               // Extract the smallest eigenvector.
-               FVec = std::vector<std::complex<double>>(NLambdaMat.data(), NLambdaMat.data()+Size);
-            }
-
-            ++LambdaY;
-         }
-         ++Lambda;
-      }
-
-      if (!Finished)
-      {
-         std::cerr << "fatal: Cannot localize wavepacket." << std::endl;
-         return 1;
-      }
-
-      if (Verbose > 2)
-      {
-         // Print the F vector beforeconvolution.
-         std::cout << "Printing F before convolution..." << std::endl;
-         std::cout << "#kx ky F" << std::endl;
-         auto K = KVec.begin();
-         auto KY = KYVec.begin();
-         auto F = FVec.begin();
-         while (K != KVec.end())
-         {
-            std::cout << *K << " " << *KY << " "
-                      << formatting::format_complex(*F) << std::endl;
-            ++K, ++KY, ++F;
-         }
-      }
-
-      // Convolute with momentum space Gaussian.
-      if (Sigma != 0.0)
-      {
          if (Verbose > 1)
-            std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
-         auto K = KVec.begin();
-         auto F = FVec.begin();
-         while (K != KVec.end())
+            std::cout << "Constructing window with L = " << L << std::endl;
+
+         WPVec = std::vector<std::vector<StateComponent>>(UCSize);
+
+         for (int n = -L; n <= L; ++n)
          {
-            // Since we have a periodic domain in momentum space, we cannot
-            // just use a normal Gaussian, so we use the "wrapped Gaussian",
-            // which is defined on a periodic domain.
-            *F *= WrappedGaussian(math_const::pi*(*K), math_const::pi*KCenter, math_const::pi*Sigma);
-            ++K, ++F;
+            auto B = BVec.begin();
+            auto WP = WPVec.begin();
+            while (B != BVec.end())
+            {
+               WP->push_back(std::exp(-0.5*std::pow(SigmaScale*n,2)) * std::exp(std::complex<double>(0.0,KCenterScale*n)) * B->front());
+               ++B, ++WP;
+            }
          }
       }
 
-      // Convolute with y-momentum space Gaussian.
-      if (SigmaY != 0.0)
-      {
-         if (Verbose > 1)
-            std::cout << "Convoluting with y-momentum space Gaussian..." << std::endl;
-         auto KY = KYVec.begin();
-         auto F = FVec.begin();
-         while (KY != KYVec.end())
-         {
-            *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
-            ++KY, ++F;
-         }
-      }
-
-      if (Verbose > 2)
-      {
-         // Print the F vector after convolution.
-         std::cout << "Printing F after convolution..." << std::endl;
-         std::cout << "#kx ky F" << std::endl;
-         auto K = KVec.begin();
-         auto KY = KYVec.begin();
-         auto F = FVec.begin();
-         while (K != KVec.end())
-         {
-            std::cout << *K << " " << *KY << " "
-                      << formatting::format_complex(*F) << std::endl;
-            ++K, ++KY, ++F;
-         }
-      }
-
-      if (Verbose > 1)
-      {
-         // Print the norm of the B-matrices in WPVec for each unit cell.
-         std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BVec, ExpIKVec, FVec, N/2);
-         std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
-         std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
-         int i = 0;
-         for (auto const& WPCell : WPVec)
-         {
-            int j = -N/2;
-            for (auto const& WP : WPCell)
-               std::cout << i << " " << j++ << " " << norm_frob(WP) << std::endl;
-            ++i;
-         }
-      }
-
-      if (Verbose > 1)
-         std::cout << "Constructing window..." << std::endl;
-
-      std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BVec, ExpIKVec, FVec, Lambda);
       LinearWavefunction PsiWindowLinear = ConstructPsiWindow(PsiLeft, PsiRight, WPVec);
 
       if (Verbose > 1)
@@ -634,7 +695,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < WPVec.front().size(); ++i)
          RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
 
-      IBCWavefunction PsiOut(PsiLeftOriginal, PsiWindow, PsiRightOriginal, LeftQShift, RightQShift, -Lambda*UCSize,
+      IBCWavefunction PsiOut(PsiLeftOriginal, PsiWindow, PsiRightOriginal, LeftQShift, RightQShift, -L*UCSize,
                              (PsiLeft.size() - LeftIndex) % PsiLeft.size(), RightIndex);
 
       // Stream the boundaries, if the input files do.

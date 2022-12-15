@@ -55,11 +55,11 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       auto Test = PackMatrixOperator(MatrixOperator(PsiLinearLeft.Basis1(), PsiLinearRight.Basis1()));
       if (Test.size() == 0)
       {
-         std::cerr << "fatal: The effetive Hamiltonian has dimension zero. "
-                   << "This probably means the bases of the left and right wavefunction have incompatible quantum number sectors: "
-                   // This error message may be confusing if this code is ever reused for a tool other than mp-excitation-ansatz.
-                   << "try using a different value for the option --quantumnumber." << std::endl;
-         std::abort();
+         std::string ErrorMessage = "fatal: The effective Hamiltonian has dimension zero. "
+                                    "This probably means the bases of the left and right wavefunction have incompatible quantum number sectors: "
+                                    // This error message may be confusing if this code is ever reused for a tool other than mp-excitation-ansatz.
+                                    "try using a different value for the option --quantumnumber.";
+         throw std::runtime_error(ErrorMessage);
       }
    }
 
