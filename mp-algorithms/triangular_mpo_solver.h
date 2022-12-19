@@ -191,4 +191,70 @@ SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
                         QuantumNumber const& QShift, ProductMPO const& Op,
                         MatrixOperator const& Rho, MatrixOperator const& Ident,
                         std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPolyType> const& EMat0,
+                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                       LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                       BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                       MatrixOperator const& TRight, std::complex<double> ExpIK,
+                       bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
+                       double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+void
+SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
+                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                        LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                        MatrixOperator const& TRight, std::complex<double> ExpIK,
+                        bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
+                        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, LinearWavefunction const& Psi,
+                         QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                         MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+std::complex<double>
+SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+                         BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, LinearWavefunction const& Psi,
+                          QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                          MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+std::complex<double>
+SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, InfiniteWavefunctionRight const& Psi,
+                          BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,
+                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                            LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                            BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                            MatrixOperator const& TRight, std::complex<double> ExpIK,
+                            double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<MatrixPolyType> const& FMat0,
+                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                             BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                             MatrixOperator const& TRight, std::complex<double> ExpIK,
+                             double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
+                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                            LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                            BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                            MatrixOperator const& TRight, std::complex<double> ExpIK,
+                            double Tol = DefaultTol, int Verbose = 0);
+
+void
+SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
+                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                             BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                             MatrixOperator const& TRight, std::complex<double> ExpIK,
+                             double Tol = DefaultTol, int Verbose = 0);
 #endif

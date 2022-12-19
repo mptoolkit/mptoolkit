@@ -25,6 +25,7 @@
 #include "wavefunction/ea.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
+#include "wavefunction/momentum_operations.h"
 
 struct EASettings
 {
@@ -93,6 +94,7 @@ struct HEff
    double Alpha;
 
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
+   std::vector<MatrixPolyType> EMat0, FMat0;
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;

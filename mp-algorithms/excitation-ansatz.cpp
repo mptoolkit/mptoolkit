@@ -64,7 +64,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    }
 
    // Get the leading eigenvectors for the mixed transfer matrix of PsiLeft
-   // and PsiRight: for use with SolveFirstOrderMPO_EA_Left/Right.
+   // and PsiRight: for use with SolveHamiltonianMPO_EA_Left/Right.
    // If the leading eigenvalue of the left/right mixed transfer matrix
    // has magnitude < 1, we do not need to orthogonalize the E/F matrix
    // elements against its eigenvectors, so we set them to blank so that they
@@ -125,7 +125,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Solve the left Hamiltonian environment.
    BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(EMat0, BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
@@ -133,7 +133,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Solve the right Hamiltonian environment.
    BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
-   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(FMat0, BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 
@@ -177,6 +177,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Remove the contribution from the ground state energy density.
    BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
+   //FMat0.front().coefficient(0) -= (RightEnergy + BondEnergy) * FMat0.back().coefficient(0);
 
    // Get the null space matrices corresponding to each A-matrix in PsiLeft.
    for (StateComponent C : PsiLinearLeft)
@@ -290,10 +291,10 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    // one B-matrix on the top.
    StateComponent BlockHamLTri, BlockHamRTri;
 
-   SolveFirstOrderMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiLeft.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
-   SolveFirstOrderMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                               PsiRight.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_EA_Left(BlockHamLTri, BlockHamL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                               PsiLeft.qshift(), HamMPO, RhoRLLeft, RhoRLRight, ExpIK, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_EA_Right(BlockHamRTri, BlockHamR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                                PsiRight.qshift(), HamMPO, RhoLRLeft, RhoLRRight, ExpIK, GMRESTol, Verbose-1);
 
    // Shift the phases by one unit cell.
    BlockHamLTri *= ExpIK;
