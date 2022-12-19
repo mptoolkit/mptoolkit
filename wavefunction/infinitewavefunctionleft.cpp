@@ -33,6 +33,8 @@
 #include "linearalgebra/arpack_wrapper.h"
 #include "mps/packunpack.h"
 #include "mp-algorithms/transfer.h"
+#include "linearalgebra/takagi.h"
+#include "linearalgebra/simdiag.h"
 
 // Streaming versions:
 // Note: the base class CanonicalWavefunctionBase has a separate version number.
@@ -230,22 +232,133 @@ GetPrincipalTransferEigenvectorLeft(LinearWavefunction& Psi, QuantumNumbers::Qua
    return std::tie(EValues[0], EVec[0]);
 }
 
-double
-left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
+// helper function to return the minimum value of A[i]*sin(theta) + B[i]*cos(theta) with respect to i
+double GetMinimumOfCombination(LinearAlgebra::Vector<double> const& A, LinearAlgebra::Vector<double> const& B, double Theta)
 {
-   // Strategy:
-   // 1. Calculate the two largest left transfer matrix eigenvalues.
-   // 2. Check and see if they are degenerate.  If they are, use the degeneracy algorithm.
-   // 3. (non-degenerate case): Scale the eigenmatrix X to be hermitian
-   // 4. Diagonalize it: X = U D U^\dagger
-   // 5. Obtain the decompositon L = U \sqrt(D) so that L L^\dagger = X
-   // 6. Do a sequence of SVD's from left to right
-   // 7. Check that the final D matrix matches the initial
+   double s = std::sin(Theta);
+   double c = std::cos(Theta);
+   double x = s*A[0] + c*B[0];
+   for (int i = 1; i < A.size(); ++i)
+   {
+      double xx = s*A[i] + c*B[i];
+      if (xx < x)
+         x = xx;
+   }
+   return x;
+}
 
-   std::complex<double> EVal;
-   MatrixOperator X;
-   // std::tie(EVal, X) = GetPrincipalTransferEigenvectorLeft(Psi, QShift, tol, Verbose-2);
-   std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose-2);
+#if 0
+std::tuple<std::complex<double>, MatrixOperator, int>
+GetPrincipalTransferEigenvectorLeftDegen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, int Degen, double tol, int Verbose)
+{
+   std::vector<std::complex<double>> EValues;
+   std::vector<MatrixOperator> EVec;
+
+   std::tie(EValues, EVec) = get_left_transfer_eigenvectors(Degen+1, Psi, Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
+
+   // Keep increasing ExpectedDegeneracy and loop until we find a non-degenerate eigenvalue
+   while (EValues.size() > 1 && (std::abs(EValues[0] - EValues.back()) / (std::abs(EValues[0]) + std::abs(EValues.back()) <= UnityEpsilon))
+   {
+      ++Degen;
+      if (Verbose > 0)
+      {
+         std::cerr << "GetPrincipalTransferEigenvectorLeftDegen: Eigenvalues are degenerate, increasing degeneracy to " << ExpectedDegeneracy << '\n';
+      }
+      std::tie(EValues, EVec) = get_left_transfer_eigenvectors(Degen+1, Psi, Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
+   }
+
+   // Make sure the eigenvalues really are degenerate
+   while (Degen > 1 && (std::abs(EValues[0] - EValues[Degen-1] / (std::abs(EValues[0]) + std::abs(EValues[Degen-1]) > UnityEpsilon))
+      --Degen;
+
+   // early return if the eigenvalues are non-degenerate
+   if (Degen == 1)
+   {
+      return std::make_tuple(EValues[0], EVec[0], 1);
+   }
+
+   // Autonne–Takagi factorization of the degenerate eigenvectors
+   LinearAlgebra::Matrix<std::complex<double>> A(Degen, Degen);
+   for (int i = 0; i < Degen; ++i)
+   {
+      for (int j = 0; j < Degen; ++j)
+      {
+         A(i,j) = trace(EVec[i]*EVec[j]);
+      }
+   }
+   LinearAlgebra::Matrix<std::complex<double>> U;
+   LinearAlgebra::DiagonalMatrix<double> D;
+   std::tie(U, D) = TakagiFactor(A);
+
+   std::vector<MatrixOperator> X;
+   for (int i = 0; i < Degen; ++i)
+   {
+      MatrixOperator ThisX = U(i,0) * EVec[0];
+      for (int j = 1; j < Degen; ++j)
+      {
+         ThisX += U(i,j) * EVec[j];
+      }
+      X.push_back(std::move(ThisX));
+   }
+
+   LinearAlgebra::Matrix<std::complex<double>> U;
+   std::vector<LinearAlgebra::Vector<double>> Y;
+   std::tie(U, Y) = SimultaneousDiagonalizeHermitian(std::move(X));
+
+   // We now have a diagonal set of matrices, and we want to find a positive linear combination.  This algorithm
+   // only works for the Degen == 2 case.
+   if (Degen > 2)
+   {
+      std::cerr << "GetPrincipalTransferEigenvectorLeftDegen: degeneracy is greater than 2, which is not yet supported.\n";
+      std::abort();
+   }
+   double Theta = 0.0;
+   double f = -1000;
+   int N = size1(U);
+   // try all possible values of theta
+   for (int i = 0; i < N; ++i)
+   {
+      double TrialTheta = std::atan2(Y[0][i], Y[1][i]);
+      double TrialF = GetMinimumOfCombination(Y[0], Y[1], TrialTheta);
+      if (TrialF > f)
+      {
+         f = TrialF;
+         Theta = TrialTheta;
+      }
+      // try the other quadrant
+      if (TrialTheta <= 0)
+         TrialTheta += math_const::pi;
+      else
+         TrialTheta -= math_const::pi;
+      TrialF = GetMinimumOfCombination(Y[0], Y[1], TrialTheta);
+      if (TrialF > f)
+      {
+         f = TrialF;
+         Theta = TrialTheta;
+      }
+   }
+
+   // Check that our final f is positive
+   if (Verbose)
+   {
+      std::cerr << "Smallest element of the positive linear combination is " << f << '\n';
+   }
+   if (f < -1e-14)
+   {
+      std::cerr << "warning: smallest element of the positive linear combination is negative.\n";
+   }
+
+   MatrixOperator PositiveX = std::sin(Theta)*X[0] + std::cos(theta)*X[1];
+
+   return std::tie(EValues[0], Positive, Degen);
+}
+#endif
+
+// This is a helper function that does the hard work of left_orthogonalize.
+double
+left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, std::complex<double> EVal, MatrixOperator X)
+{
+   int Verbose = 0;
 
    // scale X so that it is Hermitian, and positive
    auto x = trace(X*X);   // TODO: this isn't as efficient as it should be
@@ -303,6 +416,74 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    // scale by 0.5 here to give the scaling for the A-matrices, since the overlap gives |amplitude|^2
    return 0.5*std::log(std::abs(EVal));
 }
+
+double
+left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
+{
+   // Strategy:
+   // 1. Calculate the two largest left transfer matrix eigenvalues.
+   // 2. Check and see if they are degenerate.  If they are, use the degeneracy algorithm.
+   // 3. (non-degenerate case): Scale the eigenmatrix X to be hermitian
+   // 4. Diagonalize it: X = U D U^\dagger
+   // 5. Obtain the decompositon L = U \sqrt(D) so that L L^\dagger = X
+   // 6. Do a sequence of SVD's from left to right
+   // 7. Check that the final D matrix matches the initial
+
+   std::complex<double> EVal;
+   MatrixOperator X;
+   // std::tie(EVal, X) = GetPrincipalTransferEigenvectorLeft(Psi, QShift, tol, Verbose-2);
+   std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose-2);
+   return left_orthogonalize_from_evector(Psi, QShift, EVal, X);
+}
+
+#if 0
+std::tuple<double, int>
+left_orthogonalize_degen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, int ExpectedDegen, double tol, int Verbose)
+{
+   std::complex<double> EVal;
+   MatrixOperator X;
+   int Degen,
+   std::tie(EVal, X, Degen) = GetPrincipalTransferEigenvectorLeftDegen(Psi, QShift, ExpectedDegen, tol, Verbose-2);
+   return std::make_tuple(left_orthogonalize_from_evector(Psi, QShift, EVal, X), Degen);
+}
+
+std::vector<LinearWavefunction>
+left_branch_degen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, int Degeneracy, double tol, int Verbose );
+{
+   std::vector<std::complex<double>> EValues;
+   std::vector<MatrixOperator> EVec;
+
+   std::tie(EValues, EVec) = get_left_transfer_eigenvectors(Degen, Psi, Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
+
+   // Autonne–Takagi factorization of the degenerate eigenvectors to make a hermitian basis
+   LinearAlgebra::Matrix<std::complex<double>> A(Degen, Degen);
+   for (int i = 0; i < Degen; ++i)
+   {
+      for (int j = 0; j < Degen; ++j)
+      {
+         A(i,j) = trace(EVec[i]*EVec[j]);
+      }
+   }
+   LinearAlgebra::Matrix<std::complex<double>> U;
+   LinearAlgebra::DiagonalMatrix<double> D;
+   std::tie(U, D) = TakagiFactor(A);
+
+   std::vector<MatrixOperator> X;
+   for (int i = 0; i < Degen; ++i)
+   {
+      MatrixOperator ThisX = U(i,0) * EVec[0];
+      for (int j = 1; j < Degen; ++j)
+      {
+         ThisX += U(i,j) * EVec[j];
+      }
+      X.push_back(std::move(ThisX));
+   }
+
+   // Since the MPS is left orthogonal, we know that one eigenvector is the identity.  So we can orthogonalize the
+   // X matrices against the identity and there will be N-1 linearly independent results.  In the case where
+   // N=2, this is easlier.
+}
+#endif
 
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double tol, int Verbose)
