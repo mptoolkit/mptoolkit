@@ -24,7 +24,7 @@
 double const ExpIKTol = 1e-14;
 
 void
-SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPolyType> const& EMat0,
+SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixPolyType> const& EMat0,
                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                        LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
@@ -32,17 +32,10 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
                        bool NeedFinalMatrix, int Degree, double Tol,
                        double UnityEpsilon, int Verbose)
 {
-#if 0
-   CHECK_EQUAL(TRight.Basis1(), PsiLeft.Basis1());
-   CHECK_EQUAL(TRight.Basis2(), PsiRight.Basis1());
-   CHECK_EQUAL(TLeft.Basis1(), PsiLeft.Basis1());
-   CHECK_EQUAL(TLeft.Basis2(), PsiRight.Basis1());
-#endif
-
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
-   EMat1.resize(Dim);
+   EMatK1.resize(Dim);
 
    if (Verbose > 0)
       std::cerr << "SolveSimpleMPO_EA_Left: dimension is " << Dim << std::endl;
@@ -68,8 +61,10 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
       }
 
       // Generate the next C matrices
-      MatrixPolyType C = inject_left_mask(EMat0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col]
-                       + ExpIK * inject_left_mask(EMat1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
+      KMatrixPolyType C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
+      for (auto I = C.begin(); I != C.end(); ++I)
+         I->second *= ExpIK;
+      C[1.0] += inject_left_mask(EMat0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -80,14 +75,14 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
          DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
-         EMat1[Col] = SolveZeroDiagonal(C);
+         EMatK1[Col] = SolveZeroDiagonal(C);
       }
       else
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
 
-         ComplexPolyType EParallel;
+         KComplexPolyType EParallel;
 
          bool HasEigenvalue1 = false;
          if (Classification.is_unitary())
@@ -98,30 +93,28 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
                abort();
             }
             // We only need to solve for parallel component if PsiLeft and
-            // PsiRight are the same state and ExpIK = 1.
-            if (!(TLeft.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol))
+            // PsiRight are the same state.
+            if (!TLeft.is_null())
             {
                HasEigenvalue1 = true;
                //DEBUG_TRACE(UnitMatrixLeft)(UnitMatrixRight);
                if (Verbose > 0)
                   std::cerr << "Decomposing parts parallel to the unit matrix\n";
-               EParallel = DecomposeParallelParts(C, TLeft, TRight, UnityEpsilon, Degree);
+               EParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TLeft, TRight, UnityEpsilon, Degree);
             }
          }
 
          // Now the remaining components, which is anything that is not proportional
          // to an eigenvector of magnitude 1
 
-         MatrixPolyType E;
+         KMatrixPolyType E;
          // if we are on the last column and we don't need the matrix elements, then we can
          // skip this operation
          if (Col < Dim-1 || NeedFinalMatrix)
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            C *= ExpIK;
-            E = DecomposePerpendicularPartsLeft(C, ExpIK, Diag, TLeft, TRight,
-                                                PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TLeft, TRight, PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -129,21 +122,23 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
          }
 
          // Reinsert the components parallel to the unit matrix (if any)
-         for (ComplexPolyType::const_iterator J = EParallel.begin(); J != EParallel.end(); ++J)
+         for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
          {
-            // Conj here because this comes from an overlap(x, RightUnitMatrix)
-            E[J->first] += std::conj(J->second) * TLeft;
+            for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+            {
+               // Conj here because this comes from an overlap(x, RightUnitMatrix)
+               E[I->first][J->first] += std::conj(J->second) * TLeft;
+            }
          }
 
          // Finally, set the E matrix element at this column
-         //DEBUG_TRACE(E[1.0]);
-         EMat1[Col] = E;
+         EMatK1[Col] = E;
       }
    }
 }
 
 void
-SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
+SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<MatrixPolyType> const& FMat0,
                         LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                         LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                         BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
@@ -151,17 +146,10 @@ SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPo
                         bool NeedFinalMatrix, int Degree, double Tol,
                         double UnityEpsilon, int Verbose)
 {
-#if 0
-   CHECK_EQUAL(TRight.Basis1(), PsiLeft.Basis1());
-   CHECK_EQUAL(TRight.Basis2(), PsiRight.Basis1());
-   CHECK_EQUAL(TLeft.Basis1(), PsiLeft.Basis1());
-   CHECK_EQUAL(TLeft.Basis2(), PsiRight.Basis1());
-#endif
-
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
-   FMat1.resize(Dim);
+   FMatK1.resize(Dim);
    int Row = Dim-1;
 
    if (Verbose > 0)
@@ -181,8 +169,10 @@ SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPo
       }
 
       // Generate the next C matrices
-      MatrixPolyType C = inject_right_mask(FMat0, PsiTri, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row]
-                       + ExpIK * inject_right_mask(FMat1, PsiLeft, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
+      KMatrixPolyType C = inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
+      for (auto I = C.begin(); I != C.end(); ++I)
+         I->second *= ExpIK;
+      C[1.0] += inject_right_mask(FMat0, PsiTri, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Row, Row);
@@ -193,14 +183,14 @@ SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPo
          DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
-         FMat1[Row] = SolveZeroDiagonal(C);
+         FMatK1[Row] = SolveZeroDiagonal(C);
       }
       else
       {
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
 
-         ComplexPolyType FParallel;
+         KComplexPolyType FParallel;
 
          bool HasEigenvalue1 = false;
          if (Classification.is_unitary())
@@ -211,30 +201,28 @@ SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPo
                abort();
             }
             // We only need to solve for parallel component if PsiLeft and
-            // PsiRight are the same state and ExpIK = 1.
-            if (!(TLeft.is_null() || std::abs(ExpIK - 1.0) > ExpIKTol))
+            // PsiRight are the same state.
+            if (!TLeft.is_null())
             {
                HasEigenvalue1 = true;
 
                if (Verbose > 0)
                   std::cerr << "Decomposing parts parallel to the unit matrix\n";
-               FParallel = DecomposeParallelParts(C, TRight, TLeft, UnityEpsilon, Degree);
+               FParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TRight, TLeft, UnityEpsilon, Degree);
             }
          }
 
          // Now the remaining components, which is anything that is not proportional
          // to an eigenvector of magnitude 1
 
-         MatrixPolyType F;
+         KMatrixPolyType F;
          // if we are on the last row and we don't need the matrix elements, then we can
          // skip this operation
          if (Row > 0 || NeedFinalMatrix)
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            C *= std::conj(ExpIK);
-            F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK), Diag, TRight, TLeft,
-                                                 PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -242,15 +230,17 @@ SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPo
          }
 
          // Reinsert the components parallel to the unit matrix (if any)
-         for (ComplexPolyType::const_iterator J = FParallel.begin(); J != FParallel.end(); ++J)
+         for (KComplexPolyType::const_iterator I = FParallel.begin(); I != FParallel.end(); ++I)
          {
-            // Conj here because this comes from an overlap(x, LeftUnitMatrix)
-            F[J->first] += std::conj(J->second) * TRight;
+            for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+            {
+               // Conj here because this comes from an overlap(x, LeftUnitMatrix)
+               F[I->first][J->first] += std::conj(J->second) * TRight;
+            }
          }
 
-         // Finally, set the F matrix element at this column
-         //DEBUG_TRACE(F[1.0]);
-         FMat1[Row] = F;
+         // Finally, set the F matrix element at this row
+         FMatK1[Row] = F;
       }
    }
 }
@@ -379,18 +369,18 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> cons
 {
    if (E1.is_null())
       E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
-   std::vector<MatrixPolyType> EMat1(E1.size());
+   std::vector<KMatrixPolyType> EMatK1(E1.size());
    for (int i = 0; i < E1.size(); ++i)
    {
       if (!E1[i].is_null())
-         EMat1[i][0] = E1[i];
+         EMatK1[i][1.0][0] = E1[i];
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Left(EMat1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
+   SolveSimpleMPO_EA_Left(EMatK1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
                           true, 0, Tol, UnityEpsilon, Verbose);
    for (int i = 0; i < E1.size(); ++i)
    {
-      E1[i] = EMat1[i].coefficient(0);
+      E1[i] = EMatK1[i][1.0].coefficient(0);
    }
 #if 0  // This will not work if TLeft and TRight are not defined.
    std::complex<double> Energy = inner_prod(TRight, EMat1.back()[1]);
@@ -429,18 +419,18 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<MatrixPolyType> con
 {
    if (F1.is_null())
       F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
-   std::vector<MatrixPolyType> FMat1(F1.size());
+   std::vector<KMatrixPolyType> FMatK1(F1.size());
    for (int i = 0; i < F1.size(); ++i)
    {
       if (!F1[i].is_null())
-         FMat1[i][0] = F1[i];
+         FMatK1[i][1.0][0] = F1[i];
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Right(FMat1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
+   SolveSimpleMPO_EA_Right(FMatK1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
                            true, 0, Tol, UnityEpsilon, Verbose);
    for (int i = 0; i < F1.size(); ++i)
    {
-      F1[i] = FMat1[i].coefficient(0);
+      F1[i] = FMatK1[i][1.0].coefficient(0);
    }
 #if 0
    std::complex<double> Energy = inner_prod(TLeft, FMat1.front()[1]);
@@ -480,11 +470,11 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
 {
    if (E1.is_null())
       E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
-   std::vector<MatrixPolyType> EMat1(E1.size());
+   std::vector<KMatrixPolyType> EMatK1(E1.size());
    for (int i = 0; i < E1.size(); ++i)
    {
       if (!E1[i].is_null())
-         EMat1[i][0] = E1[i];
+         EMatK1[i][1.0][0] = E1[i];
    }
    std::vector<MatrixPolyType> EMat0(E0.size());
    for (int i = 0; i < E0.size(); ++i)
@@ -493,11 +483,12 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
          EMat0[i][0] = E0[i];
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Left(EMat1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
+   SolveSimpleMPO_EA_Left(EMatK1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
                           true, 0, Tol, UnityEpsilon, Verbose);
    for (int i = 0; i < E1.size(); ++i)
    {
-      E1[i] = EMat1[i].coefficient(0);
+      //TRACE(i)(norm_frob(EMatK1[i][1.0].coefficient(0)))(norm_frob(EMatK1[i][ExpIK].coefficient(0)));
+      E1[i] = EMatK1[i][1.0].coefficient(0);
    }
 }
 
@@ -511,11 +502,11 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
 {
    if (F1.is_null())
       F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
-   std::vector<MatrixPolyType> FMat1(F1.size());
+   std::vector<KMatrixPolyType> FMatK1(F1.size());
    for (int i = 0; i < F1.size(); ++i)
    {
       if (!F1[i].is_null())
-         FMat1[i][0] = F1[i];
+         FMatK1[i][1.0][0] = F1[i];
    }
    std::vector<MatrixPolyType> FMat0(F0.size());
    for (int i = 0; i < F0.size(); ++i)
@@ -524,10 +515,11 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
          FMat0[i][0] = F0[i];
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Right(FMat1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
+   SolveSimpleMPO_EA_Right(FMatK1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
                            true, 0, Tol, UnityEpsilon, Verbose);
    for (int i = 0; i < F1.size(); ++i)
    {
-      F1[i] = FMat1[i].coefficient(0);
+      //TRACE(i)(norm_frob(FMatK1[i][1.0].coefficient(0)))(norm_frob(FMatK1[i][ExpIK].coefficient(0)));
+      F1[i] = FMatK1[i][1.0].coefficient(0);
    }
 }

@@ -193,7 +193,7 @@ SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
                         std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPolyType> const& EMat0,
+SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMat1, std::vector<MatrixPolyType> const& EMat0,
                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                        LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
@@ -202,7 +202,7 @@ SolveSimpleMPO_EA_Left(std::vector<MatrixPolyType>& EMat1, std::vector<MatrixPol
                        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 void
-SolveSimpleMPO_EA_Right(std::vector<MatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
+SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
                         LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                         LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                         BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
