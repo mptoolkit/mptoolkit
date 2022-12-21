@@ -199,6 +199,17 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMat1, std::vector<MatrixPo
                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                        MatrixOperator const& TRight, std::complex<double> ExpIK,
                        bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
+                       double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0,
+                       bool Bottom = false);
+
+void
+SolveSimpleMPO_EA_Left_Final(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixPolyType> const& EMat0,
+                       std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
+                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                       LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                       BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                       MatrixOperator const& TRight, std::complex<double> ExpIK,
+                       bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
                        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 void
