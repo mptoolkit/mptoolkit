@@ -214,21 +214,23 @@ int main(int argc, char** argv)
                           true, 0, GMRESTol, UnityEpsilon, Verbose);
 
       std::vector<KMatrixPolyType> EMatKTop;
-      SolveSimpleMPO_EA_Left(EMatKTop, EMat0, PsiLinearLeft, PsiLinearRight, PsiTri,
+      SolveSimpleMPO_EA_Left(EMatKTop, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                             PsiLinearLeft, PsiLinearRight, PsiTri,
                              QShift, Op, TRLLeft, TRLRight, ExpIK,
-                             true, 0, GMRESTol, UnityEpsilon, Verbose);
+                             true, 0, GMRESTol, UnityEpsilon, Verbose, "top");
 
       std::vector<KMatrixPolyType> EMatKBot;
-      SolveSimpleMPO_EA_Left(EMatKBot, EMat0, PsiLinearLeft, PsiLinearRight, PsiTri,
+      SolveSimpleMPO_EA_Left(EMatKBot, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                             PsiLinearLeft, PsiLinearRight, PsiTri,
                              QShift, Op, TLRLeft, TLRRight, ExpIK,
-                             true, 0, GMRESTol, UnityEpsilon, Verbose, true);
+                             true, 0, GMRESTol, UnityEpsilon, Verbose, "bottom");
 
       std::vector<KMatrixPolyType> EMatK1;
       MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
-      SolveSimpleMPO_EA_Left_Final(EMatK1, EMat0, EMatKTop, EMatKBot,
-                                   PsiLinearLeft, PsiLinearRight, PsiTri,
-                                   QShift, Op, RhoRight, IdentRight, ExpIK,
-                                   false, 0, GMRESTol, UnityEpsilon, Verbose);
+      SolveSimpleMPO_EA_Left(EMatK1, EMat0, EMatKTop, EMatKBot,
+                             PsiLinearLeft, PsiLinearRight, PsiTri,
+                             QShift, Op, RhoRight, IdentRight, ExpIK,
+                             false, 0, GMRESTol, UnityEpsilon, Verbose, "final");
 
       // Print the expectation values.
       std::cout << "#degree "
