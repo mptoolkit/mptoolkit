@@ -157,7 +157,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
    BlockHamLR = delta_shift(BlockHamLR, PsiLeft.qshift());
-   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_l(), prod(BlockHamL, PsiLeft.lambda_l())), BlockHamLR);
+   std::complex<double> BondEnergyLeft = inner_prod(prod(PsiLeft.lambda_l(), prod(BlockHamL, PsiLeft.lambda_l())), BlockHamLR);
 
    // An alternate way to calculate the bond energy using only the right
    // block Hamiltonian by essentially setting the upper-right element in
@@ -173,11 +173,26 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 #endif
 
    if (Verbose > 0)
-      std::cout << "Bond energy = " << BondEnergy << std::endl;
+      std::cout << "Left bond energy = " << BondEnergyLeft << std::endl;
+
+   // Calculate the bond energy for the right boundary: this will usually be
+   // the same as the left bond energy, but can be different if the state is
+   // dimerized.
+   std::tie(PsiLinear, D) = get_left_canonical(PsiRight);
+
+   StateComponent BlockHamRL = Initial_E(HamMPO, PsiLinear.Basis1());
+   Rho = scalar_prod(D, herm(D));
+   Rho = delta_shift(Rho, PsiRight.qshift());
+
+   SolveHamiltonianMPO_Left(BlockHamRL, PsiLinear, PsiRight.qshift(), HamMPO, Rho, GMRESTol, Verbose-1);
+   std::complex<double> BondEnergyRight = inner_prod(prod(PsiRight.lambda_l(), prod(BlockHamRL, PsiRight.lambda_l())), delta_shift(BlockHamR, PsiRight.qshift()));
+
+   if (Verbose > 0)
+      std::cout << "Right bond energy = " << BondEnergyRight << std::endl;
 
    // Remove the contribution from the ground state energy density.
-   BlockHamR.front() -= (RightEnergy + BondEnergy) * BlockHamR.back();
-   //FMat0.front().coefficient(0) -= (RightEnergy + BondEnergy) * FMat0.back().coefficient(0);
+   BlockHamR.front() -= (RightEnergy + BondEnergyRight) * BlockHamR.back();
+   //FMat0.front().coefficient(0) -= (RightEnergy + BondEnergyRight) * FMat0.back().coefficient(0);
 
    // Get the null space matrices corresponding to each A-matrix in PsiLeft.
    for (StateComponent C : PsiLinearLeft)
