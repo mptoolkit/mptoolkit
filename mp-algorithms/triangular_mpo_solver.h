@@ -115,6 +115,15 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 // it is implemented as the fixed point polynomial evaluated at n=0.
 
 std::complex<double>
+SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, LinearWavefunction const& Psi,
+                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                       MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+                   BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
 SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
                        QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                        MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
@@ -122,6 +131,15 @@ SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 std::complex<double>
 SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat,StateComponent& F, LinearWavefunction const& Psi,
+                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                    MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
+
+std::complex<double>
+SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat,StateComponent& F, InfiniteWavefunctionRight const& Psi,
+                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
