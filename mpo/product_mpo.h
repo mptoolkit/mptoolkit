@@ -21,8 +21,11 @@
 // product, such as a unitary or non-unitary evolution operator.
 //
 // Addition isn't defined for ProductMPO.
-// These operators necessarily transform as scalars.
-// (?maybe? in principle we could have an infinite cross product of vector operators?)
+// We can multiply them and act on an MPS.
+//
+// Initially they were required to be scalars, but we now allow for a quantum number per unit cell
+// (which is the size of the ProductMPO), we can have operators that represent eg products of creation
+// operators.
 
 #if !defined(MPTOOLKIT_MPO_PRODUCT_MPO_H)
 #define MPTOOLKIT_MPO_PRODUCT_MPO_H
@@ -42,19 +45,32 @@ class ProductMPO
       typedef OperatorComponent::basis1_type basis1_type;
       typedef OperatorComponent::basis2_type basis2_type;
 
-      ProductMPO() {}
+      ProductMPO() = default;
+      ProductMPO(ProductMPO const& Other) = default;
+      ProductMPO(ProductMPO&& Other) = default;
 
-      ProductMPO(ProductMPO const& Other) : Data(Other.Data) {}
-
-      explicit ProductMPO(int Size) : Data(Size) {}
+      explicit ProductMPO(int Size) : Data(Size), QShift() {}
+      ProductMPO(int Size, QuantumNumbers::QuantumNumber const& Q) : Data(Size), QShift(Q) {}
 
       // Construction from a generic MPO.  The generic MPO must already be in appropriate form.
-      explicit ProductMPO(GenericMPO const& Other);
+      explicit ProductMPO(GenericMPO const& Other)
+      : Data(Other), QShift(Other.GetSymmetryList())
+      {
+         // A ProductMPO constructed in this fashion must be a scalar
+         CHECK_EQUAL(Data.Basis1(), Data.Basis2());
+      }
 
-      ProductMPO& operator=(ProductMPO const& Other) { Data = Other.Data; return *this; }
+      ProductMPO(GenericMPO const& Other, QuantumNumbers::QuantumNumber const& Q)
+         : Data(Other), QShift(Q) {}
+
+      ProductMPO& operator=(ProductMPO const& Other) = default;
+      ProductMPO& operator=(ProductMPO&& Other) = default;
 
       // returns the total number of sites this operator contains
       int size() const { return Data.size(); }
+
+      QuantumNumbers::QuantumNumber qshift() const { return QShift; }
+      QuantumNumbers::QuantumNumber& qshift() { return QShift; }
 
       // returns true if this is a zero operator
       bool empty() const { return Data.empty() || Data.front().Basis1().size() == 0; }
@@ -64,12 +80,14 @@ class ProductMPO
       // is a product of identity operators.
       bool is_identity() const;
 
+      // returns true if this is a scalar operator.  In that case, Basis1() == Basis2()
+      bool is_scalar() const { return QuantumNumbers::is_scalar(QShift); }
+
       // returns true if this MPO is a 'string' operator with respect to the unit cell,
       // that is, a 1x1 MPO
       bool is_string() const;
 
-      // returns the left-most basis.  This is guaranteed to contain each
-      // quantum number at most once.
+      // returns the left-most basis.
       basis1_type const& Basis1() const { return Data.front().Basis1(); }
 
       basis2_type const& Basis2() const { return Data.back().Basis2(); }
@@ -106,8 +124,8 @@ class ProductMPO
       data_type& data() { return Data; }
       data_type const& data() const { return Data; }
 
-      void check_structure() const { Data.check_structure(); }
-      void debug_check_structure() const { Data.debug_check_structure(); }
+      void check_structure() const;
+      void debug_check_structure() const;
 
       // Make an identity MPO over the given unit cell basis
       static ProductMPO make_identity(std::vector<BasisList> const& Basis);
@@ -116,12 +134,24 @@ class ProductMPO
       static ProductMPO make_identity(std::vector<BasisList> const& Basis,
                                       QuantumNumber const& q);
 
+      static PStream::VersionTag VersionT;
+
    private:
       data_type Data;
+      QuantumNumbers::QuantumNumber QShift;
+
+      friend PStream::opstream& operator<<(PStream::opstream& out, ProductMPO const& op);
+      friend PStream::ipstream& operator>>(PStream::ipstream& in, ProductMPO& op);
 };
 
-PStream::opstream& operator<<(PStream::opstream& out, ProductMPO const& op);
-PStream::ipstream& operator>>(PStream::ipstream& in, ProductMPO& op);
+inline
+void
+ProductMPO::debug_check_structure() const
+{
+#if !defined(NDEBUG)
+   this->check_structure();
+#endif
+}
 
 // Returns the MPO that is Op1 \otimes Op2.
 // PRECONDITION: Op1.Basis2() == Op2.Basis1()

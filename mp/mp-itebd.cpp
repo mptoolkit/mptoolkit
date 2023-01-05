@@ -341,7 +341,7 @@ int main(int argc, char** argv)
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
 
-      std::cout << "Starting iTEBD.\nTrotter-Suziki decomposition is " << DecompositionStr << "(" << decomp.description() << ")\n"
+      std::cout << "Starting iTEBD.\nTrotter-Suziki decomposition is " << DecompositionStr << " (" << decomp.description() << ")\n"
                 << "Timestep = " << formatting::format_complex(Timestep) << '\n';
 
       if (OutputDigits == 0)
