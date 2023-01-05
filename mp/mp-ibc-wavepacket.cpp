@@ -21,6 +21,7 @@
 #include "common/formatting.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
+#include "common/rangelist.h"
 #include "common/terminal.h"
 #include "common/unique.h"
 #include "interface/inittemp.h"
@@ -250,13 +251,9 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      double KMax = 1.0;
-      double KMin = 0.0;
-      int KNum = 1;
+      std::string KStr;
       double KSMA = 0.0;
-      double KYMax = 1.0;
-      double KYMin = 0.0;
-      int KYNum = 1;
+      std::string KYStr = "0";
       int LatticeUCSize = 1;
       std::string InputPrefix;
       std::string OutputFilename;
@@ -273,20 +270,16 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("kmax", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
-         ("knum", prog_opt::value(&KNum), "Number of momentum steps to use [required]")
-         ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi)")
-         ("kymax", prog_opt::value(&KYMax), FormatDefault("Maximum y-momentum (in units of pi)", KYMax).c_str())
-         ("kymin", prog_opt::value(&KYMin), FormatDefault("Minimum y-momentum (in units of pi)", KYMin).c_str())
-         ("kynum", prog_opt::value(&KYNum), "Number of y-momentum steps to use")
+         ("momentum,k", prog_opt::value(&KStr), "Momentum range of the form start:end:step or start:end,num (in units of pi) [required]")
+         ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
+         ("ky", prog_opt::value(&KYStr), "y-momentum range (in units of pi)")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Size of lattice unit cell")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width (in units of pi)")
-         ("kcenter,k", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
+         ("kcenter,c", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width (in units of pi)")
          ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
@@ -302,7 +295,7 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || (vm.count("knum") == 0) == (vm.count("sma") == 0))
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || (vm.count("momentum") == 0) == (vm.count("sma") == 0))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
@@ -315,35 +308,38 @@ int main(int argc, char** argv)
 
       pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
-      if (KNum <= 1 && vm.count("sma") == 0)
+      RangeList KYList(KYStr);
+      RangeList KList;
+
+      if (vm.count("sma") == 0)
       {
-         std::cerr << "fatal: knum must be greater than one." << std::endl;
-         return 1;
+         KList = RangeList(KStr);
+
+         if (KList.get_num() <= 1)
+         {
+            std::cerr << "fatal: The momentum range must contain more than one value." << std::endl;
+            return 1;
+         }
       }
-
-      double KStep = (KMax-KMin)/(KNum-1);
-      double KYStep = KYNum == 1 ? 0.0 : (KYMax-KYMin)/(KYNum-1);
-
-      if (vm.count("sma"))
+      else
       {
+         KList = RangeList(std::to_string(KSMA));
+
          // TODO: We might want to be able to use a different SMA for each y-momentum.
-         CHECK(KYNum == 1);
+         CHECK(vm.count("ky") == 0);
 
          if (Sigma == 0.0)
          {
             std::cerr << "fatal: --sigma must be specified if using --sma." << std::endl;
             return 1;
          }
-
-         KMin = KSMA;
-         KStep = 0.0; // This would be NaN otherwise.
       }
 
       if (InputDigits == -1)
       {
-         InputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+         InputDigits = std::max(formatting::digits(KList.get_start()), formatting::digits(KList.get_step()));
          if (vm.count("kynum"))
-            InputDigits = std::max(InputDigits, formatting::digits(KYStep));
+            InputDigits = std::max(InputDigits, formatting::digits(KYList.get_step()));
       }
 
       if (Verbose > 1)
@@ -358,10 +354,10 @@ int main(int argc, char** argv)
       {
          std::string InputFilename = InputPrefix;
          if (vm.count("kynum") == 0)
-            InputFilename += ".k" + formatting::format_digits(KMin, InputDigits);
+            InputFilename += ".k" + formatting::format_digits(KList.get_start(), InputDigits);
          else
-            InputFilename += ".kx" + formatting::format_digits(KMin, InputDigits)
-                           + ".ky" + formatting::format_digits(KYMin, InputDigits);
+            InputFilename += ".kx" + formatting::format_digits(KList.get_start(), InputDigits)
+                           + ".ky" + formatting::format_digits(KYList.get_start(), InputDigits);
 
          pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
          EAWavefunction Psi = InPsi->get<EAWavefunction>();
@@ -400,19 +396,17 @@ int main(int argc, char** argv)
       // of each B matrix for that unit cell position.
       std::vector<std::vector<StateComponent>> BVec(UCSize);
       std::vector<std::complex<double>> ExpIKVec;
-      std::vector<double> KVec;
-      std::vector<double> KYVec;
-      for (int n = 0; n < KNum; ++n)
+      for (double const k : KList)
       {
-         for (int m = 0; m < KYNum; ++m)
+         for (double const ky : KYList)
          {
             // Load wavefunction.
             std::string InputFilename = InputPrefix;
             if (vm.count("kynum") == 0)
-               InputFilename += ".k" + formatting::format_digits(KMin + KStep*n, InputDigits);
+               InputFilename += ".k" + formatting::format_digits(k, InputDigits);
             else
-               InputFilename += ".kx" + formatting::format_digits(KMin + KStep*n, InputDigits)
-                              + ".ky" + formatting::format_digits(KYMin + KYStep*m, InputDigits);
+               InputFilename += ".kx" + formatting::format_digits(k, InputDigits)
+                              + ".ky" + formatting::format_digits(ky, InputDigits);
 
             pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
             EAWavefunction Psi = InPsi->get<EAWavefunction>();
@@ -423,8 +417,6 @@ int main(int argc, char** argv)
             // TODO: Check each wavefunction has the same left/right boundaries.
 
             ExpIKVec.push_back(Psi.exp_ik());
-            KVec.push_back(KMin + KStep*n);
-            KYVec.push_back(KYMin + KYStep*m);
 
             auto BCell = BVec.begin();
             // Here we use the left-gauge fixing condition.
@@ -493,16 +485,16 @@ int main(int argc, char** argv)
 
          // The number of Fourier modes in our momentum space (note that this does
          // not match KNum since we may have missing parts of the spectrum).
-         int N = std::round(2.0/KStep/LatticeUCsPerPsiUC);
-         if (std::abs(N*KStep/2.0 * LatticeUCsPerPsiUC - 1.0) > 0.0)
-            std::cerr << "WARNING: Number of Fourier modes " << 2.0/KStep/LatticeUCsPerPsiUC << " is noninteger! Trying N=" << N << std::endl;
+         int N = std::round(2.0/KList.get_step()/LatticeUCsPerPsiUC);
+         if (std::abs(N*KList.get_step()/2.0 * LatticeUCsPerPsiUC - 1.0) > 0.0)
+            std::cerr << "WARNING: Number of Fourier modes " << 2.0/KList.get_step()/LatticeUCsPerPsiUC << " is noninteger! Trying N=" << N << std::endl;
 
          int NY;
          if (vm.count("kynum"))
          {
-            NY = std::round(2.0/KYStep);
-            if (std::abs(NY*KYStep/2.0 - 1.0) > 0.0)
-               std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYStep << " is noninteger! Trying NY=" << NY << std::endl;
+            NY = std::round(2.0/KYList.get_step());
+            if (std::abs(NY*KYList.get_step()/2.0 - 1.0) > 0.0)
+               std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYList.get_step() << " is noninteger! Trying NY=" << NY << std::endl;
             if (NY < 4)
             {
                std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
@@ -516,7 +508,7 @@ int main(int argc, char** argv)
          std::vector<std::complex<double>> FVec;
          std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
          // Number of different Fourier modes that we optimize over.
-         int Size = KNum*KYNum;
+         int Size = KList.get_num()*KYList.get_num();
 
          int Lambda = 1;
          bool Finished = false;
@@ -563,10 +555,10 @@ int main(int argc, char** argv)
             // Print the F vector before convolution.
             std::cout << "Printing F before convolution..." << std::endl;
             std::cout << "#kx ky F" << std::endl;
-            auto K = KVec.begin();
-            auto KY = KYVec.begin();
+            auto K = KList.begin();
+            auto KY = KYList.begin();
             auto F = FVec.begin();
-            while (K != KVec.end())
+            while (K != KList.end())
             {
                std::cout << *K << " " << *KY << " "
                          << formatting::format_complex(*F) << std::endl;
@@ -579,9 +571,9 @@ int main(int argc, char** argv)
          {
             if (Verbose > 1)
                std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
-            auto K = KVec.begin();
+            auto K = KList.begin();
             auto F = FVec.begin();
-            while (K != KVec.end())
+            while (K != KList.end())
             {
                // Since we have a periodic domain in momentum space, we cannot
                // just use a normal Gaussian, so we use the "wrapped Gaussian",
@@ -596,9 +588,9 @@ int main(int argc, char** argv)
          {
             if (Verbose > 1)
                std::cout << "Convoluting with y-momentum space Gaussian..." << std::endl;
-            auto KY = KYVec.begin();
+            auto KY = KYList.begin();
             auto F = FVec.begin();
-            while (KY != KYVec.end())
+            while (KY != KYList.end())
             {
                *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
                ++KY, ++F;
@@ -610,10 +602,10 @@ int main(int argc, char** argv)
             // Print the F vector after convolution.
             std::cout << "Printing F after convolution..." << std::endl;
             std::cout << "#kx ky F" << std::endl;
-            auto K = KVec.begin();
-            auto KY = KYVec.begin();
+            auto K = KList.begin();
+            auto KY = KYList.begin();
             auto F = FVec.begin();
-            while (K != KVec.end())
+            while (K != KList.end())
             {
                std::cout << *K << " " << *KY << " "
                          << formatting::format_complex(*F) << std::endl;
