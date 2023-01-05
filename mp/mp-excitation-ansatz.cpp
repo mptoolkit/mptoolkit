@@ -21,6 +21,7 @@
 #include "common/formatting.h"
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
+#include "common/rangelist.h"
 #include "common/terminal.h"
 #include "common/unique.h"
 #include "interface/inittemp.h"
@@ -42,9 +43,7 @@ int main(int argc, char** argv)
       std::string InputFileLeft;
       std::string InputFileRight;
       std::string HamStr;
-      double KMax = 0.0;
-      double KMin = 0.0;
-      int KNum = 1;
+      std::string KStr = "0";
       double Tol = 1e-10;
       int NumEigen = 1;
       std::string QuantumNumber;
@@ -63,9 +62,7 @@ int main(int argc, char** argv)
          ("help", "Show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
-         ("kmax,k", prog_opt::value(&KMax), FormatDefault("Maximum momentum (in units of pi)", KMax).c_str())
-         ("kmin", prog_opt::value(&KMin), FormatDefault("Minimum momentum (in units of pi)", KMin).c_str())
-         ("knum", prog_opt::value(&KNum), "Number of momentum steps to calculate: if unspecified, just --kmax is calculated")
+         ("momentum,k", prog_opt::value(&KStr), FormatDefault("The momentum, in units of pi: this can be a single number, or a range of the form start:end:step or start:end,num", KStr).c_str())
          ("ky", prog_opt::value(&Settings.ky), "Target this value of the y-momentum [2D cylinders]")
          ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
@@ -140,6 +137,8 @@ int main(int argc, char** argv)
 
       mp_pheap::InitializeTempPHeap();
 
+      RangeList KList(KStr);
+
       pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
@@ -165,13 +164,11 @@ int main(int argc, char** argv)
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiLeft.size() / Lattice.GetUnitCell().size();
       // Scale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
-      Settings.k = KMax * LatticeUCsPerPsiUC;
-
-      double KStep = (KMax-KMin)/(KNum-1);
+      Settings.k = KList.get_start() * LatticeUCsPerPsiUC;
 
       if (OutputDigits == -1)
       {
-         OutputDigits = std::max(formatting::digits(KMax), formatting::digits(KStep));
+         OutputDigits = std::max(formatting::digits(KList.get_start()), formatting::digits(KList.get_step()));
          if (vm.count("ky"))
             OutputDigits = std::max(OutputDigits, formatting::digits(Settings.ky));
       }
@@ -255,9 +252,8 @@ int main(int argc, char** argv)
       std::vector<std::complex<double>> Guess;
 
       // Calculate the excitation spectrum for each k desired.
-      for (int n = 0; n < KNum; ++n)
+      for (double const k : KList)
       {
-         double k = KNum > 1 ? KMin + KStep*n : KMax;
          H.SetK(k * LatticeUCsPerPsiUC);
 
          PackHEff PackH = PackHEff(H);
@@ -267,7 +263,7 @@ int main(int argc, char** argv)
             = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal,
                                                Guess.data(), Tol, &EVectors, 0, true, Verbose);
 
-         if (!Random && n < KNum-1)
+         if (!Random)
          {
             // Save the smallest eigenvector as the initial guess for the next iteration.
             Guess = std::vector<std::complex<double>>(PackH.size());
