@@ -755,7 +755,13 @@ StateComponent aux_tensor_prod(OperatorComponent const& Op, StateComponent const
    return Result;
 }
 
-
+OperatorComponent
+delta_shift(OperatorComponent const& A, QuantumNumbers::QuantumNumber const& q)
+{
+   OperatorComponent Result(A.LocalBasis1(), A.LocalBasis2(), delta_shift(A.Basis1(), q), delta_shift(A.Basis2(), q));
+   Result.data() = A.data();
+   return Result;
+}
 
 #if 0
 //  *** This isn't correct for SU(2), the direct_product of the matrix doesn't

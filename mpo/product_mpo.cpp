@@ -17,24 +17,32 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+// Streaming versions:
+//
+// No explicit versioning information, check the LatticeVersion for <= 5
+// GenericMPO                           Data
+//
+// Version 2:
+// GenericMPO                           Data
+// QuantumNumber                        QShift
+
 #include "product_mpo.h"
 #include "common/statistics.h"
 
-ProductMPO::ProductMPO(GenericMPO const& Other)
-   : Data(Other)
-{
-   CHECK_EQUAL(Data.Basis1(), Data.Basis2());
-}
+PStream::VersionTag ProductMPO::VersionT(2);
 
 std::ostream&
 operator<<(std::ostream& out, ProductMPO const& x)
 {
-   return out << x.data();
+   out << "qshift: " << x.qshift() << '\n';
+   out << x.data();
+   return out;
 }
 
 void print_structure(ProductMPO const& Op, std::ostream& out, double UnityEpsilon)
 {
    out << "ProductMPO has " << Op.size() << " sites\n";
+   out << "Quantum number shift is " << Op.qshift() << '\n';
    for (int i = 0; i < Op.size(); ++i)
    {
       out << "Site " << i << " dimension " << Op[i].size1() << " x " << Op[i].size2() << '\n';
@@ -69,18 +77,62 @@ ProductMPO::make_identity(std::vector<BasisList> const& Basis, QuantumNumber con
    return ProductMPO(BasicFiniteMPO::make_identity(Basis, q));
 }
 
+void ProductMPO::check_structure() const
+{
+   Data.check_structure();
+   CHECK_EQUAL(this->Basis1(), delta_shift(this->Basis2(), QShift))(this->Basis1())(this->Basis2())(this->qshift());
+}
+
 PStream::opstream&
 operator<<(PStream::opstream& out, ProductMPO const& op)
 {
+   out << ProductMPO::VersionT.default_version();
    out << op.data();
+   out << op.qshift();
    return out;
 }
+
+extern PStream::VersionTag LatticeVersion;
 
 PStream::ipstream&
 operator>>(PStream::ipstream& in, ProductMPO& op)
 {
-   in >> op.data();
+   // Prior to version 6, we didn't have separate versioning support for InfiniteMPO.
+   int Version = in.version_of(LatticeVersion) >= 6 ? in.read<int>() : 1;
+   in >> op.Data;
+   if (Version >= 1)
+   {
+      in >> op.QShift;
+   }
+   else
+   {
+      op.QShift = QuantumNumber(op.Data.GetSymmetryList());
+   }
    return in;
+}
+
+QuantumNumbers::QuantumNumber operator+(QuantumNumbers::QuantumNumber const& q1, QuantumNumbers::QuantumNumber const& q2)
+{
+   return transform_targets(q1, q2)[0];
+}
+
+QuantumNumbers::QuantumNumber operator*(QuantumNumbers::QuantumNumber q, int n)
+{
+   CHECK(n >= 0);
+   if (n == 0)
+      return QuantumNumber(q.GetSymmetryList());
+   if (n == 1)
+      return q;
+   if (n % 2 == 0)
+      return (q+q) * (n/2);
+   // else if (n % 2 == 1)
+   return q + (q+q)*((n-1)/2);
+}
+
+inline
+QuantumNumbers::QuantumNumber operator*(int n, QuantumNumbers::QuantumNumber q)
+{
+   return q*n;
 }
 
 ProductMPO
@@ -91,7 +143,7 @@ join(ProductMPO const& Op1, ProductMPO const& Op2)
    if (Op2.is_null())
       return Op1;
    CHECK_EQUAL(Op1.Basis2(), Op2.Basis1());
-   ProductMPO Result(Op1.size() + Op2.size());
+   ProductMPO Result(Op1.size() + Op2.size(), Op1.qshift() + Op2.qshift());
    for (int i = 0; i < Op1.size(); ++i)
    {
       Result[i] = Op1[i];
@@ -100,6 +152,7 @@ join(ProductMPO const& Op1, ProductMPO const& Op2)
    {
       Result[i+Op1.size()] = Op2[i];
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -107,11 +160,12 @@ ProductMPO
 repeat(ProductMPO const& Op, int Count)
 {
    CHECK_EQUAL(Op.Basis1(), Op.Basis2());
-   ProductMPO Result(Op.size()*Count);
+   ProductMPO Result(Op.size()*Count, Op.qshift()*Count);
    for (int i = 0; i < Result.size(); ++i)
    {
-      Result[i] = Op[i%Op.size()];
+      Result[i] = delta_shift(Op[i%Op.size()], Op.qshift() * ((Result.size()-i-1) / Op.size()));
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -130,11 +184,12 @@ operator*(ProductMPO const& x, ProductMPO const& y)
 
    // we handle also the case where x.size() != y.size()
    int sz =  statistics::lcm(x.size(), y.size());
-   ProductMPO Result(sz);
+   ProductMPO Result(sz, x.qshift()*(sz/x.size()) + y.qshift()*(sz/y.size()));
    for (int i = 0; i < sz; ++i)
    {
       Result[i] = aux_tensor_prod(x[i%x.size()], y[i%y.size()]);
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -184,6 +239,7 @@ conj(ProductMPO const& x)
    {
       *I = conj(*I);
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -191,10 +247,12 @@ ProductMPO
 adjoint(ProductMPO const& x)
 {
    ProductMPO Result(x);
+   Result.qshift() = adjoint(x.qshift());
    for (ProductMPO::iterator I = Result.begin(); I != Result.end(); ++I)
    {
       *I = adjoint(*I);
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -202,10 +260,12 @@ ProductMPO
 inv_adjoint(ProductMPO const& x)
 {
    ProductMPO Result(x);
+   Result.qshift() = adjoint(x.qshift());
    for (ProductMPO::iterator I = Result.begin(); I != Result.end(); ++I)
    {
       *I = inv_adjoint(*I);
    }
+   Result.check_structure();
    return Result;
 }
 
@@ -223,9 +283,11 @@ prod_unit_right_to_left(BasicFiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);
-   CHECK_EQUAL(Op.Basis1(), Op.Basis2());
+   // We no longer require Op.Basis1() == Op.Basis2()
 
-   ProductMPO Result(UnitCellSize);
+   QuantumNumber QShift = Op.TransformsAs();
+
+   ProductMPO Result(UnitCellSize, QShift);
 
    // initialize the first unit cell
    for (int i = 0; i < UnitCellSize; ++i)
@@ -239,6 +301,7 @@ prod_unit_right_to_left(BasicFiniteMPO const& Op, int UnitCellSize)
       Result[i%UnitCellSize] = aux_tensor_prod(Op[i], Result[i%UnitCellSize]);
    }
 
+   Result.check_structure();
    return Result;
 }
 
@@ -257,9 +320,10 @@ prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize)
 {
    CHECK(Op.size() % UnitCellSize == 0)("prod_unit: Operator must be a multiple of the unit cell size!")
       (Op.size())(UnitCellSize);
-   CHECK_EQUAL(Op.Basis1(), Op.Basis2());
 
-   ProductMPO Result(UnitCellSize);
+   QuantumNumber QShift = Op.TransformsAs();
+
+   ProductMPO Result(UnitCellSize, QShift);
 
    // initialize the first unit cell
    for (int i = 0; i < UnitCellSize; ++i)
@@ -273,6 +337,7 @@ prod_unit_left_to_right(BasicFiniteMPO const& Op, int UnitCellSize)
       Result[i%UnitCellSize] = aux_tensor_prod(Result[i%UnitCellSize], Op[i]);
    }
 
+   Result.check_structure();
    return Result;
 }
 
@@ -284,10 +349,11 @@ ProductMPO translate_right(std::vector<BasisList> const& LocalBasis)
    {
       Result[i] = translate_right(LocalBasis[i-1], LocalBasis[i]);
    }
+   Result.check_structure();
    return Result;
 }
 
 ProductMPO gauge_flip(ProductMPO const& Op)
 {
-   return ProductMPO(gauge_flip(Op.data()));
+   return ProductMPO(gauge_flip(Op.data()), Op.qshift());
 }

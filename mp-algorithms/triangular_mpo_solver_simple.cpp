@@ -46,7 +46,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    EMat.resize(Dim);
 
    if (Verbose > 0)
-      std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
 
    // Make sure the (0,0) part is identity
    DEBUG_TRACE(UnityEpsilon);
@@ -55,6 +55,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
       // the (0,0) component isn't the identity operator, which is a fatal error.
       // Show some diagnosics and quit.
       std::cerr << "SolveSimpleMPO_Left: fatal: (0,0) component of the MPO must be the identity operator.\n";
+      PANIC("Fatal");
    }
 
    if (EMat[0].empty())

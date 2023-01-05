@@ -129,6 +129,8 @@ class BasisList
    friend BasisList CoerceSymmetryList(BasisList const& b, SymmetryList const& sl)
    __attribute__((warn_unused_result));
 
+   friend BasisList delta_shift(BasisList const& b, QuantumNumber const& q);
+
    friend void CoerceSymmetryListInPlace(BasisList& b, SymmetryList const& sl);
 };
 
@@ -203,6 +205,9 @@ LinearizeQuantumNumberSubspace(BasisList const& b, QuantumNumbers::QuantumNumber
 // Apply a shift operator to the basis.  This will fail if any of the shifts
 // are not possible (eg, if it shifts beyond the highest weight rep)
 BasisList delta_shift(BasisList const& Orig, QuantumNumbers::Projection const& p);
+
+BasisList delta_shift(BasisList const& b, QuantumNumber const& q);
+
 
 //
 // VectorBasis

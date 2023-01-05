@@ -173,16 +173,16 @@ OperatorComponent::make_identity(BasisList const& LocalBasis, BasisList const& A
 
 // Constructs an MPO that represents a shift operator
 //     |
-//      \    o
-// ---   --- IncomingBasis
-//    \      o
+//      \
+// ---   --- RightBasis
+//    \
 //     |
 //    ThisBasis
 
 OperatorComponent
-translate_left(BasisList const& LeftBasis, BasisList const& ThisBasis);
+translate_left(BasisList const& ThisBasis, BasisList const& RightBasis);
 
-// Constructs an MPO that represents a translation to the left
+// Constructs an MPO that represents a translation to the right
 //               |
 //              /       o
 // LeftBasis ---   ---  o
@@ -192,7 +192,6 @@ translate_left(BasisList const& LeftBasis, BasisList const& ThisBasis);
 //
 // The result is an MPO with local basis (LeftBasis, ThisBasis), and
 // auxiliary basis (LeftBasis, ThisBasis)
-
 OperatorComponent
 translate_right(BasisList const& LeftBasis, BasisList const& ThisBasis);
 
@@ -428,6 +427,9 @@ operator+(OperatorComponent const& A, OperatorComponent const& Op);
 
 OperatorComponent
 operator-(OperatorComponent const& A, OperatorComponent const& Op);
+
+OperatorComponent
+delta_shift(OperatorComponent const& A, QuantumNumbers::QuantumNumber const& q);
 
 #if 0
 // dont need these, linearalgebra::multiplication<> takes care
