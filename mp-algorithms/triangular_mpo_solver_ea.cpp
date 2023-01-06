@@ -279,120 +279,6 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
    }
 }
 
-std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, LinearWavefunction const& Psi,
-                         QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                         MatrixOperator const& Rho, double Tol, int Verbose)
-{
-   if (E.is_null())
-      E = Initial_E(Op, Psi.Basis1());
-   EMat = std::vector<MatrixPolyType>(E.size());
-   for (int i = 0; i < E.size(); ++i)
-   {
-      if (!E[i].is_null())
-         EMat[i][0] = E[i];
-   }
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_Left(EMat, Psi, QShift, Op, E.front(), Rho, true, 0, Tol, UnityEpsilon, Verbose);
-   for (int i = 0; i < E.size(); ++i)
-   {
-      E[i] = EMat[i].coefficient(0);
-   }
-   std::complex<double> Energy = inner_prod(Rho, EMat.back()[1]);
-   // Check that the linear part of the Hamiltonian is a constant
-   MatrixOperator Remainder = EMat.back()[1] - Energy*E.front();
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
-   {
-      std::cerr << "SolveHamiltonianMPO_Left: warning: Hamiltonian has diverging matrix elements.\n";
-      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(Rho, Remainder));
-      //std::abort();
-   }
-   if (EMat.back().degree() > 1)
-   {
-      for (int d = 2; d <= EMat.back().degree(); ++d)
-      {
-         if (norm_frob(EMat.back().coefficient(d)) > Tol * norm_frob(Energy))
-         {
-            std::cerr << "SolveHamiltonianMPO_Left: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(EMat.back().coefficient(d)) << '\n';
-            std::abort();
-         }
-      }
-   }
-   return Energy;
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                         BasicTriangularMPO const& Op, double Tol, int Verbose)
-{
-   LinearWavefunction PsiLinear;
-   RealDiagonalOperator Lambda;
-   std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
-   MatrixOperator Rho = delta_shift(Lambda*Lambda, Psi.qshift());
-   return SolveHamiltonianMPO_Left(EMat, E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, LinearWavefunction const& Psi,
-                          QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                          MatrixOperator const& Rho, double Tol, int Verbose)
-{
-   if (F.is_null())
-      F = Initial_F(Op, Psi.Basis1());
-   FMat = std::vector<MatrixPolyType>(F.size());
-   for (int i = 0; i < F.size(); ++i)
-   {
-      if (!F[i].is_null())
-         FMat[i][0] = F[i];
-   }
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_Right(FMat, Psi, QShift, Op, F.back(), Rho, true, 0, Tol, UnityEpsilon, Verbose);
-   for (int i = 0; i < F.size(); ++i)
-   {
-      F[i] = FMat[i].coefficient(0);
-   }
-   std::complex<double> Energy = inner_prod(Rho, FMat.front()[1]);
-   // Check that the linear part of the Hamiltonian is a constant
-   MatrixOperator Remainder = FMat.front()[1] - Energy*F.back();
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
-   {
-      std::cerr << "SolveHamiltonianMPO_Right: warning: Hamiltonian has diverging matrix elements.\n";
-      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(Rho, Remainder));
-      //std::abort();
-   }
-   if (FMat.front().degree() > 1)
-   {
-      for (int d = 2; d <= FMat.front().degree(); ++d)
-      {
-         if (norm_frob(FMat.front().coefficient(d)) > Tol * norm_frob(Energy))
-         {
-            std::cerr << "SolveHamiltonianMPO_Right: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(FMat.front().coefficient(d)) << '\n';
-            TRACE(inner_prod(Rho,FMat.front().coefficient(d)));
-            std::abort();
-         }
-      }
-   }
-   // Everything here is in the Hermitian representation, so the actual energy is the conjugate
-   return std::conj(Energy);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                          BasicTriangularMPO const& Op, double Tol, int Verbose)
-{
-   LinearWavefunction PsiLinear;
-   RealDiagonalOperator Lambda;
-   std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
-   MatrixOperator Rho = delta_shift(Lambda*Lambda, adjoint(Psi.qshift()));
-   return SolveHamiltonianMPO_Right(FMat, F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
-}
-
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,
                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
@@ -417,31 +303,7 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> cons
    {
       E1[i] = EMatK1[i][1.0].coefficient(0);
    }
-#if 0  // This will not work if TLeft and TRight are not defined.
-   std::complex<double> Energy = inner_prod(TRight, EMat1.back()[1]);
-   // Check that the linear part of the Hamiltonian is a constant
-   MatrixOperator Remainder = EMat1.back()[1] - Energy*TLeft;
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
-   {
-      std::cerr << "SolveHamiltonianMPO_Left: warning: Hamiltonian has diverging matrix elements.\n";
-      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(TRight, Remainder));
-      //std::abort();
-   }
-   if (EMat1.back().degree() > 1)
-   {
-      for (int d = 2; d <= EMat1.back().degree(); ++d)
-      {
-         if (norm_frob(EMat1.back().coefficient(d)) > Tol * norm_frob(Energy))
-         {
-            std::cerr << "SolveHamiltonianMPO_Left: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(EMat1.back().coefficient(d)) << '\n';
-            std::abort();
-         }
-      }
-   }
-#endif
+   // TODO: Check for diverging components?
 }
 
 void
@@ -467,32 +329,7 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<MatrixPolyType> con
    {
       F1[i] = FMatK1[i][1.0].coefficient(0);
    }
-#if 0
-   std::complex<double> Energy = inner_prod(TLeft, FMat1.front()[1]);
-   // Check that the linear part of the Hamiltonian is a constant
-   MatrixOperator Remainder = FMat1.front()[1] - Energy*TRight
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
-   {
-      std::cerr << "SolveHamiltonianMPO_Right: warning: Hamiltonian has diverging matrix elements.\n";
-      std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(TLeft, Remainder));
-      //std::abort();
-   }
-   if (FMat1.front().degree() > 1)
-   {
-      for (int d = 2; d <= FMat1.front().degree(); ++d)
-      {
-         if (norm_frob(FMat1.front().coefficient(d)) > Tol * norm_frob(Energy))
-         {
-            std::cerr << "SolveHamiltonianMPO_Right: error: energy per site diverges at order " << d << " with component magnitude " << norm_frob(FMat1.front().coefficient(d)) << '\n';
-            TRACE(inner_prod(Rho,FMat1.front().coefficient(d)));
-            std::abort();
-         }
-      }
-   }
-#endif
+   // TODO: Check for diverging components?
 }
 
 void
@@ -503,29 +340,13 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
                             MatrixOperator const& TRight, std::complex<double> ExpIK,
                             double Tol, int Verbose)
 {
-   if (E1.is_null())
-      E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
-   std::vector<KMatrixPolyType> EMatK1(E1.size());
-   for (int i = 0; i < E1.size(); ++i)
-   {
-      if (!E1[i].is_null())
-         EMatK1[i][1.0][0] = E1[i];
-   }
    std::vector<MatrixPolyType> EMat0(E0.size());
    for (int i = 0; i < E0.size(); ++i)
    {
       if (!E0[i].is_null())
          EMat0[i][0] = E0[i];
    }
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Left(EMatK1, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                          PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
-                          true, 0, Tol, UnityEpsilon, Verbose, "top");
-   for (int i = 0; i < E1.size(); ++i)
-   {
-      //TRACE(i)(norm_frob(EMatK1[i][1.0].coefficient(0)))(norm_frob(EMatK1[i][ExpIK].coefficient(0)));
-      E1[i] = EMatK1[i][1.0].coefficient(0);
-   }
+   SolveHamiltonianMPO_EA_Left(E1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
 }
 
 void
@@ -536,26 +357,11 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
                              MatrixOperator const& TRight, std::complex<double> ExpIK,
                              double Tol, int Verbose)
 {
-   if (F1.is_null())
-      F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
-   std::vector<KMatrixPolyType> FMatK1(F1.size());
-   for (int i = 0; i < F1.size(); ++i)
-   {
-      if (!F1[i].is_null())
-         FMatK1[i][1.0][0] = F1[i];
-   }
    std::vector<MatrixPolyType> FMat0(F0.size());
    for (int i = 0; i < F0.size(); ++i)
    {
       if (!F0[i].is_null())
          FMat0[i][0] = F0[i];
    }
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Right(FMatK1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
-                           true, 0, Tol, UnityEpsilon, Verbose);
-   for (int i = 0; i < F1.size(); ++i)
-   {
-      //TRACE(i)(norm_frob(FMatK1[i][1.0].coefficient(0)))(norm_frob(FMatK1[i][ExpIK].coefficient(0)));
-      F1[i] = FMatK1[i][1.0].coefficient(0);
-   }
+   SolveHamiltonianMPO_EA_Right(F1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
 }
