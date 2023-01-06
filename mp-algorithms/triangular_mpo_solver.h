@@ -218,8 +218,8 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                        MatrixOperator const& TRight, std::complex<double> ExpIK,
                        bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                       double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0,
-                       std::string Mode = "top");
+                       double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top",
+                       int Verbose = 0);
 
 void
 SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
@@ -228,7 +228,8 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixP
                         BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                         MatrixOperator const& TRight, std::complex<double> ExpIK,
                         bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+                        double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top",
+                        int Verbose = 0);
 
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,

@@ -28,9 +28,10 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                        MatrixOperator const& TRight, std::complex<double> ExpIK,
                        bool NeedFinalMatrix, int Degree, double Tol,
-                       double UnityEpsilon, int Verbose, std::string Mode)
+                       double UnityEpsilon, std::string Mode, int Verbose)
 {
-   CHECK(Mode == "top" || Mode == "bottom" || Mode == "final");
+   CHECK(Mode == "top" || Mode == "top-ea" || Mode == "bottom" || Mode == "final");
+
    if (Mode == "final")
       CHECK(!TLeft.is_null() && !TRight.is_null());
 
@@ -63,7 +64,7 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
       // Generate the next C matrices
       KMatrixPolyType C;
 
-      if (Mode == "top")
+      if (Mode == "top" || Mode == "top-ea")
       {
          C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
          for (auto I = C.begin(); I != C.end(); ++I)
@@ -124,7 +125,7 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
                HasEigenvalue1 = true;
                if (Verbose > 0)
                   std::cerr << "Decomposing parts parallel to the unit matrix\n";
-               if (Mode == "top")
+               if (Mode == "top" || Mode == "top-ea")
                   EParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TLeft, TRight, UnityEpsilon, Degree);
                else if (Mode == "bottom")
                   EParallel = DecomposeParallelPartsWithMomentum(C, std::conj(ExpIK), TLeft, TRight, UnityEpsilon, Degree);
@@ -143,7 +144,11 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            if (Mode == "top")
+            if (Mode == "top-ea" && Col == 0)
+               E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
+            else if (Mode == "top-ea" && Col == Dim-1)
+               E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TLeft, TRight, PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            else if (Mode == "top" || Mode == "top-ea")
                E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TLeft, TRight, PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "bottom")
                E = DecomposePerpendicularPartsLeft(C, std::conj(ExpIK)*Diag, TLeft, TRight, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
@@ -178,9 +183,9 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
                         BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                         MatrixOperator const& TRight, std::complex<double> ExpIK,
                         bool NeedFinalMatrix, int Degree, double Tol,
-                        double UnityEpsilon, int Verbose)
+                        double UnityEpsilon, std::string Mode, int Verbose)
 {
-   DEBUG_TRACE(Verbose)(Degree)(Tol);
+   CHECK(Mode == "top" || Mode == "top-ea");
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    FMatK1.resize(Dim);
@@ -256,7 +261,10 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
          {
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
-            F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            if (Mode == "top-ea" && Row == 0)
+               F[1.0] = DecomposePerpendicularPartsRight(C[1.0], 1.0, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            else if (Mode == "top" || Mode == "top-ea")
+               F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -298,7 +306,7 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> cons
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    SolveSimpleMPO_EA_Left(EMatK1, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
                           PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
-                          true, 0, Tol, UnityEpsilon, Verbose, "top");
+                          true, 0, Tol, UnityEpsilon, "top-ea", Verbose);
    for (int i = 0; i < E1.size(); ++i)
    {
       E1[i] = EMatK1[i][1.0].coefficient(0);
@@ -324,7 +332,7 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<MatrixPolyType> con
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    SolveSimpleMPO_EA_Right(FMatK1, FMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
-                           true, 0, Tol, UnityEpsilon, Verbose);
+                           true, 0, Tol, UnityEpsilon, "top-ea", Verbose);
    for (int i = 0; i < F1.size(); ++i)
    {
       F1[i] = FMatK1[i][1.0].coefficient(0);
