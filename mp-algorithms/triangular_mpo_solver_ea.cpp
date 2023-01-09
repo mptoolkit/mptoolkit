@@ -17,51 +17,47 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "transfer.h"
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
 
 void
-SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixPolyType> const& EMat0,
-                       std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
-                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                       LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                       BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                       MatrixOperator const& TRight, std::complex<double> ExpIK,
-                       bool NeedFinalMatrix, int Degree, double Tol,
-                       double UnityEpsilon, std::string Mode, int Verbose)
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyType> const& EMatK0,
+                 std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
+                 LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                 LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                 BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                 MatrixOperator const& TRight, std::complex<double> ExpIK,
+                 bool NeedFinalMatrix, int Degree, double Tol,
+                 double UnityEpsilon, std::string Mode, int Verbose)
 {
    CHECK(Mode == "top" || Mode == "top-ea" || Mode == "bottom" || Mode == "final");
 
    if (Mode == "final")
       CHECK(!TLeft.is_null() && !TRight.is_null());
 
-   int Dim = Op.Basis1().size();       // dimension of the MPOa
+   int Dim = Op.Basis1().size();
    EMatK1.resize(Dim);
 
    if (Verbose > 0)
-      std::cerr << "SolveSimpleMPO_EA_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveMPO_EA_Left: dimension is " << Dim << std::endl;
 
-   // Make sure the (0,0) part is identity
-   DEBUG_TRACE(UnityEpsilon);
+   // Make sure the top-left element is the identity.
    if (!classify(Op(0,0), UnityEpsilon).is_identity())
    {
-      // the (0,0) component isn't the identity operator, which is a fatal error.
-      // Show some diagnosics and quit.
-      std::cerr << "SolveSimpleMPO_EA_Left: fatal: (0,0) component of the MPO must be the identity operator.\n";
+      std::cerr << "SolveMPO_EA_Left: fatal: (0,0) component of the MPO must be the identity operator." << std::endl;
       PANIC("Fatal");
    }
 
    int StartCol = 0;
 
-   // solve recursively column 0 onwards
+   // Solve recursively from the first column.
    for (int Col = StartCol; Col < Dim; ++Col)
    {
       if (Verbose > 0)
-      {
-         std::cerr << "Solving column " << (Col) << " of [0:" << (Dim-1) << "]\n";
-      }
+         std::cerr << "Solving column " << (Col) << " of [0:" << (Dim-1) << "]" << std::endl;
 
-      // Generate the next C matrices
+      // Generate the next C matrices: this depends on the E-matrix being calculated.
       KMatrixPolyType C;
 
       if (Mode == "top" || Mode == "top-ea")
@@ -69,14 +65,18 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
          C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
          for (auto I = C.begin(); I != C.end(); ++I)
             I->second *= ExpIK;
-         C[1.0] += inject_left_mask(EMat0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
+         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
+         for (auto I = CInit.begin(); I != CInit.end(); ++I)
+            C[I->first] += I->second;
       }
       else if (Mode == "bottom")
       {
          C = inject_left_mask(EMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col];
          for (auto I = C.begin(); I != C.end(); ++I)
             I->second *= std::conj(ExpIK);
-         C[1.0] += inject_left_mask(EMat0, PsiLeft, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
+         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiLeft, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
+         for (auto I = CInit.begin(); I != CInit.end(); ++I)
+            C[I->first] += I->second;
       }
       else if (Mode == "final")
       {
@@ -87,18 +87,20 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
          KMatrixPolyType CBot = inject_left_mask(EMatKBot, PsiTri, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col];
          for (auto I = CBot.begin(); I != CBot.end(); ++I)
             C[I->first] += std::conj(ExpIK) * I->second;
-         C[1.0] += inject_left_mask(EMat0, PsiTri, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
+         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
+         for (auto I = CInit.begin(); I != CInit.end(); ++I)
+            C[I->first] += I->second;
       }
 
-      // Now do the classification, based on the properties of the diagonal operator
+      // Now do the classification, based on the properties of the diagonal operator.
       BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
       {
-         DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
+
          EMatK1[Col] = SolveZeroDiagonal(C);
       }
       else
@@ -106,71 +108,120 @@ SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixP
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at column " << Col << std::endl;
 
+         // Components parallel to the transfer matrix left eigenvector.
          KComplexPolyType EParallel;
+
+         // Multiplication factor and left and right transfer matrix eigenvectors.
+         std::complex<double> Factor = Classification.factor();
+         MatrixOperator TransferEVLeft = TLeft;
+         MatrixOperator TransferEVRight = TRight;
 
          bool HasEigenvalue1 = false;
          if (Classification.is_unitary())
          {
-            if (!Classification.is_identity())
+            // Find the eigenvectors of the transfer matrix: if the operator is
+            // proportional to the identity in the scalar sector, then the
+            // eigenvectors are those of the usual transfer matrix (TLeft and
+            // TRight), otherwise, we must solve for the generalised transfer
+            // matrix eigenvalues.
+            if (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity())
             {
-               std::cerr << "SolveSimpleMPO_EA_Left: fatal: unitary (non-identity) component on the diagonal is not supported\n";
-               abort();
-            }
-            HasEigenvalue1 = true;
+               if (Verbose > 0)
+                  std::cerr << "Solving unitary diagonal component" << std::endl;
 
-            // For top and bottom modes, we only need to solve for the parallel
-            // component if PsiLeft and PsiRight are the same state.
-            if (!TLeft.is_null())
+               // Find the largest eigenvalue.
+               std::complex<double> EValue;
+               if (Mode == "top" || Mode == "top-ea")
+                  std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(PsiRight, PsiLeft, QShift, ProductMPO(Diag), Tol, Verbose);
+               else if (Mode == "bottom")
+                  std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(PsiLeft, PsiRight, QShift, ProductMPO(Diag), Tol, Verbose);
+               else if (Mode == "final")
+                  std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(PsiRight, PsiRight, QShift, ProductMPO(Diag), Tol, Verbose);
+
+               TransferEVRight = delta_shift(TransferEVRight, QShift);
+
+               EValue = std::conj(EValue); // left eigenvalue, so conjugate (see comment at operator_actions.h)
+
+               if (Verbose > 0)
+                  std::cerr << "Eigenvalue of unitary operator is " << EValue << std::endl;
+
+               // If the magnitude of the largest eigenvalue is less than one, we don't need the eigenvectors.
+               if (std::abs(norm_frob(Factor) - 1.0) < UnityEpsilon)
+               {
+                  TransferEVLeft = MatrixOperator();
+                  TransferEVRight = MatrixOperator();
+               }
+               else
+                  Factor = EValue;
+            }
+            else if (Verbose > 0 && Classification.is_identity())
+               std::cerr << "Diagonal component is the identity" << std::endl;
+            else if (Verbose > 0 && Classification.is_complex_identity())
+               std::cerr << "Diagonal component is proportional to the identity" << std::endl;
+
+            // Multiply by the EA momentum factors for mixed transfer matrices.
+            if (Mode == "top" || Mode == "top-ea")
+               Factor *= ExpIK;
+            else if (Mode == "bottom")
+               Factor *= std::conj(ExpIK);
+
+            // We only need to solve for the parallel components if we have an
+            // eigenvalue of magnitude 1, which we can tell by whether the
+            // eigenvector is null.
+            if (!TransferEVLeft.is_null())
             {
                HasEigenvalue1 = true;
+
                if (Verbose > 0)
-                  std::cerr << "Decomposing parts parallel to the unit matrix\n";
-               if (Mode == "top" || Mode == "top-ea")
-                  EParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TLeft, TRight, UnityEpsilon, Degree);
-               else if (Mode == "bottom")
-                  EParallel = DecomposeParallelPartsWithMomentum(C, std::conj(ExpIK), TLeft, TRight, UnityEpsilon, Degree);
-               else if (Mode == "final")
-                  EParallel = DecomposeParallelPartsWithMomentum(C, 1.0, TLeft, TRight, UnityEpsilon, Degree);
+                  std::cerr << "Decomposing parts parallel to the unit matrix" << std::endl;
+
+               EParallel = DecomposeParallelPartsWithMomentum(C, Factor, TransferEVLeft, TransferEVRight, UnityEpsilon, Degree);
             }
+            else if (Verbose > 0)
+               std::cerr << "Diagonal component has spectral radius < 1" << std::endl;
          }
 
          // Now the remaining components, which is anything that is not proportional
-         // to an eigenvector of magnitude 1
+         // to an eigenvector of magnitude 1.
 
          KMatrixPolyType E;
-         // if we are on the last column and we don't need the matrix elements, then we can
-         // skip this operation
+         // If we are on the last column and we don't need the matrix elements, then we can
+         // skip this operation.
          if (Col < Dim-1 || NeedFinalMatrix)
          {
             if (Verbose > 0)
-               std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
+               std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
+
             if (Mode == "top-ea" && Col == 0)
                E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
             else if (Mode == "top-ea" && Col == Dim-1)
-               E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TLeft, TRight, PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+               // For the EA algorithm, we only need the zero momentum components for the final column.
+               E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TransferEVLeft, TransferEVRight,
+                                                        PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "top" || Mode == "top-ea")
-               E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TLeft, TRight, PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+               E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TransferEVLeft, TransferEVRight,
+                                                   PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "bottom")
-               E = DecomposePerpendicularPartsLeft(C, std::conj(ExpIK)*Diag, TLeft, TRight, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+               E = DecomposePerpendicularPartsLeft(C, std::conj(ExpIK)*Diag, TransferEVLeft, TransferEVRight,
+                                                   PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "final")
-               E = DecomposePerpendicularPartsLeft(C, Diag, TLeft, TRight, PsiRight, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+               E = DecomposePerpendicularPartsLeft(C, Diag, TransferEVLeft, TransferEVRight,
+                                                   PsiRight, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
-         {
-            std::cerr << "Skipping parts perpendicular to the unit matrix for the last column.\n";
-         }
+            std::cerr << "Skipping parts perpendicular to the unit matrix for the last column" << std::endl;
 
-         // Reinsert the components parallel to the unit matrix (if any)
+         // Reinsert the components parallel to the unit matrix (if any).
          for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
          {
             for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
             {
-               // Conj here because this comes from an overlap(x, RightUnitMatrix)
-               E[I->first][J->first] += std::conj(J->second) * TLeft;
+               // Conj here because this comes from an overlap(x, TransferEVRight).
+               E[I->first][J->first] += std::conj(J->second) * TransferEVLeft;
             }
          }
 
-         // Finally, set the E matrix element at this column
+         // Finally, set the E matrix element at this column.
          EMatK1[Col] = E;
       }
    }
@@ -187,41 +238,41 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
 {
    CHECK(Mode == "top" || Mode == "top-ea");
 
-   int Dim = Op.Basis1().size();       // dimension of the MPO
+   int Dim = Op.Basis1().size();
    FMatK1.resize(Dim);
    int Row = Dim-1;
 
    if (Verbose > 0)
       std::cerr << "SolveSimpleMPO_EA_Right: dimension is " << Dim << std::endl;
 
+   // Make sure the bottom-right element is the identity.
    if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
    {
-      std::cerr << "SolveSimpleMPO_EA_Right: fatal: MPO(last,last) must be the identity operator.\n";
+      std::cerr << "SolveSimpleMPO_EA_Right: fatal: MPO(last,last) must be the identity operator." << std::endl;
       PANIC("Fatal");
    }
 
+   // Solve recursively from the final row.
    for (Row = Dim-1; Row >= 0; --Row)
    {
       if (Verbose > 0)
-      {
-         std::cerr << "Solving row " << (Row) << " of [0:" << (Dim-1) << "]\n";
-      }
+         std::cerr << "Solving row " << (Row) << " of [0:" << (Dim-1) << "]" << std::endl;
 
-      // Generate the next C matrices
+      // Generate the next C matrices.
       KMatrixPolyType C = inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
       for (auto I = C.begin(); I != C.end(); ++I)
          I->second *= ExpIK;
       C[1.0] += inject_right_mask(FMat0, PsiTri, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
 
-      // Now do the classification, based on the properties of the diagonal operator
+      // Now do the classification, based on the properties of the diagonal operator.
       BasicFiniteMPO Diag = Op(Row, Row);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
 
       if (Classification.is_null())
       {
-         DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
+
          FMatK1[Row] = SolveZeroDiagonal(C);
       }
       else
@@ -229,6 +280,7 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
          if (Verbose > 0)
             std::cerr << "Non-zero diagonal matrix element at row " << Row << std::endl;
 
+         // Components parallel to the transfer matrix right eigenvector.
          KComplexPolyType FParallel;
 
          bool HasEigenvalue1 = false;
@@ -236,59 +288,64 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
          {
             if (!Classification.is_identity())
             {
-               std::cerr << "SolveSimpleMPO_EA_Right: fatal: unitary (non-identity) component on the diagonal is not supported\n";
+               std::cerr << "SolveSimpleMPO_EA_Right: fatal: unitary (non-identity) component on the diagonal is not supported" << std::endl;
                abort();
             }
-            // We only need to solve for parallel component if PsiLeft and
-            // PsiRight are the same state.
+
+            // We only need to solve for the parallel components if we have an
+            // eigenvalue of magnitude 1, which we can tell by whether the
+            // eigenvector is null.
             if (!TLeft.is_null())
             {
                HasEigenvalue1 = true;
 
                if (Verbose > 0)
-                  std::cerr << "Decomposing parts parallel to the unit matrix\n";
+                  std::cerr << "Decomposing parts parallel to the unit matrix" << std::endl;
+
                FParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TRight, TLeft, UnityEpsilon, Degree);
             }
+            else if (Verbose > 0)
+               std::cerr << "Diagonal component has spectral radius < 1" << std::endl;
          }
 
          // Now the remaining components, which is anything that is not proportional
-         // to an eigenvector of magnitude 1
+         // to an eigenvector of magnitude 1.
 
          KMatrixPolyType F;
-         // if we are on the last row and we don't need the matrix elements, then we can
-         // skip this operation
+         // If we are on the last row and we don't need the matrix elements, then we can
+         // skip this operation.
          if (Row > 0 || NeedFinalMatrix)
          {
             if (Verbose > 0)
-               std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
+               std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
+
             if (Mode == "top-ea" && Row == 0)
+               // For the EA algorithm, we only need the zero momentum components for the first row.
                F[1.0] = DecomposePerpendicularPartsRight(C[1.0], 1.0, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "top" || Mode == "top-ea")
                F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TRight, TLeft, PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
-         {
-            std::cerr << "Skipping parts perpendicular to the unit matrix for the last row.\n";
-         }
+            std::cerr << "Skipping parts perpendicular to the unit matrix for the last row." << std::endl;
 
-         // Reinsert the components parallel to the unit matrix (if any)
+         // Reinsert the components parallel to the unit matrix (if any).
          for (KComplexPolyType::const_iterator I = FParallel.begin(); I != FParallel.end(); ++I)
          {
             for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
             {
-               // Conj here because this comes from an overlap(x, LeftUnitMatrix)
+               // Conj here because this comes from an overlap(x, Tleft).
                F[I->first][J->first] += std::conj(J->second) * TRight;
             }
          }
 
-         // Finally, set the F matrix element at this row
+         // Finally, set the F matrix element at this row.
          FMatK1[Row] = F;
       }
    }
 }
 
 void
-SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,
+SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                             BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
@@ -304,9 +361,9 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> cons
          EMatK1[i][1.0][0] = E1[i];
    }
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   SolveSimpleMPO_EA_Left(EMatK1, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                          PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
-                          true, 0, Tol, UnityEpsilon, "top-ea", Verbose);
+   SolveMPO_EA_Left(EMatK1, EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                    PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK,
+                    true, 0, Tol, UnityEpsilon, "top-ea", Verbose);
    for (int i = 0; i < E1.size(); ++i)
    {
       E1[i] = EMatK1[i][1.0].coefficient(0);
@@ -348,13 +405,13 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
                             MatrixOperator const& TRight, std::complex<double> ExpIK,
                             double Tol, int Verbose)
 {
-   std::vector<MatrixPolyType> EMat0(E0.size());
+   std::vector<KMatrixPolyType> EMatK0(E0.size());
    for (int i = 0; i < E0.size(); ++i)
    {
       if (!E0[i].is_null())
-         EMat0[i][0] = E0[i];
+         EMatK0[i][1.0][0] = E0[i];
    }
-   SolveHamiltonianMPO_EA_Left(E1, EMat0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
+   SolveHamiltonianMPO_EA_Left(E1, EMatK0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
 }
 
 void

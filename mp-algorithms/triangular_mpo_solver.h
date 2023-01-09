@@ -211,15 +211,14 @@ SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
                         std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveSimpleMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<MatrixPolyType> const& EMat0,
-                       std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
-                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                       LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                       BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                       MatrixOperator const& TRight, std::complex<double> ExpIK,
-                       bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                       double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top",
-                       int Verbose = 0);
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyType> const& EMatK0,
+                 std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
+                 LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                 LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                 BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                 MatrixOperator const& TRight, std::complex<double> ExpIK,
+                 bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
+                 double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
 
 void
 SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
@@ -228,8 +227,7 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixP
                         BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
                         MatrixOperator const& TRight, std::complex<double> ExpIK,
                         bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                        double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top",
-                        int Verbose = 0);
+                        double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
 
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,

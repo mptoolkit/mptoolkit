@@ -353,29 +353,29 @@ int main(int argc, char** argv)
       for (int p = 1; p <= Power; ++p)
       {
          // Calculate the full E-matrix.
-         std::vector<MatrixPolyType> EMat0;
+         std::vector<KMatrixPolyType> EMatK0;
          MatrixOperator IdentLeft = MatrixOperator::make_identity(PsiLeft.Basis1());
-         SolveSimpleMPO_Left(EMat0, PsiLinearLeft, QShift, Op, IdentLeft, RhoLeft,
-                             true, Degree*p, Tol, UnityEpsilon, Verbose);
+         SolveMPO_Left(EMatK0, PsiLinearLeft, QShift, Op, IdentLeft, RhoLeft,
+                       true, Degree*p, Tol, UnityEpsilon, Verbose);
 
          std::vector<KMatrixPolyType> EMatKTop;
-         SolveSimpleMPO_EA_Left(EMatKTop, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                PsiLinearLeft, PsiLinearRight, PsiTri,
-                                QShift, Op, TRLLeft, TRLRight, ExpIK,
-                                true, Degree*p, Tol, UnityEpsilon, "top", Verbose);
+         SolveMPO_EA_Left(EMatKTop, EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                          PsiLinearLeft, PsiLinearRight, PsiTri,
+                          QShift, Op, TRLLeft, TRLRight, ExpIK,
+                          true, Degree*p, Tol, UnityEpsilon, "top", Verbose);
 
          std::vector<KMatrixPolyType> EMatKBot;
-         SolveSimpleMPO_EA_Left(EMatKBot, EMat0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                PsiLinearLeft, PsiLinearRight, PsiTri,
-                                QShift, Op, TLRLeft, TLRRight, ExpIK,
-                                true, Degree*p, Tol, UnityEpsilon, "bottom", Verbose);
+         SolveMPO_EA_Left(EMatKBot, EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                          PsiLinearLeft, PsiLinearRight, PsiTri,
+                          QShift, Op, TLRLeft, TLRRight, ExpIK,
+                          true, Degree*p, Tol, UnityEpsilon, "bottom", Verbose);
 
          std::vector<KMatrixPolyType> EMatK1;
          MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
-         SolveSimpleMPO_EA_Left(EMatK1, EMat0, EMatKTop, EMatKBot,
-                                PsiLinearLeft, PsiLinearRight, PsiTri,
-                                QShift, Op, RhoRight, IdentRight, ExpIK,
-                                false, Degree*p, Tol, UnityEpsilon, "final", Verbose);
+         SolveMPO_EA_Left(EMatK1, EMatK0, EMatKTop, EMatKBot,
+                          PsiLinearLeft, PsiLinearRight, PsiTri,
+                          QShift, Op, RhoRight, IdentRight, ExpIK,
+                          false, Degree*p, Tol, UnityEpsilon, "final", Verbose);
 
          // Get the moment for the excitation.
          Moments.push_back(inner_prod(EMatK1.back()[1.0].coefficient(1), IdentRight));
