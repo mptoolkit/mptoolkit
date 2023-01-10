@@ -103,7 +103,7 @@ struct HEff
    MatrixOperator RhoRLLeft, RhoRLRight;
    // Eigenvectors of the left/right non-mixed (i.e. left/left and right/right)
    // transfer matrices with the Ty operator.
-   MatrixOperator TyL, TyR;
+   StateComponent TyL, TyR;
    // Partially contracted versions of TyL and TyR.
    // Only needed when adding TyEff to HEff.
    std::deque<StateComponent> TyLDeque, TyRDeque;

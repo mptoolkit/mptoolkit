@@ -178,6 +178,7 @@ SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi
 // Solvers for excitation ansatz wavefunctions, where PsiTri is the
 // "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
 
+#if 0
 void
 SolveFirstOrderMPO_EA_Left(StateComponent& E2, StateComponent const& E1,
                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
@@ -209,6 +210,7 @@ SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
                         QuantumNumber const& QShift, ProductMPO const& Op,
                         MatrixOperator const& Rho, MatrixOperator const& Ident,
                         std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+#endif
 
 void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyType> const& EMatK0,
@@ -230,7 +232,7 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixP
                         double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
 
 void
-SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<MatrixPolyType> const& EMat0,
+SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                             BasicTriangularMPO const& Op, MatrixOperator const& TLeft,

@@ -238,13 +238,13 @@ int main(int argc, char** argv)
       if (Quiet == 0)
       {
          if (vm.count("string"))
-            std::cout << "#kx/pi              ";
+            std::cout << "#kx/pi                ";
          else
-            std::cout << "#k/pi               ";
+            std::cout << "#k/pi                 ";
          if (NumEigen > 1)
             std::cout << "#n        ";
          if (vm.count("string"))
-            std::cout << "#ky/pi              #|Ty|               ";
+            std::cout << "#ky/pi                #|Ty|                 ";
          std::cout << "#E" << std::endl;
       }
       std::cout << std::left;
@@ -276,14 +276,14 @@ int main(int argc, char** argv)
          {
             int Index = i * PackH.size();
             if (Quiet < 2)
-               std::cout << std::setw(20) << k;
+               std::cout << std::setw(20) << k << "  ";
             if (NumEigen > 1)
-               std::cout << std::setw(10) << i;
+               std::cout << std::setw(8) << i << "  ";
             if (vm.count("string") && Quiet < 2)
             {
                std::deque<MatrixOperator> XDeque = PackH.unpack(&(EVectors[Index]));
-               std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi
-                         << std::setw(20) << std::abs(H.Ty(XDeque));
+               std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi << "  "
+                         << std::setw(20) << std::abs(H.Ty(XDeque)) << "  ";
             }
             std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
 

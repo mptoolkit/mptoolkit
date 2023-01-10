@@ -42,12 +42,14 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
    if (Verbose > 0)
       std::cerr << "SolveMPO_EA_Left: dimension is " << Dim << std::endl;
 
+#if 0
    // Make sure the top-left element is the identity.
    if (!classify(Op(0,0), UnityEpsilon).is_identity())
    {
       std::cerr << "SolveMPO_EA_Left: fatal: (0,0) component of the MPO must be the identity operator." << std::endl;
       PANIC("Fatal");
    }
+#endif
 
    int StartCol = 0;
 
@@ -117,14 +119,14 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
          MatrixOperator TransferEVRight = TRight;
 
          bool HasEigenvalue1 = false;
-         if (Classification.is_unitary())
+         if (Classification.is_unitary() || Classification.is_unclassified())
          {
             // Find the eigenvectors of the transfer matrix: if the operator is
             // proportional to the identity in the scalar sector, then the
             // eigenvectors are those of the usual transfer matrix (TLeft and
             // TRight), otherwise, we must solve for the generalised transfer
             // matrix eigenvalues.
-            if (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity())
+            if (!is_scalar(Diag.Basis2()[0]) || !(Classification.is_complex_identity() || Classification.is_unclassified()))
             {
                if (Verbose > 0)
                   std::cerr << "Solving unitary diagonal component" << std::endl;
@@ -158,6 +160,12 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
                std::cerr << "Diagonal component is the identity" << std::endl;
             else if (Verbose > 0 && Classification.is_complex_identity())
                std::cerr << "Diagonal component is proportional to the identity" << std::endl;
+            else if (Classification.is_unclassified())
+            {
+               if (Verbose > 0)
+                  std::cerr << "Diagonal component is unclassified" << std::endl;
+               Factor = 1.0;
+            }
 
             // Multiply by the EA momentum factors for mixed transfer matrices.
             if (Mode == "top" || Mode == "top-ea")
@@ -192,7 +200,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
-            if (Mode == "top-ea" && Col == 0)
+            if (Mode == "top-ea" && Col == 0 && Classification.is_identity())
                E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
             else if (Mode == "top-ea" && Col == Dim-1)
                // For the EA algorithm, we only need the zero momentum components for the final column.
@@ -245,12 +253,14 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
    if (Verbose > 0)
       std::cerr << "SolveSimpleMPO_EA_Right: dimension is " << Dim << std::endl;
 
+#if 0
    // Make sure the bottom-right element is the identity.
    if (!classify(Op(Row,Row), UnityEpsilon).is_identity())
    {
       std::cerr << "SolveSimpleMPO_EA_Right: fatal: MPO(last,last) must be the identity operator." << std::endl;
       PANIC("Fatal");
    }
+#endif
 
    // Solve recursively from the final row.
    for (Row = Dim-1; Row >= 0; --Row)
@@ -284,9 +294,9 @@ SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<Matrix
          KComplexPolyType FParallel;
 
          bool HasEigenvalue1 = false;
-         if (Classification.is_unitary())
+         if (Classification.is_unitary() || Classification.is_unclassified())
          {
-            if (!Classification.is_identity())
+            if (!(Classification.is_identity() || Classification.is_unclassified()))
             {
                std::cerr << "SolveSimpleMPO_EA_Right: fatal: unitary (non-identity) component on the diagonal is not supported" << std::endl;
                abort();

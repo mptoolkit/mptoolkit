@@ -220,12 +220,12 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    if (!StringOp.is_null())
    {
-      MatrixOperator Tmp;
+      MatrixOperator Tmp, TyLMO, TyRMO;
 
       // Calculate the left/right eigenvectors of the transfer matrix with
       // the string operator corresponding to Ty, fixing their norms and
       // relative phases.
-      std::tie(std::ignore, TyL, Tmp) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearLeft, PsiLeft.qshift(), StringOp);
+      std::tie(std::ignore, TyLMO, Tmp) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearLeft, PsiLeft.qshift(), StringOp);
 
       // Normalize TyL s.t. the sum of the singular values of Tmp = 1.
       MatrixOperator U, Vh;
@@ -233,45 +233,49 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       SingularValueDecomposition(Tmp, U, D, Vh);
 
       Tmp *= 1.0 / trace(D);
-      TyL *= 1.0 / inner_prod(delta_shift(Tmp, PsiLeft.qshift()), TyL);
+      TyLMO *= 1.0 / inner_prod(delta_shift(Tmp, PsiLeft.qshift()), TyLMO);
 
-      std::tie(std::ignore, Tmp, TyR) = get_transfer_eigenpair(PsiLinearRight, PsiLinearRight, PsiRight.qshift(), StringOp);
+      std::tie(std::ignore, Tmp, TyRMO) = get_transfer_eigenpair(PsiLinearRight, PsiLinearRight, PsiRight.qshift(), StringOp);
 
       // Normalize TyR s.t. the sum of the singular values of Tmp = 1.
       SingularValueDecomposition(Tmp, U, D, Vh);
 
       Tmp *= 1.0 / trace(D);
-      TyR *= 1.0 / inner_prod(delta_shift(TyR, PsiRight.qshift()), Tmp);
+      TyRMO *= 1.0 / inner_prod(delta_shift(TyRMO, PsiRight.qshift()), Tmp);
 
       // Fix the phases of TyL and TyR by setting the phases of their traces to be zero.
       // TODO: Figure out a better method to fix the phase: see wavefunction/ibc.cpp.
-      if (TyL.Basis1() == TyL.Basis2() && TyR.Basis1() == TyR.Basis2())
+      if (TyLMO.Basis1() == TyLMO.Basis2() && TyRMO.Basis1() == TyRMO.Basis2())
       {
-         std::complex<double> TyLTrace = trace(TyL);
+         std::complex<double> TyLTrace = trace(TyLMO);
 
          if (std::abs(TyLTrace) > TraceTol)
-            TyL *= std::conj(TyLTrace) / std::abs(TyLTrace);
+            TyLMO *= std::conj(TyLTrace) / std::abs(TyLTrace);
          else
             WARNING("The trace of TyL is below threshold, so Ty will have a spurious phase contribution.")(TyLTrace);
 
-         std::complex<double> TyRTrace = trace(TyR);
+         std::complex<double> TyRTrace = trace(TyRMO);
 
          if (std::abs(TyRTrace) > TraceTol)
-            TyR *= std::conj(TyRTrace) / std::abs(TyRTrace);
+            TyRMO *= std::conj(TyRTrace) / std::abs(TyRTrace);
          else
             WARNING("The trace of TyR is below threshold, so Ty will have a spurious phase contribution.")(TyRTrace);
       }
       else
          WARNING("TyL or TyR is not square, so Ty will have a spurious phase contribution.");
 
+      // Convert TyL and TyR to StateComponents with a trivial local basis.
+      TyL = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
+      TyL.front() = TyLMO;
+
+      TyR = StateComponent(StringOp.Basis2(), PsiRight.Basis2(), PsiRight.Basis2());
+      TyR.front() = TyRMO;
+
       // Only needed when adding TyEff to HEff.
       // Construct the partially contracted versions of TyL and TyR.
       if (Alpha != 0.0)
       {
-         StateComponent TyLSC = StateComponent(StringOp.Basis1(), PsiLeft.Basis1(), PsiLeft.Basis1());
-         TyLSC.front() = TyL;
-
-         TyLDeque.push_back(TyLSC);
+         TyLDeque.push_back(TyL);
 
          CL = PsiLinearLeft.begin();
          O = StringOp.begin();
@@ -281,10 +285,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
             ++CL, ++O;
          }
 
-         StateComponent TyRSC = StateComponent(StringOp.Basis2(), PsiRight.Basis2(), PsiRight.Basis2());
-         TyRSC.front() = TyR;
-
-         TyRDeque.push_front(TyRSC);
+         TyRDeque.push_front(TyR);
          CR = PsiLinearRight.end();
          O = StringOp.end();
          while (CR != PsiLinearRight.begin())
@@ -374,11 +375,12 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
    // Code to target excitations with a specific y-momentum.
    if (Alpha != 0.0)
    {
-      MatrixOperator E, F;
-      SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                             PsiLeft.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
-      SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                              PsiRight.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+      StateComponent E, F;
+      BasicTriangularMPO Op(std::vector<OperatorComponent>(StringOp.begin(), StringOp.end()));
+      SolveHamiltonianMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                                  PsiLeft.qshift(), Op, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+      SolveHamiltonianMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                                   PsiRight.qshift(), Op, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
 
       E *= ExpIK;
       F *= ExpIK;
@@ -400,8 +402,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
 
       // Calculate the contribution where the top B-matrix is in the left
       // semi-infinite part.
-      Tmp = StateComponent(StringOp.Basis1(), PsiLinearRight.Basis1(), PsiLinearLeft.Basis1());
-      Tmp.front() = E;
+      Tmp = E;
       B = BDeque.begin();
       NL = NullLeftDeque.begin();
       CL = PsiLinearLeft.begin();
@@ -422,8 +423,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque) const
 
       // Calculate the contribution where the top B-matrix is in the right
       // semi-infinite part.
-      Tmp = StateComponent(StringOp.Basis2(), PsiLinearLeft.Basis2(), PsiLinearRight.Basis2());
-      Tmp.front() = F;
+      Tmp = F;
       B = BDeque.end();
       NL = NullLeftDeque.end();
       CL = PsiLinearLeft.end();
@@ -451,11 +451,12 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque) const
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
    LinearWavefunction PsiTri = this->ConstructPsiTri(BDeque);
 
-   MatrixOperator E, F;
-   SolveStringMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
-                          PsiLeft.qshift(), StringOp, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
-   SolveStringMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
-                           PsiRight.qshift(), StringOp, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
+   StateComponent E, F;
+   BasicTriangularMPO Op(std::vector<OperatorComponent>(StringOp.begin(), StringOp.end()));
+   SolveHamiltonianMPO_EA_Left(E, TyL, PsiLinearLeft, PsiLinearRight, PsiTri,
+                               PsiLeft.qshift(), Op, TyRLLeft, TyRLRight, ExpIK, GMRESTol, Verbose-1);
+   SolveHamiltonianMPO_EA_Right(F, TyR, PsiLinearLeft, PsiLinearRight, PsiTri,
+                                PsiRight.qshift(), Op, TyLRLeft, TyLRRight, ExpIK, GMRESTol, Verbose-1);
 
    E *= ExpIK;
    F *= ExpIK;

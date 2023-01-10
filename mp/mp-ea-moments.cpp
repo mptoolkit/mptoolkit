@@ -429,8 +429,12 @@ int main(int argc, char** argv)
       // If we wanted both moments and cumulants, print the cumulants now.
       if (CalculateMoments && CalculateCumulants)
       {
-         std::cout << std::endl << "#cumulant ";
-         ShowHeading(ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+         std::cout << std::endl;
+         if (!Quiet)
+         {
+            std::cout << "#cumulant ";
+            ShowHeading(ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+         }
          for (int i = 0; i < Cumulants.size(); ++i)
          {
             std::cout << std::setw(9) << i << " ";
