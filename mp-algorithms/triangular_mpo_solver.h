@@ -223,13 +223,14 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
                  double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
 
 void
-SolveSimpleMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<MatrixPolyType> const& FMat0,
-                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                        LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                        BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                        MatrixOperator const& TRight, std::complex<double> ExpIK,
-                        bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                        double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<KMatrixPolyType> const& FMatK0,
+                  std::vector<KMatrixPolyType> const& FMatKTop, std::vector<KMatrixPolyType> const& FMatKBot,
+                  LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                  LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                  BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
+                  MatrixOperator const& TRight, std::complex<double> ExpIK,
+                  bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
+                  double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
 
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
@@ -240,7 +241,7 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> con
                             double Tol = DefaultTol, int Verbose = 0);
 
 void
-SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<MatrixPolyType> const& FMat0,
+SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<KMatrixPolyType> const& FMatK0,
                              LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                              LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
                              BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
