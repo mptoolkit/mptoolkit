@@ -54,11 +54,12 @@ void PrintFormat(std::complex<double> const& Value, bool ShowRealPart, bool Show
    }
    if (ShowArgument)
    {
-      double Arg =  std::atan2(Value.imag(), Value.real());
+      double Arg = std::arg(Value);
       if (!ShowRadians)
          Arg *= 180.0 / math_const::pi;
       std::cout << std::setw(20) << Arg << "    ";
    }
+   std::cout << std::endl;
 }
 
 void ShowHeading(bool ShowRealPart, bool ShowImagPart,
@@ -98,6 +99,7 @@ int main(int argc, char** argv)
       double Tol = 1e-15;
       double UnityEpsilon = DefaultEigenUnityEpsilon;
       bool Right = false;
+      bool ShowAll = false;
       std::string InputFilename;
       std::string OpStr;
 
@@ -138,6 +140,7 @@ int main(int argc, char** argv)
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("right", prog_opt::bool_switch(&Right), "Calculate the moments in the opposite direction")
+	 ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
@@ -198,6 +201,18 @@ int main(int argc, char** argv)
 
       if (CalculateMomentsFull)
          CalculateMoments = true;
+
+      if (ShowAll)
+      {
+         if (Right)
+         {
+            std::cerr << "fatal: Showing all components with --right is not yet supported." << std::endl;
+            return 1;
+         }
+
+         CalculateMoments = true;
+         CalculateMomentsFull = true;
+      }
 
       // Load the wavefunction.
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
@@ -341,6 +356,8 @@ int main(int argc, char** argv)
          // Print column headings.
          if (CalculateMoments)
             std::cout << "#moment ";
+         if (ShowAll)
+            std::cout << "#matrix #column #momentum(rad/pi)    ";
          if (CalculateMomentsFull)
             std::cout << "#degree ";
          if (CalculateCumulants & !CalculateMoments)
@@ -356,14 +373,22 @@ int main(int argc, char** argv)
       {
          MatrixOperator IdentLeft = MatrixOperator::make_identity(PsiLinearLeft.Basis1());
          MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
-         KMatrixPolyType FinalMatrix;
+         //KMatrixPolyType FinalMatrix;
+         Polynomial<std::complex<double>> FullMoment;
 
          if (!Right)
          {
             // Calculate the full E-matrix.
             std::vector<KMatrixPolyType> EMatK0;
+#if 0
             SolveMPO_Left(EMatK0, PsiLinearLeft, QShift, Op, IdentLeft, RhoLeft,
                           true, Degree*p, Tol, UnityEpsilon, Verbose);
+#else
+            SolveMPO_EA_Left(EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
+                             PsiLinearLeft, LinearWavefunction(), LinearWavefunction(),
+                             QShift, Op, IdentLeft, RhoLeft, ExpIK,
+                             true, Degree*p, Tol, UnityEpsilon, "initial", Verbose);
+#endif
 
             std::vector<KMatrixPolyType> EMatKTop;
             SolveMPO_EA_Left(EMatKTop, EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
@@ -386,7 +411,84 @@ int main(int argc, char** argv)
             // Get the moment for the excitation.
             Moments.push_back(inner_prod(EMatK1.back()[1.0].coefficient(1), IdentRight));
 
-            FinalMatrix = EMatK1.back();
+            // Get the full moment if we need it.
+            if (CalculateMomentsFull && !ShowAll)
+               FullMoment = ExtractOverlap(EMatK1.back()[1.0], IdentRight);
+
+            if (ShowAll)
+            {
+               for (int i = 0; i < EMatKBot.size(); ++i)
+               {
+                  for (auto const& x : EMatK0[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, RhoLeft))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Initial "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < EMatKBot.size(); ++i)
+               {
+                  for (auto const& x : EMatKTop[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, TRLRight))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Top     "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < EMatKBot.size(); ++i)
+               {
+                  for (auto const& x : EMatKBot[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, TLRRight))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Bottom  "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < EMatKBot.size(); ++i)
+               {
+                  for (auto const& x : EMatK1[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, IdentRight))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Final   "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+            }
          }
          else
          {
@@ -418,7 +520,8 @@ int main(int argc, char** argv)
             // Get the moment for the excitation.
             Moments.push_back(inner_prod(delta_shift(IdentLeft, adjoint(QShift)), FMatK1.front()[1.0].coefficient(1)));
 
-            FinalMatrix = FMatK1.front();
+            if (CalculateMomentsFull)
+               FullMoment = ExtractOverlap(FMatK1.front()[1.0], delta_shift(IdentLeft, adjoint(QShift)));
          }
 
          // Get the cumulant if desired.
@@ -435,7 +538,6 @@ int main(int argc, char** argv)
                std::cout << std::setw(9) << Cumulants.size() << " ";
                PrintFormat(Cumulants.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
                            ShowArgument, ShowRadians);
-               std::cout << std::endl;
             }
          }
 
@@ -445,25 +547,19 @@ int main(int argc, char** argv)
             std::cout << std::setw(7) << Moments.size() << " ";
             PrintFormat(Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
                         ShowArgument, ShowRadians);
-            std::cout << std::endl;
          }
-         if (CalculateMomentsFull)
+         if (CalculateMomentsFull & !ShowAll)
          {
             // Print the full moment polynomials.
-            for (auto I = FinalMatrix[1.0].begin(); I != FinalMatrix[1.0].end(); ++I)
+            for (auto const& I : FullMoment)
             {
-               std::complex<double> x;
-               if (!Right)
-                  x = inner_prod(I->second, IdentRight);
-               else
-                  x = inner_prod(delta_shift(IdentLeft, adjoint(QShift)), I->second);
-
                std::cout << std::setw(7) << p << " "
-                         << std::setw(7) << I->first-1 << " ";
-               PrintFormat(x * std::pow(ScaleFactor, double(I->first-1)),
-                           ShowRealPart, ShowImagPart, ShowMagnitude,
+                         << std::setw(7) << I.first-1 << " ";
+               std::complex<double> x = I.second * std::pow(ScaleFactor, double(I.first-1));
+               if (Right)
+                  x = std::conj(x);
+               PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
                            ShowArgument, ShowRadians);
-               std::cout << std::endl;
             }
          }
 
@@ -486,7 +582,6 @@ int main(int argc, char** argv)
             std::cout << std::setw(9) << i << " ";
             PrintFormat(Cumulants[i], ShowRealPart, ShowImagPart, ShowMagnitude,
                         ShowArgument, ShowRadians);
-            std::cout << std::endl;
          }
       }
 

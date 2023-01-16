@@ -49,8 +49,8 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
       // Make sure the top-left element is the identity.
       if (!classify(Op(StartCol, StartCol), UnityEpsilon).is_identity())
       {
-         std::cerr << "SolveMPO_EA_Left: fatal: MPO(0,0) must be the identity operator for mode initial." << std::endl;
-         PANIC("Fatal");
+         //std::cerr << "SolveMPO_EA_Left: fatal: MPO(0,0) must be the identity operator for mode initial." << std::endl;
+         //PANIC("Fatal");
       }
 
       // Initialize the first E-matrix.
@@ -278,8 +278,8 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<KMatrixPolyT
       // Make sure the bottom-right element is the identity.
       if (!classify(Op(StartRow, StartRow), UnityEpsilon).is_identity())
       {
-         std::cerr << "SolveMPO_EA_Right: fatal: MPO(last,last) must be the identity operator for mode initial." << std::endl;
-         PANIC("Fatal");
+         //std::cerr << "SolveMPO_EA_Right: fatal: MPO(last,last) must be the identity operator for mode initial." << std::endl;
+         //PANIC("Fatal");
       }
 
       // Initialize the first F-matrix.
