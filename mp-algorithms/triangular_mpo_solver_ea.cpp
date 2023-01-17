@@ -218,9 +218,13 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
             else if (Mode == "top-ea" && Col == 0 && Classification.is_identity())
                E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
             else if (Mode == "top-ea" && Col == Dim-1)
+            {
+               // This should be zero anyway, so we do not want to run the linear solver for this component.
+               C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the final column.
                E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TransferEVLeft, TransferEVRight,
                                                         PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            }
             else if (Mode == "top" || Mode == "top-ea")
                E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TransferEVLeft, TransferEVRight,
                                                    PsiRight, PsiLeft, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
@@ -445,9 +449,13 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<KMatrixPolyT
                F = DecomposePerpendicularPartsRight(C, Diag, TransferEVRight, TransferEVLeft,
                                                     PsiRight, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
             else if (Mode == "top-ea" && Row == 0)
+            {
+               // This should be zero anyway, so we do not want to run the linear solver for this component.
+               C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the first row.
                F[1.0] = DecomposePerpendicularPartsRight(C[1.0], 1.0, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
                                                          PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+            }
             else if (Mode == "top" || Mode == "top-ea")
                F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
                                                     PsiLeft, PsiRight, QShift, 1.0, HasEigenvalue1, Tol, Verbose);

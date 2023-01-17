@@ -94,6 +94,8 @@ class Polynomial
       const_iterator begin() const { return data_.begin(); }
       const_iterator end() const { return data_.end(); }
 
+      void erase(int n) { data_.erase(n); }
+
       std::map<int, coefficient_type> data_;
 };
 
