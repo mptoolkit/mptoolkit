@@ -178,40 +178,6 @@ SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi
 // Solvers for excitation ansatz wavefunctions, where PsiTri is the
 // "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
 
-#if 0
-void
-SolveFirstOrderMPO_EA_Left(StateComponent& E2, StateComponent const& E1,
-                           LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                           LinearWavefunction const& PsiTri,
-                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                           MatrixOperator const& Ident, MatrixOperator const& Rho,
-                           std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
-
-void
-SolveStringMPO_EA_Left(MatrixOperator& E1, MatrixOperator const& E0,
-                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                       LinearWavefunction const& PsiTri,
-                       QuantumNumber const& QShift, ProductMPO const& Op,
-                       MatrixOperator const& Ident, MatrixOperator const& Rho,
-                       std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
-
-void
-SolveFirstOrderMPO_EA_Right(StateComponent& F2, StateComponent const& F1,
-                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                            LinearWavefunction const& PsiTri,
-                            QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                            MatrixOperator const& Rho, MatrixOperator const& Ident,
-                            std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
-
-void
-SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
-                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                        LinearWavefunction const& PsiTri,
-                        QuantumNumber const& QShift, ProductMPO const& Op,
-                        MatrixOperator const& Rho, MatrixOperator const& Ident,
-                        std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
-#endif
-
 void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyType> const& EMatK0,
                  std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,

@@ -69,40 +69,18 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyTy
       KMatrixPolyType C;
 
       if (Mode == "initial")
-      {
          C = inject_left_mask(EMatK1, PsiLeft, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
-      }
       else if (Mode == "top" || Mode == "top-ea")
-      {
-         C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
-         for (auto I = C.begin(); I != C.end(); ++I)
-            I->second *= ExpIK;
-         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = ExpIK * inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col]
+           + inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiLeft, mask_column(Op, Col))[Col];
       else if (Mode == "bottom")
-      {
-         C = inject_left_mask(EMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col];
-         for (auto I = C.begin(); I != C.end(); ++I)
-            I->second *= std::conj(ExpIK);
-         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiLeft, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = std::conj(ExpIK) * inject_left_mask(EMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col]
+           + inject_left_mask(EMatK0, PsiLeft, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
       else if (Mode == "final")
-      {
-         C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col];
-         KMatrixPolyType CTop = inject_left_mask(EMatKTop, PsiRight, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
-         for (auto I = CTop.begin(); I != CTop.end(); ++I)
-            C[I->first] += ExpIK * I->second;
-         KMatrixPolyType CBot = inject_left_mask(EMatKBot, PsiTri, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col];
-         for (auto I = CBot.begin(); I != CBot.end(); ++I)
-            C[I->first] += std::conj(ExpIK) * I->second;
-         KMatrixPolyType CInit = inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = inject_left_mask(EMatK1, PsiRight, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col]
+           + ExpIK * inject_left_mask(EMatKTop, PsiRight, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col]
+           + std::conj(ExpIK) * inject_left_mask(EMatKBot, PsiTri, QShift, Op.data(), PsiRight, mask_column(Op, Col))[Col]
+           + inject_left_mask(EMatK0, PsiTri, QShift, Op.data(), PsiTri, mask_column(Op, Col))[Col];
 
       // Now do the classification, based on the properties of the diagonal operator.
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -302,40 +280,18 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK1, std::vector<KMatrixPolyT
       KMatrixPolyType C;
 
       if (Mode == "initial")
-      {
          C = inject_right_mask(FMatK1, PsiRight, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
-      }
       else if (Mode == "top" || Mode == "top-ea")
-      {
-         C = inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
-         for (auto I = C.begin(); I != C.end(); ++I)
-            I->second *= ExpIK;
-         KMatrixPolyType CInit = inject_right_mask(FMatK0, PsiTri, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = ExpIK * inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row]
+           + inject_right_mask(FMatK0, PsiTri, QShift, Op.data(), PsiRight, mask_row(Op, Row))[Row];
       else if (Mode == "bottom")
-      {
-         C = inject_right_mask(FMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row];
-         for (auto I = C.begin(); I != C.end(); ++I)
-            I->second *= std::conj(ExpIK);
-         KMatrixPolyType CInit = inject_right_mask(FMatK0, PsiRight, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = std::conj(ExpIK) * inject_right_mask(FMatK1, PsiRight, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row]
+           + inject_right_mask(FMatK0, PsiRight, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row];
       else if (Mode == "final")
-      {
-         C = inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row];
-         KMatrixPolyType CTop = inject_right_mask(FMatKTop, PsiLeft, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row];
-         for (auto I = CTop.begin(); I != CTop.end(); ++I)
-            C[I->first] += ExpIK * I->second;
-         KMatrixPolyType CBot = inject_right_mask(FMatKBot, PsiTri, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row];
-         for (auto I = CBot.begin(); I != CBot.end(); ++I)
-            C[I->first] += std::conj(ExpIK) * I->second;
-         KMatrixPolyType CInit = inject_right_mask(FMatK0, PsiTri, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row];
-         for (auto I = CInit.begin(); I != CInit.end(); ++I)
-            C[I->first] += I->second;
-      }
+         C = inject_right_mask(FMatK1, PsiLeft, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row]
+           + ExpIK * inject_right_mask(FMatKTop, PsiLeft, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row]
+           + std::conj(ExpIK) * inject_right_mask(FMatKBot, PsiTri, QShift, Op.data(), PsiLeft, mask_row(Op, Row))[Row]
+           + inject_right_mask(FMatK0, PsiTri, QShift, Op.data(), PsiTri, mask_row(Op, Row))[Row];
 
       // Now do the classification, based on the properties of the diagonal operator.
       BasicFiniteMPO Diag = Op(Row, Row);
