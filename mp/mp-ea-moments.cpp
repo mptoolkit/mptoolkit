@@ -351,7 +351,12 @@ int main(int argc, char** argv)
          if (CalculateMoments)
             std::cout << "#moment ";
          if (ShowAll)
-            std::cout << "#matrix #column #momentum(rad/pi)    ";
+         {
+            if (!Right)
+               std::cout << "#matrix #column #momentum(rad/pi)    ";
+            else
+               std::cout << "#matrix #row    #momentum(rad/pi)    ";
+         }
          if (CalculateMomentsFull)
             std::cout << "#degree ";
          if (CalculateCumulants & !CalculateMoments)
@@ -519,7 +524,7 @@ int main(int argc, char** argv)
 
             if (ShowAll)
             {
-               for (int i = 0; i < FMatK0.size(); ++i)
+               for (int i = FMatK0.size()-1; i >= 0; --i)
                {
                   for (auto const& x : FMatK0[i])
                   {
@@ -537,7 +542,7 @@ int main(int argc, char** argv)
                   }
                }
 
-               for (int i = 0; i < FMatKTop.size(); ++i)
+               for (int i = FMatKTop.size()-1; i >= 0; --i)
                {
                   for (auto const& x : FMatKTop[i])
                   {
@@ -555,7 +560,7 @@ int main(int argc, char** argv)
                   }
                }
 
-               for (int i = 0; i < FMatKBot.size(); ++i)
+               for (int i = FMatKBot.size()-1; i >= 0; --i)
                {
                   for (auto const& x : FMatKBot[i])
                   {
@@ -573,7 +578,7 @@ int main(int argc, char** argv)
                   }
                }
 
-               for (int i = 0; i < FMatK1.size(); ++i)
+               for (int i = FMatK1.size()-1; i >= 0; --i)
                {
                   for (auto const& x : FMatK1[i])
                   {
