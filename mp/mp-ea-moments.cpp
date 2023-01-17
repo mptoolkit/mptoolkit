@@ -204,12 +204,6 @@ int main(int argc, char** argv)
 
       if (ShowAll)
       {
-         if (Right)
-         {
-            std::cerr << "fatal: Showing all components with --right is not yet supported." << std::endl;
-            return 1;
-         }
-
          CalculateMoments = true;
          CalculateMomentsFull = true;
       }
@@ -417,7 +411,7 @@ int main(int argc, char** argv)
 
             if (ShowAll)
             {
-               for (int i = 0; i < EMatKBot.size(); ++i)
+               for (int i = 0; i < EMatK0.size(); ++i)
                {
                   for (auto const& x : EMatK0[i])
                   {
@@ -435,7 +429,7 @@ int main(int argc, char** argv)
                   }
                }
 
-               for (int i = 0; i < EMatKBot.size(); ++i)
+               for (int i = 0; i < EMatKTop.size(); ++i)
                {
                   for (auto const& x : EMatKTop[i])
                   {
@@ -471,7 +465,7 @@ int main(int argc, char** argv)
                   }
                }
 
-               for (int i = 0; i < EMatKBot.size(); ++i)
+               for (int i = 0; i < EMatK1.size(); ++i)
                {
                   for (auto const& x : EMatK1[i])
                   {
@@ -520,8 +514,83 @@ int main(int argc, char** argv)
             // Get the moment for the excitation.
             Moments.push_back(inner_prod(delta_shift(IdentLeft, adjoint(QShift)), FMatK1.front()[1.0].coefficient(1)));
 
-            if (CalculateMomentsFull)
+            if (CalculateMomentsFull && !ShowAll)
                FullMoment = ExtractOverlap(FMatK1.front()[1.0], delta_shift(IdentLeft, adjoint(QShift)));
+
+            if (ShowAll)
+            {
+               for (int i = 0; i < FMatK0.size(); ++i)
+               {
+                  for (auto const& x : FMatK0[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, delta_shift(RhoRight, adjoint(QShift))))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Initial "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < FMatKTop.size(); ++i)
+               {
+                  for (auto const& x : FMatKTop[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, TLRLeft))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Top     "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < FMatKBot.size(); ++i)
+               {
+                  for (auto const& x : FMatKBot[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, TRLLeft))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Bottom  "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+
+               for (int i = 0; i < FMatK1.size(); ++i)
+               {
+                  for (auto const& x : FMatK1[i])
+                  {
+                     for (auto const& I : ExtractOverlap(x.second, delta_shift(IdentLeft, adjoint(QShift))))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << "Final   "
+                                  << std::setw(7) << i << " "
+                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
+                                  << std::setw(7) << I.first << " ";
+                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
+                                    ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+            }
          }
 
          // Get the cumulant if desired.
