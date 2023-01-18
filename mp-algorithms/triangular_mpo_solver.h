@@ -179,24 +179,34 @@ SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi
 // "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
 
 void
-SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK1, std::vector<KMatrixPolyType> const& EMatK0,
-                 std::vector<KMatrixPolyType> const& EMatKTop, std::vector<KMatrixPolyType> const& EMatKBot,
-                 LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                 LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                 BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                 MatrixOperator const& TRight, std::complex<double> ExpIK,
-                 bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                 double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                 bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
 void
-SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMat1, std::vector<KMatrixPolyType> const& FMatK0,
-                  std::vector<KMatrixPolyType> const& FMatKTop, std::vector<KMatrixPolyType> const& FMatKBot,
-                  LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                  LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                  BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                  MatrixOperator const& TRight, std::complex<double> ExpIK,
-                  bool NeedFinalMatrix, int Degree, double Tol = DefaultTol,
-                  double UnityEpsilon = DefaultEigenUnityEpsilon, std::string Mode = "top", int Verbose = 0);
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+
+std::vector<KMatrixPolyType>
+CalculateCTriK_Left(std::vector<KMatrixPolyType> const& EMatKNorth, std::vector<KMatrixPolyType> const& EMatKEast,
+                    std::vector<KMatrixPolyType> const& EMatKNorthEast, LinearWavefunction const& Psi1,
+                    LinearWavefunction const& Psi2, LinearWavefunction const& PsiTri1,
+                    LinearWavefunction const& PsiTri2, QuantumNumber const& QShift,
+                    BasicTriangularMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
+
+std::vector<KMatrixPolyType>
+CalculateCTriK_Right(std::vector<KMatrixPolyType> const& FMatKSouth, std::vector<KMatrixPolyType> const& FMatKWest,
+                     std::vector<KMatrixPolyType> const& FMatKSouthWest, LinearWavefunction const& Psi1,
+                     LinearWavefunction const& Psi2, LinearWavefunction const& PsiTri1,
+                     LinearWavefunction const& PsiTri2, QuantumNumber const& QShift,
+                     BasicTriangularMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
 
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
