@@ -76,6 +76,51 @@ void ShowHeading(bool ShowRealPart, bool ShowImagPart,
    std::cout << std::endl;
 }
 
+// Get the off-diagonal elements of the triangular unit cell for the excitation
+// specified by the vector of (single-site) windows.
+LinearWavefunction
+ConstructPsiTri(LinearWavefunction PsiLeft, LinearWavefunction PsiRight,
+                std::vector<WavefunctionSectionLeft> WindowVec)
+{
+   // Extract the (single-site) windows.
+   std::vector<StateComponent> BVec;
+   for (WavefunctionSectionLeft Window : WindowVec)
+   {
+      LinearWavefunction PsiLinear;
+      MatrixOperator U;
+      std::tie(PsiLinear, U) = get_left_canonical(Window);
+      // Note that we assume that the window is single-site.
+      BVec.push_back(PsiLinear.get_front()*U);
+   }
+
+   // The "triangular" wavefunction containing all of the windows.
+   LinearWavefunction PsiTri;
+
+   if (PsiLeft.size() == 1)
+      PsiTri.push_back(BVec.back());
+   else
+   {
+      auto CL = PsiLeft.begin();
+      auto CR = PsiRight.begin();
+      auto B = BVec.begin();
+      SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
+      PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
+      ++CL, ++CR, ++B;
+      for (int i = 1; i < PsiLeft.size()-1; ++i)
+      {
+         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
+         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
+         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
+         PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
+         ++CL, ++CR, ++B;
+      }
+      SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
+      PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
+   }
+
+   return PsiTri;
+}
+
 int main(int argc, char** argv)
 {
    try
@@ -100,7 +145,9 @@ int main(int argc, char** argv)
       double UnityEpsilon = DefaultEigenUnityEpsilon;
       bool Right = false;
       bool ShowAll = false;
+      bool Product = false;
       std::string InputFilename;
+      std::string InputFilename2;
       std::string OpStr;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -140,7 +187,7 @@ int main(int argc, char** argv)
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("right", prog_opt::bool_switch(&Right), "Calculate the moments in the opposite direction")
-	 ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
+         ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "Increase verbosity (can be used more than once)")
          ;
@@ -149,11 +196,14 @@ int main(int argc, char** argv)
       hidden.add_options()
          ("psi", prog_opt::value<std::string>(&InputFilename), "wavefunction")
          ("operator", prog_opt::value<std::string>(&OpStr), "operator")
+         ("psi2", prog_opt::value<std::string>(&InputFilename2), "wavefunction2")
+         ("product", prog_opt::bool_switch(&Product), "Read a product operator instead of a triangular operator")
          ;
 
       prog_opt::positional_options_description p;
       p.add("psi", 1);
       p.add("operator", 1);
+      p.add("psi2", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -213,6 +263,15 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(InputFilename, CacheSize, true);
       EAWavefunction Psi = PsiPtr->get<EAWavefunction>();
 
+      EAWavefunction Psi2;
+      if (vm.count("psi2"))
+      {
+         pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(InputFilename2);
+         Psi2 = Psi2Ptr->get<EAWavefunction>();
+      }
+      else
+         Psi2 = Psi;
+
       CHECK(Psi.window_size() == 1);
 
       // Extract the left and right semi-infinite boundaries.
@@ -236,41 +295,19 @@ int main(int argc, char** argv)
       MatrixOperator RhoLeft = delta_shift(LambdaLeft*LambdaLeft, QShift);
       MatrixOperator RhoRight = LambdaRight*LambdaRight;
 
-      // Extract the (single-site) windows.
-      std::vector<StateComponent> BVec;
-      for (WavefunctionSectionLeft Window : Psi.window_vec())
+      MatrixOperator IdentLeft = MatrixOperator::make_identity(PsiLinearLeft.Basis1());
+      MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
+
+      if (Right)
       {
-         LinearWavefunction PsiLinear;
-         MatrixOperator U;
-         std::tie(PsiLinear, U) = get_left_canonical(Window);
-         // Note that we assume that the window is single-site.
-         BVec.push_back(PsiLinear.get_front()*U);
+         RhoLeft.delta_shift(adjoint(QShift));
+         RhoRight.delta_shift(adjoint(QShift));
+         IdentLeft.delta_shift(adjoint(QShift));
+         IdentRight.delta_shift(adjoint(QShift));
       }
 
-      // The "triangular" wavefunction containing all of the windows.
-      LinearWavefunction PsiTri;
-
-      if (PsiLeft.size() == 1)
-         PsiTri.push_back(BVec.back());
-      else
-      {
-         auto CL = PsiLinearLeft.begin();
-         auto CR = PsiLinearRight.begin();
-         auto B = BVec.begin();
-         SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
-         PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
-         ++CL, ++CR, ++B;
-         for (int i = 1; i < PsiLeft.size()-1; ++i)
-         {
-            StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-            SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
-            SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-            PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
-            ++CL, ++CR, ++B;
-         }
-         SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
-         PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
-      }
+      LinearWavefunction PsiTri = ConstructPsiTri(PsiLinearLeft, PsiLinearRight, Psi.window_vec());
+      LinearWavefunction PsiTri2 = ConstructPsiTri(PsiLinearLeft, PsiLinearRight, Psi2.window_vec());
 
       // Calculate the eigenvectors of the mixed left/right and right/left transfer operators.
       std::complex<double> OverlapLR, OverlapRL;
@@ -314,7 +351,14 @@ int main(int argc, char** argv)
       // Load the operator.
       BasicTriangularMPO Op;
       InfiniteLattice Lattice;
-      std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
+      if (!Product)
+         std::tie(Op, Lattice) = ParseTriangularOperatorAndLattice(OpStr);
+      else
+      {
+         ProductMPO ProductOp;
+         std::tie(ProductOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
+         Op = BasicTriangularMPO(std::vector<OperatorComponent>(ProductOp.begin(), ProductOp.end()));
+      }
 
       // Ensure Op is the correct size.
       if (Op.size() < PsiLeft.size())
@@ -370,10 +414,8 @@ int main(int argc, char** argv)
       // Loop over the powers of the operator.
       for (int p = 1; p <= Power; ++p)
       {
-         MatrixOperator IdentLeft = MatrixOperator::make_identity(PsiLinearLeft.Basis1());
-         MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
-         //KMatrixPolyType FinalMatrix;
          Polynomial<std::complex<double>> FullMoment;
+         std::vector<std::tuple<std::string, std::vector<KMatrixPolyType>, MatrixOperator>> FullData;
 
          if (!Right)
          {
@@ -392,21 +434,21 @@ int main(int argc, char** argv)
 
             std::vector<KMatrixPolyType> EMatKTop;
             std::vector<KMatrixPolyType> CTriKTop = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
-                                                                        PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+                                                                        PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
             SolveMPO_EA_Left(EMatKTop, CTriKTop, PsiLinearRight, PsiLinearLeft,
                              QShift, Op, TRLLeft, TRLRight, ExpIK,
                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> EMatKBot;
             std::vector<KMatrixPolyType> CTriKBot = CalculateCTriK_Left(EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                                                        PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+                                                                        PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
             SolveMPO_EA_Left(EMatKBot, CTriKBot, PsiLinearLeft, PsiLinearRight,
                              QShift, Op, TLRLeft, TLRRight, std::conj(ExpIK),
                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> EMatK1;
             std::vector<KMatrixPolyType> CTriK1 = CalculateCTriK_Left(EMatKTop, EMatKBot, EMatK0, PsiLinearRight, PsiLinearRight,
-                                                                      PsiTri, PsiTri, QShift, Op, ExpIK, ExpIK);
+                                                                      PsiTri, PsiTri2, QShift, Op, ExpIK, ExpIK);
             SolveMPO_EA_Left(EMatK1, CTriK1, PsiLinearRight, PsiLinearRight,
                              QShift, Op, RhoRight, IdentRight, 1.0,
                              Degree*p, Tol, UnityEpsilon, false, false, Verbose);
@@ -420,77 +462,10 @@ int main(int argc, char** argv)
 
             if (ShowAll)
             {
-               for (int i = 0; i < EMatK0.size(); ++i)
-               {
-                  for (auto const& x : EMatK0[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, RhoLeft))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Initial "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = 0; i < EMatKTop.size(); ++i)
-               {
-                  for (auto const& x : EMatKTop[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, TRLRight))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Top     "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = 0; i < EMatKBot.size(); ++i)
-               {
-                  for (auto const& x : EMatKBot[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, TLRRight))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Bottom  "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = 0; i < EMatK1.size(); ++i)
-               {
-                  for (auto const& x : EMatK1[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, IdentRight))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Final   "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(I.second * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
+               FullData.push_back(std::tie("Initial ", EMatK0, RhoLeft));
+               FullData.push_back(std::tie("Top     ", EMatKTop, TRLRight));
+               FullData.push_back(std::tie("Bottom  ", EMatKBot, TLRRight));
+               FullData.push_back(std::tie("Final   ", EMatK1, IdentRight));
             }
          }
          else
@@ -500,110 +475,42 @@ int main(int argc, char** argv)
             FMatK0.push_back(KMatrixPolyType());
             FMatK0[0][1.0] = MatrixPolyType(delta_shift(IdentRight, adjoint(QShift)));
             SolveMPO_EA_Right(FMatK0, std::vector<KMatrixPolyType>(), PsiLinearRight, PsiLinearRight,
-                              QShift, Op, delta_shift(RhoRight, adjoint(QShift)), delta_shift(IdentRight, adjoint(QShift)), 1.0,
+                              QShift, Op, RhoRight, IdentRight, 1.0,
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatKTop;
             std::vector<KMatrixPolyType> CTriKTop = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
-                                                                         PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+                                                                         PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
             SolveMPO_EA_Right(FMatKTop, CTriKTop, PsiLinearLeft, PsiLinearRight,
                               QShift, Op, TLRLeft, TLRRight, ExpIK, // TODO: change to std::conj?
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatKBot;
             std::vector<KMatrixPolyType> CTriKBot = CalculateCTriK_Right(FMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                                                         PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+                                                                         PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
             SolveMPO_EA_Right(FMatKBot, CTriKBot, PsiLinearRight, PsiLinearLeft,
                               QShift, Op, TRLLeft, TRLRight, std::conj(ExpIK),
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatK1;
             std::vector<KMatrixPolyType> CTriK1 = CalculateCTriK_Right(FMatKTop, FMatKBot, FMatK0, PsiLinearLeft, PsiLinearLeft,
-                                                                       PsiTri, PsiTri, QShift, Op, ExpIK, ExpIK);
+                                                                       PsiTri, PsiTri2, QShift, Op, ExpIK, ExpIK);
             SolveMPO_EA_Right(FMatK1, CTriK1, PsiLinearLeft, PsiLinearLeft,
-                              QShift, Op, delta_shift(IdentLeft, adjoint(QShift)), delta_shift(RhoLeft, adjoint(QShift)), 1.0,
+                              QShift, Op, IdentLeft, RhoLeft, 1.0,
                               Degree*p, Tol, UnityEpsilon, false, false, Verbose);
 
             // Get the moment for the excitation.
-            Moments.push_back(inner_prod(delta_shift(IdentLeft, adjoint(QShift)), FMatK1.front()[1.0].coefficient(1)));
-
-            if (CalculateMomentsFull && !ShowAll)
-               FullMoment = ExtractOverlap(FMatK1.front()[1.0], delta_shift(IdentLeft, adjoint(QShift)));
+            Moments.push_back(inner_prod(IdentLeft, FMatK1.front()[1.0].coefficient(1)));
 
             if (ShowAll)
             {
-               for (int i = FMatK0.size()-1; i >= 0; --i)
-               {
-                  for (auto const& x : FMatK0[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, delta_shift(RhoRight, adjoint(QShift))))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Initial "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = FMatKTop.size()-1; i >= 0; --i)
-               {
-                  for (auto const& x : FMatKTop[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, TLRLeft))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Top     "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = FMatKBot.size()-1; i >= 0; --i)
-               {
-                  for (auto const& x : FMatKBot[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, TRLLeft))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Bottom  "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
-
-               for (int i = FMatK1.size()-1; i >= 0; --i)
-               {
-                  for (auto const& x : FMatK1[i])
-                  {
-                     for (auto const& I : ExtractOverlap(x.second, delta_shift(IdentLeft, adjoint(QShift))))
-                     {
-                        std::cout << std::setw(7) << p << " "
-                                  << "Final   "
-                                  << std::setw(7) << i << " "
-                                  << std::setw(20) << std::arg(x.first)/math_const::pi << " "
-                                  << std::setw(7) << I.first << " ";
-                        PrintFormat(std::conj(I.second) * std::pow(ScaleFactor, double(I.first-1)),
-                                    ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
-                     }
-                  }
-               }
+               FullData.push_back(std::tie("Initial ", FMatK0, RhoRight));
+               FullData.push_back(std::tie("Top     ", FMatKTop, TLRLeft));
+               FullData.push_back(std::tie("Bottom  ", FMatKBot, TRLLeft));
+               FullData.push_back(std::tie("Final   ", FMatK1, IdentLeft));
             }
+            else if (CalculateMomentsFull)
+               FullMoment = ExtractOverlap(FMatK1.front()[1.0], delta_shift(IdentLeft, adjoint(QShift)));
          }
 
          // Get the cumulant if desired.
@@ -623,14 +530,35 @@ int main(int argc, char** argv)
             }
          }
 
-         if (CalculateMoments & !CalculateMomentsFull)
+         if (ShowAll)
          {
-            // Print the moment.
-            std::cout << std::setw(7) << Moments.size() << " ";
-            PrintFormat(Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
-                        ShowArgument, ShowRadians);
+            // Print all of the columns of each E-matrix for each degree and momentum.
+            for (auto const& I : FullData)
+            {
+               int Dim = std::get<1>(I).size();
+               for (int i = 0; i < Dim; ++i)
+               {
+                  int Index = Right ? Dim-i-1 : i;
+                  for (auto const& E : std::get<1>(I)[Index])
+                  {
+                     for (auto const& J : ExtractOverlap(E.second, std::get<2>(I)))
+                     {
+                        std::cout << std::setw(7) << p << " "
+                                  << std::get<0>(I)
+                                  << std::setw(7) << Index << " "
+                                  << std::setw(20) << std::arg(E.first)/math_const::pi << " "
+                                  << std::setw(7) << J.first << " ";
+                        std::complex<double> x = J.second * std::pow(ScaleFactor, double(J.first-1));
+                        if (Right)
+                           x = std::conj(x);
+                        PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
+                                    ShowArgument, ShowRadians);
+                     }
+                  }
+               }
+            }
          }
-         if (CalculateMomentsFull & !ShowAll)
+         else if (CalculateMomentsFull)
          {
             // Print the full moment polynomials.
             for (auto const& I : FullMoment)
@@ -643,6 +571,13 @@ int main(int argc, char** argv)
                PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
                            ShowArgument, ShowRadians);
             }
+         }
+         else if (CalculateMoments)
+         {
+            // Print the moment.
+            std::cout << std::setw(7) << Moments.size() << " ";
+            PrintFormat(Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
+                        ShowArgument, ShowRadians);
          }
 
          // Get the next power of the MPO.
