@@ -230,7 +230,7 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
       std::complex<double> EValue;
       std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, Tol, Verbose);
       //std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Op(Dim-1, Dim-1)), Tol, Verbose);
-      TRight = delta_shift(TRight, QShift);
+      TLeft = delta_shift(TLeft, adjoint(QShift));
 
       if (Verbose > 0)
          std::cerr << "Eigenvalue of transfer matrix is " << EValue << std::endl;
