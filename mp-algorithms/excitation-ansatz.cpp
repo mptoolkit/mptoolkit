@@ -73,16 +73,16 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    std::tie(OverlapLR, RhoLRLeft, RhoLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift());
    RhoLRLeft = delta_shift(RhoLRLeft, adjoint(PsiLeft.qshift()));
-   if (Verbose > 1)
+   if (Verbose > 0)
       std::cout << "LR overlap = " << OverlapLR << std::endl;
 
    std::tie(OverlapRL, RhoRLLeft, RhoRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift());
    RhoRLRight = delta_shift(RhoRLRight, PsiRight.qshift());
-   if (Verbose > 1)
+   if (Verbose > 0)
       std::cout << "RL overlap = " << OverlapRL << std::endl;
 
    if (std::abs(OverlapLR - std::conj(OverlapRL)) > OverlapTol)
-      PANIC("OverlapLR and conj(OverlapRL) are different!");
+      WARNING("OverlapLR and conj(OverlapRL) are different!");
 
    if (std::abs(std::abs(OverlapLR) - 1.0) > OverlapTol)
    {
@@ -98,16 +98,16 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       // matrices with the string operator corresponding to Ty.
       std::tie(OverlapLR, TyLRLeft, TyLRRight) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearRight, PsiLeft.qshift(), StringOp);
       TyLRLeft = delta_shift(TyLRLeft, adjoint(PsiLeft.qshift()));
-      if (Verbose > 1)
+      if (Verbose > 0)
          std::cout << "TyLR overlap = " << OverlapLR << std::endl;
 
       std::tie(OverlapRL, TyRLLeft, TyRLRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearLeft, PsiLeft.qshift(), StringOp);
       TyRLRight = delta_shift(TyRLRight, PsiRight.qshift());
-      if (Verbose > 1)
+      if (Verbose > 0)
          std::cout << "TyRL overlap = " << OverlapRL << std::endl;
 
       if (std::abs(OverlapLR - std::conj(OverlapRL)) > OverlapTol)
-         PANIC("OverlapLR and conj(OverlapRL) are different!");
+         WARNING("OverlapLR and conj(OverlapRL) are different!");
 
       if (std::abs(std::abs(OverlapLR) - 1.0) > OverlapTol)
       {

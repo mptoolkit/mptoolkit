@@ -182,7 +182,7 @@ void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
@@ -190,7 +190,7 @@ void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
                   LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                   bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
@@ -199,14 +199,14 @@ CalculateCTriK_Left(std::vector<KMatrixPolyType> const& EMatKNorth, std::vector<
                     std::vector<KMatrixPolyType> const& EMatKNorthEast, LinearWavefunction const& Psi1,
                     LinearWavefunction const& Psi2, LinearWavefunction const& PsiTri1,
                     LinearWavefunction const& PsiTri2, QuantumNumber const& QShift,
-                    BasicTriangularMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
+                    GenericMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
 
 std::vector<KMatrixPolyType>
 CalculateCTriK_Right(std::vector<KMatrixPolyType> const& FMatKSouth, std::vector<KMatrixPolyType> const& FMatKWest,
                      std::vector<KMatrixPolyType> const& FMatKSouthWest, LinearWavefunction const& Psi1,
                      LinearWavefunction const& Psi2, LinearWavefunction const& PsiTri1,
                      LinearWavefunction const& PsiTri2, QuantumNumber const& QShift,
-                     BasicTriangularMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
+                     GenericMPO const& Op, std::complex<double> ExpIK1, std::complex<double> ExpIK2);
 
 void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
