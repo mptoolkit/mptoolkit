@@ -371,6 +371,8 @@ int main(int argc, char** argv)
          }
          if (CalculateMomentsFull)
             std::cout << "#degree ";
+         if (ShowAll)
+            std::cout << "#norm                   ";
          if (CalculateCumulants & !CalculateMoments)
             std::cout << "#cumulant ";
          ShowHeading(ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
@@ -506,16 +508,21 @@ int main(int argc, char** argv)
                for (int i = 0; i < Dim; ++i)
                {
                   int Index = Right ? Dim-i-1 : i;
-                  for (auto const& E : std::get<1>(I)[Index])
+                  for (auto const& J : std::get<1>(I)[Index])
                   {
-                     for (auto const& J : ExtractOverlap(E.second, std::get<2>(I)))
+                     for (auto const& E : J.second)
                      {
+                        if (E.second.TransformsAs() != std::get<2>(I).TransformsAs())
+                           break;
+
                         std::cout << std::setw(7) << p << " "
                                   << std::get<0>(I)
                                   << std::setw(7) << Index << " "
-                                  << std::setw(20) << std::arg(E.first)/math_const::pi << " "
-                                  << std::setw(7) << J.first << " ";
-                        std::complex<double> x = J.second * std::pow(ScaleFactor, double(J.first-1));
+                                  << std::setw(20) << std::arg(J.first)/math_const::pi << " "
+                                  << std::setw(7) << E.first << " "
+                                  << std::setw(20) << norm_frob(E.second) << "    ";
+                        std::complex<double> x = inner_prod(std::get<2>(I), E.second)
+                                               * std::pow(ScaleFactor, double(E.first-1));
                         if (Right)
                            x = std::conj(x);
                         PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,

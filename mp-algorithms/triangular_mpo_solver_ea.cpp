@@ -232,6 +232,9 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
       //std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Op(Dim-1, Dim-1)), Tol, Verbose);
       TLeft = delta_shift(TLeft, adjoint(QShift));
 
+      //TLeft *= 1.0 / norm_frob(TLeft);
+      //TRight *= 1.0 / inner_prod(TLeft, TRight);
+
       if (Verbose > 0)
          std::cerr << "Eigenvalue of transfer matrix is " << EValue << std::endl;
 
@@ -297,6 +300,9 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                std::complex<double> EValue;
                std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Diag), Tol, Verbose);
                TransferEVRight = delta_shift(TransferEVRight, QShift);
+
+               //TransferEVLeft *= 1.0 / norm_frob(TransferEVLeft);
+               //TransferEVRight *= 1.0 / inner_prod(TransferEVLeft, TransferEVRight);
 
                //EValue = std::conj(EValue); // left eigenvalue, so conjugate (see comment at operator_actions.h)
 
