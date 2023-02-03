@@ -115,15 +115,6 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 // it is implemented as the fixed point polynomial evaluated at n=0.
 
 std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, LinearWavefunction const& Psi,
-                       QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                       MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
-
-std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                   BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
-
-std::complex<double>
 SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
                        QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                        MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
@@ -131,15 +122,6 @@ SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
 std::complex<double>
 SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
-
-std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, LinearWavefunction const& Psi,
-                    QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                    MatrixOperator const& Rho, double Tol = DefaultTol, int Verbose = 0);
-
-std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                    BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
 std::complex<double>
 SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
@@ -182,7 +164,7 @@ void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                 MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
@@ -190,7 +172,7 @@ void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
                   LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                  MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                   bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 

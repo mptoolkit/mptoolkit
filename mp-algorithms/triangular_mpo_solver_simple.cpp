@@ -252,13 +252,13 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 }
 
 std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, LinearWavefunction const& Psi,
-                         QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                         MatrixOperator const& Rho, double Tol, int Verbose)
+SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
+   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+   MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (E.is_null())
       E = Initial_E(Op, Psi.Basis1());
-   EMat = std::vector<MatrixPolyType>(E.size());
+   std::vector<MatrixPolyType> EMat(E.size());
    for (int i = 0; i < E.size(); ++i)
    {
       if (!E[i].is_null())
@@ -297,41 +297,24 @@ SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, L
 }
 
 std::complex<double>
-SolveHamiltonianMPO_Left(std::vector<MatrixPolyType>& EMat, StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                         BasicTriangularMPO const& Op, double Tol, int Verbose)
+SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
+   BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
    MatrixOperator Rho = delta_shift(Lambda*Lambda, Psi.qshift());
-   return SolveHamiltonianMPO_Left(EMat, E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
+   return SolveHamiltonianMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
 
 std::complex<double>
-SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
-                         QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                         MatrixOperator const& Rho, double Tol, int Verbose)
-{
-   std::vector<MatrixPolyType> EMat(E.size());
-   return SolveHamiltonianMPO_Left(EMat, E, Psi, QShift, Op, Rho, Tol, Verbose);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
-                         BasicTriangularMPO const& Op, double Tol, int Verbose)
-{
-   std::vector<MatrixPolyType> EMat(E.size());
-   return SolveHamiltonianMPO_Left(EMat, E, Psi, Op, Tol, Verbose);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, LinearWavefunction const& Psi,
-                          QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                          MatrixOperator const& Rho, double Tol, int Verbose)
+SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
+   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+   MatrixOperator const& Rho, double Tol, int Verbose)
 {
    if (F.is_null())
       F = Initial_F(Op, Psi.Basis1());
-   FMat = std::vector<MatrixPolyType>(F.size());
+   std::vector<MatrixPolyType> FMat(F.size());
    for (int i = 0; i < F.size(); ++i)
    {
       if (!F[i].is_null())
@@ -372,29 +355,12 @@ SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, 
 }
 
 std::complex<double>
-SolveHamiltonianMPO_Right(std::vector<MatrixPolyType>& FMat, StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                          BasicTriangularMPO const& Op, double Tol, int Verbose)
+SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
+   BasicTriangularMPO const& Op, double Tol, int Verbose)
 {
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
    MatrixOperator Rho = delta_shift(Lambda*Lambda, adjoint(Psi.qshift()));
-   return SolveHamiltonianMPO_Right(FMat, F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
-                          QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                          MatrixOperator const& Rho, double Tol, int Verbose)
-{
-   std::vector<MatrixPolyType> FMat(F.size());
-   return SolveHamiltonianMPO_Right(FMat, F, Psi, QShift, Op, Rho, Tol, Verbose);
-}
-
-std::complex<double>
-SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
-                          BasicTriangularMPO const& Op, double Tol, int Verbose)
-{
-   std::vector<MatrixPolyType> FMat(F.size());
-   return SolveHamiltonianMPO_Right(FMat, F, Psi, Op, Tol, Verbose);
+   return SolveHamiltonianMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }

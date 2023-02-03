@@ -287,6 +287,7 @@ int main(int argc, char** argv)
       std::tie(PsiLinearLeft, LambdaLeft) = get_left_canonical(PsiLeft);
       std::tie(LambdaRight, PsiLinearRight) = get_right_canonical(PsiRight);
 
+      // Get the transfer matrix eigenvectors for the left and right boundaries.
       MatrixOperator RhoLeft = delta_shift(LambdaLeft*LambdaLeft, QShift);
       MatrixOperator RhoRight = LambdaRight*LambdaRight;
 
@@ -299,6 +300,24 @@ int main(int argc, char** argv)
          RhoRight.delta_shift(adjoint(QShift));
          IdentLeft.delta_shift(adjoint(QShift));
          IdentRight.delta_shift(adjoint(QShift));
+      }
+
+      // Get the mixed transfer matrix eigenvectors.
+      MatrixOperator TTopLeft, TTopRight, TBotLeft, TBotRight;
+
+      if (!Right)
+      {
+         std::tie(std::ignore, TTopLeft, TTopRight) = get_transfer_unit_eigenpair(PsiLinearRight, PsiLinearLeft, QShift, Tol, UnityEpsilon, Verbose);
+         TTopRight = delta_shift(TTopRight, QShift);
+         std::tie(std::ignore, TBotLeft, TBotRight) = get_transfer_unit_eigenpair(PsiLinearLeft, PsiLinearRight, QShift, Tol, UnityEpsilon, Verbose);
+         TBotRight = delta_shift(TBotRight, QShift);
+      }
+      else
+      {
+         std::tie(std::ignore, TTopLeft, TTopRight) = get_transfer_unit_eigenpair(PsiLinearLeft, PsiLinearRight, QShift, Tol, UnityEpsilon, Verbose);
+         TTopLeft = delta_shift(TTopLeft, adjoint(QShift));
+         std::tie(std::ignore, TBotLeft, TBotRight) = get_transfer_unit_eigenpair(PsiLinearRight, PsiLinearLeft, QShift, Tol, UnityEpsilon, Verbose);
+         TBotLeft = delta_shift(TBotLeft, adjoint(QShift));
       }
 
       LinearWavefunction PsiTri = ConstructPsiTri(PsiLinearLeft, PsiLinearRight, Psi.window_vec());
@@ -394,30 +413,28 @@ int main(int argc, char** argv)
             EMatK0.push_back(KMatrixPolyType());
             EMatK0[0][1.0] = MatrixPolyType(IdentLeft);
             SolveMPO_EA_Left(EMatK0, std::vector<KMatrixPolyType>(), PsiLinearLeft, PsiLinearLeft,
-                             QShift, Op, IdentLeft, RhoLeft, false, 1.0,
+                             QShift, Op, IdentLeft, RhoLeft, 1.0,
                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> EMatKTop;
             std::vector<KMatrixPolyType> CTriKTop = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
                                                                         PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
-            MatrixOperator TTopLeft, TTopRight;
             SolveMPO_EA_Left(EMatKTop, CTriKTop, PsiLinearRight, PsiLinearLeft,
-                             QShift, Op, TTopLeft, TTopRight, true, ExpIK,
+                             QShift, Op, TTopLeft, TTopRight, ExpIK,
                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> EMatKBot;
             std::vector<KMatrixPolyType> CTriKBot = CalculateCTriK_Left(EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
                                                                         PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
-            MatrixOperator TBotLeft, TBotRight;
             SolveMPO_EA_Left(EMatKBot, CTriKBot, PsiLinearLeft, PsiLinearRight,
-                             QShift, Op, TBotLeft, TBotRight, true, std::conj(ExpIK),
+                             QShift, Op, TBotLeft, TBotRight, std::conj(ExpIK),
                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> EMatK1;
             std::vector<KMatrixPolyType> CTriK1 = CalculateCTriK_Left(EMatKTop, EMatKBot, EMatK0, PsiLinearRight, PsiLinearRight,
                                                                       PsiTri, PsiTri2, QShift, Op, ExpIK, ExpIK);
             SolveMPO_EA_Left(EMatK1, CTriK1, PsiLinearRight, PsiLinearRight,
-                             QShift, Op, RhoRight, IdentRight, false, 1.0,
+                             QShift, Op, RhoRight, IdentRight, 1.0,
                              Degree*p, Tol, UnityEpsilon, false, false, Verbose);
 
             // Get the moment for the excitation.
@@ -442,30 +459,28 @@ int main(int argc, char** argv)
             FMatK0.push_back(KMatrixPolyType());
             FMatK0[0][1.0] = MatrixPolyType(IdentRight);
             SolveMPO_EA_Right(FMatK0, std::vector<KMatrixPolyType>(), PsiLinearRight, PsiLinearRight,
-                              QShift, Op, RhoRight, IdentRight, false, 1.0,
+                              QShift, Op, RhoRight, IdentRight, 1.0,
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatKTop;
             std::vector<KMatrixPolyType> CTriKTop = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
                                                                          PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
-            MatrixOperator TTopLeft, TTopRight;
             SolveMPO_EA_Right(FMatKTop, CTriKTop, PsiLinearLeft, PsiLinearRight,
-                              QShift, Op, TTopLeft, TTopRight, true, ExpIK, // TODO: change to std::conj?
+                              QShift, Op, TTopLeft, TTopRight, ExpIK,
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatKBot;
             std::vector<KMatrixPolyType> CTriKBot = CalculateCTriK_Right(FMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
                                                                          PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op, 1.0, 1.0);
-            MatrixOperator TBotLeft, TBotRight;
             SolveMPO_EA_Right(FMatKBot, CTriKBot, PsiLinearRight, PsiLinearLeft,
-                              QShift, Op, TBotLeft, TBotRight, true, std::conj(ExpIK),
+                              QShift, Op, TBotLeft, TBotRight, std::conj(ExpIK),
                               Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
             std::vector<KMatrixPolyType> FMatK1;
             std::vector<KMatrixPolyType> CTriK1 = CalculateCTriK_Right(FMatKTop, FMatKBot, FMatK0, PsiLinearLeft, PsiLinearLeft,
                                                                        PsiTri, PsiTri2, QShift, Op, ExpIK, ExpIK);
             SolveMPO_EA_Right(FMatK1, CTriK1, PsiLinearLeft, PsiLinearLeft,
-                              QShift, Op, IdentLeft, RhoLeft, false, 1.0,
+                              QShift, Op, IdentLeft, RhoLeft, 1.0,
                               Degree*p, Tol, UnityEpsilon, false, false, Verbose);
 
             // Get the moment for the excitation.

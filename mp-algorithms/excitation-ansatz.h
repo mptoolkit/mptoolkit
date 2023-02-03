@@ -37,7 +37,6 @@ struct EASettings
    int Verbose = 0;
 };
 
-
 // Struct to describe the effective Hamiltonian operator for the MPS excitation ansatz.
 //
 // HEff can be applied to a deque of MatrixOperators describing the X-matrices
@@ -94,7 +93,6 @@ struct HEff
    double Alpha;
 
    LinearWavefunction PsiLinearLeft, PsiLinearRight;
-   std::vector<MatrixPolyType> EMat0, FMat0;
    StateComponent BlockHamL, BlockHamR;
    std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
    std::deque<StateComponent> NullLeftDeque;

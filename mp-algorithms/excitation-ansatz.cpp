@@ -125,7 +125,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Solve the left Hamiltonian environment.
    BlockHamL = Initial_E(HamMPO, PsiLeft.Basis1());
-   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(EMat0, BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> LeftEnergy = SolveHamiltonianMPO_Left(BlockHamL, PsiLeft, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Left energy = " << LeftEnergy << std::endl;
 
@@ -133,7 +133,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Solve the right Hamiltonian environment.
    BlockHamR = Initial_F(HamMPO, PsiLinearRight.Basis2());
-   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(FMat0, BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
+   std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamMPO, GMRESTol, Verbose-1);
    if (Verbose > 0)
       std::cout << "Right energy = " << RightEnergy << std::endl;
 
@@ -192,7 +192,6 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
 
    // Remove the contribution from the ground state energy density.
    BlockHamR.front() -= (RightEnergy + BondEnergyRight) * BlockHamR.back();
-   //FMat0.front().coefficient(0) -= (RightEnergy + BondEnergyRight) * FMat0.back().coefficient(0);
 
    // Get the null space matrices corresponding to each A-matrix in PsiLeft.
    for (StateComponent C : PsiLinearLeft)

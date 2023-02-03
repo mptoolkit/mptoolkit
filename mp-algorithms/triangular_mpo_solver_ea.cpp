@@ -25,7 +25,7 @@ void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                 MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
 {
@@ -35,30 +35,6 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
 
    if (Verbose > 0)
       std::cerr << "SolveMPO_EA_Left: dimension = " << Dim << std::endl;
-
-   if (FindTEVs)
-   {
-      if (Verbose > 0)
-         std::cerr << "Calculating transfer matrix eigenvalues" << std::endl;
-
-      std::complex<double> EValue;
-      std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, Tol, Verbose);
-      //std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Op(0, 0)), Tol, Verbose);
-      TRight = delta_shift(TRight, QShift);
-
-      EValue = std::conj(EValue);
-
-      if (Verbose > 0)
-         std::cerr << "Eigenvalue of transfer matrix is " << EValue << std::endl;
-
-      // If the magnitude of the largest eigenvalue is less than one, we don't need the eigenvectors.
-      if (std::abs(norm_frob(EValue) - 1.0) > UnityEpsilon)
-      {
-         TLeft = MatrixOperator();
-         TRight = MatrixOperator();
-      }
-      // TODO: Should we multiply ExpIK by EValue?
-   }
 
    // Solve recursively from the first empty column.
    for (int Col = StartCol; Col < Dim; ++Col)
@@ -112,7 +88,8 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
 
                // Find the largest eigenvalue.
                std::complex<double> EValue;
-               std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Diag), Tol, Verbose);
+               std::tie(EValue, TransferEVLeft, TransferEVRight)
+                  = get_transfer_unit_eigenpair(Psi1, Psi2, QShift, ProductMPO(Diag), Tol, UnityEpsilon, Verbose);
                TransferEVRight = delta_shift(TransferEVRight, QShift);
 
                EValue = std::conj(EValue); // left eigenvalue, so conjugate (see comment at operator_actions.h)
@@ -120,14 +97,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                if (Verbose > 0)
                   std::cerr << "Eigenvalue of unitary operator is " << EValue << std::endl;
 
-               // If the magnitude of the largest eigenvalue is less than one, we don't need the eigenvectors.
-               if (std::abs(norm_frob(EValue) - 1.0) > UnityEpsilon)
-               {
-                  TransferEVLeft = MatrixOperator();
-                  TransferEVRight = MatrixOperator();
-               }
-               else
-                  Factor = EValue;
+               Factor = EValue;
             }
             else if (Verbose > 0 && Classification.is_identity())
                std::cerr << "Diagonal component is the identity" << std::endl;
@@ -207,13 +177,12 @@ void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
                   LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                  MatrixOperator& TLeft, MatrixOperator& TRight, bool FindTEVs,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
                   bool NeedFinalMatrix, bool EAOptimization, int Verbose)
 {
    int Dim = Op.Basis1().size();
    int StartRow = Dim-1-FMatK.size();
-   // TODO: Is this the best way to do this?
    CHECK(StartRow >= -1);
    std::vector<KMatrixPolyType> Tmp = FMatK;
    FMatK = std::vector<KMatrixPolyType>(StartRow+1);
@@ -221,30 +190,6 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
 
    if (Verbose > 0)
       std::cerr << "SolveMPO_EA_Right: dimension = " << Dim << std::endl;
-
-   if (FindTEVs)
-   {
-      if (Verbose > 0)
-         std::cerr << "Calculating transfer matrix eigenvalues" << std::endl;
-
-      std::complex<double> EValue;
-      std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, Tol, Verbose);
-      //std::tie(EValue, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Op(Dim-1, Dim-1)), Tol, Verbose);
-      TLeft = delta_shift(TLeft, adjoint(QShift));
-
-      //TLeft *= 1.0 / norm_frob(TLeft);
-      //TRight *= 1.0 / inner_prod(TLeft, TRight);
-
-      if (Verbose > 0)
-         std::cerr << "Eigenvalue of transfer matrix is " << EValue << std::endl;
-
-      // If the magnitude of the largest eigenvalue is less than one, we don't need the eigenvectors.
-      if (std::abs(norm_frob(EValue) - 1.0) > UnityEpsilon)
-      {
-         TLeft = MatrixOperator();
-         TRight = MatrixOperator();
-      }
-   }
 
    // Solve recursively from the last empty row.
    for (int Row = StartRow; Row >= 0; --Row)
@@ -298,25 +243,17 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
 
                // Find the largest eigenvalue.
                std::complex<double> EValue;
-               std::tie(EValue, TransferEVLeft, TransferEVRight) = get_transfer_eigenpair(Psi1, Psi2, QShift, ProductMPO(Diag), Tol, Verbose);
+               std::tie(EValue, TransferEVLeft, TransferEVRight)
+                  = get_transfer_unit_eigenpair(Psi1, Psi2, QShift, ProductMPO(Diag), Tol, UnityEpsilon, Verbose);
                TransferEVRight = delta_shift(TransferEVRight, QShift);
 
                //TransferEVLeft *= 1.0 / norm_frob(TransferEVLeft);
                //TransferEVRight *= 1.0 / inner_prod(TransferEVLeft, TransferEVRight);
 
-               //EValue = std::conj(EValue); // left eigenvalue, so conjugate (see comment at operator_actions.h)
-
                if (Verbose > 0)
                   std::cerr << "Eigenvalue of unitary operator is " << EValue << std::endl;
 
-               // If the magnitude of the largest eigenvalue is less than one, we don't need the eigenvectors.
-               if (std::abs(norm_frob(EValue) - 1.0) > UnityEpsilon)
-               {
-                  TransferEVLeft = MatrixOperator();
-                  TransferEVRight = MatrixOperator();
-               }
-               else
-                  Factor = EValue;
+               Factor = EValue;
             }
             else if (Verbose > 0 && Classification.is_identity())
                std::cerr << "Diagonal component is the identity" << std::endl;
@@ -445,14 +382,12 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> con
                             double Tol, int Verbose)
 {
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   MatrixOperator TLeftCopy = TLeft;
-   MatrixOperator TRightCopy = TRight;
 
    std::vector<KMatrixPolyType> EMatK1;
    std::vector<KMatrixPolyType> CTriK = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
                                                             PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
    SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
-                    QShift, Op, TLeftCopy, TRightCopy, false, ExpIK,
+                    QShift, Op, TLeft, TRight, ExpIK,
                     0, Tol, UnityEpsilon, true, true, Verbose);
 
    E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
@@ -470,14 +405,12 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<KMatrixPolyType> co
                              double Tol, int Verbose)
 {
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   MatrixOperator TLeftCopy = TLeft;
-   MatrixOperator TRightCopy = TRight;
 
    std::vector<KMatrixPolyType> FMatK1;
    std::vector<KMatrixPolyType> CTriK = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
                                                              PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
    SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
-                     QShift, Op, TLeftCopy, TRightCopy, false, ExpIK,
+                     QShift, Op, TLeft, TRight, ExpIK,
                      0, Tol, UnityEpsilon, true, true, Verbose);
 
    F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
