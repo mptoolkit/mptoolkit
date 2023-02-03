@@ -39,8 +39,8 @@
 // with diagonal Lambda matrices on both boundaries.  Beyond these boundaries, there is necessarily
 // a unitary matrix to connect this to the basis of the semi-infinite strips.
 
-#if !defined(MPTOOLKIT_WAVFUNCTION_IBC_H)
-#define MPTOOLKIT_WAVFUNCTION_IBC_H
+#if !defined(MPTOOLKIT_WAVEFUNCTION_IBC_H)
+#define MPTOOLKIT_WAVEFUNCTION_IBC_H
 
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"
@@ -56,6 +56,9 @@ class WavefunctionSectionLeft : public CanonicalWavefunctionBase
       WavefunctionSectionLeft(WavefunctionSectionLeft const& Psi) = default;
 
       explicit WavefunctionSectionLeft(InfiniteWavefunctionLeft const& Psi);
+
+      // Make a zero-site WavefunctionSection from a Centre matrix
+      explicit WavefunctionSectionLeft(MatrixOperator const& C);
 
       // Constructs a WavefunctionSectionLeft from a LinearWavefunction that is
       // in left-orthogonal form, with the Lambda matrix at the right-hand edge
@@ -114,15 +117,6 @@ class IBCWavefunction
       IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
                       WavefunctionSectionLeft const& Window_,
                       InfiniteWavefunctionRight const& Right_,
-                      int Offset = 0,
-                      int WindowLeft = 0,
-                      int WindowRight = 0);
-
-      IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-                      WavefunctionSectionLeft const& Window_,
-                      InfiniteWavefunctionRight const& Right_,
-                      std::string LeftFilename,
-                      std::string RightFilename,
                       int Offset = 0,
                       int WindowLeft = 0,
                       int WindowRight = 0);

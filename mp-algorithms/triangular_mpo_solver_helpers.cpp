@@ -347,6 +347,31 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
    return F;
 }
 
+KMatrixPolyType
+DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
+                            BasicFiniteMPO const& Diag,
+                            MatrixOperator const& Identity,
+                            MatrixOperator const& Rho,
+                            LinearWavefunction const& Psi1,
+                            LinearWavefunction const& Psi2,
+                            QuantumNumber const& QShift,
+                            std::complex<double> Scale,
+                            bool HasEigenvalue1,
+                            double Tol,
+                            int Verbose)
+{
+   // Identity and Rho are only used if HasEigenvalue1 is true
+   // Components perpendicular to the identity satisfy equation (24)
+   KMatrixPolyType E;
+   for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
+   {
+      std::complex<double> K = I->first;  // the momentum (complex phase)
+      E[K] = DecomposePerpendicularPartsRight(I->second, I->first, Diag, Identity, Rho,
+                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+   }
+   return E;
+}
+
 // Solve the components for the case where the diagonal operator is zero
 MatrixPolyType
 SolveZeroDiagonal(MatrixPolyType const& C, std::complex<double> K)

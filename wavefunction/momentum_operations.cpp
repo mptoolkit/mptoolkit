@@ -211,6 +211,21 @@ add_triple_prod(MatrixPolyType& Result, std::complex<double> Factor,
    }
 }
 
+void
+add_triple_prod(KMatrixPolyType& Result, std::complex<double> Factor,
+              MatrixOperator const& x,
+              KMatrixPolyType const& E,
+              HermitianProxy<MatrixOperator> const& y,
+              QuantumNumber const& qxy,
+              QuantumNumber const& qEp)
+{
+   // loop over degrees of the polynomial
+   for (KMatrixPolyType::const_iterator K = E.begin(); K != E.end(); ++K)
+   {
+      add_triple_prod(Result[K->first], Factor, x, K->second, y, qxy, qEp);
+   }
+}
+
 
 std::vector<KMatrixPolyType>
 contract_from_left(OperatorComponent const& M,
@@ -360,6 +375,37 @@ inject_right_mask(std::vector<MatrixPolyType> const& In,
 
    std::vector<MatrixPolyType> F;
    std::vector<MatrixPolyType> Result(In);
+
+   while (OpIter != Op.begin())
+   {
+      std::swap(F, Result);
+
+      --I1; --I2; --OpIter; --MaskIter;
+
+      Result = contract_from_right_mask(herm(*OpIter), *I1, F, herm(*I2), *(MaskIter-1), *MaskIter);
+
+   }
+   return delta_shift(Result, adjoint(QShift));
+}
+
+std::vector<KMatrixPolyType>
+inject_right_mask(std::vector<KMatrixPolyType> const& In,
+                  LinearWavefunction const& Psi1,
+                  QuantumNumber const& QShift,
+                  GenericMPO const& Op,
+                  LinearWavefunction const& Psi2,
+                  std::vector<std::vector<int>> const& Mask)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Op.size());
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   GenericMPO::const_iterator OpIter = Op.end();
+   std::vector<std::vector<int> >::const_iterator MaskIter = Mask.end();
+
+   std::vector<KMatrixPolyType> F;
+   std::vector<KMatrixPolyType> Result(In);
 
    while (OpIter != Op.begin())
    {

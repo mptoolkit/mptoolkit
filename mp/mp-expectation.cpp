@@ -76,7 +76,7 @@ int main(int argc, char** argv)
          ("imag,i", prog_opt::bool_switch(&ShowImag),
           "display only the imaginary part of the result")
          ("print,p", prog_opt::bool_switch(&Print), "Print the MPO to standard output (use --verbose to see more detail)")
-    ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
+         ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "Verbose output (use multiple times for more output)")
          ;
@@ -192,6 +192,11 @@ int main(int argc, char** argv)
          Op.ExtendToCoverUnitCell(Psi.size());
 
          x = expectation(Psi, Op.MPO(), Psi2);
+      }
+      else
+      {
+         std::cerr << "mp-expectation: fatal: unsupported wavefunction type.\n";
+         return 1;
       }
 
       if (ShowDefault)
