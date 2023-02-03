@@ -26,6 +26,7 @@
 #include "models/spinlessfermion-u1.h"
 #include "models/spinlessantifermion-u1.h"
 #include "models/spin.h"
+#include "models/contrib/spin-tau.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 
@@ -37,11 +38,13 @@ int main(int argc, char** argv)
    {
       std::string FileName;
       half_int Spin = 0.5;
+      bool Tau = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
+         ("tau", prog_opt::bool_switch(&Tau), "use alternate scaling of the ladder operators")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -76,7 +79,7 @@ int main(int argc, char** argv)
 
       LatticeSite FSite = SpinlessFermionU1();
       LatticeSite AFSite = SpinlessAntifermionU1();
-      LatticeSite SSite = SpinSite(Spin);
+      LatticeSite SSite = Tau ? SpinTau(Spin) : SpinSite(Spin);
       UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite);
       UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite);
       UnitCell Cell(join(FCell, AFCell));
