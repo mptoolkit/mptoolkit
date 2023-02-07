@@ -74,14 +74,14 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
          MatrixOperator TransferEVRight = TRight;
 
          bool HasEigenvalue1 = false;
-         if (Classification.is_unitary() || Classification.is_unclassified())
+         if (Classification.is_unitary())
          {
             // Find the eigenvectors of the transfer matrix: if the operator is
             // proportional to the identity in the scalar sector, then the
             // eigenvectors are those of the usual transfer matrix (TLeft and
             // TRight), otherwise, we must solve for the generalised transfer
             // matrix eigenvalues.
-            if (!is_scalar(Diag.Basis2()[0]) || !(Classification.is_complex_identity() || Classification.is_unclassified()))
+            if (!is_scalar(Diag.Basis2()[0]) || !Classification.is_complex_identity())
             {
                if (Verbose > 0)
                   std::cerr << "Solving unitary diagonal component" << std::endl;
@@ -103,12 +103,6 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                std::cerr << "Diagonal component is the identity" << std::endl;
             else if (Verbose > 0 && Classification.is_complex_identity())
                std::cerr << "Diagonal component is proportional to the identity" << std::endl;
-            else if (Classification.is_unclassified())
-            {
-               if (Verbose > 0)
-                  std::cerr << "Diagonal component is unclassified" << std::endl;
-               Factor = 1.0;
-            }
 
             // Multiply by the momentum factor.
             Factor *= ExpIK;
@@ -140,7 +134,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
-            if (EAOptimization && Col == 0 && Classification.is_identity())
+            if (EAOptimization && Col == 0)
                E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
             else if (EAOptimization && Col == Dim-1)
             {
@@ -229,14 +223,14 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
          MatrixOperator TransferEVRight = TRight;
 
          bool HasEigenvalue1 = false;
-         if (Classification.is_unitary() || Classification.is_unclassified())
+         if (Classification.is_unitary())
          {
             // Find the eigenvectors of the transfer matrix: if the operator is
             // proportional to the identity in the scalar sector, then the
             // eigenvectors are those of the usual transfer matrix (TLeft and
             // TRight), otherwise, we must solve for the generalised transfer
             // matrix eigenvalues.
-            if (!is_scalar(Diag.Basis1()[0]) || !(Classification.is_complex_identity() || Classification.is_unclassified()))
+            if (!is_scalar(Diag.Basis1()[0]) || !Classification.is_complex_identity())
             {
                if (Verbose > 0)
                   std::cerr << "Solving unitary diagonal component" << std::endl;
@@ -259,12 +253,6 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                std::cerr << "Diagonal component is the identity" << std::endl;
             else if (Verbose > 0 && Classification.is_complex_identity())
                std::cerr << "Diagonal component is proportional to the identity" << std::endl;
-            else if (Classification.is_unclassified())
-            {
-               if (Verbose > 0)
-                  std::cerr << "Diagonal component is unclassified" << std::endl;
-               Factor = 1.0;
-            }
 
             // Multiply by the momentum factor.
             Factor *= ExpIK;
@@ -327,6 +315,98 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
    }
 }
 
+void
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, ProductMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
+                 bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+{
+   CHECK(Op.is_string());
+
+   // If EMatK is nonempty, we must already have the result, so we can return early.
+   if (!EMatK.empty())
+      return;
+
+   if (Verbose > 0)
+      std::cerr << "SolveMPO_EA_Left: string operator" << std::endl;
+
+   KMatrixPolyType C = CTriK[0];
+
+   // Components parallel to the transfer matrix left eigenvector.
+   if (Verbose > 0)
+      std::cerr << "Decomposing parts parallel to the unit matrix" << std::endl;
+
+   KComplexPolyType EParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TLeft, TRight, UnityEpsilon, Degree);
+
+   // Now the remaining components, which is anything that is not proportional
+   // to an eigenvector of magnitude 1.
+   if (Verbose > 0)
+      std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
+
+   KMatrixPolyType E = DecomposePerpendicularPartsLeft(C, ExpIK*BasicFiniteMPO(Op), TLeft, TRight,
+                                                       Psi1, Psi2, QShift, 1.0, true, Tol, Verbose);
+
+   // Reinsert the components parallel to the unit matrix (if any).
+   for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
+   {
+      for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+      {
+         // Conj here because this comes from an overlap(x, TRight).
+         E[I->first][J->first] += std::conj(J->second) * TLeft;
+      }
+   }
+
+   EMatK.push_back(E);
+}
+
+void
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, ProductMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
+                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+{
+   CHECK(Op.is_string());
+
+   // If FMatK is nonempty, we must already have the result, so we can return early.
+   if (!FMatK.empty())
+      return;
+
+   if (Verbose > 0)
+      std::cerr << "SolveMPO_EA_Right: string operator" << std::endl;
+
+   KMatrixPolyType C = CTriK[0];
+
+   // Components parallel to the transfer matrix right eigenvector.
+   if (Verbose > 0)
+      std::cerr << "Decomposing parts parallel to the unit matrix" << std::endl;
+
+   KComplexPolyType FParallel = DecomposeParallelPartsWithMomentum(C, ExpIK, TRight, TLeft, UnityEpsilon, Degree);
+
+   // Now the remaining components, which is anything that is not proportional
+   // to an eigenvector of magnitude 1.
+   if (Verbose > 0)
+      std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
+
+   KMatrixPolyType F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*BasicFiniteMPO(Op), TRight, TLeft,
+                                                        Psi1, Psi2, QShift, 1.0, true, Tol, Verbose);
+
+   // Reinsert the components parallel to the unit matrix (if any).
+   for (KComplexPolyType::const_iterator I = FParallel.begin(); I != FParallel.end(); ++I)
+   {
+      for (ComplexPolyType::const_iterator J = I->second.begin(); J != I->second.end(); ++J)
+      {
+         // Conj here because this comes from an overlap(x, TLeft).
+         F[I->first][J->first] += std::conj(J->second) * TRight;
+      }
+   }
+
+   FMatK.push_back(F);
+}
+
 std::vector<KMatrixPolyType>
 CalculateCTriK_Left(std::vector<KMatrixPolyType> const& EMatKNorth, std::vector<KMatrixPolyType> const& EMatKEast,
                     std::vector<KMatrixPolyType> const& EMatKNorthEast, LinearWavefunction const& Psi1,
@@ -374,52 +454,6 @@ CalculateCTriK_Right(std::vector<KMatrixPolyType> const& FMatKSouth, std::vector
 }
 
 void
-SolveHamiltonianMPO_EA_Left(StateComponent& E1, std::vector<KMatrixPolyType> const& EMatK0,
-                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                            LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                            BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                            MatrixOperator const& TRight, std::complex<double> ExpIK,
-                            double Tol, int Verbose)
-{
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-
-   std::vector<KMatrixPolyType> EMatK1;
-   std::vector<KMatrixPolyType> CTriK = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
-                                                            PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
-                    QShift, Op, TLeft, TRight, ExpIK,
-                    0, Tol, UnityEpsilon, true, true, Verbose);
-
-   E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
-   for (int i = 0; i < E1.size(); ++i)
-      E1[i] = EMatK1[i][1.0].coefficient(0);
-   // TODO: Check for diverging components?
-}
-
-void
-SolveHamiltonianMPO_EA_Right(StateComponent& F1, std::vector<KMatrixPolyType> const& FMatK0,
-                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
-                             BasicTriangularMPO const& Op, MatrixOperator const& TLeft,
-                             MatrixOperator const& TRight, std::complex<double> ExpIK,
-                             double Tol, int Verbose)
-{
-   double UnityEpsilon = DefaultEigenUnityEpsilon;
-
-   std::vector<KMatrixPolyType> FMatK1;
-   std::vector<KMatrixPolyType> CTriK = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
-                                                             PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
-                     QShift, Op, TLeft, TRight, ExpIK,
-                     0, Tol, UnityEpsilon, true, true, Verbose);
-
-   F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
-   for (int i = 0; i < F1.size(); ++i)
-      F1[i] = FMatK1[i][1.0].coefficient(0);
-   // TODO: Check for diverging components?
-}
-
-void
 SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
                             LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
                             LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
@@ -432,7 +466,20 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
       if (!E0[i].is_null())
          EMatK0[i][1.0][0] = E0[i];
 
-   SolveHamiltonianMPO_EA_Left(E1, EMatK0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+
+   std::vector<KMatrixPolyType> EMatK1;
+   std::vector<KMatrixPolyType> CTriK
+      = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
+                            PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
+                    QShift, Op, TLeft, TRight, ExpIK,
+                    0, Tol, UnityEpsilon, true, true, Verbose);
+
+   E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
+   for (int i = 0; i < E1.size(); ++i)
+      E1[i] = EMatK1[i][1.0].coefficient(0);
+   // TODO: Check for diverging components?
 }
 
 void
@@ -448,5 +495,76 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
       if (!F0[i].is_null())
          FMatK0[i][1.0][0] = F0[i];
 
-   SolveHamiltonianMPO_EA_Right(F1, FMatK0, PsiLeft, PsiRight, PsiTri, QShift, Op, TLeft, TRight, ExpIK, Tol, Verbose);
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+
+   std::vector<KMatrixPolyType> FMatK1;
+   std::vector<KMatrixPolyType> CTriK
+      = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
+                             PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
+                     QShift, Op, TLeft, TRight, ExpIK,
+                     0, Tol, UnityEpsilon, true, true, Verbose);
+
+   F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
+   for (int i = 0; i < F1.size(); ++i)
+      F1[i] = FMatK1[i][1.0].coefficient(0);
+   // TODO: Check for diverging components?
+}
+
+void
+SolveStringMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
+                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                       LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                       ProductMPO const& Op, MatrixOperator const& TLeft,
+                       MatrixOperator const& TRight, std::complex<double> ExpIK,
+                       double Tol, int Verbose)
+{
+   std::vector<KMatrixPolyType> EMatK0(E0.size());
+   for (int i = 0; i < E0.size(); ++i)
+      if (!E0[i].is_null())
+         EMatK0[i][1.0][0] = E0[i];
+
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+
+   std::vector<KMatrixPolyType> EMatK1;
+   std::vector<KMatrixPolyType> CTriK
+      = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
+                            PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
+                    QShift, Op, TLeft, TRight, ExpIK,
+                    0, Tol, UnityEpsilon, true, false, Verbose);
+
+   E1 = StateComponent(Op.Basis1(), PsiRight.Basis1(), PsiLeft.Basis1());
+   for (int i = 0; i < E1.size(); ++i)
+      E1[i] = EMatK1[i][1.0].coefficient(0);
+   // TODO: Check for diverging components?
+}
+
+void
+SolveStringMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
+                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
+                        LinearWavefunction const& PsiTri, QuantumNumber const& QShift,
+                        ProductMPO const& Op, MatrixOperator const& TLeft,
+                        MatrixOperator const& TRight, std::complex<double> ExpIK,
+                        double Tol, int Verbose)
+{
+   std::vector<KMatrixPolyType> FMatK0(F0.size());
+   for (int i = 0; i < F0.size(); ++i)
+      if (!F0[i].is_null())
+         FMatK0[i][1.0][0] = F0[i];
+
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+
+   std::vector<KMatrixPolyType> FMatK1;
+   std::vector<KMatrixPolyType> CTriK
+      = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
+                             PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
+   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
+                     QShift, Op, TLeft, TRight, ExpIK,
+                     0, Tol, UnityEpsilon, true, false, Verbose);
+
+   F1 = StateComponent(Op.Basis1(), PsiLeft.Basis2(), PsiRight.Basis2());
+   for (int i = 0; i < F1.size(); ++i)
+      F1[i] = FMatK1[i][1.0].coefficient(0);
+   // TODO: Check for diverging components?
 }
