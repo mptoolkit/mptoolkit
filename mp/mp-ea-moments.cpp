@@ -695,6 +695,9 @@ int main(int argc, char** argv)
                   {
                      for (auto const& E : J.second)
                      {
+                        if (std::get<2>(I).is_null())
+                           break;
+
                         if (E.second.TransformsAs() != std::get<2>(I).TransformsAs())
                            break;
 
