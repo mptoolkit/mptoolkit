@@ -122,6 +122,17 @@ InfiniteMPO::as_complex() const
    return boost::get<std::complex<double> >(this->op());
 }
 
+GenericMPO const&
+InfiniteMPO::as_generic_mpo() const
+{
+   if (this->is_triangular())
+      return this->as_basic_triangular_mpo();
+   else if (this->is_product())
+      return this->as_product_mpo();
+   else
+      throw std::runtime_error("fatal: InfiniteMPO must be a triangular or product MPO to convert to GenericMPO.");
+}
+
 std::ostream& operator<<(std::ostream& out, InfiniteMPO const& Op)
 {
    out << Op.name();
