@@ -73,6 +73,8 @@ class InfiniteMPO
 
       std::complex<double> as_complex() const;
 
+      GenericMPO const& as_generic_mpo() const;
+
       operator_type& op() { return Operator; }
       operator_type const& op() const { return Operator; }
 

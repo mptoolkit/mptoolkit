@@ -321,9 +321,9 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  QuantumNumber const& QShift, ProductMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                 bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                 int Verbose)
 {
-   CHECK(Op.is_string());
+   PRECONDITION(Op.is_string());
 
    // If EMatK is nonempty, we must already have the result, so we can return early.
    if (!EMatK.empty())
@@ -367,9 +367,9 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, ProductMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                  int Verbose)
 {
-   CHECK(Op.is_string());
+   PRECONDITION(Op.is_string());
 
    // If FMatK is nonempty, we must already have the result, so we can return early.
    if (!FMatK.empty())
@@ -405,6 +405,44 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
    }
 
    FMatK.push_back(F);
+}
+
+void
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, InfiniteMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
+                 bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+{
+   if (Op.is_triangular())
+      SolveMPO_EA_Left(EMatK, CTriK, Psi1, Psi2, QShift, Op.as_basic_triangular_mpo(),
+                       TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon,
+                       NeedFinalMatrix, EAOptimization, Verbose);
+   else if (Op.is_product())
+      SolveMPO_EA_Left(EMatK, CTriK, Psi1, Psi2, QShift, Op.as_product_mpo(),
+                       TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Verbose);
+   else
+      throw std::runtime_error("SolveMPO_EA_Left: fatal: InfiniteMPO must be a triangular or product MPO.");
+}
+
+void
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, InfiniteMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
+                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+{
+   if (Op.is_triangular())
+      SolveMPO_EA_Right(FMatK, CTriK, Psi1, Psi2, QShift, Op.as_basic_triangular_mpo(),
+                        TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon,
+                        NeedFinalMatrix, EAOptimization, Verbose);
+   else if (Op.is_product())
+      SolveMPO_EA_Right(FMatK, CTriK, Psi1, Psi2, QShift, Op.as_product_mpo(),
+                        TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Verbose);
+   else
+      throw std::runtime_error("SolveMPO_EA_Right: fatal: InfiniteMPO must be a triangular or product MPO.");
 }
 
 std::vector<KMatrixPolyType>
@@ -472,9 +510,8 @@ SolveHamiltonianMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
    std::vector<KMatrixPolyType> CTriK
       = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
                             PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
-                    QShift, Op, TLeft, TRight, ExpIK,
-                    0, Tol, UnityEpsilon, true, true, Verbose);
+   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft, QShift, Op, TLeft, TRight,
+                    ExpIK, 0, Tol, UnityEpsilon, true, true, Verbose);
 
    E1 = StateComponent(Op.Basis(), PsiRight.Basis1(), PsiLeft.Basis1());
    for (int i = 0; i < E1.size(); ++i)
@@ -501,9 +538,8 @@ SolveHamiltonianMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
    std::vector<KMatrixPolyType> CTriK
       = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
                              PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
-                     QShift, Op, TLeft, TRight, ExpIK,
-                     0, Tol, UnityEpsilon, true, true, Verbose);
+   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight, QShift, Op, TLeft, TRight,
+                     ExpIK, 0, Tol, UnityEpsilon, true, true, Verbose);
 
    F1 = StateComponent(Op.Basis(), PsiLeft.Basis2(), PsiRight.Basis2());
    for (int i = 0; i < F1.size(); ++i)
@@ -530,9 +566,8 @@ SolveStringMPO_EA_Left(StateComponent& E1, StateComponent const& E0,
    std::vector<KMatrixPolyType> CTriK
       = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
                             PsiRight, PsiLeft, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft,
-                    QShift, Op, TLeft, TRight, ExpIK,
-                    0, Tol, UnityEpsilon, true, false, Verbose);
+   SolveMPO_EA_Left(EMatK1, CTriK, PsiRight, PsiLeft, QShift, Op, TLeft, TRight,
+                    ExpIK, 0, Tol, UnityEpsilon, Verbose);
 
    E1 = StateComponent(Op.Basis1(), PsiRight.Basis1(), PsiLeft.Basis1());
    for (int i = 0; i < E1.size(); ++i)
@@ -559,9 +594,8 @@ SolveStringMPO_EA_Right(StateComponent& F1, StateComponent const& F0,
    std::vector<KMatrixPolyType> CTriK
       = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
                              PsiLeft, PsiRight, PsiTri, PsiTri, QShift, Op, 1.0, 1.0);
-   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight,
-                     QShift, Op, TLeft, TRight, ExpIK,
-                     0, Tol, UnityEpsilon, true, false, Verbose);
+   SolveMPO_EA_Right(FMatK1, CTriK, PsiLeft, PsiRight, QShift, Op, TLeft, TRight,
+                     ExpIK, 0, Tol, UnityEpsilon, Verbose);
 
    F1 = StateComponent(Op.Basis1(), PsiLeft.Basis2(), PsiRight.Basis2());
    for (int i = 0; i < F1.size(); ++i)

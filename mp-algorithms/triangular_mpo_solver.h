@@ -33,6 +33,7 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H)
 #define MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H
 
+#include "mpo/infinite_mpo.h"
 #include "wavefunction/momentum_operations.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/infinitewavefunctionright.h"
@@ -181,13 +182,29 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, ProductMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
+                 double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+void
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, ProductMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
+                  double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+void
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, InfiniteMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
 void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
                   LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
-                  QuantumNumber const& QShift, ProductMPO const& Op,
+                  QuantumNumber const& QShift, InfiniteMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
                   bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
