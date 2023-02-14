@@ -49,7 +49,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "Show this help message")
          ("momentum,k", prog_opt::value(&K), FormatDefault("The momentum (in units of pi)", K).c_str())
-         ("output,o", prog_opt::value(&OutputFilename), "Prefix for saving output files (will not save if not specified)")
+         ("output,o", prog_opt::value(&OutputFilename), "Output filename")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
@@ -76,10 +76,10 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("psi") == 0)
+      if (vm.count("help") || vm.count("psi") == 0 || vm.count("output") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <psi> [psi-right]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <psi> [psi-right] -o <output-psi>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -136,11 +136,30 @@ int main(int argc, char** argv)
          PsiRight = InfiniteWavefunctionRight(PsiLeft);
       }
 
+      if (PsiLeft.size() > 1 || PsiRight.size() > 1)
+      {
+         // TODO
+         std::cerr << "fatal: multisite unit cells are not implemented yet." << std::endl;
+         return 1;
+      }
+
       InfiniteLattice Lattice;
       UnitCellMPO Op;
       std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
-      CHECK(Op.size() == 1)(PsiLeft.size() == 1)(PsiRight.size() == 1);
+      if (!Op.is_scalar())
+      {
+         // TODO
+         std::cerr << "fatal: handling of nonscalar operators is not implemented yet." << std::endl;
+         return 1;
+      }
+
+      if (Op.size() > 1)
+      {
+         // TODO
+         std::cerr << "fatal: multisite operators are not implemented yet." << std::endl;
+         return 1;
+      }
 
       WavefunctionSectionLeft PsiWindow(PsiLeft);
 

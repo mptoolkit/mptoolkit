@@ -326,6 +326,8 @@ int main(int argc, char** argv)
 
          // We only handle string operators at the moment.
          CHECK(StringOp.is_string());
+         // We only handle scalar operators at the moment.
+         CHECK(StringOp.is_scalar());
       }
 
       // Ensure StringOp is the correct size.
