@@ -513,7 +513,7 @@ mp-ibc-join : random_wavefunc.o triangular_mpo_solver.o momentum_operations.o in
 mp-ibc-correlation : number-parser.o
 mp-excitation-ansatz : rangelist.o excitation-ansatz.o triangular_mpo_solver.o ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o triangular_mpo_solver_ea.o
 mp-ibc-wavepacket : rangelist.o
-mp-ea-moments: triangular_mpo_solver.o ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o triangular_mpo_solver_ea.o
+mp-ea-moments: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o
 
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o

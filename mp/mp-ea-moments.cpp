@@ -21,18 +21,13 @@
 #include "mp/copyright.h"
 #include <boost/program_options.hpp>
 #include "common/environment.h"
-#include "interface/inittemp.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/prog_options.h"
+#include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
+#include "mp-algorithms/ef-matrix.h"
 #include "mp-algorithms/triangular_mpo_solver_helpers.h"
-#include "mp-algorithms/transfer.h"
-
-// The tolerance of the trace of the left/right generalised transfer
-// eigenvectors for fixing their relative phases.
-double const TraceTol = 1e-8;
 
 namespace prog_opt = boost::program_options;
 
@@ -75,51 +70,6 @@ void ShowHeading(bool ShowRealPart, bool ShowImagPart,
    std::cout << std::endl;
 }
 
-// Get the off-diagonal elements of the triangular unit cell for the excitation
-// specified by the vector of (single-site) windows.
-LinearWavefunction
-ConstructPsiTri(LinearWavefunction PsiLeft, LinearWavefunction PsiRight,
-                std::vector<WavefunctionSectionLeft> WindowVec)
-{
-   // Extract the (single-site) windows.
-   std::vector<StateComponent> BVec;
-   for (WavefunctionSectionLeft Window : WindowVec)
-   {
-      LinearWavefunction PsiLinear;
-      MatrixOperator U;
-      std::tie(PsiLinear, U) = get_left_canonical(Window);
-      // Note that we assume that the window is single-site.
-      BVec.push_back(PsiLinear.get_front()*U);
-   }
-
-   // The "triangular" wavefunction containing all of the windows.
-   LinearWavefunction PsiTri;
-
-   if (PsiLeft.size() == 1)
-      PsiTri.push_back(BVec.back());
-   else
-   {
-      auto CL = PsiLeft.begin();
-      auto CR = PsiRight.begin();
-      auto B = BVec.begin();
-      SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
-      PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
-      ++CL, ++CR, ++B;
-      for (int i = 1; i < PsiLeft.size()-1; ++i)
-      {
-         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-         PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
-         ++CL, ++CR, ++B;
-      }
-      SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
-      PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
-   }
-
-   return PsiTri;
-}
-
 int main(int argc, char** argv)
 {
    try
@@ -140,8 +90,6 @@ int main(int argc, char** argv)
       int UnitCellSize = 0;
       int Degree = 0;
       bool Quiet = false;
-      double Tol = 1e-15;
-      double UnityEpsilon = DefaultEigenUnityEpsilon;
       bool Right = false;
       bool ShowAll = false;
       bool String = false;
@@ -149,6 +97,10 @@ int main(int argc, char** argv)
       std::string InputFilename;
       std::string InputFilename2;
       std::string OpStr;
+
+      EFMatrixSettings Settings;
+      Settings.Tol = 1e-15;
+      Settings.NeedFinalMatrix = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -185,10 +137,10 @@ int main(int argc, char** argv)
          ("degree,d", prog_opt::value(&Degree),
           "Force setting the degree of the MPO")
          ("quiet,q", prog_opt::bool_switch(&Quiet), "Don't show column headings")
-         ("tol", prog_opt::value(&Tol),
-          FormatDefault("Linear solver convergence tolerance", Tol).c_str())
-         ("unityepsilon", prog_opt::value(&UnityEpsilon),
-          FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
+         ("tol", prog_opt::value(&Settings.Tol),
+          FormatDefault("Linear solver convergence tolerance", Settings.Tol).c_str())
+         ("unityepsilon", prog_opt::value(&Settings.UnityEpsilon),
+          FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
          ("right", prog_opt::bool_switch(&Right), "Calculate the moments in the opposite direction")
          ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -223,6 +175,9 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+
+      Settings.Verbose = Verbose;
+      Settings.Degree = Degree;
 
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
@@ -306,7 +261,6 @@ int main(int argc, char** argv)
       // Load the operator.
       InfiniteLattice Lattice;
       InfiniteMPO Op;
-      ProductMPO StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi.left()));
 
       if (!String)
       {
@@ -320,123 +274,48 @@ int main(int argc, char** argv)
 
          Op = TriOp;
       }
-      else if (!Overlap)
+      else
       {
-         std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
+         ProductMPO StringOp = ProductMPO::make_identity(ExtractLocalBasis(Psi.left()));
 
-         // We only handle string operators at the moment.
-         CHECK(StringOp.is_string());
-         // We only handle scalar operators at the moment.
-         CHECK(StringOp.is_scalar());
-      }
+         if (!Overlap)
+            std::tie(StringOp, Lattice) = ParseProductOperatorAndLattice(OpStr);
 
-      // Ensure StringOp is the correct size.
-      if (StringOp.size() < Psi.left().size())
-         StringOp = repeat(StringOp, Psi.left().size() / StringOp.size());
-      CHECK_EQUAL(StringOp.size(), Psi.left().size());
+         // Ensure StringOp is the correct size.
+         if (StringOp.size() < Psi.left().size())
+            StringOp = repeat(StringOp, Psi.left().size() / StringOp.size());
+         CHECK_EQUAL(StringOp.size(), Psi.left().size());
 
-      if (String)
          Op = StringOp;
+      }
 
       // Extract the left and right semi-infinite boundaries.
       InfiniteWavefunctionLeft PsiLeft = Psi.left();
       inplace_qshift(PsiLeft, Psi.left_qshift());
       PsiLeft.rotate_left(Psi.left_index());
 
-      QuantumNumber QShift = PsiLeft.qshift();
-
       InfiniteWavefunctionRight PsiRight = Psi.right();
       inplace_qshift(PsiRight, Psi.right_qshift());
       PsiRight.rotate_left(Psi.right_index());
 
-      CHECK(PsiRight.qshift() == PsiLeft.qshift());
+      // Extract the windows.
+      std::deque<StateComponent> BVec, BVec2;
 
-      LinearWavefunction PsiLinearLeft, PsiLinearRight;
-      RealDiagonalOperator LambdaLeft, LambdaRight;
-      std::tie(PsiLinearLeft, LambdaLeft) = get_left_canonical(PsiLeft);
-      std::tie(LambdaRight, PsiLinearRight) = get_right_canonical(PsiRight);
-
-      // Get the transfer matrix eigenvectors for the left and right boundaries.
-      MatrixOperator RhoLeft = delta_shift(LambdaLeft*LambdaLeft, QShift);
-      MatrixOperator RhoRight = LambdaRight*LambdaRight;
-
-      MatrixOperator IdentLeft = MatrixOperator::make_identity(PsiLinearLeft.Basis1());
-      MatrixOperator IdentRight = MatrixOperator::make_identity(PsiLinearRight.Basis1());
-
-      // If we have a nontrivial string operator, we must solve for the
-      // generalized transfer matrix eigenvalues.
-      if (String && !Overlap)
+      for (WavefunctionSectionLeft Window : Psi.window_vec())
       {
-         // Left eigenvectors.
-         std::tie(std::ignore, IdentLeft, RhoLeft) = get_transfer_eigenpair(PsiLinearLeft, PsiLinearLeft, QShift, StringOp, Tol, Verbose);
-         RhoLeft.delta_shift(QShift);
-
-         // Normalize by setting the sum of singular values of RhoLeft to be 1.
-         MatrixOperator U, Vh;
-         RealDiagonalOperator D;
-         SingularValueDecomposition(RhoLeft, U, D, Vh);
-         RhoLeft *= 1.0 / trace(D);
-         IdentLeft *= 1.0 / inner_prod(RhoLeft, IdentLeft);
-
-         // Fix the phases of IdentLeft and RhoLeft by setting the phase of the
-         // trace of IdentLeft to be zero.
-         std::complex<double> TraceLeft = trace(IdentLeft);
-         if (std::abs(TraceLeft) > TraceTol)
-         {
-            std::complex<double> ConjPhase = std::conj(TraceLeft) / std::abs(TraceLeft);
-            IdentLeft *= ConjPhase;
-            RhoLeft *= ConjPhase;
-         }
-         else
-            std::cerr << "warning: the trace of IdentLeft is below threshold, so the results will have a spurious phase contribution." << std::endl;
-
-         // Right eigenvectors.
-         std::tie(std::ignore, RhoRight, IdentRight) = get_transfer_eigenpair(PsiLinearRight, PsiLinearRight, QShift, StringOp, Tol, Verbose);
-         IdentRight.delta_shift(QShift);
-
-         // Normalize by setting the sum of singular values of RhoRight to be 1.
-         SingularValueDecomposition(RhoRight, U, D, Vh);
-         RhoRight *= 1.0 / trace(D);
-         IdentRight *= 1.0 / inner_prod(RhoRight, IdentRight);
-
-         // Fix the phases of IdentRight and RhoRight by setting the phase of the
-         // trace of IdentRight to be zero.
-         std::complex<double> TraceRight = trace(IdentRight);
-         if (std::abs(TraceRight) > TraceTol)
-         {
-            std::complex<double> ConjPhase = std::conj(TraceRight) / std::abs(TraceRight);
-            IdentRight *= ConjPhase;
-            RhoRight *= ConjPhase;
-         }
-         else
-            std::cerr << "warning: the trace of IdentRight is below threshold, so the results will have a spurious phase contribution." << std::endl;
+         LinearWavefunction PsiLinear;
+         MatrixOperator U;
+         std::tie(PsiLinear, U) = get_left_canonical(Window);
+         BVec.push_back(PsiLinear.get_front()*U);
       }
 
-      // Get the mixed transfer matrix eigenvectors.
-      MatrixOperator TTopLeft, TTopRight, TBotLeft, TBotRight;
-      std::tie(std::ignore, TTopLeft, TTopRight) = get_transfer_unit_eigenpair(PsiLinearRight, PsiLinearLeft, QShift, StringOp, Tol, UnityEpsilon, Verbose);
-      TTopRight.delta_shift(QShift);
-      std::tie(std::ignore, TBotLeft, TBotRight) = get_transfer_unit_eigenpair(PsiLinearLeft, PsiLinearRight, QShift, StringOp, Tol, UnityEpsilon, Verbose);
-      TBotRight.delta_shift(QShift);
-
-      if (Right)
+      for (WavefunctionSectionLeft Window : Psi2.window_vec())
       {
-         RhoLeft.delta_shift(adjoint(QShift));
-         RhoRight.delta_shift(adjoint(QShift));
-         IdentLeft.delta_shift(adjoint(QShift));
-         IdentRight.delta_shift(adjoint(QShift));
-
-         std::swap(TTopLeft, TBotLeft);
-         std::swap(TTopRight, TBotRight);
-
-         TTopLeft.delta_shift(adjoint(QShift));
-         TTopRight.delta_shift(adjoint(QShift));
-         TBotLeft.delta_shift(adjoint(QShift));
-         TBotRight.delta_shift(adjoint(QShift));
+         LinearWavefunction PsiLinear;
+         MatrixOperator U;
+         std::tie(PsiLinear, U) = get_left_canonical(Window);
+         BVec2.push_back(PsiLinear.get_front()*U);
       }
-
-      LinearWavefunction PsiTri = ConstructPsiTri(PsiLinearLeft, PsiLinearRight, Psi.window_vec());
-      LinearWavefunction PsiTri2 = ConstructPsiTri(PsiLinearLeft, PsiLinearRight, Psi2.window_vec());
 
       InfiniteMPO OriginalOp = Op;
 
@@ -488,107 +367,40 @@ int main(int argc, char** argv)
 
       std::vector<std::complex<double>> Moments, Cumulants;
 
+      EFMatrix *EF;
+
+      if (!Right)
+      {
+         EF = new EMatrix(Op, Settings);
+         EF->SetPsi(0, PsiLeft);
+         EF->SetPsi(1, PsiRight);
+      }
+      else
+      {
+         EF = new FMatrix(Op, Settings);
+         EF->SetPsi(0, PsiRight);
+         EF->SetPsi(1, PsiLeft);
+      }
+
+      EF->SetPsiTriUpper(1, BVec, ExpIK);
+      EF->SetPsiTriLower(1, BVec2, ExpIK);
+
       // Loop over the powers of the operator.
       for (int p = 1; p <= Power; ++p)
       {
-         Polynomial<std::complex<double>> FullMoment;
-         std::vector<std::tuple<std::string, std::vector<KMatrixPolyType>, MatrixOperator>> FullData;
-
-         if (!Right)
+         if (p > 1)
          {
-            // Calculate the full E-matrix.
-            std::vector<KMatrixPolyType> EMatK0;
-            EMatK0.push_back(KMatrixPolyType());
-            EMatK0[0][1.0] = MatrixPolyType(IdentLeft);
-            SolveMPO_EA_Left(EMatK0, std::vector<KMatrixPolyType>(), PsiLinearLeft, PsiLinearLeft,
-                             QShift, Op, IdentLeft, RhoLeft, 1.0,
-                             Degree*p, Tol, UnityEpsilon, true, false, Verbose);
-
-            std::vector<KMatrixPolyType> EMatKTop;
-            std::vector<KMatrixPolyType> CTriKTop
-               = CalculateCTriK_Left(std::vector<KMatrixPolyType>(), EMatK0, std::vector<KMatrixPolyType>(),
-                                     PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), 1.0, 1.0);
-            SolveMPO_EA_Left(EMatKTop, CTriKTop, PsiLinearRight, PsiLinearLeft,
-                             QShift, Op, TTopLeft, TTopRight, ExpIK,
-                             Degree*p, Tol, UnityEpsilon, true, false, Verbose);
-
-            std::vector<KMatrixPolyType> EMatKBot;
-            std::vector<KMatrixPolyType> CTriKBot
-               = CalculateCTriK_Left(EMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                     PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), 1.0, 1.0);
-            SolveMPO_EA_Left(EMatKBot, CTriKBot, PsiLinearLeft, PsiLinearRight,
-                             QShift, Op, TBotLeft, TBotRight, std::conj(ExpIK),
-                             Degree*p, Tol, UnityEpsilon, true, false, Verbose);
-
-            std::vector<KMatrixPolyType> EMatK1;
-            std::vector<KMatrixPolyType> CTriK1
-               = CalculateCTriK_Left(EMatKTop, EMatKBot, EMatK0, PsiLinearRight, PsiLinearRight,
-                                     PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), ExpIK, ExpIK);
-            SolveMPO_EA_Left(EMatK1, CTriK1, PsiLinearRight, PsiLinearRight,
-                             QShift, Op, RhoRight, IdentRight, 1.0,
-                             Degree*p, Tol, UnityEpsilon, false, false, Verbose);
-
-            // Get the moment for the excitation.
-            Moments.push_back(inner_prod(IdentRight, EMatK1.back()[1.0].coefficient(1)));
-
-            // Get the full moment if we need it.
-            if (ShowAll)
-            {
-               FullData.push_back(std::tie("Initial ", EMatK0, RhoLeft));
-               FullData.push_back(std::tie("Top     ", EMatKTop, TTopRight));
-               FullData.push_back(std::tie("Bottom  ", EMatKBot, TBotRight));
-               FullData.push_back(std::tie("Final   ", EMatK1, IdentRight));
-            }
-            else if (CalculateMomentsFull)
-               FullMoment = ExtractOverlap(EMatK1.back()[1.0], IdentRight);
+            // Set Op to the next power.
+            Op = Op * OriginalOp;
+            EF->SetOp(Op, Degree * p);
          }
-         else
-         {
-            // Calculate the full F-matrix.
-            std::vector<KMatrixPolyType> FMatK0;
-            FMatK0.push_back(KMatrixPolyType());
-            FMatK0[0][1.0] = MatrixPolyType(IdentRight);
-            SolveMPO_EA_Right(FMatK0, std::vector<KMatrixPolyType>(), PsiLinearRight, PsiLinearRight,
-                              QShift, Op, RhoRight, IdentRight, 1.0,
-                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
 
-            std::vector<KMatrixPolyType> FMatKTop;
-            std::vector<KMatrixPolyType> CTriKTop
-               = CalculateCTriK_Right(std::vector<KMatrixPolyType>(), FMatK0, std::vector<KMatrixPolyType>(),
-                                      PsiLinearLeft, PsiLinearRight, PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), 1.0, 1.0);
-            SolveMPO_EA_Right(FMatKTop, CTriKTop, PsiLinearLeft, PsiLinearRight,
-                              QShift, Op, TTopLeft, TTopRight, ExpIK,
-                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
+         // Get the moment for the excitation.
+         MatrixPolyType FinalElement = !Right ? EF->GetElement(1, 1).back()[1.0] : EF->GetElement(1, 1).front()[1.0];
 
-            std::vector<KMatrixPolyType> FMatKBot;
-            std::vector<KMatrixPolyType> CTriKBot
-               = CalculateCTriK_Right(FMatK0, std::vector<KMatrixPolyType>(), std::vector<KMatrixPolyType>(),
-                                      PsiLinearRight, PsiLinearLeft, PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), 1.0, 1.0);
-            SolveMPO_EA_Right(FMatKBot, CTriKBot, PsiLinearRight, PsiLinearLeft,
-                              QShift, Op, TBotLeft, TBotRight, std::conj(ExpIK),
-                              Degree*p, Tol, UnityEpsilon, true, false, Verbose);
-
-            std::vector<KMatrixPolyType> FMatK1;
-            std::vector<KMatrixPolyType> CTriK1
-               = CalculateCTriK_Right(FMatKTop, FMatKBot, FMatK0, PsiLinearLeft, PsiLinearLeft,
-                                      PsiTri, PsiTri2, QShift, Op.as_generic_mpo(), ExpIK, ExpIK);
-            SolveMPO_EA_Right(FMatK1, CTriK1, PsiLinearLeft, PsiLinearLeft,
-                              QShift, Op, IdentLeft, RhoLeft, 1.0,
-                              Degree*p, Tol, UnityEpsilon, false, false, Verbose);
-
-            // Get the moment for the excitation.
-            Moments.push_back(inner_prod(FMatK1.front()[1.0].coefficient(1), IdentLeft));
-
-            if (ShowAll)
-            {
-               FullData.push_back(std::tie("Initial ", FMatK0, RhoRight));
-               FullData.push_back(std::tie("Top     ", FMatKTop, TTopLeft));
-               FullData.push_back(std::tie("Bottom  ", FMatKBot, TBotLeft));
-               FullData.push_back(std::tie("Final   ", FMatK1, IdentLeft));
-            }
-            else if (CalculateMomentsFull)
-               FullMoment = ExtractOverlap(FMatK1.front()[1.0], IdentLeft);
-         }
+         Moments.push_back(inner_prod(EF->GetRho(1, 1), FinalElement.coefficient(1)));
+         if (Right) // Conjugate for the right.
+            Moments.back() = std::conj(Moments.back());
 
          // Get the cumulant if desired.
          if (CalculateCumulants)
@@ -610,34 +422,39 @@ int main(int argc, char** argv)
          if (ShowAll)
          {
             // Print all of the columns of each E-matrix for each degree and momentum.
-            for (auto const& I : FullData)
+            for (int i = 0; i <= 1; ++i)
             {
-               int Dim = std::get<1>(I).size();
-               for (int i = 0; i < Dim; ++i)
+               for (int j = 0; j <= 1; ++j)
                {
-                  int Index = Right ? Dim-i-1 : i;
-                  for (auto const& J : std::get<1>(I)[Index])
+                  std::vector<KMatrixPolyType> Element = EF->GetElement(i, j);
+                  int Dim = Element.size();
+                  for (int n = 0; n < Dim; ++n)
                   {
-                     for (auto const& E : J.second)
+                     int Index = Right ? Dim-n-1 : n;
+                     for (auto const& J : Element[Index])
                      {
-                        if (std::get<2>(I).is_null())
-                           break;
+                        for (auto const& E : J.second)
+                        {
+                           if (EF->GetRho(i, j).is_null())
+                              break;
 
-                        if (E.second.TransformsAs() != std::get<2>(I).TransformsAs())
-                           break;
+                           if (E.second.TransformsAs() != EF->GetRho(i, j).TransformsAs())
+                              break;
 
-                        std::cout << std::setw(7) << p << " "
-                                  << std::get<0>(I)
-                                  << std::setw(7) << Index << " "
-                                  << std::setw(20) << std::arg(J.first)/math_const::pi << " "
-                                  << std::setw(7) << E.first << " "
-                                  << std::setw(20) << norm_frob(E.second) << "    ";
-                        std::complex<double> x = inner_prod(std::get<2>(I), E.second)
-                                               * std::pow(ScaleFactor, double(E.first-1));
-                        if (Right)
-                           x = std::conj(x);
-                        PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
-                                    ShowArgument, ShowRadians);
+                           std::cout << std::setw(7) << p << " "
+                                     << std::setw(3) << i << " "
+                                     << std::setw(3) << j << " "
+                                     << std::setw(7) << Index << " "
+                                     << std::setw(20) << std::arg(J.first)/math_const::pi << " "
+                                     << std::setw(7) << E.first << " "
+                                     << std::setw(20) << norm_frob(E.second) << "    ";
+                           std::complex<double> x = inner_prod(EF->GetRho(i, j), E.second)
+                                                  * std::pow(ScaleFactor, double(E.first-1));
+                           if (Right)
+                              x = std::conj(x);
+                           PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
+                                       ShowArgument, ShowRadians);
+                        }
                      }
                   }
                }
@@ -646,10 +463,10 @@ int main(int argc, char** argv)
          else if (CalculateMomentsFull)
          {
             // Print the full moment polynomials.
-            for (auto const& I : FullMoment)
+            for (auto const& I : ExtractOverlap(FinalElement, EF->GetRho(1, 1)))
             {
                std::cout << std::setw(7) << p << " "
-                         << std::setw(7) << I.first-1 << " ";
+                         << std::setw(7) << I.first << " ";
                std::complex<double> x = I.second * std::pow(ScaleFactor, double(I.first-1));
                if (Right)
                   x = std::conj(x);
@@ -664,10 +481,6 @@ int main(int argc, char** argv)
             PrintFormat(Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
                         ShowArgument, ShowRadians);
          }
-
-         // Get the next power of the MPO.
-         if (p < Power)
-            Op = Op * OriginalOp;
       }
 
       // If we wanted both moments and cumulants, print the cumulants now.
