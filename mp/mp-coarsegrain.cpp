@@ -87,17 +87,34 @@ int main(int argc, char** argv)
          PsiPtr = pheap::ImportHeap(InputFile);
       }
 
-      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
-
-      if (Psi.size() % Coarsegrain != 0)
+      if (PsiPtr->is<InfiniteWavefunctionLeft>())
       {
-         std::cerr << "Wavefunction size is not a multiple of the coarsegran size, expending...\n";
-         Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
+         InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+
+         if (Psi.size() % Coarsegrain != 0)
+         {
+            std::cerr << "Wavefunction size is not a multiple of the coarsegran size, expending...\n";
+            Psi = repeat(Psi, statistics::lcm(Psi.size(), Coarsegrain) / Psi.size());
+         }
+
+         Psi = coarse_grain(Psi, Coarsegrain, Verbose);
+
+         PsiPtr.mutate()->Wavefunction() = Psi;
+      }
+      else if (PsiPtr->is<FiniteWavefunctionLeft>())
+      {
+         FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
+
+         LinearWavefunction PsiLinear(Psi.base_begin(), Psi.base_end());
+
+         PsiPtr.mutate()->Wavefunction() = FiniteWavefunctionLeft::Construct(coarse_grain(PsiLinear, Coarsegrain));
+      }
+      else
+      {
+         std::cerr << "mp-coarsegrain: fatal: unsupported wavefunction type." << std::endl;
+         return 1;
       }
 
-      Psi = coarse_grain(Psi, Coarsegrain, Verbose);
-
-      PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();
 

@@ -240,7 +240,8 @@ UnitCellMPO ExtendToCoverUnitCell(UnitCellMPO const& Op, int OtherSize)
 inline
 UnitCellMPO coarse_grain(UnitCellMPO const& Op, int N)
 {
-   return UnitCellMPO(Op.SiteList, coarse_grain(ExtendToCoverUnitCell(Op,N).Op, N), Op.Com, Op.Offset, Op.Description,
+   return UnitCellMPO(Op.SiteList, coarse_grain(ExtendToCoverUnitCell(Op,N).Op, N), Op.Com,
+                      numerics::divp(Op.Offset, N).quot, Op.Description,
 		      Op.CoarseGrain*N);
 }
 
