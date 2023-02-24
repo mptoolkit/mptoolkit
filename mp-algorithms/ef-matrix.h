@@ -48,7 +48,6 @@ struct EFMatrixSettings
    int Verbose = 0;
 };
 
-// Generic class to handle the code common to the E and F matrices.
 class EFMatrix
 {
    public:
@@ -72,48 +71,57 @@ class EFMatrix
       // Returns the left and right (unit) TEVs, calculating them if they have
       // not been calculated yet. If the spectral radius is < 1, then
       // TLeft/Right will be null.
-      MatrixOperator GetTLeft(int i, int j);
-      MatrixOperator GetTRight(int i, int j);
+      MatrixOperator GetTLeft(int i, int j, bool F = false);
+      MatrixOperator GetTRight(int i, int j, bool F = false);
 
       // Ident is the TEV in the same direction as the E/F matrix.
-      virtual MatrixOperator GetIdent(int i, int j) = 0;
+      MatrixOperator GetIdent(int i, int j, bool F = false)
+         { return F ? this->GetTRight(i, j, true) : this->GetTLeft(i, j); }
       // Rho is the TEV in the opposite direction as the E/F matrix
       // (calculating the inner product of an E/F matrix element with Rho gives
       // the expectation value).
-      virtual MatrixOperator GetRho(int i, int j) = 0;
+      MatrixOperator GetRho(int i, int j, bool F = false)
+         { return F ? this->GetTLeft(i, j, true) : this->GetTRight(i, j); }
 
       // Get the E/F matrix where the ket and bra wavefunctions go up to the
       // boundaries i and j respectively.
-      virtual std::vector<KMatrixPolyType> GetElement(int i, int j, int n);
-      virtual std::vector<KMatrixPolyType> GetElement(int i, int j) = 0;
+      std::vector<KMatrixPolyType> GetE(int i, int j, int n);
+      std::vector<KMatrixPolyType> GetE(int i, int j) { return this->GetE(i, j, -1); }
+      std::vector<KMatrixPolyType> GetF(int i, int j, int n);
+      std::vector<KMatrixPolyType> GetF(int i, int j) { return this->GetF(i, j, UnitCellSize); }
 
-   protected:
-      virtual void CheckOperator() = 0;
+      std::vector<KMatrixPolyType> GetElement(int i, int j, bool F = false)
+         { return F ? this->GetF(i, j) : this->GetE(i, j); }
+
+   private:
+      void CheckOperator();
 
       // Set the TEVs when PsiUpper and PsiLower are the same and the lambda
       // matrix for the left/right canonical form is known.
-      virtual void SetDiagTEVsLC(int i, RealDiagonalOperator Lambda) = 0;
-      virtual void SetDiagTEVsRC(int i, RealDiagonalOperator Lambda) = 0;
+      void SetDiagTEVsLC(int i, RealDiagonalOperator Lambda);
+      void SetDiagTEVsRC(int i, RealDiagonalOperator Lambda);
 
       // Solve for the the TEVs with an eigenvalue of magnitude 1: if the
       // spectral radius is less than one, set the TEVs to null.
-      virtual void CalculateTEVs(int i, int j) = 0;
+      void CalculateTEVs(int i, int j);
 
       // Return the momentum factor corresponding to the element (i, j).
-      virtual std::complex<double> MomentumFactor(int i, int j) = 0;
+      std::complex<double> MomentumFactor(int i, int j) { return ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
 
       // Calculate the unit cell for element (i, j).
-      virtual void CalculateElement(int i, int j) = 0;
+      void CalculateE(int i, int j);
+      void CalculateF(int i, int j);
 
       // Solve the corner element (i, j), using the off-diagonal component CTriK.
-      virtual void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK) = 0;
+      void SolveE(int i, int j, std::vector<KMatrixPolyType> CTriK);
+      void SolveF(int i, int j, std::vector<KMatrixPolyType> CTriK);
 
       std::map<int, LinearWavefunction> PsiUpper, PsiLower;
       std::map<int, std::map<int, StateComponent>> WindowUpper, WindowLower;
       std::map<int, std::complex<double>> ExpIKUpper, ExpIKLower;
       std::map<std::pair<int, int>, MatrixOperator> TLeft, TRight;
       std::map<std::pair<int, int>, bool> TCalculated;
-      std::map<std::pair<int, int>, std::map<int, std::vector<KMatrixPolyType>>> EFMatK;
+      std::map<std::pair<int, int>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
 
       int IMax, JMax;
       int UnitCellSize = 0;
@@ -127,65 +135,6 @@ class EFMatrix
       bool NeedFinalMatrix;
       bool EAOptimization;
       int Verbose;
-};
-
-// The specific classes for E matrices and F matrices.
-class EMatrix : public EFMatrix
-{
-   public:
-      EMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
-         : EFMatrix(Op_, Settings) { this->CheckOperator(); }
-
-      void SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-      void SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-
-      MatrixOperator GetIdent(int i, int j) { return this->GetTLeft(i, j); }
-      MatrixOperator GetRho(int i, int j) { return this->GetTRight(i, j); }
-
-      std::vector<KMatrixPolyType> GetElement(int i, int j, int n) { return this->EFMatrix::GetElement(i, j, n); }
-      std::vector<KMatrixPolyType> GetElement(int i, int j) { return this->EFMatrix::GetElement(i, j, -1); }
-
-   protected:
-      void CheckOperator();
-
-      void SetDiagTEVsLC(int i, RealDiagonalOperator Lambda);
-      void SetDiagTEVsRC(int i, RealDiagonalOperator Lambda);
-
-      void CalculateTEVs(int i, int j);
-
-      std::complex<double> MomentumFactor(int i, int j) { return ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
-
-      void CalculateElement(int i, int j);
-      void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK);
-};
-
-class FMatrix : public EFMatrix
-{
-   public:
-      FMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
-         : EFMatrix(Op_, Settings) { this->CheckOperator(); }
-
-      void SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-      void SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-
-      MatrixOperator GetIdent(int i, int j) { return this->GetTRight(i, j); }
-      MatrixOperator GetRho(int i, int j) { return this->GetTLeft(i, j); }
-
-      std::vector<KMatrixPolyType> GetElement(int i, int j, int n) { return this->EFMatrix::GetElement(i, j, n); }
-      std::vector<KMatrixPolyType> GetElement(int i, int j) { return this->EFMatrix::GetElement(i, j, UnitCellSize); }
-
-   protected:
-      void CheckOperator();
-
-      void SetDiagTEVsLC(int i, RealDiagonalOperator Lambda);
-      void SetDiagTEVsRC(int i, RealDiagonalOperator Lambda);
-
-      void CalculateTEVs(int i, int j);
-
-      std::complex<double> MomentumFactor(int i, int j) { return std::conj(ExpIKUpper[i]) * ExpIKLower[j]; }
-
-      void CalculateElement(int i, int j);
-      void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK);
 };
 
 #endif

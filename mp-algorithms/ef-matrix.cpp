@@ -66,52 +66,32 @@ EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
    IMax = -1;
    JMax = -1;
 
-   // Since this is a pure virtual function, we must call it in the
-   // constructors for the derived classes.
-   //this->CheckOperator();
+   this->CheckOperator();
 }
 
 void
-EMatrix::CheckOperator()
+EFMatrix::CheckOperator()
 {
    if (Op.is_product())
    {
       // We only handle string operators at the moment.
       if (!Op.as_product_mpo().is_string())
-         throw std::runtime_error("EMatrix: fatal: Op cannot be a non-string ProductMPO.");
+         throw std::runtime_error("EFMatrix: fatal: Op cannot be a non-string ProductMPO.");
       // We only handle scalar operators at the moment.
       if (!Op.as_product_mpo().is_scalar())
-         throw std::runtime_error("EMatrix: fatal: Op cannot be a non-scalar ProductMPO.");
+         throw std::runtime_error("EFMatrix: fatal: Op cannot be a non-scalar ProductMPO.");
    }
    else if (Op.is_triangular())
    {
+      // TODO: We could possibly relax this.
       if (!classify(Op.as_basic_triangular_mpo()(0,0), UnityEpsilon).is_identity())
-         throw std::runtime_error("EMatrix: fatal: first component of Op must be the identity operator.");
-   }
-   else
-      throw std::runtime_error("EMatrix: fatal: Op must be a BasicTriangularMPO or a ProductMPO.");
-}
-
-void
-FMatrix::CheckOperator()
-{
-   if (Op.is_product())
-   {
-      // We only handle string operators at the moment.
-      if (!Op.as_product_mpo().is_string())
-         throw std::runtime_error("FMatrix: fatal: Op cannot be a non-string ProductMPO.");
-      // We only handle scalar operators at the moment.
-      if (!Op.as_product_mpo().is_scalar())
-         throw std::runtime_error("FMatrix: fatal: Op cannot be a non-scalar ProductMPO.");
-   }
-   else if (Op.is_triangular())
-   {
+         throw std::runtime_error("EFMatrix: fatal: first component of Op must be the identity operator.");
       int Dim = Op.as_basic_triangular_mpo().Basis1().size();
       if (!classify(Op.as_basic_triangular_mpo()(Dim-1,Dim-1), UnityEpsilon).is_identity())
-         throw std::runtime_error("FMatrix: fatal: final component of Op must be the identity operator.");
+         throw std::runtime_error("EFMatrix: fatal: final component of Op must be the identity operator.");
    }
    else
-      throw std::runtime_error("FMatrix: fatal: Op must be a BasicTriangularMPO or a ProductMPO.");
+      throw std::runtime_error("EFMatrix: fatal: Op must be a BasicTriangularMPO or a ProductMPO.");
 }
 
 void
@@ -151,18 +131,10 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionLeft const& Psi)
 }
 
 void
-EMatrix::SetDiagTEVsLC(int i, RealDiagonalOperator Lambda)
+EFMatrix::SetDiagTEVsLC(int i, RealDiagonalOperator Lambda)
 {
    TLeft[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis1());
    TRight[std::make_pair(i, i)] = delta_shift(Lambda*Lambda, QShift);
-   TCalculated[std::make_pair(i, i)] = true;
-}
-
-void
-FMatrix::SetDiagTEVsLC(int i, RealDiagonalOperator Lambda)
-{
-   TLeft[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis2());
-   TRight[std::make_pair(i, i)] = Lambda*Lambda;
    TCalculated[std::make_pair(i, i)] = true;
 }
 
@@ -203,18 +175,10 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionRight const& Psi)
 }
 
 void
-EMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
+EFMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
 {
    TLeft[std::make_pair(i, i)] = Lambda*Lambda;
    TRight[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis1());
-   TCalculated[std::make_pair(i, i)] = true;
-}
-
-void
-FMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
-{
-   TLeft[std::make_pair(i, i)] = delta_shift(Lambda*Lambda, adjoint(QShift));
-   TRight[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis2());
    TCalculated[std::make_pair(i, i)] = true;
 }
 
@@ -275,7 +239,8 @@ EFMatrix::SetOp(InfiniteMPO Op_, int Degree_)
    // using the solver.
 
    // Clear the matrix elements.
-   EFMatK.clear();
+   EMatK.clear();
+   FMatK.clear();
 
    Op = Op_;
    Degree = Degree_;
@@ -286,7 +251,7 @@ EFMatrix::SetOp(InfiniteMPO Op_, int Degree_)
 }
 
 MatrixOperator
-EFMatrix::GetTLeft(int i, int j)
+EFMatrix::GetTLeft(int i, int j, bool F)
 {
    // Return null if out of bounds.
    if (i < 0 || j < 0)
@@ -296,11 +261,14 @@ EFMatrix::GetTLeft(int i, int j)
    if (!TCalculated[std::make_pair(i, j)])
       this->CalculateTEVs(i, j);
 
-   return TLeft[std::make_pair(i, j)];
+   if (F)
+      return delta_shift(TLeft[std::make_pair(i, j)], adjoint(QShift));
+   else
+      return TLeft[std::make_pair(i, j)];
 }
 
 MatrixOperator
-EFMatrix::GetTRight(int i, int j)
+EFMatrix::GetTRight(int i, int j, bool F)
 {
    // Return null if out of bounds.
    if (i < 0 || j < 0)
@@ -310,11 +278,14 @@ EFMatrix::GetTRight(int i, int j)
    if (!TCalculated[std::make_pair(i, j)])
       this->CalculateTEVs(i, j);
 
-   return TRight[std::make_pair(i, j)];
+   if (F)
+      return delta_shift(TRight[std::make_pair(i, j)], adjoint(QShift));
+   else
+      return TRight[std::make_pair(i, j)];
 }
 
 void
-EMatrix::CalculateTEVs(int i, int j)
+EFMatrix::CalculateTEVs(int i, int j)
 {
    ProductMPO StringOp = ProductMPO::make_identity(ExtractLocalBasis(PsiUpper[i]));
    if (Op.is_product())
@@ -337,53 +308,29 @@ EMatrix::CalculateTEVs(int i, int j)
    TCalculated[std::make_pair(i, j)] = true;
 }
 
-void
-FMatrix::CalculateTEVs(int i, int j)
-{
-   ProductMPO StringOp = ProductMPO::make_identity(ExtractLocalBasis(PsiUpper[i]));
-   if (Op.is_product())
-      StringOp = Op.as_product_mpo();
-
-   // Find the eigenpair if they have an eigenvalue of magnitude 1.
-   std::tie(std::ignore, TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)])
-      = get_transfer_unit_eigenpair(PsiUpper[i], PsiLower[j], QShift, StringOp, Tol, UnityEpsilon, Verbose);
-
-   TLeft[std::make_pair(i, j)].delta_shift(adjoint(QShift));
-
-   // Special normalization for the first transfer matrix.
-   if (i == 0 && j == 0)
-      Normalize(TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)]);
-
-   // Special normalization for the final transfer matrix.
-   if (i == IMax && j == JMax)
-      Normalize(TRight[std::make_pair(i, j)], TLeft[std::make_pair(i, j)]);
-
-   TCalculated[std::make_pair(i, j)] = true;
-}
-
 std::vector<KMatrixPolyType>
-EFMatrix::GetElement(int i, int j, int n)
+EFMatrix::GetE(int i, int j, int n)
 {
    // Return null if out of bounds.
    if (i < 0 || j < 0)
       return std::vector<KMatrixPolyType>();
 
    // Calculate the element if we haven't already.
-   if (EFMatK[std::make_pair(i, j)].empty())
-      this->CalculateElement(i, j);
+   if (EMatK[std::make_pair(i, j)].empty())
+      this->CalculateE(i, j);
 
    if (n == -1)
-      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EFMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
+      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
    else if (n == UnitCellSize)
-      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(EFMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(EMatK[std::make_pair(i, j)][0], adjoint(QShift)));
    else if (n >= 0 && n < UnitCellSize)
-      return EFMatK[std::make_pair(i, j)][n];
+      return EMatK[std::make_pair(i, j)][n];
    else
-      throw std::runtime_error("EFMatrix::GetElement: fatal: n is out of bounds.");
+      throw std::runtime_error("EFMatrix::GetE: fatal: n is out of bounds.");
 }
 
 void
-EMatrix::CalculateElement(int i, int j)
+EFMatrix::CalculateE(int i, int j)
 {
    auto CUpper = PsiUpper[i].begin();
    auto CLower = PsiLower[j].begin();
@@ -395,29 +342,29 @@ EMatrix::CalculateElement(int i, int j)
    // Loop over each position in the unit cell.
    for (int n = 0; n < UnitCellSize; ++n)
    {
-      EFMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis2().size());
+      EMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis2().size());
 
       // Handle contributions with a window on the top and the bottom.
       if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
          if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetElement(i-1, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
 
       // Handle contributions with a window on the bottom only.
       if (i == 0 || i == IMax)
          if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetElement(i, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetE(i, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
 
       // Handle contributions with a window on the top only.
       if (j == 0 || j == JMax)
          if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetElement(i-1, j, n-1), *CLower);
+            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j, n-1), *CLower);
 
       // Handle contributions without any windows (corner elements only).
       if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
       {
          if (n > 0)
             CTriK = contract_from_left(*O, herm(*CUpper), CTriK, *CLower);
-         CTriK += EFMatK[std::make_pair(i, j)][n];
+         CTriK += EMatK[std::make_pair(i, j)][n];
       }
 
       ++CUpper, ++CLower, ++O;
@@ -425,30 +372,30 @@ EMatrix::CalculateElement(int i, int j)
 
    // Run the linear solver for corner elements.
    if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
-      this->SolveElement(i, j, delta_shift(CTriK, QShift));
+      this->SolveE(i, j, delta_shift(CTriK, QShift));
 }
 
 void
-EMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
+EFMatrix::SolveE(int i, int j, std::vector<KMatrixPolyType> CTriK)
 {
-   EFMatK[std::make_pair(i, j)][UnitCellSize-1].clear();
+   EMatK[std::make_pair(i, j)][UnitCellSize-1].clear();
 
    // Initialize the first element of the first E matrix.
    if (i == 0 && j == 0)
    {
-      EFMatK[std::make_pair(i, j)][UnitCellSize-1].push_back(KMatrixPolyType());
-      EFMatK[std::make_pair(i, j)][UnitCellSize-1][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
+      EMatK[std::make_pair(i, j)][UnitCellSize-1].push_back(KMatrixPolyType());
+      EMatK[std::make_pair(i, j)][UnitCellSize-1][0][1.0] = MatrixPolyType(this->GetTLeft(i, j));
    }
 
    bool FinalElement = i == IMax && j == JMax;
 
    // Run the linear solver.
-   SolveMPO_EA_Left(EFMatK[std::make_pair(i, j)][UnitCellSize-1], CTriK, PsiUpper[i], PsiLower[j], QShift,
+   SolveMPO_EA_Left(EMatK[std::make_pair(i, j)][UnitCellSize-1], CTriK, PsiUpper[i], PsiLower[j], QShift,
                     Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
                     Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
                     FinalElement && EAOptimization, Verbose);
 
-   EFMatK[std::make_pair(i, j)][UnitCellSize-1] = delta_shift(EFMatK[std::make_pair(i, j)][UnitCellSize-1], adjoint(QShift));
+   EMatK[std::make_pair(i, j)][UnitCellSize-1] = delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], adjoint(QShift));
 
    // Calculate the elements in the rest of the unit cell.
    if (!FinalElement || NeedFinalMatrix)
@@ -459,14 +406,35 @@ EMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
 
       for (int n = 0; n < UnitCellSize-1; ++n)
       {
-         EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetElement(i, j, n-1), *CLower);
+         EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetE(i, j, n-1), *CLower);
          ++CUpper, ++CLower, ++O;
       }
    }
 }
 
+std::vector<KMatrixPolyType>
+EFMatrix::GetF(int i, int j, int n)
+{
+   // Return null if out of bounds.
+   if (i > IMax || j > JMax)
+      return std::vector<KMatrixPolyType>();
+
+   // Calculate the element if we haven't already.
+   if (FMatK[std::make_pair(i, j)].empty())
+      this->CalculateF(i, j);
+
+   if (n == -1)
+      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(FMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
+   else if (n == UnitCellSize)
+      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(FMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+   else if (n >= 0 && n < UnitCellSize)
+      return FMatK[std::make_pair(i, j)][n];
+   else
+      throw std::runtime_error("EFMatrix::GetF: fatal: n is out of bounds.");
+}
+
 void
-FMatrix::CalculateElement(int i, int j)
+EFMatrix::CalculateF(int i, int j)
 {
    auto CUpper = PsiUpper[i].end();
    auto CLower = PsiLower[j].end();
@@ -480,58 +448,58 @@ FMatrix::CalculateElement(int i, int j)
    {
       --CUpper, --CLower, --O;
 
-      EFMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis1().size());
+      FMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis1().size());
 
       // Handle contributions with a window on the top and the bottom.
-      if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
-         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i], this->GetElement(i-1, j-1, n+1), herm(WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]));
+      if (WindowUpper[numerics::divp(n-i,UnitCellSize).rem].count(i+1) == 1)
+         if (WindowLower[numerics::divp(n-j,UnitCellSize).rem].count(j+1) == 1)
+            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
 
       // Handle contributions with a window on the bottom only.
       if (i == 0 || i == IMax)
-         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetElement(i, j-1, n+1), herm(WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]));
+         if (WindowLower[numerics::divp(n-j,UnitCellSize).rem].count(j+1) == 1)
+            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
 
       // Handle contributions with a window on the top only.
       if (j == 0 || j == JMax)
-         if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
-            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i], this->GetElement(i-1, j, n+1), herm(*CLower));
+         if (WindowUpper[numerics::divp(n-i,UnitCellSize).rem].count(i+1) == 1)
+            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j, n+1), herm(*CLower));
 
       // Handle contributions without any windows (corner elements only).
       if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
       {
          if (n < UnitCellSize-1)
             CTriK = contract_from_right(herm(*O), *CUpper, CTriK, herm(*CLower));
-         CTriK += EFMatK[std::make_pair(i, j)][n];
+         CTriK += FMatK[std::make_pair(i, j)][n];
       }
    }
 
    // Run the linear solver for corner elements.
    if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
-      this->SolveElement(i, j, delta_shift(CTriK, adjoint(QShift)));
+      this->SolveF(i, j, delta_shift(CTriK, adjoint(QShift)));
 }
 
 void
-FMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
+EFMatrix::SolveF(int i, int j, std::vector<KMatrixPolyType> CTriK)
 {
-   EFMatK[std::make_pair(i, j)][0].clear();
+   FMatK[std::make_pair(i, j)][0].clear();
 
    // Initialize the first element of the first F matrix.
-   if (i == 0 && j == 0)
+   if (i == IMax && j == JMax)
    {
-      EFMatK[std::make_pair(i, j)][0].push_back(KMatrixPolyType());
-      EFMatK[std::make_pair(i, j)][0][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
+      FMatK[std::make_pair(i, j)][0].push_back(KMatrixPolyType());
+      FMatK[std::make_pair(i, j)][0][0][1.0] = MatrixPolyType(this->GetTRight(i, j, true));
    }
 
-   bool FinalElement = i == IMax && j == JMax;
+   bool FinalElement = i == 0 && j == 0;
 
    // Run the linear solver.
-   SolveMPO_EA_Right(EFMatK[std::make_pair(i, j)][0], CTriK, PsiUpper[i], PsiLower[j], QShift,
-                     Op, this->GetTLeft(i, j), this->GetTRight(i, j), std::conj(this->MomentumFactor(i, j)),
+   SolveMPO_EA_Right(FMatK[std::make_pair(i, j)][0], CTriK, PsiUpper[i], PsiLower[j], QShift,
+                     Op, this->GetTLeft(i, j, true), this->GetTRight(i, j, true), std::conj(this->MomentumFactor(i, j)),
                      Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
                      FinalElement && EAOptimization, Verbose);
 
-   EFMatK[std::make_pair(i, j)][0] = delta_shift(EFMatK[std::make_pair(i, j)][0], QShift);
+   FMatK[std::make_pair(i, j)][0] = delta_shift(FMatK[std::make_pair(i, j)][0], QShift);
 
    // Calculate the elements in the rest of the unit cell.
    if (!FinalElement || NeedFinalMatrix)
@@ -543,7 +511,7 @@ FMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
       for (int n = UnitCellSize-1; n > 0; --n)
       {
          --CUpper, --CLower, --O;
-         EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetElement(i, j, n+1), herm(*CLower));
+         FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j, n+1), herm(*CLower));
       }
    }
 }

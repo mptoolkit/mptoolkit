@@ -367,23 +367,11 @@ int main(int argc, char** argv)
 
       std::vector<std::complex<double>> Moments, Cumulants;
 
-      EFMatrix *EF;
-
-      if (!Right)
-      {
-         EF = new EMatrix(Op, Settings);
-         EF->SetPsi(0, PsiLeft);
-         EF->SetPsi(1, PsiRight);
-      }
-      else
-      {
-         EF = new FMatrix(Op, Settings);
-         EF->SetPsi(0, PsiRight);
-         EF->SetPsi(1, PsiLeft);
-      }
-
-      EF->SetPsiTriUpper(1, BVec, ExpIK);
-      EF->SetPsiTriLower(1, BVec2, ExpIK);
+      EFMatrix EF(Op, Settings);
+      EF.SetPsi(0, PsiLeft);
+      EF.SetPsi(1, PsiRight);
+      EF.SetPsiTriUpper(1, BVec, ExpIK);
+      EF.SetPsiTriLower(1, BVec2, ExpIK);
 
       // Loop over the powers of the operator.
       for (int p = 1; p <= Power; ++p)
@@ -392,13 +380,16 @@ int main(int argc, char** argv)
          {
             // Set Op to the next power.
             Op = Op * OriginalOp;
-            EF->SetOp(Op, Degree * p);
+            EF.SetOp(Op, Degree * p);
          }
 
-         // Get the moment for the excitation.
-         MatrixPolyType FinalElement = !Right ? EF->GetElement(1, 1).back()[1.0] : EF->GetElement(1, 1).front()[1.0];
+         // The index for the final element
+         int FI = !Right ? 1 : 0;
 
-         Moments.push_back(inner_prod(EF->GetRho(1, 1), FinalElement.coefficient(1)));
+         // Get the moment for the excitation.
+         MatrixPolyType FinalElement = !Right ? EF.GetElement(FI, FI, Right).back()[1.0] : EF.GetElement(FI, FI, Right).front()[1.0];
+
+         Moments.push_back(inner_prod(EF.GetRho(FI, FI, Right), FinalElement.coefficient(1)));
          if (Right) // Conjugate for the right.
             Moments.back() = std::conj(Moments.back());
 
@@ -426,29 +417,32 @@ int main(int argc, char** argv)
             {
                for (int j = 0; j <= 1; ++j)
                {
-                  std::vector<KMatrixPolyType> Element = EF->GetElement(i, j);
+                  int I = !Right ? i : 1-i;
+                  int J = !Right ? j : 1-j;
+
+                  std::vector<KMatrixPolyType> Element = EF.GetElement(I, J, Right);
                   int Dim = Element.size();
                   for (int n = 0; n < Dim; ++n)
                   {
                      int Index = Right ? Dim-n-1 : n;
-                     for (auto const& J : Element[Index])
+                     for (auto const& K : Element[Index])
                      {
-                        for (auto const& E : J.second)
+                        for (auto const& E : K.second)
                         {
-                           if (EF->GetRho(i, j).is_null())
+                           if (EF.GetRho(I, J, Right).is_null())
                               break;
 
-                           if (E.second.TransformsAs() != EF->GetRho(i, j).TransformsAs())
+                           if (E.second.TransformsAs() != EF.GetRho(I, J, Right).TransformsAs())
                               break;
 
                            std::cout << std::setw(7) << p << " "
-                                     << std::setw(3) << i << " "
-                                     << std::setw(3) << j << " "
+                                     << std::setw(3) << I << " "
+                                     << std::setw(3) << J << " "
                                      << std::setw(7) << Index << " "
-                                     << std::setw(20) << std::arg(J.first)/math_const::pi << " "
+                                     << std::setw(20) << std::arg(K.first)/math_const::pi << " "
                                      << std::setw(7) << E.first << " "
                                      << std::setw(20) << norm_frob(E.second) << "    ";
-                           std::complex<double> x = inner_prod(EF->GetRho(i, j), E.second)
+                           std::complex<double> x = inner_prod(EF.GetRho(I, J, Right), E.second)
                                                   * std::pow(ScaleFactor, double(E.first-1));
                            if (Right)
                               x = std::conj(x);
@@ -463,7 +457,7 @@ int main(int argc, char** argv)
          else if (CalculateMomentsFull)
          {
             // Print the full moment polynomials.
-            for (auto const& I : ExtractOverlap(FinalElement, EF->GetRho(1, 1)))
+            for (auto const& I : ExtractOverlap(FinalElement, EF.GetRho(FI, FI, Right)))
             {
                std::cout << std::setw(7) << p << " "
                          << std::setw(7) << I.first << " ";
