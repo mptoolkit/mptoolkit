@@ -30,18 +30,12 @@
 // matrix elements as required and stores them in case they are needed later.
 // Changing the operator or the windows (TODO) will automatically invalidate
 // the effected matrix elements and eigenvalues.
-//
-// A note on the indices: the window of index i is between the boundaries i-1
-// and i. The first boundary index is 0, and so the first window index is 1.
-// For E matrices, the index signifies the position in the wavefunction from
-// left to right, but for F matrices, it signifies the position from right to
-// left.
 
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_EF_MATRIX_H)
 #define MPTOOLKIT_MP_ALGORITHMS_EF_MATRIX_H
 
-#include "mp-algorithms/transfer.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
+#include "mp-algorithms/transfer.h"
 
 // Struct to hold the settings to initialize the EFMatrix class.
 struct EFMatrixSettings
@@ -66,15 +60,10 @@ class EFMatrix
       void SetPsi(int i, InfiniteWavefunctionLeft const& Psi);
       void SetPsi(int i, InfiniteWavefunctionRight const& Psi);
 
-      // Set the window unit cell between boundaries i-1 and i with the
-      // (individual) momentum factor ExpIK. (i > 0)
-      void SetPsiTriUpper(int i, LinearWavefunction const& PsiTri, std::complex<double> ExpIK);
-      void SetPsiTriLower(int j, LinearWavefunction const& PsiTri, std::complex<double> ExpIK);
-
       // Set the window using a deque of single-site windows for each position
-      // in the unit cell: requires the boundaries at i-1 and i to be specified.
-      virtual void SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK) = 0;
-      virtual void SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK) = 0;
+      // in the unit cell. (i > 0)
+      void SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
+      void SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
 
       // Update the operator: invalides the calculated E/F matrix elements and
       // (for string operators) the TEVs.
@@ -95,26 +84,39 @@ class EFMatrix
 
       // Get the E/F matrix where the ket and bra wavefunctions go up to the
       // boundaries i and j respectively.
-      std::vector<KMatrixPolyType> GetElement(int i, int j);
+      virtual std::vector<KMatrixPolyType> GetElement(int i, int j, int n);
+      virtual std::vector<KMatrixPolyType> GetElement(int i, int j) = 0;
 
    protected:
       virtual void CheckOperator() = 0;
 
+      // Set the TEVs when PsiUpper and PsiLower are the same and the lambda
+      // matrix for the left/right canonical form is known.
       virtual void SetDiagTEVsLC(int i, RealDiagonalOperator Lambda) = 0;
       virtual void SetDiagTEVsRC(int i, RealDiagonalOperator Lambda) = 0;
 
+      // Solve for the the TEVs with an eigenvalue of magnitude 1: if the
+      // spectral radius is less than one, set the TEVs to null.
       virtual void CalculateTEVs(int i, int j) = 0;
 
+      // Return the momentum factor corresponding to the element (i, j).
+      virtual std::complex<double> MomentumFactor(int i, int j) = 0;
+
+      // Calculate the unit cell for element (i, j).
       virtual void CalculateElement(int i, int j) = 0;
 
+      // Solve the corner element (i, j), using the off-diagonal component CTriK.
+      virtual void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK) = 0;
+
       std::map<int, LinearWavefunction> PsiUpper, PsiLower;
-      std::map<int, LinearWavefunction> PsiTriUpper, PsiTriLower;
+      std::map<int, std::map<int, StateComponent>> WindowUpper, WindowLower;
       std::map<int, std::complex<double>> ExpIKUpper, ExpIKLower;
       std::map<std::pair<int, int>, MatrixOperator> TLeft, TRight;
       std::map<std::pair<int, int>, bool> TCalculated;
-      std::map<std::pair<int, int>, std::vector<KMatrixPolyType>> EFMatK;
+      std::map<std::pair<int, int>, std::map<int, std::vector<KMatrixPolyType>>> EFMatK;
 
       int IMax, JMax;
+      int UnitCellSize = 0;
       QuantumNumber QShift;
 
       InfiniteMPO Op;
@@ -140,6 +142,9 @@ class EMatrix : public EFMatrix
       MatrixOperator GetIdent(int i, int j) { return this->GetTLeft(i, j); }
       MatrixOperator GetRho(int i, int j) { return this->GetTRight(i, j); }
 
+      std::vector<KMatrixPolyType> GetElement(int i, int j, int n) { return this->EFMatrix::GetElement(i, j, n); }
+      std::vector<KMatrixPolyType> GetElement(int i, int j) { return this->EFMatrix::GetElement(i, j, -1); }
+
    protected:
       void CheckOperator();
 
@@ -148,7 +153,10 @@ class EMatrix : public EFMatrix
 
       void CalculateTEVs(int i, int j);
 
+      std::complex<double> MomentumFactor(int i, int j) { return ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
+
       void CalculateElement(int i, int j);
+      void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK);
 };
 
 class FMatrix : public EFMatrix
@@ -163,6 +171,9 @@ class FMatrix : public EFMatrix
       MatrixOperator GetIdent(int i, int j) { return this->GetTRight(i, j); }
       MatrixOperator GetRho(int i, int j) { return this->GetTLeft(i, j); }
 
+      std::vector<KMatrixPolyType> GetElement(int i, int j, int n) { return this->EFMatrix::GetElement(i, j, n); }
+      std::vector<KMatrixPolyType> GetElement(int i, int j) { return this->EFMatrix::GetElement(i, j, UnitCellSize); }
+
    protected:
       void CheckOperator();
 
@@ -171,7 +182,10 @@ class FMatrix : public EFMatrix
 
       void CalculateTEVs(int i, int j);
 
+      std::complex<double> MomentumFactor(int i, int j) { return std::conj(ExpIKUpper[i]) * ExpIKLower[j]; }
+
       void CalculateElement(int i, int j);
+      void SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK);
 };
 
 #endif

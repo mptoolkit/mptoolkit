@@ -33,6 +33,9 @@ double const TraceTol = 1e-8;
 void
 Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
 {
+   if (Rho.is_null())
+      throw std::runtime_error("EFMatrix::CalculateTEVs: fatal: leading transfer matrix eigenvalue is below tolerance for diagonal element");
+
    // Normalize by setting the sum of singular values of Rho to be 1.
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
@@ -51,39 +54,6 @@ Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
    else
       std::cerr << "EFMatrix: warning: the trace of Ident is below threshold,"
                    " so the results will have a spurious phase contribution." << std::endl;
-}
-
-// Get the window unit cell for a deque of single-site windows between two
-// boundaries PsiLeft and PsiRight.
-LinearWavefunction
-ConstructPsiTri(LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                std::deque<StateComponent> const& BDeque)
-{
-   LinearWavefunction PsiTri;
-
-   if (PsiLeft.size() == 1)
-      PsiTri.push_back(BDeque.back());
-   else
-   {
-      auto CL = PsiLeft.begin();
-      auto CR = PsiRight.begin();
-      auto B = BDeque.begin();
-      SumBasis<VectorBasis> NewBasis0((*CL).Basis2(), (*B).Basis2());
-      PsiTri.push_back(tensor_row_sum(*CL, *B, NewBasis0));
-      ++CL, ++CR, ++B;
-      for (int i = 1; i < PsiLeft.size()-1; ++i)
-      {
-         StateComponent Z = StateComponent((*CL).LocalBasis(), (*CR).Basis1(), (*CL).Basis2());
-         SumBasis<VectorBasis> NewBasis1((*CL).Basis2(), (*B).Basis2());
-         SumBasis<VectorBasis> NewBasis2((*CL).Basis1(), (*CR).Basis1());
-         PsiTri.push_back(tensor_col_sum(tensor_row_sum(*CL, *B, NewBasis1), tensor_row_sum(Z, *CR, NewBasis1), NewBasis2));
-         ++CL, ++CR, ++B;
-      }
-      SumBasis<VectorBasis> NewBasis3((*B).Basis1(), (*CR).Basis1());
-      PsiTri.push_back(tensor_col_sum(*B, *CR, NewBasis3));
-   }
-
-   return PsiTri;
 }
 
 EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
@@ -155,6 +125,12 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionLeft const& Psi)
    else
       CHECK_EQUAL(QShift, Psi.qshift());
 
+   // If we haven't set the unit cell size, set it now, otherwise, check that it is the same.
+   if (UnitCellSize == 0)
+      UnitCellSize = Psi.size();
+   else
+      CHECK_EQUAL(UnitCellSize, Psi.size());
+
    // Update the maximum indices.
    if (i > IMax)
       IMax = i;
@@ -201,6 +177,12 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionRight const& Psi)
    else
       CHECK_EQUAL(QShift, Psi.qshift());
 
+   // If we haven't set the unit cell size, set it now, otherwise, check that it is the same.
+   if (UnitCellSize == 0)
+      UnitCellSize = Psi.size();
+   else
+      CHECK_EQUAL(UnitCellSize, Psi.size());
+
    // Update the maximum indices.
    if (i > IMax)
       IMax = i;
@@ -237,15 +219,17 @@ FMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetPsiTriUpper(int i, LinearWavefunction const& PsiTri, std::complex<double> ExpIK)
+EFMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
 {
    PRECONDITION(i > 0);
+   CHECK_EQUAL(UnitCellSize, BDeque.size());
 
-   // Update the maximum index.
-   if (i > IMax)
-      IMax = i;
-
-   PsiTriUpper[i] = PsiTri;
+   int n = 0;
+   for (auto const& B : BDeque)
+   {
+      WindowUpper[n][i] = B;
+      ++n;
+   }
 
    // We must have already set i-1.
    // FIXME: Is it possible to do this in another way?
@@ -256,64 +240,22 @@ EFMatrix::SetPsiTriUpper(int i, LinearWavefunction const& PsiTri, std::complex<d
 }
 
 void
-EFMatrix::SetPsiTriLower(int j, LinearWavefunction const& PsiTri, std::complex<double> ExpIK)
+EFMatrix::SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
 {
    PRECONDITION(j > 0);
+   CHECK_EQUAL(UnitCellSize, BDeque.size());
 
-   // Update the maximum index.
-   if (j > JMax)
-      JMax = j;
-
-   PsiTriLower[j] = PsiTri;
+   int n = 0;
+   for (auto const& B : BDeque)
+   {
+      WindowLower[n][j] = B;
+      ++n;
+   }
 
    // We must have already set j-1.
    // FIXME: Is it possible to do this in another way?
    CHECK(ExpIKLower.count(j-1) == 1);
    ExpIKLower[j] = ExpIKLower[j-1] * ExpIK;
-}
-
-void
-EMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
-{
-   PRECONDITION(i > 0);
-
-   CHECK(PsiUpper.count(i-1) == 1)(PsiUpper.count(i) == 1);
-   LinearWavefunction PsiTri = ConstructPsiTri(PsiUpper[i-1], PsiUpper[i], BDeque);
-
-   this->EFMatrix::SetPsiTriUpper(i, PsiTri, ExpIK);
-}
-
-void
-EMatrix::SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
-{
-   PRECONDITION(j > 0);
-
-   CHECK(PsiLower.count(j-1) == 1)(PsiLower.count(j) == 1);
-   LinearWavefunction PsiTri = ConstructPsiTri(PsiLower[j-1], PsiLower[j], BDeque);
-
-   this->EFMatrix::SetPsiTriLower(j, PsiTri, ExpIK);
-}
-
-void
-FMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
-{
-   PRECONDITION(i > 0);
-
-   CHECK(PsiUpper.count(i-1) == 1)(PsiUpper.count(i) == 1);
-   LinearWavefunction PsiTri = ConstructPsiTri(PsiUpper[i], PsiUpper[i-1], BDeque);
-
-   this->EFMatrix::SetPsiTriUpper(i, PsiTri, ExpIK);
-}
-
-void
-FMatrix::SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
-{
-   PRECONDITION(j > 0);
-
-   CHECK(PsiLower.count(j-1) == 1)(PsiLower.count(j) == 1);
-   LinearWavefunction PsiTri = ConstructPsiTri(PsiLower[j], PsiLower[j-1], BDeque);
-
-   this->EFMatrix::SetPsiTriLower(j, PsiTri, ExpIK);
 }
 
 void
@@ -337,6 +279,8 @@ EFMatrix::SetOp(InfiniteMPO Op_, int Degree_)
 
    Op = Op_;
    Degree = Degree_;
+
+   // TODO: Check Op size.
 
    this->CheckOperator();
 }
@@ -376,6 +320,7 @@ EMatrix::CalculateTEVs(int i, int j)
    if (Op.is_product())
       StringOp = Op.as_product_mpo();
 
+   // Find the eigenpair if they have an eigenvalue of magnitude 1.
    std::tie(std::ignore, TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)])
       = get_transfer_unit_eigenpair(PsiUpper[i], PsiLower[j], QShift, StringOp, Tol, UnityEpsilon, Verbose);
 
@@ -399,6 +344,7 @@ FMatrix::CalculateTEVs(int i, int j)
    if (Op.is_product())
       StringOp = Op.as_product_mpo();
 
+   // Find the eigenpair if they have an eigenvalue of magnitude 1.
    std::tie(std::ignore, TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)])
       = get_transfer_unit_eigenpair(PsiUpper[i], PsiLower[j], QShift, StringOp, Tol, UnityEpsilon, Verbose);
 
@@ -416,7 +362,7 @@ FMatrix::CalculateTEVs(int i, int j)
 }
 
 std::vector<KMatrixPolyType>
-EFMatrix::GetElement(int i, int j)
+EFMatrix::GetElement(int i, int j, int n)
 {
    // Return null if out of bounds.
    if (i < 0 || j < 0)
@@ -426,53 +372,178 @@ EFMatrix::GetElement(int i, int j)
    if (EFMatK[std::make_pair(i, j)].empty())
       this->CalculateElement(i, j);
 
-   return EFMatK[std::make_pair(i, j)];
+   if (n == -1)
+      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EFMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
+   else if (n == UnitCellSize)
+      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(EFMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+   else if (n >= 0 && n < UnitCellSize)
+      return EFMatK[std::make_pair(i, j)][n];
+   else
+      throw std::runtime_error("EFMatrix::GetElement: fatal: n is out of bounds.");
 }
 
 void
 EMatrix::CalculateElement(int i, int j)
 {
+   auto CUpper = PsiUpper[i].begin();
+   auto CLower = PsiLower[j].begin();
+   auto O = Op.as_generic_mpo().begin();
+
+   // Cumulative sum for corner elements.
+   std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>(O->Basis2().size());
+
+   // Loop over each position in the unit cell.
+   for (int n = 0; n < UnitCellSize; ++n)
+   {
+      EFMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis2().size());
+
+      // Handle contributions with a window on the top and the bottom.
+      if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
+         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetElement(i-1, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+
+      // Handle contributions with a window on the bottom only.
+      if (i == 0 || i == IMax)
+         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetElement(i, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+
+      // Handle contributions with a window on the top only.
+      if (j == 0 || j == JMax)
+         if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetElement(i-1, j, n-1), *CLower);
+
+      // Handle contributions without any windows (corner elements only).
+      if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      {
+         if (n > 0)
+            CTriK = contract_from_left(*O, herm(*CUpper), CTriK, *CLower);
+         CTriK += EFMatK[std::make_pair(i, j)][n];
+      }
+
+      ++CUpper, ++CLower, ++O;
+   }
+
+   // Run the linear solver for corner elements.
+   if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      this->SolveElement(i, j, delta_shift(CTriK, QShift));
+}
+
+void
+EMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
+{
+   EFMatK[std::make_pair(i, j)][UnitCellSize-1].clear();
+
    // Initialize the first element of the first E matrix.
    if (i == 0 && j == 0)
    {
-      EFMatK[std::make_pair(i, j)].push_back(KMatrixPolyType());
-      EFMatK[std::make_pair(i, j)][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
+      EFMatK[std::make_pair(i, j)][UnitCellSize-1].push_back(KMatrixPolyType());
+      EFMatK[std::make_pair(i, j)][UnitCellSize-1][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
    }
-
-   std::vector<KMatrixPolyType> CTriK
-      = CalculateCTriK_Left(this->GetElement(i, j-1), this->GetElement(i-1, j), this->GetElement(i-1, j-1),
-                            PsiUpper[i], PsiLower[j], PsiTriUpper[i], PsiTriLower[j],
-                            QShift, Op.as_generic_mpo(), ExpIKUpper[i], ExpIKLower[j]);
 
    bool FinalElement = i == IMax && j == JMax;
 
-   SolveMPO_EA_Left(EFMatK[std::make_pair(i, j)], CTriK, PsiUpper[i], PsiLower[j],
-                    QShift, Op, this->GetTLeft(i, j), this->GetTRight(i, j),
-                    ExpIKUpper[i] * std::conj(ExpIKLower[j]),
+   // Run the linear solver.
+   SolveMPO_EA_Left(EFMatK[std::make_pair(i, j)][UnitCellSize-1], CTriK, PsiUpper[i], PsiLower[j], QShift,
+                    Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
                     Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
                     FinalElement && EAOptimization, Verbose);
+
+   EFMatK[std::make_pair(i, j)][UnitCellSize-1] = delta_shift(EFMatK[std::make_pair(i, j)][UnitCellSize-1], adjoint(QShift));
+
+   // Calculate the elements in the rest of the unit cell.
+   if (!FinalElement || NeedFinalMatrix)
+   {
+      auto CUpper = PsiUpper[i].begin();
+      auto CLower = PsiLower[j].begin();
+      auto O = Op.as_generic_mpo().begin();
+
+      for (int n = 0; n < UnitCellSize-1; ++n)
+      {
+         EFMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetElement(i, j, n-1), *CLower);
+         ++CUpper, ++CLower, ++O;
+      }
+   }
 }
 
 void
 FMatrix::CalculateElement(int i, int j)
 {
+   auto CUpper = PsiUpper[i].end();
+   auto CLower = PsiLower[j].end();
+   auto O = Op.as_generic_mpo().end();
+
+   // Cumulative sum for corner elements.
+   std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>((O-1)->Basis1().size());
+
+   // Loop over each position in the unit cell.
+   for (int n = UnitCellSize-1; n >= 0; --n)
+   {
+      --CUpper, --CLower, --O;
+
+      EFMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis1().size());
+
+      // Handle contributions with a window on the top and the bottom.
+      if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
+         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i], this->GetElement(i-1, j-1, n+1), herm(WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]));
+
+      // Handle contributions with a window on the bottom only.
+      if (i == 0 || i == IMax)
+         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetElement(i, j-1, n+1), herm(WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]));
+
+      // Handle contributions with a window on the top only.
+      if (j == 0 || j == JMax)
+         if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
+            EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i], this->GetElement(i-1, j, n+1), herm(*CLower));
+
+      // Handle contributions without any windows (corner elements only).
+      if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      {
+         if (n < UnitCellSize-1)
+            CTriK = contract_from_right(herm(*O), *CUpper, CTriK, herm(*CLower));
+         CTriK += EFMatK[std::make_pair(i, j)][n];
+      }
+   }
+
+   // Run the linear solver for corner elements.
+   if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      this->SolveElement(i, j, delta_shift(CTriK, adjoint(QShift)));
+}
+
+void
+FMatrix::SolveElement(int i, int j, std::vector<KMatrixPolyType> CTriK)
+{
+   EFMatK[std::make_pair(i, j)][0].clear();
+
    // Initialize the first element of the first F matrix.
    if (i == 0 && j == 0)
    {
-      EFMatK[std::make_pair(i, j)].push_back(KMatrixPolyType());
-      EFMatK[std::make_pair(i, j)][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
+      EFMatK[std::make_pair(i, j)][0].push_back(KMatrixPolyType());
+      EFMatK[std::make_pair(i, j)][0][0][1.0] = MatrixPolyType(this->GetIdent(i, j));
    }
-
-   std::vector<KMatrixPolyType> CTriK
-      = CalculateCTriK_Right(this->GetElement(i, j-1), this->GetElement(i-1, j), this->GetElement(i-1, j-1),
-                             PsiUpper[i], PsiLower[j], PsiTriUpper[i], PsiTriLower[j],
-                             QShift, Op.as_generic_mpo(), ExpIKUpper[i], ExpIKLower[j]);
 
    bool FinalElement = i == IMax && j == JMax;
 
-   SolveMPO_EA_Right(EFMatK[std::make_pair(i, j)], CTriK, PsiUpper[i], PsiLower[j],
-                     QShift, Op, this->GetTLeft(i, j), this->GetTRight(i, j),
-                     ExpIKUpper[i] * std::conj(ExpIKLower[j]),
+   // Run the linear solver.
+   SolveMPO_EA_Right(EFMatK[std::make_pair(i, j)][0], CTriK, PsiUpper[i], PsiLower[j], QShift,
+                     Op, this->GetTLeft(i, j), this->GetTRight(i, j), std::conj(this->MomentumFactor(i, j)),
                      Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
                      FinalElement && EAOptimization, Verbose);
+
+   EFMatK[std::make_pair(i, j)][0] = delta_shift(EFMatK[std::make_pair(i, j)][0], QShift);
+
+   // Calculate the elements in the rest of the unit cell.
+   if (!FinalElement || NeedFinalMatrix)
+   {
+      auto CUpper = PsiUpper[i].end();
+      auto CLower = PsiLower[j].end();
+      auto O = Op.as_generic_mpo().end();
+
+      for (int n = UnitCellSize-1; n > 0; --n)
+      {
+         --CUpper, --CLower, --O;
+         EFMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetElement(i, j, n+1), herm(*CLower));
+      }
+   }
 }
