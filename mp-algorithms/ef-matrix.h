@@ -28,8 +28,8 @@
 //
 // The class calculates the (mixed) transfer matrix eigenvectors (TEVs) and E/F
 // matrix elements as required and stores them in case they are needed later.
-// Changing the operator or the windows (TODO) will automatically invalidate
-// the effected matrix elements and eigenvalues.
+// Changing the operator or the windows will automatically invalidate the
+// effected matrix elements and eigenvalues.
 
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_EF_MATRIX_H)
 #define MPTOOLKIT_MP_ALGORITHMS_EF_MATRIX_H
@@ -45,12 +45,15 @@ struct EFMatrixSettings
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    bool NeedFinalMatrix = true;
    bool EAOptimization = false;
+   bool SubtractEnergy = false;
    int Verbose = 0;
 };
 
 class EFMatrix
 {
    public:
+      EFMatrix() {}
+
       EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings);
 
       // Set boundary wavefunctions: at the moment, we assume that the boundary
@@ -93,6 +96,14 @@ class EFMatrix
       std::vector<KMatrixPolyType> GetElement(int i, int j, bool F = false)
          { return F ? this->GetF(i, j) : this->GetE(i, j); }
 
+      // Get the constant, zero-momentum part of this element as a StateComponent.
+      StateComponent GetESC(int i, int j, int n);
+      StateComponent GetFSC(int i, int j, int n);
+
+      // Calculate the effective Hamiltonian acting on the window w.r.t. site i.
+      std::deque<StateComponent> GetHEff(int i = 0);
+      std::deque<MatrixOperator> GetHEff(std::deque<StateComponent> NDeque, int i = 0);
+
    private:
       void CheckOperator();
 
@@ -106,7 +117,8 @@ class EFMatrix
       void CalculateTEVs(int i, int j);
 
       // Return the momentum factor corresponding to the element (i, j).
-      std::complex<double> MomentumFactor(int i, int j) { return ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
+      std::complex<double> MomentumFactor(int i, int j, bool F = false)
+         { return F ? std::conj(ExpIKUpper[IMax-i]) * ExpIKLower[JMax-j] : ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
 
       // Calculate the unit cell for element (i, j).
       void CalculateE(int i, int j);
@@ -134,6 +146,7 @@ class EFMatrix
       double UnityEpsilon;
       bool NeedFinalMatrix;
       bool EAOptimization;
+      bool SubtractEnergy;
       int Verbose;
 };
 

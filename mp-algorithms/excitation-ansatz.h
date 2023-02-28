@@ -20,6 +20,7 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_EXCITATION_ANSATZ_H)
 #define MPTOOLKIT_MP_ALGORITHMS_EXCITATION_ANSATZ_H
 
+#include "mp-algorithms/ef-matrix.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "mps/packunpack.h"
 #include "wavefunction/ea.h"
@@ -32,12 +33,13 @@ struct EASettings
    ProductMPO StringOp;
    double k = 0.0;
    double ky = 0.0;
-   double Alpha = 5.0;
    double GMRESTol = 1e-13;
+   double UnityEpsilon = DefaultEigenUnityEpsilon;
+   double Alpha = 5.0;
    int Verbose = 0;
 };
 
-// Struct to describe the effective Hamiltonian operator for the MPS excitation ansatz.
+// Class to describe the effective Hamiltonian operator for the MPS excitation ansatz.
 //
 // HEff can be applied to a deque of MatrixOperators describing the X-matrices
 // in the excitation ansatz, which are left-multiplied by the left null-space
@@ -47,93 +49,80 @@ struct EASettings
 // At the moment, only the single-site EA is supported.
 struct HEff
 {
-   HEff() {}
+   public:
+      HEff() {}
 
-   HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
-        BasicTriangularMPO const& HamMPO_, EASettings const& Settings_);
+      HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
+           BasicTriangularMPO const& HamMPO_, EASettings const& Settings_);
 
-   // Apply the effective Hamiltonian to XDeque.
-   std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque) const;
+      // Apply the effective Hamiltonian to XDeque.
+      std::deque<MatrixOperator> operator()(std::deque<MatrixOperator> const& XDeque);
 
-   // For a 2D system, if we specify the string operator describing Ty,
-   // calculate the expectation value of Ty.
-   std::complex<double> Ty(std::deque<MatrixOperator> const& XDeque) const;
+      // For a 2D system, if we specify the string operator describing Ty,
+      // calculate the expectation value of Ty.
+      std::complex<double> Ty(std::deque<MatrixOperator> const& XDeque);
 
-   // Construct the B-matrices corresponding to the input X-matrices.
-   std::deque<StateComponent> ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const;
+      // Construct the B-matrices corresponding to the input X-matrices.
+      std::deque<StateComponent> ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const;
 
-   // Construct the "triangular" MPS unit cell containing each B-matrix.
-   LinearWavefunction ConstructPsiTri(std::deque<StateComponent> const& BDeque) const;
+      // Generate a random initial state for a solver.
+      // (This function is currently unused.)
+      std::deque<MatrixOperator> InitialGuess() const;
 
-   // Generate a random initial state for a solver.
-   // (This function is currently unused.)
-   std::deque<MatrixOperator> InitialGuess() const;
+      // Generate the objects to pack and unpack each X-matrix for the ARPACK wrapper.
+      std::deque<PackMatrixOperator> PackInitialize() const;
 
-   // Generate the objects to pack and unpack each X-matrix for the ARPACK wrapper.
-   std::deque<PackMatrixOperator> PackInitialize() const;
+      // Update the value of k.
+      void SetK(double k);
 
-   // Update the value of k.
-   void SetK(double k);
+      // Update the value of ky.
+      void SetKY(double k);
 
-   // Update the value of ky.
-   void SetKY(double k);
+      // Construct a vector of windows for the supplied X-matrices.
+      std::vector<WavefunctionSectionLeft> ConstructWindowVec(std::deque<MatrixOperator> XDeque) const;
 
-   // Construct a vector of windows for the supplied X-matrices.
-   std::vector<WavefunctionSectionLeft> ConstructWindowVec(std::deque<MatrixOperator> XDeque) const;
+      std::complex<double> exp_ik() const { return ExpIK; }
 
-   InfiniteWavefunctionLeft PsiLeft;
-   InfiniteWavefunctionRight PsiRight;
-   BasicTriangularMPO HamMPO;
-   ProductMPO StringOp;
-   double GMRESTol;
-   int Verbose;
-   std::complex<double> ExpIK;
-   std::complex<double> ExpIKY = 0.0;
-   // Parameter to penalize states with the wrong y-momentum.
-   double Alpha;
+   private:
+      InfiniteWavefunctionLeft PsiLeft;
+      InfiniteWavefunctionRight PsiRight;
+      BasicTriangularMPO HamMPO;
+      ProductMPO StringOp;
+      double GMRESTol;
+      double UnityEpsilon;
+      int Verbose;
+      std::complex<double> ExpIK;
+      std::complex<double> ExpIKY = 0.0;
+      // Parameter to penalize states with the wrong y-momentum.
+      double Alpha;
 
-   LinearWavefunction PsiLinearLeft, PsiLinearRight;
-   StateComponent BlockHamL, BlockHamR;
-   std::deque<StateComponent> BlockHamLDeque, BlockHamRDeque;
-   std::deque<StateComponent> NullLeftDeque;
-   // Left/right eigenvectors of the left/right mixed transfer matrices.
-   MatrixOperator RhoLRLeft, RhoLRRight;
-   MatrixOperator RhoRLLeft, RhoRLRight;
-   // Eigenvectors of the left/right non-mixed (i.e. left/left and right/right)
-   // transfer matrices with the Ty operator.
-   StateComponent TyL, TyR;
-   // Partially contracted versions of TyL and TyR.
-   // Only needed when adding TyEff to HEff.
-   std::deque<StateComponent> TyLDeque, TyRDeque;
-   // Left/right eigenvectors of the left/right mixed transfer matrices with
-   // the Ty operator.
-   MatrixOperator TyLRLeft, TyLRRight;
-   MatrixOperator TyRLLeft, TyRLRight;
+      EFMatrix EF, EFTy;
+      LinearWavefunction PsiLinearLeft, PsiLinearRight;
+      std::deque<StateComponent> NullLeftDeque;
 };
 
-// A version of the HEff struct which can be used with the ARPACK wrapper.
-struct PackHEff
+// A version of the HEff class which can be used with the ARPACK wrapper.
+class PackHEff
 {
-   PackHEff(HEff H_);
+   public:
+      PackHEff(HEff* H_);
 
-   // Apply HEff to input vector.
-   void operator()(std::complex<double> const* In_, std::complex<double>* Out_) const;
+      // Apply HEff to input vector.
+      void operator()(std::complex<double> const* In_, std::complex<double>* Out_) const;
 
-   // Convert raw array to deque of MatrixOperators.
-   std::deque<MatrixOperator> unpack(std::complex<double> const* In_) const;
+      // Convert raw array to deque of MatrixOperators.
+      std::deque<MatrixOperator> unpack(std::complex<double> const* In_) const;
 
-   // Convert deque of MatrixOperators to an array readable by the ARPACK wrapper.
-   void pack(std::deque<MatrixOperator> XDeque, std::complex<double>* Out_) const;
+      // Convert deque of MatrixOperators to an array readable by the ARPACK wrapper.
+      void pack(std::deque<MatrixOperator> XDeque, std::complex<double>* Out_) const;
 
-   // Size of the raw arrays.
-   int size() const
-   {
-      return Size;
-   }
+      // Size of the raw arrays.
+      int size() const { return Size; }
 
-   std::deque<PackMatrixOperator> Pack;
-   HEff H;
-   int Size;
+   private:
+      std::deque<PackMatrixOperator> Pack;
+      HEff* H;
+      int Size;
 };
 
 #endif

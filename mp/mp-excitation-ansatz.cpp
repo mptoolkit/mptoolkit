@@ -78,6 +78,8 @@ int main(int argc, char** argv)
           FormatDefault("Error tolerance for the eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&Settings.GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
+         ("unityepsilon", prog_opt::value(&Settings.UnityEpsilon),
+          FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random number generator seed")
          ("random", prog_opt::bool_switch(&Random), "Use a random initial state for each momentum (otherwise, use the previous result as an initial guess)")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
@@ -173,8 +175,6 @@ int main(int argc, char** argv)
             OutputDigits = std::max(OutputDigits, formatting::digits(Settings.ky));
       }
 
-      // Initialize the effective Hamiltonian.
-      HEff H;
       InfiniteWavefunctionRight PsiRight;
       if (vm.count("psi2"))
       {
@@ -232,7 +232,8 @@ int main(int argc, char** argv)
       if (vm.count("ky") == 0)
          Settings.Alpha = 0.0;
 
-      H = HEff(PsiLeft, PsiRight, HamMPO, Settings);
+      // Initialize the effective Hamiltonian.
+      HEff H(PsiLeft, PsiRight, HamMPO, Settings);
 
       // Print column headers.
       if (Quiet == 0)
@@ -251,12 +252,17 @@ int main(int argc, char** argv)
 
       std::vector<std::complex<double>> Guess;
 
+      // FIXME: Passing PackH to the ARPACK wrapper causes memory issues, but
+      // applying the effetive Hamiltonian once before seems to mitigate it?
+      std::deque<MatrixOperator> X = H.InitialGuess();
+      X = H(X);
+
       // Calculate the excitation spectrum for each k desired.
       for (double const k : KList)
       {
          H.SetK(k * LatticeUCsPerPsiUC);
 
-         PackHEff PackH = PackHEff(H);
+         PackHEff PackH = PackHEff(&H);
          std::vector<std::complex<double>> EVectors;
 
          LinearAlgebra::Vector<std::complex<double>> EValues
@@ -291,7 +297,7 @@ int main(int argc, char** argv)
             if (OutputPrefix != "")
             {
                std::vector<WavefunctionSectionLeft> WindowVec = H.ConstructWindowVec(PackH.unpack(&(EVectors[Index])));
-               EAWavefunction PsiEA(PsiLeftOriginal, WindowVec, PsiRightOriginal, Q, I, 0, Rotate, H.ExpIK);
+               EAWavefunction PsiEA(PsiLeftOriginal, WindowVec, PsiRightOriginal, Q, I, 0, Rotate, H.exp_ik());
 
                if (Streaming)
                {

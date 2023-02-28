@@ -59,7 +59,8 @@ Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
 EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
    : Op(Op_), Degree(Settings.Degree), Tol(Settings.Tol),
      UnityEpsilon(Settings.UnityEpsilon), NeedFinalMatrix(Settings.NeedFinalMatrix),
-     EAOptimization(Settings.EAOptimization), Verbose(Settings.Verbose)
+     EAOptimization(Settings.EAOptimization), SubtractEnergy(Settings.SubtractEnergy),
+     Verbose(Settings.Verbose)
 {
    ExpIKUpper[0] = 1.0;
    ExpIKLower[0] = 1.0;
@@ -200,7 +201,22 @@ EFMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::c
    CHECK(ExpIKUpper.count(i-1) == 1);
    ExpIKUpper[i] = ExpIKUpper[i-1] * ExpIK;
 
-   // TODO: Invalidation.
+   // Invalidate elements which depend on this window.
+   for (auto I = EMatK.begin(); I != EMatK.end();)
+   {
+      if (I->first.first >= i)
+         I = EMatK.erase(I);
+      else
+         ++I;
+   }
+
+   for (auto I = FMatK.begin(); I != FMatK.end();)
+   {
+      if (I->first.first < i)
+         I = FMatK.erase(I);
+      else
+         ++I;
+   }
 }
 
 void
@@ -220,6 +236,23 @@ EFMatrix::SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::c
    // FIXME: Is it possible to do this in another way?
    CHECK(ExpIKLower.count(j-1) == 1);
    ExpIKLower[j] = ExpIKLower[j-1] * ExpIK;
+
+   // Invalidate elements which depend on this window.
+   for (auto I = EMatK.begin(); I != EMatK.end();)
+   {
+      if (I->first.second >= j)
+         I = EMatK.erase(I);
+      else
+         ++I;
+   }
+
+   for (auto I = FMatK.begin(); I != FMatK.end();)
+   {
+      if (I->first.second < j)
+         I = FMatK.erase(I);
+      else
+         ++I;
+   }
 }
 
 void
@@ -293,7 +326,7 @@ EFMatrix::CalculateTEVs(int i, int j)
 
    // Find the eigenpair if they have an eigenvalue of magnitude 1.
    std::tie(std::ignore, TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)])
-      = get_transfer_unit_eigenpair(PsiUpper[i], PsiLower[j], QShift, StringOp, Tol, UnityEpsilon, Verbose);
+      = get_transfer_unit_eigenpair(PsiUpper[i], PsiLower[j], QShift, StringOp, Tol, UnityEpsilon, Verbose-1);
 
    TRight[std::make_pair(i, j)].delta_shift(QShift);
 
@@ -321,8 +354,6 @@ EFMatrix::GetE(int i, int j, int n)
 
    if (n == -1)
       return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
-   else if (n == UnitCellSize)
-      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(EMatK[std::make_pair(i, j)][0], adjoint(QShift)));
    else if (n >= 0 && n < UnitCellSize)
       return EMatK[std::make_pair(i, j)][n];
    else
@@ -380,20 +411,21 @@ EFMatrix::SolveE(int i, int j, std::vector<KMatrixPolyType> CTriK)
 {
    EMatK[std::make_pair(i, j)][UnitCellSize-1].clear();
 
+   bool FirstElement = i == 0 && j == 0;
+   bool FinalElement = i == IMax && j == JMax;
+
    // Initialize the first element of the first E matrix.
-   if (i == 0 && j == 0)
+   if (FirstElement)
    {
       EMatK[std::make_pair(i, j)][UnitCellSize-1].push_back(KMatrixPolyType());
       EMatK[std::make_pair(i, j)][UnitCellSize-1][0][1.0] = MatrixPolyType(this->GetTLeft(i, j));
    }
 
-   bool FinalElement = i == IMax && j == JMax;
-
    // Run the linear solver.
    SolveMPO_EA_Left(EMatK[std::make_pair(i, j)][UnitCellSize-1], CTriK, PsiUpper[i], PsiLower[j], QShift,
                     Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
                     Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
-                    FinalElement && EAOptimization, Verbose);
+                    !FirstElement && EAOptimization, Verbose-1);
 
    EMatK[std::make_pair(i, j)][UnitCellSize-1] = delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], adjoint(QShift));
 
@@ -423,10 +455,8 @@ EFMatrix::GetF(int i, int j, int n)
    if (FMatK[std::make_pair(i, j)].empty())
       this->CalculateF(i, j);
 
-   if (n == -1)
-      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(FMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
-   else if (n == UnitCellSize)
-      return ScalarMultiply(std::conj(this->MomentumFactor(i, j)), delta_shift(FMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+   if (n == UnitCellSize)
+      return ScalarMultiply(std::conj(this->MomentumFactor(i, j, true)), delta_shift(FMatK[std::make_pair(i, j)][0], adjoint(QShift)));
    else if (n >= 0 && n < UnitCellSize)
       return FMatK[std::make_pair(i, j)][n];
    else
@@ -484,22 +514,58 @@ EFMatrix::SolveF(int i, int j, std::vector<KMatrixPolyType> CTriK)
 {
    FMatK[std::make_pair(i, j)][0].clear();
 
+   bool FirstElement = i == IMax && j == JMax;
+   bool FinalElement = i == 0 && j == 0;
+
    // Initialize the first element of the first F matrix.
-   if (i == IMax && j == JMax)
+   if (FirstElement)
    {
       FMatK[std::make_pair(i, j)][0].push_back(KMatrixPolyType());
       FMatK[std::make_pair(i, j)][0][0][1.0] = MatrixPolyType(this->GetTRight(i, j, true));
    }
 
-   bool FinalElement = i == 0 && j == 0;
-
    // Run the linear solver.
    SolveMPO_EA_Right(FMatK[std::make_pair(i, j)][0], CTriK, PsiUpper[i], PsiLower[j], QShift,
-                     Op, this->GetTLeft(i, j, true), this->GetTRight(i, j, true), std::conj(this->MomentumFactor(i, j)),
+                     Op, this->GetTLeft(i, j, true), this->GetTRight(i, j, true), std::conj(this->MomentumFactor(i, j, true)),
                      Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
-                     FinalElement && EAOptimization, Verbose);
+                     !FirstElement && EAOptimization, Verbose-1);
 
    FMatK[std::make_pair(i, j)][0] = delta_shift(FMatK[std::make_pair(i, j)][0], QShift);
+
+   // Subtract the contribution due to the energy density: this is to ensure
+   // that the expectation value obtained by taking product of E and F matrices
+   // corresponds to the value we would obtain by solving the full E or F
+   // matrix.
+   if (FirstElement && SubtractEnergy)
+   {
+      // The first contribution can be extracted from the expectation value of the F matrix.
+      std::complex<double> RightEnergy = inner_prod(this->GetTLeft(i, j), FMatK[std::make_pair(i, j)][0].front()[1.0].coefficient(1));
+
+      if (Verbose > 0)
+         std::cerr << "EFMatrix: subtracting contribution from right energy = " << RightEnergy << std::endl;
+
+      // The second contribution is the "bond energy", which is the
+      // contribution to the energy from terms which cross the unit cell
+      // boundary: the most reliable way to calculate this is by calculating
+      // the E matrix for the same wavefunctions and taking the product of
+      // the E and F matrices.
+      std::vector<KMatrixPolyType> EMatKRight(1, KMatrixPolyType());
+      EMatKRight[0][1.0] = MatrixPolyType(this->GetTLeft(i, j));
+
+      SolveMPO_EA_Left(EMatKRight, std::vector<KMatrixPolyType>(), PsiUpper[i], PsiLower[j], QShift,
+                       Op, this->GetTLeft(i, j), this->GetTRight(i, j), std::conj(this->MomentumFactor(i, j, true)),
+                       Degree, Tol, UnityEpsilon, true, false, Verbose-1);
+
+      std::complex<double> BondEnergy = 0.0;
+      for (int I = 0; I < EMatKRight.size(); ++I)
+         BondEnergy += inner_prod(EMatKRight[I][1.0].coefficient(0), FMatK[std::make_pair(i, j)][0][I][1.0].coefficient(0));
+
+      if (Verbose > 0)
+         std::cerr << "EFMatrix: subtracting contribution from bond energy = " << BondEnergy << std::endl;
+
+      // Subtract the right and bond energies from the final element from the first F matrix.
+      FMatK[std::make_pair(i, j)][0].front() -= (RightEnergy + BondEnergy) * FMatK[std::make_pair(i, j)][0].back();
+   }
 
    // Calculate the elements in the rest of the unit cell.
    if (!FinalElement || NeedFinalMatrix)
@@ -514,4 +580,76 @@ EFMatrix::SolveF(int i, int j, std::vector<KMatrixPolyType> CTriK)
          FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j, n+1), herm(*CLower));
       }
    }
+}
+
+// TODO: Could these be implemented in a better way?
+StateComponent
+EFMatrix::GetESC(int i, int j, int n)
+{
+   std::vector<KMatrixPolyType> E = this->GetE(i, j, n);
+   MatrixOperator Tmp = E[0][1.0].coefficient(0);
+   OperatorComponent O = Op.as_generic_mpo()[numerics::divp(n,UnitCellSize).rem];
+   StateComponent Result(O.Basis2(), Tmp.Basis1(), Tmp.Basis2());
+
+   for (int I = 0; I < Result.size(); ++I)
+      Result[I] = E[I][1.0].coefficient(0);
+
+   return Result;
+}
+
+StateComponent
+EFMatrix::GetFSC(int i, int j, int n)
+{
+   std::vector<KMatrixPolyType> F = this->GetF(i, j, n);
+   MatrixOperator Tmp = F[0][1.0].coefficient(0);
+   OperatorComponent O = Op.as_generic_mpo()[numerics::divp(n,UnitCellSize).rem];
+   StateComponent Result(O.Basis1(), Tmp.Basis1(), Tmp.Basis2());
+
+   for (int I = 0; I < Result.size(); ++I)
+      Result[I] = F[I][1.0].coefficient(0);
+
+   return Result;
+}
+
+std::deque<StateComponent>
+EFMatrix::GetHEff(int i)
+{
+   std::deque<StateComponent> Result;
+
+   auto CLeft = PsiUpper[i].begin();
+   auto CRight = PsiUpper[i+1].begin();
+   auto O = Op.as_generic_mpo().begin();
+
+   // Loop over each position in the unit cell.
+   for (int n = 0; n < UnitCellSize; ++n)
+   {
+      Result.push_back(operator_prod_inner(*O, this->GetESC(i, i, n-1), WindowLower[numerics::divp(n-i,UnitCellSize).rem][i+1], herm(this->GetFSC(i+1, i+1, n+1))));
+      Result.back() += operator_prod_inner(*O, this->GetESC(i, i, n-1), *CLeft, herm(this->GetFSC(i+1, i, n+1)));
+      Result.back() += operator_prod_inner(*O, this->GetESC(i, i+1, n-1), *CRight, herm(this->GetFSC(i+1, i+1, n+1)));
+      ++CLeft, ++CRight, ++O;
+   }
+
+   return Result;
+}
+
+std::deque<MatrixOperator>
+EFMatrix::GetHEff(std::deque<StateComponent> NDeque, int i)
+{
+   std::deque<MatrixOperator> Result;
+
+   auto CLeft = PsiUpper[i].begin();
+   auto CRight = PsiUpper[i+1].begin();
+   auto O = Op.as_generic_mpo().begin();
+   auto N = NDeque.begin();
+
+   // Loop over each position in the unit cell.
+   for (int n = 0; n < UnitCellSize; ++n)
+   {
+      Result.push_back(scalar_prod(herm(contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1]), this->GetESC(i, i, n-1), *N)), this->GetFSC(i+1, i+1, n+1)));
+      Result.back() += scalar_prod(herm(contract_from_left(*O, herm(*CLeft), this->GetESC(i, i, n-1), *N)), this->GetFSC(i, i+1, n+1));
+      Result.back() += scalar_prod(herm(contract_from_left(*O, herm(*CRight), this->GetESC(i+1, i, n-1), *N)), this->GetFSC(i+1, i+1, n+1));
+      ++CLeft, ++CRight, ++O, ++N;
+   }
+
+   return Result;
 }
