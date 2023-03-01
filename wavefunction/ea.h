@@ -110,8 +110,7 @@ class EAWavefunction
       void check_structure() const;
       void debug_check_structure() const;
 
-      private:
-
+   private:
       // We can optionally save the left and right semi-infinite wavefunctions on disc by reference to a file.
       // If these strings are non-empty then the Left and Right components are not saved when this wavefunction
       // is streamed to disc.

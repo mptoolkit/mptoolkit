@@ -143,8 +143,7 @@ int main(int argc, char** argv)
           FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
          ("right", prog_opt::bool_switch(&Right), "Calculate the moments in the opposite direction")
          ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "Increase verbosity (can be used more than once)")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");

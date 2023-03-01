@@ -128,7 +128,7 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
       Result.push_back(scalar_prod(herm(*NL), *I));
       if (Alpha != 0.0)
       {
-         Result.back() += Alpha * ExpIK * scalar_prod(herm(*NL), *J);
+         Result.back() += -Alpha * std::conj(ExpIKY) * scalar_prod(herm(*NL), *J);
          ++J;
       }
       ++NL, ++I;
