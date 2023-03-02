@@ -62,10 +62,14 @@ class EFMatrix
       void SetPsi(int i, InfiniteWavefunctionLeft const& Psi);
       void SetPsi(int i, InfiniteWavefunctionRight const& Psi);
 
+      // Set the windows using a vector of LinearWavefunctions.
+      void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK);
+      void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK);
+
       // Set the window using a deque of single-site windows for each position
       // in the unit cell. (i > 0)
-      void SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-      void SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
+      void SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
+      void SetWindowLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
 
       // Update the operator: invalides the calculated E/F matrix elements and
       // (for string operators) the TEVs.

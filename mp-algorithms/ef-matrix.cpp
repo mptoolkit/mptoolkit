@@ -184,7 +184,85 @@ EFMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
+EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK)
+{
+   CHECK_EQUAL(UnitCellSize, WindowVec.size());
+   // FIXME: Find a better way to do this.
+   CHECK_EQUAL(IMax, WindowVec.front().size());
+
+   int n = 0;
+   for (auto const& Window : WindowVec)
+   {
+      int i = 1;
+      for (auto const& B : Window)
+         WindowUpper[n][i++] = B;
+      ++n;
+   }
+
+   int i = 1;
+   while (i < IMax)
+      ExpIKUpper[i++] = 1.0;
+   ExpIKUpper[i] = ExpIK;
+
+   // Invalidate elements which depend on this window.
+   for (auto I = EMatK.begin(); I != EMatK.end();)
+   {
+      if (I->first.first > 0)
+         I = EMatK.erase(I);
+      else
+         ++I;
+   }
+
+   for (auto I = FMatK.begin(); I != FMatK.end();)
+   {
+      if (I->first.first < IMax)
+         I = FMatK.erase(I);
+      else
+         ++I;
+   }
+}
+
+void
+EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK)
+{
+   CHECK_EQUAL(UnitCellSize, WindowVec.size());
+   // FIXME: Find a better way to do this.
+   CHECK_EQUAL(JMax, WindowVec.front().size());
+
+   int n = 0;
+   for (auto const& Window : WindowVec)
+   {
+      int j = 1;
+      for (auto const& B : Window)
+         WindowLower[n][j++] = B;
+      ++n;
+   }
+
+   int j = 1;
+   while (j < IMax)
+      ExpIKLower[j++] = 1.0;
+   ExpIKLower[j] = ExpIK;
+
+   // Invalidate elements which depend on this window.
+   for (auto I = EMatK.begin(); I != EMatK.end();)
+   {
+      if (I->first.second > 0)
+         I = EMatK.erase(I);
+      else
+         ++I;
+   }
+
+   for (auto I = FMatK.begin(); I != FMatK.end();)
+   {
+      if (I->first.second < JMax)
+         I = FMatK.erase(I);
+      else
+         ++I;
+   }
+}
+
+void
+EFMatrix::SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
 {
    PRECONDITION(i > 0);
    CHECK_EQUAL(UnitCellSize, BDeque.size());
@@ -220,7 +298,7 @@ EFMatrix::SetPsiTriUpper(int i, std::deque<StateComponent> const& BDeque, std::c
 }
 
 void
-EFMatrix::SetPsiTriLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
+EFMatrix::SetWindowLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
 {
    PRECONDITION(j > 0);
    CHECK_EQUAL(UnitCellSize, BDeque.size());
@@ -363,9 +441,16 @@ EFMatrix::GetE(int i, int j, int n)
 void
 EFMatrix::CalculateE(int i, int j)
 {
-   auto CUpper = PsiUpper[i].begin();
-   auto CLower = PsiLower[j].begin();
    auto O = Op.as_generic_mpo().begin();
+   LinearWavefunction::const_iterator CUpper, CLower;
+
+   bool CornerUpper = i == 0 || i == IMax;
+   if (CornerUpper)
+      CUpper = PsiUpper[i].begin();
+
+   bool CornerLower = j == 0 || j == JMax;
+   if (CornerLower)
+      CLower = PsiLower[j].begin();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>(O->Basis2().size());
@@ -381,28 +466,32 @@ EFMatrix::CalculateE(int i, int j)
             EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
 
       // Handle contributions with a window on the bottom only.
-      if (i == 0 || i == IMax)
+      if (CornerUpper)
          if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
             EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetE(i, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
 
       // Handle contributions with a window on the top only.
-      if (j == 0 || j == JMax)
+      if (CornerLower)
          if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
             EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j, n-1), *CLower);
 
       // Handle contributions without any windows (corner elements only).
-      if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      if (CornerUpper && CornerLower)
       {
          if (n > 0)
             CTriK = contract_from_left(*O, herm(*CUpper), CTriK, *CLower);
          CTriK += EMatK[std::make_pair(i, j)][n];
       }
 
-      ++CUpper, ++CLower, ++O;
+      ++O;
+      if (CornerUpper)
+         ++CUpper;
+      if (CornerLower)
+         ++CLower;
    }
 
    // Run the linear solver for corner elements.
-   if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+   if (CornerUpper && CornerLower)
       this->SolveE(i, j, delta_shift(CTriK, QShift));
 }
 
@@ -466,9 +555,16 @@ EFMatrix::GetF(int i, int j, int n)
 void
 EFMatrix::CalculateF(int i, int j)
 {
-   auto CUpper = PsiUpper[i].end();
-   auto CLower = PsiLower[j].end();
    auto O = Op.as_generic_mpo().end();
+   LinearWavefunction::const_iterator CUpper, CLower;
+
+   bool CornerUpper = i == 0 || i == IMax;
+   if (CornerUpper)
+      CUpper = PsiUpper[i].end();
+
+   bool CornerLower = j == 0 || j == JMax;
+   if (CornerLower)
+      CLower = PsiLower[j].end();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>((O-1)->Basis1().size());
@@ -476,7 +572,11 @@ EFMatrix::CalculateF(int i, int j)
    // Loop over each position in the unit cell.
    for (int n = UnitCellSize-1; n >= 0; --n)
    {
-      --CUpper, --CLower, --O;
+      --O;
+      if (CornerUpper)
+         --CUpper;
+      if (CornerLower)
+         --CLower;
 
       FMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis1().size());
 
@@ -486,17 +586,17 @@ EFMatrix::CalculateF(int i, int j)
             FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
 
       // Handle contributions with a window on the bottom only.
-      if (i == 0 || i == IMax)
+      if (CornerUpper)
          if (WindowLower[numerics::divp(n-j,UnitCellSize).rem].count(j+1) == 1)
             FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
 
       // Handle contributions with a window on the top only.
-      if (j == 0 || j == JMax)
+      if (CornerLower)
          if (WindowUpper[numerics::divp(n-i,UnitCellSize).rem].count(i+1) == 1)
             FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j, n+1), herm(*CLower));
 
       // Handle contributions without any windows (corner elements only).
-      if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+      if (CornerUpper && CornerLower)
       {
          if (n < UnitCellSize-1)
             CTriK = contract_from_right(herm(*O), *CUpper, CTriK, herm(*CLower));
@@ -505,7 +605,7 @@ EFMatrix::CalculateF(int i, int j)
    }
 
    // Run the linear solver for corner elements.
-   if ((i == 0 || i == IMax) && (j == 0 || j == JMax))
+   if (CornerUpper && CornerLower)
       this->SolveF(i, j, delta_shift(CTriK, adjoint(QShift)));
 }
 

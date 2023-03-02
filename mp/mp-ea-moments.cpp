@@ -243,9 +243,6 @@ int main(int argc, char** argv)
       else
          Psi2 = Psi;
 
-      CHECK(Psi.window_size() == 1);
-      CHECK(Psi2.window_size() == 1);
-
       // If the operator is not specified, use the one specified in the file attributes.
       if (!vm.count("operator") && !String)
       {
@@ -298,14 +295,18 @@ int main(int argc, char** argv)
       PsiRight.rotate_left(Psi.right_index());
 
       // Extract the windows.
-      std::deque<StateComponent> BVec, BVec2;
+      int WindowSize = Psi.window_size();
+      int WindowSize2 = Psi2.window_size();
+      CHECK_EQUAL(WindowSize, WindowSize2); // TODO
+      std::vector<LinearWavefunction> WindowVec, WindowVec2;
 
       for (WavefunctionSectionLeft Window : Psi.window_vec())
       {
          LinearWavefunction PsiLinear;
          MatrixOperator U;
          std::tie(PsiLinear, U) = get_left_canonical(Window);
-         BVec.push_back(PsiLinear.get_front()*U);
+         PsiLinear.set_back(PsiLinear.get_back()*U);
+         WindowVec.push_back(PsiLinear);
       }
 
       for (WavefunctionSectionLeft Window : Psi2.window_vec())
@@ -313,7 +314,8 @@ int main(int argc, char** argv)
          LinearWavefunction PsiLinear;
          MatrixOperator U;
          std::tie(PsiLinear, U) = get_left_canonical(Window);
-         BVec2.push_back(PsiLinear.get_front()*U);
+         PsiLinear.set_back(PsiLinear.get_back()*U);
+         WindowVec2.push_back(PsiLinear);
       }
 
       InfiniteMPO OriginalOp = Op;
@@ -368,9 +370,9 @@ int main(int argc, char** argv)
 
       EFMatrix EF(Op, Settings);
       EF.SetPsi(0, PsiLeft);
-      EF.SetPsi(1, PsiRight);
-      EF.SetPsiTriUpper(1, BVec, ExpIK);
-      EF.SetPsiTriLower(1, BVec2, ExpIK);
+      EF.SetPsi(WindowSize, PsiRight);
+      EF.SetWindowUpper(WindowVec, ExpIK);
+      EF.SetWindowLower(WindowVec2, ExpIK);
 
       // Loop over the powers of the operator.
       for (int p = 1; p <= Power; ++p)
@@ -383,7 +385,7 @@ int main(int argc, char** argv)
          }
 
          // The index for the final element
-         int FI = !Right ? 1 : 0;
+         int FI = !Right ? WindowSize : 0;
 
          // Get the moment for the excitation.
          MatrixPolyType FinalElement = !Right ? EF.GetElement(FI, FI, Right).back()[1.0] : EF.GetElement(FI, FI, Right).front()[1.0];
@@ -412,9 +414,9 @@ int main(int argc, char** argv)
          if (ShowAll)
          {
             // Print all of the columns of each E-matrix for each degree and momentum.
-            for (int i = 0; i <= 1; ++i)
+            for (int i = 0; i <= WindowSize; ++i)
             {
-               for (int j = 0; j <= 1; ++j)
+               for (int j = 0; j <= WindowSize2; ++j)
                {
                   int I = !Right ? i : 1-i;
                   int J = !Right ? j : 1-j;

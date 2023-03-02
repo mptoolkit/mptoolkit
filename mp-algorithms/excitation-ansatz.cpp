@@ -108,14 +108,14 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
 
 #if 1
-   EF.SetPsiTriLower(1, BDeque, ExpIK);
+   EF.SetWindowLower(1, BDeque, ExpIK);
 
    std::deque<StateComponent> HEffDeque = EF.GetHEff(0);
 
    std::deque<StateComponent> TyDeque;
    if (Alpha != 0.0)
    {
-      EFTy.SetPsiTriLower(1, BDeque, ExpIK);
+      EFTy.SetWindowLower(1, BDeque, ExpIK);
       TyDeque = EFTy.GetHEff(0);
    }
 
@@ -134,13 +134,13 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
       ++NL, ++I;
    }
 #else
-   EF.SetPsiTriUpper(1, BDeque, ExpIK);
+   EF.SetWindowUpper(1, BDeque, ExpIK);
 
    std::deque<MatrixOperator> Result = EF.GetHEff(NullLeftDeque);
 
    if (Alpha != 0.0)
    {
-      EFTy.SetPsiTriUpper(1, BDeque, ExpIK);
+      EFTy.SetWindowUpper(1, BDeque, ExpIK);
       std::deque<MatrixOperator> Result2 = EFTy.GetHEff(NullLeftDeque);
 
       auto R = Result.begin();
@@ -161,8 +161,8 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque)
 {
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
 
-   EFTy.SetPsiTriUpper(1, BDeque, ExpIK);
-   EFTy.SetPsiTriLower(1, BDeque, ExpIK);
+   EFTy.SetWindowUpper(1, BDeque, ExpIK);
+   EFTy.SetWindowLower(1, BDeque, ExpIK);
 
    return inner_prod(EFTy.GetRho(1, 1), EFTy.GetElement(1, 1).front()[1.0].coefficient(1));
 }
