@@ -4,7 +4,7 @@
 //
 // wavefunction/infinitewavefunctionleft.cpp
 //
-// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2023 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -186,7 +186,7 @@ InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::Construct(LinearWavefunction Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double LogAmplitude, int Verbose)
 {
    left_orthogonalize(Psi, QShift, ArnoldiTol, Verbose);
-   auto Lambda = gauge_fix_left_orthogonal(Psi, QShift, ArnoldiTol, Verbose-1);
+   auto Lambda = gauge_fix_left_orthogonal(Psi, QShift, GuessRho, ArnoldiTol, Verbose-1);
    return ConstructFromOrthogonal(Psi, QShift, Lambda, LogAmplitude, Verbose);
 }
 
@@ -202,8 +202,10 @@ InfiniteWavefunctionLeft::Construct(LinearWavefunction Psi,
 InfiniteWavefunctionLeft
 InfiniteWavefunctionLeft::ConstructPreserveAmplitude(LinearWavefunction Psi, QuantumNumbers::QuantumNumber const& QShift, MatrixOperator GuessRho, double LogAmplitude, int Verbose)
 {
+   CHECK_EQUAL(GuessRho.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(GuessRho.Basis2(), Psi.Basis2());
    LogAmplitude += left_orthogonalize(Psi, QShift, ArnoldiTol, Verbose);
-   auto Lambda = gauge_fix_left_orthogonal(Psi, QShift, ArnoldiTol, Verbose-1);
+   auto Lambda = gauge_fix_left_orthogonal(Psi, QShift, GuessRho, ArnoldiTol, Verbose-1);
    return ConstructFromOrthogonal(Psi, QShift, Lambda, LogAmplitude, Verbose);
 }
 
@@ -232,7 +234,8 @@ GetPrincipalTransferEigenvectorLeft(LinearWavefunction& Psi, QuantumNumbers::Qua
    return std::tie(EValues[0], EVec[0]);
 }
 
-// helper function to return the minimum value of A[i]*sin(theta) + B[i]*cos(theta) with respect to i
+// helper function to return the minimum value of A[i]*sin(theta) + B[i]*cos(theta) with respect to i.
+// We don't need the value of i, but just the minimum value itself.
 double GetMinimumOfCombination(LinearAlgebra::Vector<double> const& A, LinearAlgebra::Vector<double> const& B, double Theta)
 {
    double s = std::sin(Theta);
@@ -257,7 +260,7 @@ GetPrincipalTransferEigenvectorLeftDegen(LinearWavefunction& Psi, QuantumNumbers
    std::tie(EValues, EVec) = get_left_transfer_eigenvectors(Degen+1, Psi, Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
 
    // Keep increasing ExpectedDegeneracy and loop until we find a non-degenerate eigenvalue
-   while (EValues.size() > 1 && (std::abs(EValues[0] - EValues.back()) / (std::abs(EValues[0]) + std::abs(EValues.back()) <= UnityEpsilon))
+   while (EValues.size() > 1 && (std::abs(EValues[0] - EValues.back()) / (std::abs(EValues[0]) + std::abs(EValues.back()) <= UnityEpsilon)))
    {
       ++Degen;
       if (Verbose > 0)
@@ -356,28 +359,30 @@ GetPrincipalTransferEigenvectorLeftDegen(LinearWavefunction& Psi, QuantumNumbers
 
 // This is a helper function that does the hard work of left_orthogonalize.
 double
-left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, std::complex<double> EVal, MatrixOperator X)
+left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, std::complex<double> EVal, MatrixOperator X, int Verbose = 0)
 {
-   int Verbose = 0;
-
-   // scale X so that it is Hermitian, and positive
-   auto x = trace(X*X);   // TODO: this isn't as efficient as it should be
-   X *= std::pow(x, -0.5);
-   if (trace(X).real() < 0)
-      X = -X;
-
-   // See how close X is to being Hermitian.  If it is not Hermitian, then the principal eigenvalue is degenerate
-   // We don't have a function to assign the hermitian conjugate of an operator, so workaround is to muliply with identity...
-   MatrixOperator Xh = MatrixOperator::make_identity(X.Basis1()) * herm(X);
-   double e = norm_frob(X-Xh);
-   if (e > 1E-14)
-   {
-      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^dagger = " << e << '\n';
-   }
 
    MatrixOperator U0;
    RealDiagonalOperator D0;
    std::tie(D0, U0) = DiagonalizeHermitian(X); // Now X = U^\dagger D U
+
+   // Get the min and max elements of D0
+   double m = 1.0;
+   double M = 0.0;
+   for (int i = 0; i < D0.Basis1().size(); ++i)
+   {
+      for (int j = 0; j < D0.Basis1().dim(i); ++j)
+      {
+         double x = D0(i,i)(j,j);
+         m = std::min(m, x);
+         M = std::max(M, x);
+      }
+   }
+   double ConditionNum = M / m;
+   if (Verbose > 0 || ConditionNum > 10.0)
+   {
+      std::cerr << "left_orthogonalize_from_evector: Left evector condition number is " << ConditionNum << '\n';
+   }
 
    D0 = SqrtDiagonal(D0);
 
@@ -409,7 +414,7 @@ left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::Quantum
    }
    if (Eps >= 1E-12*Dr.Basis1().total_dimension())
    {
-      std::cerr << "left_orthogonalize: WARNING: left transfer orthogonalization residual is large: "
+      std::cerr << "left_orthogonalize_from_evector: WARNING: left transfer orthogonalization residual is large: "
          << Eps << '\n';
    }
 
@@ -432,8 +437,52 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    std::complex<double> EVal;
    MatrixOperator X;
    // std::tie(EVal, X) = GetPrincipalTransferEigenvectorLeft(Psi, QShift, tol, Verbose-2);
+   // std::tie(EVal, X) = get_left_transfer_eigenvector_hermitian(Psi, QShift, tol, Verbose-2);
    std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose-2);
-   return left_orthogonalize_from_evector(Psi, QShift, EVal, X);
+
+   MatrixOperator XH = MatrixOperator::make_identity(X.Basis1()) * herm(X);
+   X = 0.5*(X + XH);
+
+   std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, X, tol, Verbose-2);
+
+   if (Verbose >= 2 && std::abs(EVal-1.0) > UnityEpsilon)
+   {
+      std::cerr << "left_orthogonalize: WARNING: left transfer eigenvalue differs from 1.0: "
+                << EVal << " 1-evalue=" << (EVal-1.0) << '\n';
+   }
+
+   // scale X so that it is Hermitian, and positive
+   auto x = trace(X*X);   // TODO: this isn't as efficient as it should be
+   X *= std::pow(x, -0.5);
+   if (trace(X).real() < 0)
+      X = -X;
+
+   // See how close X is to being Hermitian.  If it is not Hermitian, then we are probably
+   // close to having degenerate eigenvalues.  We can try rerunning the eigensolver to get a
+   // better eigenvector.
+   MatrixOperator Xh = MatrixOperator::make_identity(X.Basis1()) * herm(X);
+   double e = norm_frob(X-Xh);
+   X = 0.5*(X+Xh);
+   int Tries = 0;
+   while (e > 1E-14 && ++Tries < 10) // some arbitrary number of tries.  In practice nothing seems to change after 2
+   {
+      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^dagger = " << e << " restarting orthogonalization\n";
+
+      std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, X);
+      x = trace(X*X);   // TODO: this isn't as efficient as it should be
+      X *= std::pow(x, -0.5);
+      if (trace(X).real() < 0)
+      X = -X;
+      Xh = MatrixOperator::make_identity(X.Basis1()) * herm(X);
+      e = norm_frob(X-Xh);
+      X = 0.5*(X+Xh);
+   }
+   if (Tries == 10)
+   {
+      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix never converged to a Hermitian matrix!\n";
+   }
+
+   return left_orthogonalize_from_evector(Psi, QShift, EVal, X, Verbose);
 }
 
 #if 0
@@ -493,20 +542,51 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    // 10. Gauge fix the left side with U_L^\dagger
    // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
 
+   CHECK_EQUAL(GuessRho.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(GuessRho.Basis2(), Psi.Basis2());
+
    std::complex<double> EValue;
    MatrixOperator Y;
+   // Ensure the initial guess is hermitian
+   MatrixOperator rH = MatrixOperator::make_identity(GuessRho.Basis1()) * herm(GuessRho);
+   GuessRho = 0.5 * (GuessRho + rH);
+   // std::tie(EValue, Y) = get_right_transfer_eigenvector_hermitian(Psi, QShift, std::move(GuessRho), tol, Verbose);
    std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, std::move(GuessRho), tol, Verbose);
    if (std::abs(EValue-1.0) > UnityEpsilon)
    {
       std::cerr << "gauge_fix_left_orthogonal: WARNING: right transfer eigenvalue differs from 1.0: "
-                << EValue << '\n';
-      TRACE(EValue-1.0)(std::abs(EValue-1.0));
+      << EValue << " evalue-1=" << (EValue-1.0) << '\n';
    }
-   // scale Y so it is Hermitian
+   // scale Y so it is Hermitian - as an eigenvector it may be arbitrarily rotated by a complex number
    auto y = trace(Y*Y);  // TODO: fixme
    Y *= std::pow(y, -0.5);
    // make the trace of Y = 1
-   Y *= 1.0 / trace(Y).real();
+   Y *= 1.0 / trace(Y);
+   // if (trace(Y).real() < 0.0)
+   //    Y *= -1.0;
+
+   rH = MatrixOperator::make_identity(Y.Basis1()) * herm(Y);
+   double e = norm_frob(Y-rH);
+   Y = 0.5*(Y+rH);
+   int Tries = 0;
+   while (e > 1E-14 && ++Tries < 10)
+   {
+      std::cerr << "gauge_fix_left_orthogonal: warning: right transfer eigenmatrix is not hermitian, norm of Y-Y^dagger = " << e << " restarting orthogonalization\n";
+      std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, std::move(Y), tol, Verbose);
+      // scale Y so it is Hermitian - as an eigenvector it may be arbitrarily rotated by a complex number
+      auto y = trace(Y*Y);  // TODO: fixme
+      Y *= std::pow(y, -0.5);
+      // make the trace of Y = 1
+      Y *= 1.0 / trace(Y);
+
+      rH = MatrixOperator::make_identity(Y.Basis1()) * herm(Y);
+      e = norm_frob(Y-rH);
+      Y = 0.5*(Y+rH);
+   }
+   if (Tries == 10)
+   {
+      std::cerr << "gauge_fix_left_orthogonal: warning: right transfer eigenmatrix never converged to a Hermitian matrix!\n";
+   }
 
    MatrixOperator U;
    RealDiagonalOperator D;
@@ -521,34 +601,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
 {
-   // 8. Calculate the right transfer matrix eigenvector (density operator) \rho
-   // 9. Diagonalize \rho and obtain U_L \Lambda_L^2 U_L^\dagger
-   // 10. Gauge fix the left side with U_L^\dagger
-   // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
-
-   std::complex<double> EValue;
-   MatrixOperator Y;
-   std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose);
-   if (std::abs(EValue-1.0) > UnityEpsilon)
-   {
-      std::cerr << "gauge_fix_left_orthogonal: WARNING: right transfer eigenvalue differs from 1.0: "
-                << EValue << '\n';
-      TRACE(EValue-1.0)(std::abs(EValue-1.0));
-   }
-   // scale Y so it is Hermitian
-   auto y = trace(Y*Y);  // TODO: fixme
-   Y *= std::pow(y, -0.5);
-   // make the trace of Y = 1
-   Y *= 1.0 / trace(Y).real();
-
-   MatrixOperator U;
-   RealDiagonalOperator D;
-   std::tie(D, U) = DiagonalizeHermitian(std::move(Y)); // Now Y = U^\dagger D U
-
-   Psi.set_front(delta_shift(U, QShift) * Psi.get_front());
-   Psi.set_back(Psi.get_back() * herm(U));
-
-   return SqrtDiagonal(std::move(D));
+   return gauge_fix_left_orthogonal(Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
 }
 
 void
@@ -603,6 +656,7 @@ InfiniteWavefunctionLeft::InitializeFromLeftOrthogonal(LinearWavefunction Psi, R
    {
       std::cerr << "InfiniteWavefunctionLeft: WARNING: right transfer orthogonalization residual is large: "
          << Eps << '\n';
+      TRACE(Lambda0)(Lambda);
    }
 
    this->set_A_matrices_from_handle(Psi.base_begin(), Psi.base_end());
