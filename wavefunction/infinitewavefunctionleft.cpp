@@ -823,6 +823,20 @@ void InfiniteWavefunctionLeft::scale(std::complex<double> x)
    *this->base_begin_() = s;
 }
 
+void InfiniteWavefunctionLeft::scale_log(std::complex<double> x)
+{
+   LogAmplitude += x.real();
+   // Because the components have value semantics we can't directly load() the pvalue_ptr
+   // and then mutate it, because pvalue_handle's are immutable - we would end up referring
+   // do a different object.
+   if (x.imag() != 0.0)
+   {
+      pvalue_ptr<StateComponent> s = this->base_begin_()->load();
+      *s.mutate() *= std::exp(std::complex<double>(0,x.imag()));
+      *this->base_begin_() = s;
+   }
+}
+
 InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x)
 {
    psi.scale(x);

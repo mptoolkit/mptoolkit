@@ -104,6 +104,10 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // x / |x|
       void scale(std::complex<double> x);
 
+      // Scale the wavefunction by exp(x).  This has the effect of adding x.real() to the
+      // log_amplitude, and rotating the first matrix of the unit cell by exp(i*x.imag())
+      void scale_log(std::complex<double> x);
+
       // Rotates the wavefunction to the left, by taking the left-most site
       // and moving it to the right
       void rotate_left(int Count);
