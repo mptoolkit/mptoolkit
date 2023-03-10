@@ -238,6 +238,52 @@ inject_right(LinearWavefunction const& Psi1,
 
 // miscellaneous functions
 
+struct LeftMultiply
+{
+   typedef MatrixOperator argument_type;
+   typedef MatrixOperator result_type;
+
+   LeftMultiply(LinearWavefunction const& L_, QuantumNumber const& QShift_)
+      : L(L_), QShift(QShift_) {}
+
+   result_type operator()(argument_type const& x) const
+   {
+      result_type r = delta_shift(x, QShift);
+      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
+      {
+         r = operator_prod(herm(*I), r, *I);
+      }
+      return r;
+   }
+
+   LinearWavefunction const& L;
+   QuantumNumber QShift;
+};
+
+struct LeftMultiplyHermitian
+{
+   typedef MatrixOperator argument_type;
+   typedef MatrixOperator result_type;
+
+   LeftMultiplyHermitian(LinearWavefunction const& L_, QuantumNumber const& QShift_)
+      : L(L_), QShift(QShift_) {}
+
+   result_type operator()(argument_type const& x) const
+   {
+      result_type r = delta_shift(x, QShift);
+      for (LinearWavefunction::const_iterator I = L.begin(); I != L.end(); ++I)
+      {
+         r = operator_prod(herm(*I), r, *I);
+      }
+      MatrixOperator rh = MatrixOperator::make_identity(r.Basis1()) * herm(r);
+      r = 0.5 * (r +rh);
+      return r;
+   }
+
+   LinearWavefunction const& L;
+   QuantumNumber QShift;
+};
+
 struct LeftMultiplyString
 {
    typedef MatrixOperator argument_type;
@@ -389,6 +435,34 @@ struct RightMultiply
 };
 
 
+struct RightMultiplyHermitian
+{
+   typedef MatrixOperator argument_type;
+   typedef MatrixOperator result_type;
+
+   RightMultiplyHermitian(LinearWavefunction const& R_, QuantumNumber const& QShift_)
+      : R(R_), QShift(QShift_) {}
+
+   result_type operator()(argument_type const& x) const
+   {
+      result_type r = x;
+      int s = R.size();
+      LinearWavefunction::const_iterator I = R.end();
+      while (I != R.begin())
+      {
+         --s;
+         --I;
+         r = operator_prod(*I, r, herm(*I));
+      }
+      MatrixOperator rh = MatrixOperator::make_identity(r.Basis1()) * herm(r);
+      //TRACE(norm_frob(r-rh));
+      r = 0.5 * (r+rh);
+      return delta_shift(r, adjoint(QShift));
+   }
+
+   LinearWavefunction const& R;
+   QuantumNumber QShift;
+};
 
 
 struct RightMultiplyOperator

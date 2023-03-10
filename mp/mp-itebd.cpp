@@ -57,7 +57,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    int MaxStates = 0;
    double DeltaLogAmplitude = 0;
    #pragma omp parallel for reduction(+:DeltaLogAmplitude)
-   for (unsigned i = 0; i < Sz; i += 2)
+   for (unsigned i = 0; i < Sz-1; i += 2)
    {
       TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], DeltaLogAmplitude, UEven[i/2], SInfo);
       if (Verbose > 0)
@@ -524,7 +524,7 @@ int main(int argc, char** argv)
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
                DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
-               LambdaR = LambdaSave.back();
+               // LambdaSave doesn't include a lambda matrix for the right hand edge, so leave LambdaR as it ia
             }
             else
                Psi = LinearWavefunction::FromContainer(PsiVec.begin(), PsiVec.end());
