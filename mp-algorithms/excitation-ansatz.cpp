@@ -107,7 +107,6 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
 {
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
 
-#if 1
    EF.SetWindowLower(1, BDeque, ExpIK);
 
    std::deque<StateComponent> HEffDeque = EF.GetHEff(0);
@@ -133,25 +132,6 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
       }
       ++NL, ++I;
    }
-#else
-   EF.SetWindowUpper(1, BDeque, ExpIK);
-
-   std::deque<MatrixOperator> Result = EF.GetHEff(NullLeftDeque);
-
-   if (Alpha != 0.0)
-   {
-      EFTy.SetWindowUpper(1, BDeque, ExpIK);
-      std::deque<MatrixOperator> Result2 = EFTy.GetHEff(NullLeftDeque);
-
-      auto R = Result.begin();
-      auto R2 = Result2.begin();
-      while (R != Result.end())
-      {
-         *R += -Alpha * ExpIKY * (*R2);
-         ++R, ++R2;
-      }
-   }
-#endif
 
    return Result;
 }

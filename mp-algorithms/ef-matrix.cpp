@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "ef-matrix.h"
+#include "mp-algorithms/triangular_mpo_solver_helpers.h"
 #include "tensor/tensor_eigen.h"
 
 // The tolerance of the trace of the left/right generalised transfer
@@ -54,6 +55,28 @@ Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
    else
       std::cerr << "EFMatrix: warning: the trace of Ident is below threshold,"
                    " so the results will have a spurious phase contribution." << std::endl;
+}
+
+// Shifts the variables in the polynomials in EMatK from (n+Shift) to n.
+void
+ShiftVariable(std::vector<KMatrixPolyType>& EMatK, int Shift)
+{
+   // Loop over each element in the vector.
+   for (auto& EK : EMatK)
+   {
+      // Loop over each momentum.
+      for (auto& EX : EK)
+      {
+         // Loop over the terms in the polynomial, starting from the highest degree.
+         auto E = EX.second.end();
+         while (E != EX.second.begin())
+         {
+            --E;
+            for (int n = 0; n < E->first; ++n)
+               EX.second[n] -= double(std::pow(Shift, E->first-n) * Binomial(E->first, n)) * E->second;
+         }
+      }
+   }
 }
 
 EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
@@ -364,8 +387,8 @@ EFMatrix::SetOp(InfiniteMPO Op_, int Degree_)
 MatrixOperator
 EFMatrix::GetTLeft(int i, int j, bool F)
 {
-   // Return null if out of bounds.
-   if (i < 0 || j < 0)
+   // Return null if not a corner element.
+   if (!((i == 0 || i == IMax) && (j == 0 || j == JMax)))
       return MatrixOperator();
 
    // Calculate the element if we haven't already.
@@ -381,8 +404,8 @@ EFMatrix::GetTLeft(int i, int j, bool F)
 MatrixOperator
 EFMatrix::GetTRight(int i, int j, bool F)
 {
-   // Return null if out of bounds.
-   if (i < 0 || j < 0)
+   // Return null if not a corner element.
+   if (!((i == 0 || i == IMax) && (j == 0 || j == JMax)))
       return MatrixOperator();
 
    // Calculate the element if we haven't already.
@@ -419,6 +442,32 @@ EFMatrix::CalculateTEVs(int i, int j)
    TCalculated[std::make_pair(i, j)] = true;
 }
 
+StateComponent
+EFMatrix::GetWUpper(int i, int n)
+{
+   // If not defined, return null;
+   if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 0)
+      return StateComponent();
+
+   StateComponent WUpper = WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i];
+   for (int I = numerics::divp(n-i+1,UnitCellSize).quot; I < 0; ++I)
+      WUpper.delta_shift(QShift);
+   return WUpper;
+}
+
+StateComponent
+EFMatrix::GetWLower(int j, int n)
+{
+   // If not defined, return null;
+   if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 0)
+      return StateComponent();
+
+   StateComponent WLower = WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j];
+   for (int I = numerics::divp(n-j+1,UnitCellSize).quot; I < 0; ++I)
+      WLower.delta_shift(QShift);
+   return WLower;
+}
+
 std::vector<KMatrixPolyType>
 EFMatrix::GetE(int i, int j, int n)
 {
@@ -431,7 +480,13 @@ EFMatrix::GetE(int i, int j, int n)
       this->CalculateE(i, j);
 
    if (n == -1)
-      return ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
+   {
+      // Delta shift and multiply by momentum factor.
+      std::vector<KMatrixPolyType> Result = ScalarMultiply(this->MomentumFactor(i, j), delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], QShift));
+      // Shift polynomial variable from n+1 to n.
+      ShiftVariable(Result, 1);
+      return Result;
+   }
    else if (n >= 0 && n < UnitCellSize)
       return EMatK[std::make_pair(i, j)][n];
    else
@@ -460,20 +515,20 @@ EFMatrix::CalculateE(int i, int j)
    {
       EMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis2().size());
 
+      StateComponent WUpper = this->GetWUpper(i, n);
+      StateComponent WLower = this->GetWLower(j, n);
+
       // Handle contributions with a window on the top and the bottom.
-      if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
-         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+      if (!WUpper.is_null() && !WLower.is_null())
+         EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WUpper), this->GetE(i-1, j-1, n-1), WLower);
 
       // Handle contributions with a window on the bottom only.
-      if (CornerUpper)
-         if (WindowLower[numerics::divp(n-j+1,UnitCellSize).rem].count(j) == 1)
-            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetE(i, j-1, n-1), WindowLower[numerics::divp(n-j+1,UnitCellSize).rem][j]);
+      if (CornerUpper && !WLower.is_null())
+         EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(*CUpper), this->GetE(i, j-1, n-1), WLower);
 
       // Handle contributions with a window on the top only.
-      if (CornerLower)
-         if (WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem].count(i) == 1)
-            EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i+1,UnitCellSize).rem][i]), this->GetE(i-1, j, n-1), *CLower);
+      if (CornerLower && !WUpper.is_null())
+         EMatK[std::make_pair(i, j)][n] += contract_from_left(*O, herm(WUpper), this->GetE(i-1, j, n-1), *CLower);
 
       // Handle contributions without any windows (corner elements only).
       if (CornerUpper && CornerLower)
@@ -518,6 +573,10 @@ EFMatrix::SolveE(int i, int j, std::vector<KMatrixPolyType> CTriK)
 
    EMatK[std::make_pair(i, j)][UnitCellSize-1] = delta_shift(EMatK[std::make_pair(i, j)][UnitCellSize-1], adjoint(QShift));
 
+   // Shift polynomial variable from n-1 to n.
+   // TODO: Can this be factored out?
+   ShiftVariable(EMatK[std::make_pair(i, j)][UnitCellSize-1], -1);
+
    // Calculate the elements in the rest of the unit cell.
    if (!FinalElement || NeedFinalMatrix)
    {
@@ -545,7 +604,13 @@ EFMatrix::GetF(int i, int j, int n)
       this->CalculateF(i, j);
 
    if (n == UnitCellSize)
-      return ScalarMultiply(std::conj(this->MomentumFactor(i, j, true)), delta_shift(FMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+   {
+      // Delta shift and multiply by momentum factor.
+      std::vector<KMatrixPolyType> Result = ScalarMultiply(std::conj(this->MomentumFactor(i, j, true)), delta_shift(FMatK[std::make_pair(i, j)][0], adjoint(QShift)));
+      // Shift polynomial variable from n+1 to n.
+      ShiftVariable(Result, 1);
+      return Result;
+   }
    else if (n >= 0 && n < UnitCellSize)
       return FMatK[std::make_pair(i, j)][n];
    else
@@ -580,20 +645,20 @@ EFMatrix::CalculateF(int i, int j)
 
       FMatK[std::make_pair(i, j)][n] = std::vector<KMatrixPolyType>(O->Basis1().size());
 
+      StateComponent WUpper = this->GetWUpper(i+1, n);
+      StateComponent WLower = this->GetWLower(j+1, n);
+
       // Handle contributions with a window on the top and the bottom.
-      if (WindowUpper[numerics::divp(n-i,UnitCellSize).rem].count(i+1) == 1)
-         if (WindowLower[numerics::divp(n-j,UnitCellSize).rem].count(j+1) == 1)
-            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
+      if (!WUpper.is_null() && !WLower.is_null())
+         FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WUpper, this->GetF(i+1, j+1, n+1), herm(WLower));
 
       // Handle contributions with a window on the bottom only.
-      if (CornerUpper)
-         if (WindowLower[numerics::divp(n-j,UnitCellSize).rem].count(j+1) == 1)
-            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j+1, n+1), herm(WindowLower[numerics::divp(n-j,UnitCellSize).rem][j+1]));
+      if (CornerUpper && !WLower.is_null())
+         FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), *CUpper, this->GetF(i, j+1, n+1), herm(WLower));
 
       // Handle contributions with a window on the top only.
-      if (CornerLower)
-         if (WindowUpper[numerics::divp(n-i,UnitCellSize).rem].count(i+1) == 1)
-            FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1], this->GetF(i+1, j, n+1), herm(*CLower));
+      if (CornerLower && !WUpper.is_null())
+         FMatK[std::make_pair(i, j)][n] += contract_from_right(herm(*O), WUpper, this->GetF(i+1, j, n+1), herm(*CLower));
 
       // Handle contributions without any windows (corner elements only).
       if (CornerUpper && CornerLower)
@@ -667,6 +732,10 @@ EFMatrix::SolveF(int i, int j, std::vector<KMatrixPolyType> CTriK)
       FMatK[std::make_pair(i, j)][0].front() -= (RightEnergy + BondEnergy) * FMatK[std::make_pair(i, j)][0].back();
    }
 
+   // Shift polynomial variable from n-1 to n.
+   // TODO: Can this be factored out?
+   ShiftVariable(FMatK[std::make_pair(i, j)][0], -1);
+
    // Calculate the elements in the rest of the unit cell.
    if (!FinalElement || NeedFinalMatrix)
    {
@@ -723,32 +792,10 @@ EFMatrix::GetHEff(int i)
    // Loop over each position in the unit cell.
    for (int n = 0; n < UnitCellSize; ++n)
    {
-      Result.push_back(operator_prod_inner(*O, this->GetESC(i, i, n-1), WindowLower[numerics::divp(n-i,UnitCellSize).rem][i+1], herm(this->GetFSC(i+1, i+1, n+1))));
+      Result.push_back(operator_prod_inner(*O, this->GetESC(i, i, n-1), this->GetWLower(i+1, n), herm(this->GetFSC(i+1, i+1, n+1))));
       Result.back() += operator_prod_inner(*O, this->GetESC(i, i, n-1), *CLeft, herm(this->GetFSC(i+1, i, n+1)));
       Result.back() += operator_prod_inner(*O, this->GetESC(i, i+1, n-1), *CRight, herm(this->GetFSC(i+1, i+1, n+1)));
       ++CLeft, ++CRight, ++O;
-   }
-
-   return Result;
-}
-
-std::deque<MatrixOperator>
-EFMatrix::GetHEff(std::deque<StateComponent> NDeque, int i)
-{
-   std::deque<MatrixOperator> Result;
-
-   auto CLeft = PsiUpper[i].begin();
-   auto CRight = PsiUpper[i+1].begin();
-   auto O = Op.as_generic_mpo().begin();
-   auto N = NDeque.begin();
-
-   // Loop over each position in the unit cell.
-   for (int n = 0; n < UnitCellSize; ++n)
-   {
-      Result.push_back(scalar_prod(herm(contract_from_left(*O, herm(WindowUpper[numerics::divp(n-i,UnitCellSize).rem][i+1]), this->GetESC(i, i, n-1), *N)), this->GetFSC(i+1, i+1, n+1)));
-      Result.back() += scalar_prod(herm(contract_from_left(*O, herm(*CLeft), this->GetESC(i, i, n-1), *N)), this->GetFSC(i, i+1, n+1));
-      Result.back() += scalar_prod(herm(contract_from_left(*O, herm(*CRight), this->GetESC(i+1, i, n-1), *N)), this->GetFSC(i+1, i+1, n+1));
-      ++CLeft, ++CRight, ++O, ++N;
    }
 
    return Result;

@@ -106,7 +106,6 @@ class EFMatrix
 
       // Calculate the effective Hamiltonian acting on the window w.r.t. site i.
       std::deque<StateComponent> GetHEff(int i = 0);
-      std::deque<MatrixOperator> GetHEff(std::deque<StateComponent> NDeque, int i = 0);
 
    private:
       void CheckOperator();
@@ -123,6 +122,11 @@ class EFMatrix
       // Return the momentum factor corresponding to the element (i, j).
       std::complex<double> MomentumFactor(int i, int j, bool F = false)
          { return F ? std::conj(ExpIKUpper[IMax-i]) * ExpIKLower[JMax-j] : ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
+
+      // Return the StateComponent for the window at position n in the unit
+      // cell for the index i/j.
+      StateComponent GetWUpper(int i, int n);
+      StateComponent GetWLower(int j, int n);
 
       // Calculate the unit cell for element (i, j).
       void CalculateE(int i, int j);
