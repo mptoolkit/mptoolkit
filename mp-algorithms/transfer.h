@@ -112,6 +112,22 @@ get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctio
                        QuantumNumber const& q,
                        double tol = 1E-14, int Verbose = 0);
 
+// Gets the principal eigenpair of the transfer matrix with eigenvalue of
+// magnitude 1: if no eigenvalue of magnitude 1 exists, returns null matrices.
+// (This is faster than get_transfer_eigenpair if the spectral radius is < 1,
+// since we only need to calculate one of the eigenvectors, instead of both.)
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            ProductMPO const& StringOp, double tol = 1e-14, double UnityEpsilon = 1e-12, int Verbose = 0);
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            QuantumNumber const& q, double tol = 1e-14, double UnityEpsilon = 1e-12, int Verbose = 0);
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            double tol = 1e-14, double UnityEpsilon = 1e-12, int Verbose = 0);
+
 // get the entire spectrum up to NumEigen eigenvalues.  If LeftVectors or RightVectors is not null, then
 // also calculate the left/right eigenvectors.  These are returned in the Basis1() / Basis2() respectively.
 LinearAlgebra::Vector<std::complex<double>>

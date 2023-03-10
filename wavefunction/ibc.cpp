@@ -49,6 +49,14 @@ WavefunctionSectionLeft::WavefunctionSectionLeft(InfiniteWavefunctionLeft const&
    this->check_structure();
 }
 
+WavefunctionSectionLeft::WavefunctionSectionLeft(MatrixOperator const& C)
+   : CanonicalWavefunctionBase(C.Basis1(), C.Basis2())
+{
+   RealDiagonalOperator Lambda;
+   SingularValueDecompositionFull(C, LeftU_, Lambda, RightU_);
+   this->push_back_lambda(Lambda);
+}
+
 PStream::opstream& operator<<(PStream::opstream& out, WavefunctionSectionLeft const& Psi)
 {
    out << WavefunctionSectionLeft::VersionT.default_version();
@@ -84,6 +92,9 @@ inplace_conj(WavefunctionSectionLeft& Psi)
    {
       *I = conj(*I);
    }
+
+   Psi.LeftU_ = conj(Psi.LeftU_);
+   Psi.RightU_ = conj(Psi.RightU_);
 }
 
 WavefunctionSectionLeft
@@ -210,20 +221,6 @@ IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
 {
 }
 
-IBCWavefunction::IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
-                                 WavefunctionSectionLeft const& Window_,
-                                 InfiniteWavefunctionRight const& Right_,
-                                 std::string LeftFilename,
-                                 std::string RightFilename,
-                                 int Offset,
-                                 int WindowLeft,
-                                 int WindowRight)
-   : WindowLeftSites(WindowLeft), WindowRightSites(WindowRight), WindowOffset(Offset),
-     WavefunctionLeftFile(LeftFilename), WavefunctionRightFile(RightFilename),
-     Left(Left_), Window(Window_), Right(Right_)
-{
-}
-
 void IBCWavefunction::check_structure() const
 {
    Left.check_structure();
@@ -231,11 +228,11 @@ void IBCWavefunction::check_structure() const
    Right.check_structure();
    if (!Left.empty())
    {
-      CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+      CHECK_EQUAL(Left.Basis2(), Window.LeftU().Basis1());
    }
    if (!Right.empty())
    {
-      CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+      CHECK_EQUAL(Window.RightU().Basis2(), Right.Basis1());
    }
 }
 
@@ -246,11 +243,11 @@ void IBCWavefunction::debug_check_structure() const
    Right.debug_check_structure();
    if (!Left.empty())
    {
-      DEBUG_CHECK_EQUAL(Left.Basis2(), Window.Basis1());
+      DEBUG_CHECK_EQUAL(Left.Basis2(), Window.LeftU().Basis1());
    }
    if (!Right.empty())
    {
-      DEBUG_CHECK_EQUAL(Window.Basis2(), Right.Basis1());
+      DEBUG_CHECK_EQUAL(Window.RightU().Basis2(), Right.Basis1());
    }
 }
 
@@ -340,7 +337,7 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
    A["WindowSize"] = this->window_size();
    A["WindowOffset"] = this->window_offset();
    A["LeftUnitCellSize"] = Left.size();
-   A["RightUnitCellSize"] = Left.size();
+   A["RightUnitCellSize"] = Right.size();
    A["LeftFilename"] = this->get_left_filename();
    A["RightFilename"] = this->get_right_filename();
 }

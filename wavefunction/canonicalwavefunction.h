@@ -114,7 +114,7 @@ class CanonicalWavefunctionBase
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the final MPS matrix
-      mps_type get_back() { return *Data.back().lock(); }
+      mps_type get_back() const { return *Data.back().lock(); }
 
       // returns the lambda matrix at partition i
       lambda_type lambda(int i) const
@@ -130,6 +130,8 @@ class CanonicalWavefunctionBase
       CanonicalWavefunctionBase() = default;
       CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) = default;
       CanonicalWavefunctionBase(CanonicalWavefunctionBase&& Psi) = default;
+
+      CanonicalWavefunctionBase(VectorBasis const& B1, VectorBasis const& B2) {}
 
       CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) = default;
       CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase&& Psi) = default;

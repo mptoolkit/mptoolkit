@@ -270,6 +270,25 @@ void inplace_conj(InfiniteWavefunctionRight& Psi)
    }
 }
 
+void inplace_qshift(InfiniteWavefunctionRight& Psi, QuantumNumbers::QuantumNumber const& Shift)
+{
+   Psi.setBasis1(delta_shift(Psi.Basis1(), Shift));
+   Psi.setBasis2(delta_shift(Psi.Basis2(), Shift));
+
+   for (InfiniteWavefunctionRight::mps_iterator I = Psi.begin_(); I != Psi.end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   for (InfiniteWavefunctionRight::lambda_iterator I = Psi.lambda_begin_(); I != Psi.lambda_end_(); ++I)
+   {
+      *I = delta_shift(*I, Shift);
+   }
+
+   Psi.check_structure();
+}
+
+
 InfiniteWavefunctionRight
 reflect(InfiniteWavefunctionLeft const& Psi)
 {
@@ -279,4 +298,63 @@ reflect(InfiniteWavefunctionLeft const& Psi)
 void inplace_reflect(InfiniteWavefunctionRight& Psi)
 {
    PANIC("not implemented");
+}
+
+std::tuple<std::complex<double>, int, StateComponent>
+overlap(InfiniteWavefunctionRight const& x, ProductMPO const& StringOp,
+        InfiniteWavefunctionRight const& y,
+        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+   int Length = statistics::lcm(x.size(), y.size(), StringOp.size());
+
+   LinearWavefunction xPsi = get_right_canonical(x).second;
+   LinearWavefunction yPsi = get_right_canonical(y).second;
+
+   ProductMPO Str = StringOp * ProductMPO::make_identity(StringOp.LocalBasis1List(), Sector);
+
+   StateComponent Init = MakeRandomStateComponent(Str.Basis2(), x.Basis2(), y.Basis2());
+
+   int Iterations = Iter;
+   int TotalIterations = 0;
+   double MyTol = Tol;
+   if (Verbose > 1)
+   {
+      std::cerr << "Starting Arnoldi, Tol=" << MyTol << ", Iterations=" << Iter << '\n';
+   }
+   std::complex<double> Eta = LinearSolvers::Arnoldi(Init,
+                                                     RightMultiplyOperator(xPsi, x.qshift(), Str,
+                                                                           yPsi, y.qshift(), Length),
+                                                     Iterations,
+                                                     MyTol,
+                                                     LinearSolvers::LargestMagnitude, false, Verbose);
+   TotalIterations += Iterations;
+   DEBUG_TRACE(Eta)(Iterations);
+
+   while (MyTol < 0)
+   {
+      if (Verbose > 0)
+         std::cerr << "Restarting Arnoldi, eta=" << Eta << ", Tol=" << -MyTol << '\n';
+      Iterations = Iter;
+      MyTol = Tol;
+      Eta = LinearSolvers::Arnoldi(Init, RightMultiplyOperator(xPsi, x.qshift(), Str,
+                                                               yPsi, y.qshift(), Length),
+                                   Iterations, MyTol, LinearSolvers::LargestMagnitude, false, Verbose);
+      TotalIterations += Iterations;
+      DEBUG_TRACE(Eta)(Iterations);
+   }
+   if (Verbose > 0)
+      std::cerr << "Converged.  TotalIterations=" << TotalIterations
+                << ", Tol=" << MyTol << '\n';
+
+   return std::make_tuple(Eta, Length, Init);
+}
+
+std::pair<std::complex<double>, StateComponent>
+overlap(InfiniteWavefunctionRight const& x,  InfiniteWavefunctionRight const& y,
+        QuantumNumbers::QuantumNumber const& Sector, int Iter, double Tol, int Verbose)
+{
+   CHECK_EQUAL(x.size(), y.size());
+   std::tuple<std::complex<double>, int, StateComponent> Result =
+      overlap(x, ProductMPO::make_identity(ExtractLocalBasis(y)), y, Sector, Iter, Tol, Verbose);
+   return std::make_pair(std::get<0>(Result), std::get<2>(Result));
 }

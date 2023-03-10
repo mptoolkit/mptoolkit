@@ -186,6 +186,19 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  double Tol,
                                  int Verbose);
 
+KMatrixPolyType
+DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
+                                 BasicFiniteMPO const& Diag,
+                                 MatrixOperator const& UnitMatrixLeft,
+                                 MatrixOperator const& UnitMatrixRight,
+                                 LinearWavefunction const& Psi1,
+                                 LinearWavefunction const& Psi2,
+                                 QuantumNumber const& QShift,
+                                 std::complex<double> Scale,
+                                 bool HasEigenvalue1,
+                                 double Tol,
+                                 int Verbose);
+
 // Solve the components for the case where the diagonal operator is zero
 KMatrixPolyType
 SolveZeroDiagonal(KMatrixPolyType const& C);
