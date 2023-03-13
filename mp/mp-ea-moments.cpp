@@ -370,9 +370,9 @@ int main(int argc, char** argv)
 
       EFMatrix EF(Op, Settings);
       EF.SetPsi(0, PsiLeft);
-      EF.SetPsi(WindowSize, PsiRight);
-      EF.SetWindowUpper(WindowVec, ExpIK);
-      EF.SetWindowLower(WindowVec2, ExpIK);
+      EF.SetPsi(WindowSize, PsiRight, ExpIK);
+      EF.SetWindowUpper(WindowVec);
+      EF.SetWindowLower(WindowVec2);
 
       // Loop over the powers of the operator.
       for (int p = 1; p <= Power; ++p)

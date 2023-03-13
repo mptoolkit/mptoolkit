@@ -59,17 +59,21 @@ class EFMatrix
       // Set boundary wavefunctions: at the moment, we assume that the boundary
       // wavefunctions for the bra and ket are the same, as this allows us to
       // obtain the TEVs from the lambda matrix. (i >= 0)
-      void SetPsi(int i, InfiniteWavefunctionLeft const& Psi);
-      void SetPsi(int i, InfiniteWavefunctionRight const& Psi);
+      void SetPsi(int i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK = 1.0);
+      void SetPsi(int i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK = 1.0);
+
+      // Set the momentum factor.
+      void SetExpIKUpper(std::complex<double> ExpIK);
+      void SetExpIKLower(std::complex<double> ExpIK);
 
       // Set the windows using a vector of LinearWavefunctions.
-      void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK);
-      void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK);
+      void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec);
+      void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec);
 
-      // Set the window using a deque of single-site windows for each position
-      // in the unit cell. (i > 0)
-      void SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
-      void SetWindowLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK);
+      // Set a window element using a deque of single-site windows for each
+      // position in the unit cell. (i > 0)
+      void SetWindowUpper(int i, std::deque<StateComponent> const& BDeque);
+      void SetWindowLower(int j, std::deque<StateComponent> const& BDeque);
 
       // Update the operator: invalides the calculated E/F matrix elements and
       // (for string operators) the TEVs.

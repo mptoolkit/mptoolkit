@@ -47,7 +47,7 @@ struct EASettings
 // PsiEA = \sum_n e^{ikn} ... AABAA...
 // Each element of the deque describes the X-matrix at the position in the unit cell.
 // At the moment, only the single-site EA is supported.
-struct HEff
+class HEff
 {
    public:
       HEff() {}

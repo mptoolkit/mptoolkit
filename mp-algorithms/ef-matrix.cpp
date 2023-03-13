@@ -119,7 +119,7 @@ EFMatrix::CheckOperator()
 }
 
 void
-EFMatrix::SetPsi(int i, InfiniteWavefunctionLeft const& Psi)
+EFMatrix::SetPsi(int i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK)
 {
    PRECONDITION(i >= 0);
 
@@ -140,6 +140,10 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionLeft const& Psi)
       IMax = i;
    if (i > JMax)
       JMax = i;
+
+   // Set the momentum factors.
+   this->SetExpIKUpper(ExpIK);
+   this->SetExpIKLower(ExpIK);
 
    // Extract the wavefunction.
    LinearWavefunction PsiLinear;
@@ -163,7 +167,7 @@ EFMatrix::SetDiagTEVsLC(int i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetPsi(int i, InfiniteWavefunctionRight const& Psi)
+EFMatrix::SetPsi(int i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK)
 {
    PRECONDITION(i >= 0);
 
@@ -184,6 +188,10 @@ EFMatrix::SetPsi(int i, InfiniteWavefunctionRight const& Psi)
       IMax = i;
    if (i > JMax)
       JMax = i;
+
+   // Set the momentum factors.
+   this->SetExpIKUpper(ExpIK);
+   this->SetExpIKLower(ExpIK);
 
    // Extract the wavefunction.
    LinearWavefunction PsiLinear;
@@ -207,7 +215,25 @@ EFMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK)
+EFMatrix::SetExpIKUpper(std::complex<double> ExpIK)
+{
+   int i = 1;
+   while (i < IMax)
+      ExpIKUpper[i++] = 1.0;
+   ExpIKUpper[i] = ExpIK;
+}
+
+void
+EFMatrix::SetExpIKLower(std::complex<double> ExpIK)
+{
+   int j = 1;
+   while (j < JMax)
+      ExpIKLower[j++] = 1.0;
+   ExpIKLower[j] = ExpIK;
+}
+
+void
+EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec)
 {
    CHECK_EQUAL(UnitCellSize, WindowVec.size());
    // FIXME: Find a better way to do this.
@@ -221,11 +247,6 @@ EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::
          WindowUpper[n][i++] = B;
       ++n;
    }
-
-   int i = 1;
-   while (i < IMax)
-      ExpIKUpper[i++] = 1.0;
-   ExpIKUpper[i] = ExpIK;
 
    // Invalidate elements which depend on this window.
    for (auto I = EMatK.begin(); I != EMatK.end();)
@@ -246,7 +267,7 @@ EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::
 }
 
 void
-EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::complex<double> ExpIK)
+EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec)
 {
    CHECK_EQUAL(UnitCellSize, WindowVec.size());
    // FIXME: Find a better way to do this.
@@ -260,11 +281,6 @@ EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::
          WindowLower[n][j++] = B;
       ++n;
    }
-
-   int j = 1;
-   while (j < IMax)
-      ExpIKLower[j++] = 1.0;
-   ExpIKLower[j] = ExpIK;
 
    // Invalidate elements which depend on this window.
    for (auto I = EMatK.begin(); I != EMatK.end();)
@@ -285,7 +301,7 @@ EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::
 }
 
 void
-EFMatrix::SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
+EFMatrix::SetWindowUpper(int i, std::deque<StateComponent> const& BDeque)
 {
    PRECONDITION(i > 0);
    CHECK_EQUAL(UnitCellSize, BDeque.size());
@@ -296,11 +312,6 @@ EFMatrix::SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::c
       WindowUpper[n][i] = B;
       ++n;
    }
-
-   // We must have already set i-1.
-   // FIXME: Is it possible to do this in another way?
-   CHECK(ExpIKUpper.count(i-1) == 1);
-   ExpIKUpper[i] = ExpIKUpper[i-1] * ExpIK;
 
    // Invalidate elements which depend on this window.
    for (auto I = EMatK.begin(); I != EMatK.end();)
@@ -321,7 +332,7 @@ EFMatrix::SetWindowUpper(int i, std::deque<StateComponent> const& BDeque, std::c
 }
 
 void
-EFMatrix::SetWindowLower(int j, std::deque<StateComponent> const& BDeque, std::complex<double> ExpIK)
+EFMatrix::SetWindowLower(int j, std::deque<StateComponent> const& BDeque)
 {
    PRECONDITION(j > 0);
    CHECK_EQUAL(UnitCellSize, BDeque.size());
@@ -333,12 +344,7 @@ EFMatrix::SetWindowLower(int j, std::deque<StateComponent> const& BDeque, std::c
       ++n;
    }
 
-   // We must have already set j-1.
-   // FIXME: Is it possible to do this in another way?
-   CHECK(ExpIKLower.count(j-1) == 1);
-   ExpIKLower[j] = ExpIKLower[j-1] * ExpIK;
-
-   // Invalidate elements which depend on this window.
+   // Invalidate elements which depend on this window element.
    for (auto I = EMatK.begin(); I != EMatK.end();)
    {
       if (I->first.second >= j)
