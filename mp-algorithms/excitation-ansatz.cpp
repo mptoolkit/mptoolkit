@@ -43,7 +43,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
    CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
 
-   this->SetK(Settings_.k);
+   //this->SetK(Settings_.k); // We cannot use this method as it modifies EF, which hasn't been intialized yet.
+   ExpIK = exp(std::complex<double>(0.0, math_const::pi) * Settings_.k);
    this->SetKY(Settings_.ky);
 
    // Ensure HamMPO is the correct size.

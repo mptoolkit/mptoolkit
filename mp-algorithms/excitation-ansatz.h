@@ -20,7 +20,7 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_EXCITATION_ANSATZ_H)
 #define MPTOOLKIT_MP_ALGORITHMS_EXCITATION_ANSATZ_H
 
-#include "mp-algorithms/ef-matrix.h"
+#include "ef-matrix.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "mps/packunpack.h"
 #include "wavefunction/ea.h"

@@ -131,6 +131,10 @@ int main(int argc, char** argv)
       EAWavefunction PsiNew(Psi.left(), WSLVec, Psi.right(), Psi.left_qshift(), Psi.right_qshift(),
                             Psi.left_index(), Psi.right_index(), Psi.exp_ik(), Psi.gs_overlap());
 
+      // Stream the boundaries if the input file does.
+      PsiNew.set_left_filename(Psi.get_left_filename());
+      PsiNew.set_right_filename(Psi.get_right_filename());
+
       PsiPtr.mutate()->Wavefunction() = PsiNew;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       PsiPtr.mutate()->SetDefaultAttributes();

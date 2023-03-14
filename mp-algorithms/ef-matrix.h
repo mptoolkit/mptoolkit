@@ -125,7 +125,8 @@ class EFMatrix
 
       // Return the momentum factor corresponding to the element (i, j).
       std::complex<double> MomentumFactor(int i, int j, bool F = false)
-         { return F ? std::conj(ExpIKUpper[IMax-i]) * ExpIKLower[JMax-j] : ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
+         //{ return F ? std::conj(ExpIKUpper[IMax-i]) * ExpIKLower[JMax-j] : ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
+         { return ExpIKUpper[i] * std::conj(ExpIKLower[j]); }
 
       // Return the StateComponent for the window at position n in the unit
       // cell for the index i/j.

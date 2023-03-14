@@ -418,8 +418,8 @@ int main(int argc, char** argv)
             {
                for (int j = 0; j <= WindowSize2; ++j)
                {
-                  int I = !Right ? i : 1-i;
-                  int J = !Right ? j : 1-j;
+                  int I = !Right ? i : WindowSize-i;
+                  int J = !Right ? j : WindowSize2-j;
 
                   std::vector<KMatrixPolyType> Element = EF.GetElement(I, J, Right);
                   int Dim = Element.size();

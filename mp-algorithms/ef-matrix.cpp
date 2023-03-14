@@ -217,7 +217,7 @@ EFMatrix::SetDiagTEVsRC(int i, RealDiagonalOperator Lambda)
 void
 EFMatrix::SetExpIKUpper(std::complex<double> ExpIK)
 {
-   int i = 1;
+   int i = 0;
    while (i < IMax)
       ExpIKUpper[i++] = 1.0;
    ExpIKUpper[i] = ExpIK;
@@ -226,7 +226,7 @@ EFMatrix::SetExpIKUpper(std::complex<double> ExpIK)
 void
 EFMatrix::SetExpIKLower(std::complex<double> ExpIK)
 {
-   int j = 1;
+   int j = 0;
    while (j < JMax)
       ExpIKLower[j++] = 1.0;
    ExpIKLower[j] = ExpIK;
@@ -791,17 +791,25 @@ EFMatrix::GetHEff(int i)
 {
    std::deque<StateComponent> Result;
 
-   auto CLeft = PsiUpper[i].begin();
-   auto CRight = PsiUpper[i+1].begin();
+   auto CLeft = PsiLower[0].begin();
+   auto CRight = PsiLower[JMax].begin();
    auto O = Op.as_generic_mpo().begin();
 
    // Loop over each position in the unit cell.
    for (int n = 0; n < UnitCellSize; ++n)
    {
-      Result.push_back(operator_prod_inner(*O, this->GetESC(i, i, n-1), this->GetWLower(i+1, n), herm(this->GetFSC(i+1, i+1, n+1))));
-      Result.back() += operator_prod_inner(*O, this->GetESC(i, i, n-1), *CLeft, herm(this->GetFSC(i+1, i, n+1)));
-      Result.back() += operator_prod_inner(*O, this->GetESC(i, i+1, n-1), *CRight, herm(this->GetFSC(i+1, i+1, n+1)));
+      Result.push_back(operator_prod_inner(*O, this->GetESC(i, 0, n-1), *CLeft, herm(this->GetFSC(i+1, 0, n+1))));
+      for (int j = 0; j < JMax; ++j)
+         Result.back() += operator_prod_inner(*O, this->GetESC(i, j, n-1), this->GetWLower(j+1, n), herm(this->GetFSC(i+1, j+1, n+1)));
+      Result.back() += operator_prod_inner(*O, this->GetESC(i, JMax, n-1), *CRight, herm(this->GetFSC(i+1, JMax, n+1)));
       ++CLeft, ++CRight, ++O;
+   }
+
+   // Rotate the result deque so the components are in window order, not unit cell order.
+   for (int I = 0; I < i; ++I)
+   {
+      Result.push_back(delta_shift(Result.front(), adjoint(QShift)));
+      Result.pop_front();
    }
 
    return Result;
