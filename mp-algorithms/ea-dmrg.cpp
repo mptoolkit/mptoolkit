@@ -61,7 +61,6 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
       StateComponent N = NullSpace2(*C);
 
       // Make sure the first site each of window is of the form NX.
-      //if (std::abs(inner_prod(WFront, *C)) > OrthoTol)
       if (norm_frob(scalar_prod(herm(*C), WFront)) > OrthoTol)
          throw std::runtime_error("EA_DMRG: fatal: window does not obey the left-gauge fixing condition.");
 
@@ -92,8 +91,8 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
-   EF.SetPsi(0, PsiLeft);
-   EF.SetPsi(WS, PsiRight, Psi.exp_ik());
+   EF.SetPsi(false, PsiLeft);
+   EF.SetPsi(true, PsiRight, Psi.exp_ik());
    EF.SetWindowUpper(WindowVec);
    EF.SetWindowLower(WindowVec);
 

@@ -369,8 +369,8 @@ int main(int argc, char** argv)
       std::vector<std::complex<double>> Moments, Cumulants;
 
       EFMatrix EF(Op, Settings);
-      EF.SetPsi(0, PsiLeft);
-      EF.SetPsi(WindowSize, PsiRight, ExpIK);
+      EF.SetPsi(false, PsiLeft);
+      EF.SetPsi(true, PsiRight, ExpIK);
       EF.SetWindowUpper(WindowVec);
       EF.SetWindowLower(WindowVec2);
 
@@ -385,7 +385,7 @@ int main(int argc, char** argv)
          }
 
          // The index for the final element
-         int FI = !Right ? WindowSize : 0;
+         bool FI = !Right;
 
          // Get the moment for the excitation.
          MatrixPolyType FinalElement = !Right ? EF.GetElement(FI, FI, Right).back()[1.0] : EF.GetElement(FI, FI, Right).front()[1.0];
@@ -414,12 +414,12 @@ int main(int argc, char** argv)
          if (ShowAll)
          {
             // Print all of the columns of each E-matrix for each degree and momentum.
-            for (int i = 0; i <= WindowSize; ++i)
+            for (int i = 0; i <= 2; ++i)
             {
-               for (int j = 0; j <= WindowSize2; ++j)
+               for (int j = 0; j <= 2; ++j)
                {
-                  int I = !Right ? i : WindowSize-i;
-                  int J = !Right ? j : WindowSize2-j;
+                  bool I = FI != (i == 0);
+                  bool J = FI != (j == 0);
 
                   std::vector<KMatrixPolyType> Element = EF.GetElement(I, J, Right);
                   int Dim = Element.size();
@@ -437,8 +437,8 @@ int main(int argc, char** argv)
                               break;
 
                            std::cout << std::setw(7) << p << " "
-                                     << std::setw(3) << I << " "
-                                     << std::setw(3) << J << " "
+                                     << std::setw(3) << int(I) << " "
+                                     << std::setw(3) << int(J) << " "
                                      << std::setw(7) << Index << " "
                                      << std::setw(20) << std::arg(K.first)/math_const::pi << " "
                                      << std::setw(7) << E.first << " "
