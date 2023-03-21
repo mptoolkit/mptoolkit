@@ -369,8 +369,8 @@ int main(int argc, char** argv)
       std::vector<std::complex<double>> Moments, Cumulants;
 
       EFMatrix EF(Op, Settings);
-      EF.SetPsi(false, PsiLeft);
-      EF.SetPsi(true, PsiRight, ExpIK);
+      EF.SetPsi({false}, PsiLeft);
+      EF.SetPsi({true}, PsiRight, ExpIK);
       EF.SetWindowUpper(WindowVec);
       EF.SetWindowLower(WindowVec2);
 
@@ -388,9 +388,9 @@ int main(int argc, char** argv)
          bool FI = !Right;
 
          // Get the moment for the excitation.
-         MatrixPolyType FinalElement = !Right ? EF.GetElement(FI, FI, Right).back()[1.0] : EF.GetElement(FI, FI, Right).front()[1.0];
+         MatrixPolyType FinalElement = !Right ? EF.GetElement({FI}, {FI}, Right).back()[1.0] : EF.GetElement({FI}, {FI}, Right).front()[1.0];
 
-         Moments.push_back(inner_prod(EF.GetRho(FI, FI, Right), FinalElement.coefficient(1)));
+         Moments.push_back(inner_prod(EF.GetRho({FI}, {FI}, Right), FinalElement.coefficient(1)));
          if (Right) // Conjugate for the right.
             Moments.back() = std::conj(Moments.back());
 
@@ -421,7 +421,7 @@ int main(int argc, char** argv)
                   bool I = FI != (i == 0);
                   bool J = FI != (j == 0);
 
-                  std::vector<KMatrixPolyType> Element = EF.GetElement(I, J, Right);
+                  std::vector<KMatrixPolyType> Element = EF.GetElement({I}, {J}, Right);
                   int Dim = Element.size();
                   for (int n = 0; n < Dim; ++n)
                   {
@@ -430,10 +430,10 @@ int main(int argc, char** argv)
                      {
                         for (auto const& E : K.second)
                         {
-                           if (EF.GetRho(I, J, Right).is_null())
+                           if (EF.GetRho({I}, {J}, Right).is_null())
                               break;
 
-                           if (E.second.TransformsAs() != EF.GetRho(I, J, Right).TransformsAs())
+                           if (E.second.TransformsAs() != EF.GetRho({I}, {J}, Right).TransformsAs())
                               break;
 
                            std::cout << std::setw(7) << p << " "
@@ -443,7 +443,7 @@ int main(int argc, char** argv)
                                      << std::setw(20) << std::arg(K.first)/math_const::pi << " "
                                      << std::setw(7) << E.first << " "
                                      << std::setw(20) << norm_frob(E.second) << "    ";
-                           std::complex<double> x = inner_prod(EF.GetRho(I, J, Right), E.second)
+                           std::complex<double> x = inner_prod(EF.GetRho({I}, {J}, Right), E.second)
                                                   * std::pow(ScaleFactor, double(E.first-1));
                            if (Right)
                               x = std::conj(x);
@@ -458,7 +458,7 @@ int main(int argc, char** argv)
          else if (CalculateMomentsFull)
          {
             // Print the full moment polynomials.
-            for (auto const& I : ExtractOverlap(FinalElement, EF.GetRho(FI, FI, Right)))
+            for (auto const& I : ExtractOverlap(FinalElement, EF.GetRho({FI}, {FI}, Right)))
             {
                std::cout << std::setw(7) << p << " "
                          << std::setw(7) << I.first << " ";
