@@ -1210,7 +1210,7 @@ expectation(InfiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& Op)
    {
       ++I;
       if (I == Psi.end())
-         I == Psi.begin();
+         I = Psi.begin();
    }
    //TRACE(m-n);
    MatrixOperator X = MatrixOperator::make_identity(I->Basis1());
