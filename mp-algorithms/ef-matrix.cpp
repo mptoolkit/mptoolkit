@@ -294,19 +294,12 @@ EFMatrix::SetExpIKLower(std::vector<bool> j, std::complex<double> ExpIK)
 }
 
 void
-EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::vector<ExtendedInt> i)
+EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunction> const& WindowVec)
 {
    PRECONDITION_EQUAL(UnitCellSize, WindowVec.size());
-
-   // If unspecified, let i be a vector of all ones.
-   if (i.size() == 0)
-      i = std::vector<ExtendedInt>(NUpper, 1);
-   else
-   {
-      PRECONDITION_EQUAL(i.size(), NUpper);
-      for (auto const& I : i)
-         PRECONDITION(IsCorner(I) || I == 1);
-   }
+   PRECONDITION_EQUAL(i.size(), NUpper);
+   for (auto const& I : i)
+      PRECONDITION(IsCorner(I) || I == 1);
 
    // We assume that all windows have the same size.
    IMax[i] = WindowVec.front().size();
@@ -374,19 +367,12 @@ EFMatrix::SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::
 }
 
 void
-EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::vector<ExtendedInt> j)
+EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunction> const& WindowVec)
 {
    PRECONDITION_EQUAL(UnitCellSize, WindowVec.size());
-
-   // If unspecified, let j be a vector of all ones.
-   if (j.size() == 0)
-      j = std::vector<ExtendedInt>(NLower, 1);
-   else
-   {
-      PRECONDITION_EQUAL(j.size(), NLower);
-      for (auto const& I : j)
-         PRECONDITION(IsCorner(I) || I == 1);
-   }
+   PRECONDITION_EQUAL(j.size(), NLower);
+   for (auto const& I : j)
+      PRECONDITION(IsCorner(I) || I == 1);
 
    // We assume that all windows have the same size.
    JMax[j] = WindowVec.front().size();
@@ -454,29 +440,28 @@ EFMatrix::SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::
 }
 
 void
-EFMatrix::SetWUpper(std::deque<StateComponent> const& BDeque, std::vector<ExtendedInt> i)
+EFMatrix::SetWUpper(int i, std::deque<StateComponent> const& BDeque)
 {
    // TODO: Check whether i is in bounds.
    PRECONDITION_EQUAL(UnitCellSize, BDeque.size());
 
+   std::vector<ExtendedInt> Index(NUpper, i);
+
    int n = 0;
    for (auto const& B : BDeque)
-      WindowUpper[i][n++] = B;
+      WindowUpper[Index][n++] = B;
 
    // Invalidate elements which depend on this window element.
    for (auto I = EMatK.begin(); I != EMatK.end();)
    {
-      bool Erase = false;
-      auto iIter = i.begin();
-      auto IndexIter = I->first.first.begin();
-      while (iIter != i.end())
+      bool Erase = true;
+      for (auto const& J : I->first.first)
       {
-         if (*IndexIter >= *iIter)
+         if (J < i)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
-         ++iIter, ++IndexIter;
       }
 
       if (Erase)
@@ -487,17 +472,14 @@ EFMatrix::SetWUpper(std::deque<StateComponent> const& BDeque, std::vector<Extend
 
    for (auto I = FMatK.begin(); I != FMatK.end();)
    {
-      bool Erase = false;
-      auto iIter = i.begin();
-      auto IndexIter = I->first.first.begin();
-      while (iIter != i.end())
+      bool Erase = true;
+      for (auto const& J : I->first.first)
       {
-         if (*IndexIter < *iIter)
+         if (J >= i)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
-         ++iIter, ++IndexIter;
       }
 
       if (Erase)
@@ -508,29 +490,28 @@ EFMatrix::SetWUpper(std::deque<StateComponent> const& BDeque, std::vector<Extend
 }
 
 void
-EFMatrix::SetWLower(std::deque<StateComponent> const& BDeque, std::vector<ExtendedInt> j)
+EFMatrix::SetWLower(int j, std::deque<StateComponent> const& BDeque)
 {
    // TODO: Check whether j is in bounds.
    PRECONDITION_EQUAL(UnitCellSize, BDeque.size());
 
+   std::vector<ExtendedInt> Index(NLower, j);
+
    int n = 0;
    for (auto const& B : BDeque)
-      WindowLower[j][n++] = B;
+      WindowLower[Index][n++] = B;
 
    // Invalidate elements which depend on this window element.
    for (auto I = EMatK.begin(); I != EMatK.end();)
    {
-      bool Erase = false;
-      auto jIter = j.begin();
-      auto IndexIter = I->first.second.begin();
-      while (jIter != j.end())
+      bool Erase = true;
+      for (auto const& J : I->first.second)
       {
-         if (*IndexIter >= *jIter)
+         if (J < j)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
-         ++jIter, ++IndexIter;
       }
 
       if (Erase)
@@ -541,17 +522,14 @@ EFMatrix::SetWLower(std::deque<StateComponent> const& BDeque, std::vector<Extend
 
    for (auto I = FMatK.begin(); I != FMatK.end();)
    {
-      bool Erase = false;
-      auto jIter = j.begin();
-      auto IndexIter = I->first.second.begin();
-      while (jIter != j.end())
+      bool Erase = true;
+      for (auto const& J : I->first.second)
       {
-         if (*IndexIter < *jIter)
+         if (J >= j)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
-         ++jIter, ++IndexIter;
       }
 
       if (Erase)

@@ -91,8 +91,8 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
-   EF.SetPsi(false, PsiLeft);
-   EF.SetPsi(true, PsiRight, Psi.exp_ik());
+   EF.SetPsi({false}, PsiLeft);
+   EF.SetPsi({true}, PsiRight, Psi.exp_ik());
    EF.SetWindowUpper(WindowVec);
    EF.SetWindowLower(WindowVec);
 
@@ -198,8 +198,8 @@ EA_DMRG::IterateLeft()
    }
 
    // Update the windows.
-   EF.SetWindowUpper(Site+1, WDeque);
-   EF.SetWindowLower(Site+1, WDeque);
+   EF.SetWUpper(Site+1, WDeque);
+   EF.SetWLower(Site+1, WDeque);
 
    --Site;
 }
@@ -226,8 +226,8 @@ EA_DMRG::IterateRight()
    }
 
    // Update the windows.
-   EF.SetWindowUpper(Site+1, WDeque);
-   EF.SetWindowLower(Site+1, WDeque);
+   EF.SetWUpper(Site+1, WDeque);
+   EF.SetWLower(Site+1, WDeque);
 
    ++Site;
 }
@@ -261,7 +261,7 @@ HEff::HEff(EFMatrix* EF_, int Site_)
 std::deque<StateComponent>
 HEff::operator()(std::deque<StateComponent> WDeque)
 {
-   EF->SetWindowLower(Site+1, WDeque);
+   EF->SetWLower(Site+1, WDeque);
    return EF->GetHEff(Site);
 }
 

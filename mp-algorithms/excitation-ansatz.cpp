@@ -60,8 +60,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
-   EF.SetPsi(false, PsiLeft);
-   EF.SetPsi(true, PsiRight, ExpIK);
+   EF.SetPsi({false}, PsiLeft);
+   EF.SetPsi({true}, PsiRight, ExpIK);
 
    if (!StringOp.is_null())
    {
@@ -76,8 +76,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       SettingsTy.Verbose = Verbose;
 
       EFTy = EFMatrix(StringOp, SettingsTy);
-      EFTy.SetPsi(false, PsiLeft);
-      EFTy.SetPsi(true, PsiRight, ExpIK);
+      EFTy.SetPsi({false}, PsiLeft);
+      EFTy.SetPsi({true}, PsiRight, ExpIK);
    }
 
    // Get PsiLeft and PsiRight as LinearWavefunctions.
@@ -108,14 +108,14 @@ HEff::operator()(std::deque<MatrixOperator> const& XDeque)
 {
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
 
-   EF.SetWindowLower(1, BDeque);
+   EF.SetWLower(1, BDeque);
 
    std::deque<StateComponent> HEffDeque = EF.GetHEff();
 
    std::deque<StateComponent> TyDeque;
    if (Alpha != 0.0)
    {
-      EFTy.SetWindowLower(1, BDeque);
+      EFTy.SetWLower(1, BDeque);
       TyDeque = EFTy.GetHEff();
    }
 
@@ -142,10 +142,10 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque)
 {
    std::deque<StateComponent> BDeque = this->ConstructBDeque(XDeque);
 
-   EFTy.SetWindowUpper(1, BDeque);
-   EFTy.SetWindowLower(1, BDeque);
+   EFTy.SetWUpper(1, BDeque);
+   EFTy.SetWLower(1, BDeque);
 
-   return inner_prod(EFTy.GetRho(true, true), EFTy.GetElement(true, true).front()[1.0].coefficient(1));
+   return inner_prod(EFTy.GetRho({true}, {true}), EFTy.GetElement({true}, {true}).front()[1.0].coefficient(1));
 }
 
 std::deque<StateComponent>
@@ -217,12 +217,12 @@ HEff::SetK(double k)
 {
    ExpIK = exp(std::complex<double>(0.0, math_const::pi) * k);
 
-   EF.SetExpIKUpper(ExpIK);
-   EF.SetExpIKLower(ExpIK);
+   EF.SetExpIKUpper({true}, ExpIK);
+   EF.SetExpIKLower({true}, ExpIK);
    if (!StringOp.is_null())
    {
-      EFTy.SetExpIKUpper(ExpIK);
-      EFTy.SetExpIKLower(ExpIK);
+      EFTy.SetExpIKUpper({true}, ExpIK);
+      EFTy.SetExpIKLower({true}, ExpIK);
    }
 }
 

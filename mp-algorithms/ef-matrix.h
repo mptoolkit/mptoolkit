@@ -101,7 +101,7 @@ class ExtendedInt
 class EFMatrix
 {
    public:
-      EFMatrix() : NUpper(1), NLower(1) {}
+      EFMatrix() {}
 
       EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings);
 
@@ -116,13 +116,19 @@ class EFMatrix
       void SetExpIKLower(std::vector<bool> i, std::complex<double> ExpIK);
 
       // Set the windows using a vector of LinearWavefunctions.
-      void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec, std::vector<ExtendedInt> i = std::vector<ExtendedInt>(0));
-      void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec, std::vector<ExtendedInt> j = std::vector<ExtendedInt>(0));
+      void SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunction> const& WindowVec);
+      void SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunction> const& WindowVec);
 
-      // Set a window element using a deque of single-site windows for each
-      // position in the unit cell (in window order). (0 < i < IMax)
-      void SetWUpper(std::deque<StateComponent> const& BDeque, std::vector<ExtendedInt> i);
-      void SetWLower(std::deque<StateComponent> const& BDeque, std::vector<ExtendedInt> j);
+      // By default, set the diagonal window.
+      void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec)
+         { this->SetWindowUpper(std::vector<ExtendedInt>(NUpper, 1), WindowVec); }
+      void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec)
+         { this->SetWindowLower(std::vector<ExtendedInt>(NLower, 1), WindowVec); }
+
+      // Set a diagonal window element using a deque of single-site windows for
+      // each position in the unit cell (in window order).
+      void SetWUpper(int i, std::deque<StateComponent> const& BDeque);
+      void SetWLower(int j, std::deque<StateComponent> const& BDeque);
 
       // Update the operator: invalidates the calculated E/F matrix elements and
       // (for string operators) the TEVs.
@@ -203,7 +209,7 @@ class EFMatrix
       void SolveF(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPolyType> CTriK);
 
       // The number of windows in the upper and lower states.
-      const int NUpper, NLower;
+      int NUpper, NLower;
 
       std::map<std::vector<bool>, LinearWavefunction> PsiUpper, PsiLower;
       std::map<std::vector<ExtendedInt>, std::map<int, StateComponent>> WindowUpper, WindowLower;
