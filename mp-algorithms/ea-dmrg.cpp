@@ -91,8 +91,8 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
-   EF.SetPsi({false}, PsiLeft);
-   EF.SetPsi({true}, PsiRight, Psi.exp_ik());
+   EF.SetPsi({0}, PsiLeft);
+   EF.SetPsi({Infinity}, PsiRight, Psi.exp_ik());
    EF.SetWindowUpper(WindowVec);
    EF.SetWindowLower(WindowVec);
 

@@ -297,7 +297,6 @@ int main(int argc, char** argv)
       // Extract the windows.
       int WindowSize = Psi.window_size();
       int WindowSize2 = Psi2.window_size();
-      CHECK_EQUAL(WindowSize, WindowSize2); // TODO
       std::vector<LinearWavefunction> WindowVec, WindowVec2;
 
       for (WavefunctionSectionLeft Window : Psi.window_vec())
@@ -369,8 +368,8 @@ int main(int argc, char** argv)
       std::vector<std::complex<double>> Moments, Cumulants;
 
       EFMatrix EF(Op, Settings);
-      EF.SetPsi({false}, PsiLeft);
-      EF.SetPsi({true}, PsiRight, ExpIK);
+      EF.SetPsi({0}, PsiLeft);
+      EF.SetPsi({Infinity}, PsiRight, ExpIK);
       EF.SetWindowUpper(WindowVec);
       EF.SetWindowLower(WindowVec2);
 
@@ -385,7 +384,7 @@ int main(int argc, char** argv)
          }
 
          // The index for the final element
-         bool FI = !Right;
+         ZeroInf FI(!Right);
 
          // Get the moment for the excitation.
          MatrixPolyType FinalElement = !Right ? EF.GetElement({FI}, {FI}, Right).back()[1.0] : EF.GetElement({FI}, {FI}, Right).front()[1.0];
@@ -414,12 +413,12 @@ int main(int argc, char** argv)
          if (ShowAll)
          {
             // Print all of the columns of each E-matrix for each degree and momentum.
-            for (int i = 0; i <= 2; ++i)
+            for (int i = 0; i <= 1; ++i)
             {
-               for (int j = 0; j <= 2; ++j)
+               for (int j = 0; j <= 1; ++j)
                {
-                  bool I = FI != (i == 0);
-                  bool J = FI != (j == 0);
+                  ZeroInf I(!Right != (i == 0));
+                  ZeroInf J(!Right != (j == 0));
 
                   std::vector<KMatrixPolyType> Element = EF.GetElement({I}, {J}, Right);
                   int Dim = Element.size();
@@ -437,8 +436,8 @@ int main(int argc, char** argv)
                               break;
 
                            std::cout << std::setw(7) << p << " "
-                                     << std::setw(3) << int(I) << " "
-                                     << std::setw(3) << int(J) << " "
+                                     << std::setw(3) << int(I.is_inf()) << " "
+                                     << std::setw(3) << int(J.is_inf()) << " "
                                      << std::setw(7) << Index << " "
                                      << std::setw(20) << std::arg(K.first)/math_const::pi << " "
                                      << std::setw(7) << E.first << " "

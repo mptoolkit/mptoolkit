@@ -71,6 +71,25 @@ struct EFMatrixSettings
    int Verbose = 0;
 };
 
+// A class representing either a value of "zero" or "infinity" (essentially a
+// wrapper for bool). This is used for represeting the indices for corner
+// elements for EFMatrix.
+class ZeroInf
+{
+   public:
+      ZeroInf(bool Inf_)
+         : Inf(Inf_) {}
+
+      bool is_inf() const { return Inf; }
+
+   private:
+      bool Inf;
+};
+
+// A constant representing the value infinity (zero is just represented by "0",
+// which can be implcitly convert to a ZeroInf object).
+const ZeroInf Infinity(true);
+
 // A class to represent an extended integer, which can be a finite integer or infinity.
 class ExtendedInt
 {
@@ -80,8 +99,8 @@ class ExtendedInt
       ExtendedInt(int Value_)
          : Value(Value_), Inf(false) {}
 
-      ExtendedInt(bool Inf_)
-         : Value(0), Inf(Inf_) {}
+      ExtendedInt(ZeroInf ZI)
+         : Value(0), Inf(ZI.is_inf()) {}
 
       bool is_inf() const { return Inf; }
 
@@ -101,6 +120,9 @@ class ExtendedInt
 class EFMatrix
 {
    public:
+      typedef std::vector<ExtendedInt> EAIndex;
+      typedef std::vector<ZeroInf> CornerIndex;
+
       EFMatrix() {}
 
       EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings);
@@ -108,22 +130,22 @@ class EFMatrix
       // Set boundary wavefunctions: at the moment, we assume that the boundary
       // wavefunctions for the bra and ket are the same, as this allows us to
       // obtain the TEVs from the lambda matrix.
-      void SetPsi(std::vector<bool> i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK = 1.0);
-      void SetPsi(std::vector<bool> i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK = 1.0);
+      void SetPsi(CornerIndex i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK = 1.0);
+      void SetPsi(CornerIndex i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK = 1.0);
 
       // Set the momentum factor.
-      void SetExpIKUpper(std::vector<bool> i, std::complex<double> ExpIK);
-      void SetExpIKLower(std::vector<bool> i, std::complex<double> ExpIK);
+      void SetExpIKUpper(CornerIndex i, std::complex<double> ExpIK);
+      void SetExpIKLower(CornerIndex i, std::complex<double> ExpIK);
 
       // Set the windows using a vector of LinearWavefunctions.
-      void SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunction> const& WindowVec);
-      void SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunction> const& WindowVec);
+      void SetWindowUpper(EAIndex i, std::vector<LinearWavefunction> const& WindowVec);
+      void SetWindowLower(EAIndex j, std::vector<LinearWavefunction> const& WindowVec);
 
       // By default, set the diagonal window.
       void SetWindowUpper(std::vector<LinearWavefunction> const& WindowVec)
-         { this->SetWindowUpper(std::vector<ExtendedInt>(NUpper, 1), WindowVec); }
+         { this->SetWindowUpper(EAIndex(NUpper, 1), WindowVec); }
       void SetWindowLower(std::vector<LinearWavefunction> const& WindowVec)
-         { this->SetWindowLower(std::vector<ExtendedInt>(NLower, 1), WindowVec); }
+         { this->SetWindowLower(EAIndex(NLower, 1), WindowVec); }
 
       // Set a diagonal window element using a deque of single-site windows for
       // each position in the unit cell (in window order).
@@ -137,31 +159,31 @@ class EFMatrix
       // Returns the left and right (unit) TEVs, calculating them if they have
       // not been calculated yet. If the spectral radius is < 1, then
       // TLeft/Right will be null.
-      MatrixOperator GetTLeft(std::vector<bool> i, std::vector<bool> j, bool F = false);
-      MatrixOperator GetTRight(std::vector<bool> i, std::vector<bool> j, bool F = false);
+      MatrixOperator GetTLeft(CornerIndex i, CornerIndex j, bool F = false);
+      MatrixOperator GetTRight(CornerIndex i, CornerIndex j, bool F = false);
 
       // Ident is the TEV in the same direction as the E/F matrix.
-      MatrixOperator GetIdent(std::vector<bool> i, std::vector<bool> j, bool F = false)
+      MatrixOperator GetIdent(CornerIndex i, CornerIndex j, bool F = false)
          { return F ? this->GetTRight(i, j, true) : this->GetTLeft(i, j); }
       // Rho is the TEV in the opposite direction as the E/F matrix
       // (calculating the inner product of an E/F matrix element with Rho gives
       // the expectation value).
-      MatrixOperator GetRho(std::vector<bool> i, std::vector<bool> j, bool F = false)
+      MatrixOperator GetRho(CornerIndex i, CornerIndex j, bool F = false)
          { return F ? this->GetTLeft(i, j, true) : this->GetTRight(i, j); }
 
       // Get the E/F matrix where the ket and bra wavefunctions go up to the
       // boundaries i and j respectively.
-      std::vector<KMatrixPolyType> GetE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n);
-      std::vector<KMatrixPolyType> GetE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j) { return this->GetE(i, j, -1); }
-      std::vector<KMatrixPolyType> GetF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n);
-      std::vector<KMatrixPolyType> GetF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j) { return this->GetF(i, j, UnitCellSize); }
+      std::vector<KMatrixPolyType> GetE(EAIndex i, EAIndex j, int n);
+      std::vector<KMatrixPolyType> GetE(EAIndex i, EAIndex j) { return this->GetE(i, j, -1); }
+      std::vector<KMatrixPolyType> GetF(EAIndex i, EAIndex j, int n);
+      std::vector<KMatrixPolyType> GetF(EAIndex i, EAIndex j) { return this->GetF(i, j, UnitCellSize); }
 
-      std::vector<KMatrixPolyType> GetElement(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, bool F = false)
+      std::vector<KMatrixPolyType> GetElement(EAIndex i, EAIndex j, bool F = false)
          { return F ? this->GetF(i, j) : this->GetE(i, j); }
 
       // Get the constant, zero-momentum part of this element as a StateComponent.
-      StateComponent GetESC(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n);
-      StateComponent GetFSC(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n);
+      StateComponent GetESC(EAIndex i, EAIndex j, int n);
+      StateComponent GetFSC(EAIndex i, EAIndex j, int n);
 
       // Calculate action of the effective Hamiltonian on the window w.r.t.
       // site i for each position in the unit cell (in window order).
@@ -172,52 +194,52 @@ class EFMatrix
 
       // Set the TEVs when PsiUpper and PsiLower are the same and the lambda
       // matrix for the left/right canonical form is known.
-      void SetDiagTEVsLC(std::vector<bool> i, RealDiagonalOperator Lambda);
-      void SetDiagTEVsRC(std::vector<bool> i, RealDiagonalOperator Lambda);
+      void SetDiagTEVsLC(CornerIndex i, RealDiagonalOperator Lambda);
+      void SetDiagTEVsRC(CornerIndex i, RealDiagonalOperator Lambda);
 
       // Solve for the TEVs with an eigenvalue of magnitude 1: if the
       // spectral radius is less than one, set the TEVs to null.
-      void CalculateTEVs(std::vector<bool> i, std::vector<bool> j);
+      void CalculateTEVs(CornerIndex i, CornerIndex j);
 
       // Return the momentum factor corresponding to the element (i, j).
-      std::complex<double> MomentumFactor(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j);
-      std::complex<double> MomentumFactor(std::vector<bool> i, std::vector<bool> j);
+      std::complex<double> MomentumFactor(EAIndex i, EAIndex j);
+      std::complex<double> MomentumFactor(CornerIndex i, CornerIndex j);
 
       // Return the StateComponent for the window at position n in the unit
       // cell for the index i/j.
-      StateComponent GetWUpper(std::vector<ExtendedInt> i, int n);
-      StateComponent GetWLower(std::vector<ExtendedInt> j, int n);
-      StateComponent GetW(std::vector<ExtendedInt> i, int n, bool Upper)
+      StateComponent GetWUpper(EAIndex i, int n);
+      StateComponent GetWLower(EAIndex j, int n);
+      StateComponent GetW(EAIndex i, int n, bool Upper)
          { return Upper ? this->GetWUpper(i, n) : this->GetWLower(i, n); }
 
       // Get a map of all possible indices with a FSM transition into/out of
       // the current index, and the window component for that transition for
       // the given site in the unit cell.
-      std::map<std::vector<ExtendedInt>, StateComponent> GetWNext(std::vector<ExtendedInt> i, int n, bool Upper);
-      std::map<std::vector<ExtendedInt>, StateComponent> GetWPrev(std::vector<ExtendedInt> i, int n, bool Upper);
+      std::map<EAIndex, StateComponent> GetWNext(EAIndex i, int n, bool Upper);
+      std::map<EAIndex, StateComponent> GetWPrev(EAIndex i, int n, bool Upper);
 
       // Recurisve methods to get the multiple transtitions for corner elements.
-      void GetWNextCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Result, std::vector<ExtendedInt> i, int n, bool Upper);
-      void GetWPrevCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Result, std::vector<ExtendedInt> i, int n, bool Upper);
+      void GetWNextCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, int n, bool Upper);
+      void GetWPrevCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, int n, bool Upper);
 
       // Calculate the unit cell for element (i, j).
-      void CalculateE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j);
-      void CalculateF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j);
+      void CalculateE(EAIndex i, EAIndex j);
+      void CalculateF(EAIndex i, EAIndex j);
 
       // Solve the corner element (i, j), using the off-diagonal component CTriK.
-      void SolveE(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPolyType> CTriK);
-      void SolveF(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPolyType> CTriK);
+      void SolveE(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK);
+      void SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK);
 
       // The number of windows in the upper and lower states.
       int NUpper, NLower;
 
-      std::map<std::vector<bool>, LinearWavefunction> PsiUpper, PsiLower;
-      std::map<std::vector<ExtendedInt>, std::map<int, StateComponent>> WindowUpper, WindowLower;
-      std::map<std::vector<ExtendedInt>, int> IMax, JMax;
-      std::map<std::vector<bool>, std::complex<double>> ExpIKUpper, ExpIKLower;
-      std::map<std::pair<std::vector<bool>, std::vector<bool>>, MatrixOperator> TLeft, TRight;
-      std::map<std::pair<std::vector<bool>, std::vector<bool>>, bool> TCalculated;
-      std::map<std::pair<std::vector<ExtendedInt>, std::vector<ExtendedInt>>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
+      std::map<CornerIndex, LinearWavefunction> PsiUpper, PsiLower;
+      std::map<EAIndex, std::map<int, StateComponent>> WindowUpper, WindowLower;
+      std::map<EAIndex, int> IMax, JMax;
+      std::map<CornerIndex, std::complex<double>> ExpIKUpper, ExpIKLower;
+      std::map<std::pair<CornerIndex, CornerIndex>, MatrixOperator> TLeft, TRight;
+      std::map<std::pair<CornerIndex, CornerIndex>, bool> TCalculated;
+      std::map<std::pair<EAIndex, EAIndex>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
 
       int UnitCellSize = 0;
       QuantumNumber QShift;

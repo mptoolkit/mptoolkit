@@ -143,14 +143,16 @@ IsCorner(std::vector<ExtendedInt> Input)
    return Result;
 }
 
-// Convert a vector of ExtendedInts to a vector of bools for whether the value
-// is finite or infinite.
-std::vector<bool>
-IsInf(std::vector<ExtendedInt> Input)
+// Convert a vector of ExtendedInts to a vector of ZeroInf objects for whether
+// the value is finite or infinite. (NOTE: Nonzero finite values map to "zero",
+// so this function maps to the corner index prior to the current index if it
+// is not a corner index.)
+std::vector<ZeroInf>
+ToCorner(std::vector<ExtendedInt> Input)
 {
-   std::vector<bool> Result;
+   std::vector<ZeroInf> Result;
    for (auto const& I : Input)
-      Result.push_back(I.is_inf());
+      Result.push_back(ZeroInf(I.is_inf()));
    return Result;
 }
 
@@ -162,8 +164,8 @@ EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
      Verbose(Settings.Verbose)
 {
    // Set default values of IMax and JMax.
-   IMax[std::vector<ExtendedInt>(NUpper, 1)] = 1;
-   JMax[std::vector<ExtendedInt>(NLower, 1)] = 1;
+   IMax[EAIndex(NUpper, 1)] = 1;
+   JMax[EAIndex(NLower, 1)] = 1;
 
    this->CheckOperator();
 }
@@ -194,7 +196,7 @@ EFMatrix::CheckOperator()
 }
 
 void
-EFMatrix::SetPsi(std::vector<bool> i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK)
+EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionLeft const& Psi, std::complex<double> ExpIK)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
@@ -229,7 +231,7 @@ EFMatrix::SetPsi(std::vector<bool> i, InfiniteWavefunctionLeft const& Psi, std::
 }
 
 void
-EFMatrix::SetDiagTEVsLC(std::vector<bool> i, RealDiagonalOperator Lambda)
+EFMatrix::SetDiagTEVsLC(CornerIndex i, RealDiagonalOperator Lambda)
 {
    TLeft[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis1());
    TRight[std::make_pair(i, i)] = delta_shift(Lambda*Lambda, QShift);
@@ -237,7 +239,7 @@ EFMatrix::SetDiagTEVsLC(std::vector<bool> i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetPsi(std::vector<bool> i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK)
+EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionRight const& Psi, std::complex<double> ExpIK)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
@@ -272,7 +274,7 @@ EFMatrix::SetPsi(std::vector<bool> i, InfiniteWavefunctionRight const& Psi, std:
 }
 
 void
-EFMatrix::SetDiagTEVsRC(std::vector<bool> i, RealDiagonalOperator Lambda)
+EFMatrix::SetDiagTEVsRC(CornerIndex i, RealDiagonalOperator Lambda)
 {
    TLeft[std::make_pair(i, i)] = Lambda*Lambda;
    TRight[std::make_pair(i, i)] = MatrixOperator::make_identity(PsiUpper[i].Basis1());
@@ -280,21 +282,21 @@ EFMatrix::SetDiagTEVsRC(std::vector<bool> i, RealDiagonalOperator Lambda)
 }
 
 void
-EFMatrix::SetExpIKUpper(std::vector<bool> i, std::complex<double> ExpIK)
+EFMatrix::SetExpIKUpper(CornerIndex i, std::complex<double> ExpIK)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    ExpIKUpper[i] = ExpIK;
 }
 
 void
-EFMatrix::SetExpIKLower(std::vector<bool> j, std::complex<double> ExpIK)
+EFMatrix::SetExpIKLower(CornerIndex j, std::complex<double> ExpIK)
 {
    PRECONDITION_EQUAL(j.size(), NLower);
    ExpIKLower[j] = ExpIK;
 }
 
 void
-EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunction> const& WindowVec)
+EFMatrix::SetWindowUpper(EAIndex i, std::vector<LinearWavefunction> const& WindowVec)
 {
    PRECONDITION_EQUAL(UnitCellSize, WindowVec.size());
    PRECONDITION_EQUAL(i.size(), NUpper);
@@ -311,7 +313,7 @@ EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunct
       for (auto const& B : Window)
       {
          // Calculate the index for this element.
-         std::vector<ExtendedInt> Index = i;
+         EAIndex Index = i;
          for (auto& I : Index)
             if (I == 1)
                I = Site;
@@ -325,14 +327,14 @@ EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunct
    // Invalidate elements which depend on this window.
    for (auto I = EMatK.begin(); I != EMatK.end();)
    {
-      bool Erase = false;
+      bool Erase = true;
       auto iIter = i.begin();
       auto IndexIter = I->first.first.begin();
       while (iIter != i.end())
       {
-         if (*iIter == 1 && *IndexIter > 0)
+         if (*iIter == 1 && *IndexIter == 0)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
          ++iIter, ++IndexIter;
@@ -346,14 +348,14 @@ EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunct
 
    for (auto I = FMatK.begin(); I != FMatK.end();)
    {
-      bool Erase = false;
+      bool Erase = true;
       auto iIter = i.begin();
       auto IndexIter = I->first.first.begin();
       while (iIter != i.end())
       {
-         if (*iIter == 1 && !IndexIter->is_inf())
+         if (*iIter == 1 && IndexIter->is_inf())
          {
-            Erase = true;
+            Erase = false;
             break;
          }
          ++iIter, ++IndexIter;
@@ -367,7 +369,7 @@ EFMatrix::SetWindowUpper(std::vector<ExtendedInt> i, std::vector<LinearWavefunct
 }
 
 void
-EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunction> const& WindowVec)
+EFMatrix::SetWindowLower(EAIndex j, std::vector<LinearWavefunction> const& WindowVec)
 {
    PRECONDITION_EQUAL(UnitCellSize, WindowVec.size());
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -384,7 +386,7 @@ EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunct
       for (auto const& B : Window)
       {
          // Calculate the index for this element.
-         std::vector<ExtendedInt> Index = j;
+         EAIndex Index = j;
          for (auto& I : Index)
             if (I == 1)
                I = Site;
@@ -398,14 +400,14 @@ EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunct
    // Invalidate elements which depend on this window.
    for (auto I = EMatK.begin(); I != EMatK.end();)
    {
-      bool Erase = false;
+      bool Erase = true;
       auto jIter = j.begin();
       auto IndexIter = I->first.second.begin();
       while (jIter != j.end())
       {
-         if (*jIter == 1 && *IndexIter > 0)
+         if (*jIter == 1 && *IndexIter == 0)
          {
-            Erase = true;
+            Erase = false;
             break;
          }
          ++jIter, ++IndexIter;
@@ -419,14 +421,14 @@ EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunct
 
    for (auto I = FMatK.begin(); I != FMatK.end();)
    {
-      bool Erase = false;
+      bool Erase = true;
       auto jIter = j.begin();
       auto IndexIter = I->first.second.begin();
       while (jIter != j.end())
       {
-         if (*jIter == 1 && !IndexIter->is_inf())
+         if (*jIter == 1 && IndexIter->is_inf())
          {
-            Erase = true;
+            Erase = false;
             break;
          }
          ++jIter, ++IndexIter;
@@ -442,10 +444,10 @@ EFMatrix::SetWindowLower(std::vector<ExtendedInt> j, std::vector<LinearWavefunct
 void
 EFMatrix::SetWUpper(int i, std::deque<StateComponent> const& BDeque)
 {
-   // TODO: Check whether i is in bounds.
+   PRECONDITION(i > 0)(i <= IMax[EAIndex(NUpper, 1)]);
    PRECONDITION_EQUAL(UnitCellSize, BDeque.size());
 
-   std::vector<ExtendedInt> Index(NUpper, i);
+   EAIndex Index(NUpper, i);
 
    int n = 0;
    for (auto const& B : BDeque)
@@ -492,10 +494,10 @@ EFMatrix::SetWUpper(int i, std::deque<StateComponent> const& BDeque)
 void
 EFMatrix::SetWLower(int j, std::deque<StateComponent> const& BDeque)
 {
-   // TODO: Check whether j is in bounds.
+   PRECONDITION(j > 0)(j <= JMax[EAIndex(NLower, 1)]);
    PRECONDITION_EQUAL(UnitCellSize, BDeque.size());
 
-   std::vector<ExtendedInt> Index(NLower, j);
+   EAIndex Index(NLower, j);
 
    int n = 0;
    for (auto const& B : BDeque)
@@ -540,9 +542,9 @@ EFMatrix::SetWLower(int j, std::deque<StateComponent> const& BDeque)
 }
 
 StateComponent
-EFMatrix::GetWUpper(std::vector<ExtendedInt> i, int n)
+EFMatrix::GetWUpper(EAIndex i, int n)
 {
-   // If not defined, return null.
+   // If not defined, return null. (TODO: Is this the best behavior?)
    if (WindowUpper.count(i) == 0)
       return StateComponent();
 
@@ -565,9 +567,9 @@ EFMatrix::GetWUpper(std::vector<ExtendedInt> i, int n)
 }
 
 StateComponent
-EFMatrix::GetWLower(std::vector<ExtendedInt> j, int n)
+EFMatrix::GetWLower(EAIndex j, int n)
 {
-   // If not defined, return null;
+   // If not defined, return null.
    if (WindowLower.count(j) == 0)
       return StateComponent();
 
@@ -618,7 +620,7 @@ EFMatrix::SetOp(InfiniteMPO Op_, int Degree_)
 }
 
 MatrixOperator
-EFMatrix::GetTLeft(std::vector<bool> i, std::vector<bool> j, bool F)
+EFMatrix::GetTLeft(CornerIndex i, CornerIndex j, bool F)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -634,7 +636,7 @@ EFMatrix::GetTLeft(std::vector<bool> i, std::vector<bool> j, bool F)
 }
 
 MatrixOperator
-EFMatrix::GetTRight(std::vector<bool> i, std::vector<bool> j, bool F)
+EFMatrix::GetTRight(CornerIndex i, CornerIndex j, bool F)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -650,7 +652,7 @@ EFMatrix::GetTRight(std::vector<bool> i, std::vector<bool> j, bool F)
 }
 
 void
-EFMatrix::CalculateTEVs(std::vector<bool> i, std::vector<bool> j)
+EFMatrix::CalculateTEVs(CornerIndex i, CornerIndex j)
 {
    ProductMPO StringOp = ProductMPO::make_identity(ExtractLocalBasis(PsiUpper[i]));
    if (Op.is_product())
@@ -663,30 +665,30 @@ EFMatrix::CalculateTEVs(std::vector<bool> i, std::vector<bool> j)
    TRight[std::make_pair(i, j)].delta_shift(QShift);
 
    // Special normalization for the first transfer matrix.
-   if (i == std::vector<bool>(NUpper, false) && j == std::vector<bool>(NLower, false))
+   if (i == CornerIndex(NUpper, 0) && j == CornerIndex(NLower, 0))
       Normalize(TRight[std::make_pair(i, j)], TLeft[std::make_pair(i, j)]);
 
    // Special normalization for the final transfer matrix.
-   if (i == std::vector<bool>(NUpper, true) && j == std::vector<bool>(NLower, true))
+   if (i == CornerIndex(NUpper, Infinity) && j == CornerIndex(NLower, Infinity))
       Normalize(TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)]);
 
    TCalculated[std::make_pair(i, j)] = true;
 }
 
 std::complex<double>
-EFMatrix::MomentumFactor(std::vector<bool> i, std::vector<bool> j)
+EFMatrix::MomentumFactor(CornerIndex i, CornerIndex j)
 {
    return ExpIKUpper[i] * std::conj(ExpIKLower[j]);
 }
 
 std::complex<double>
-EFMatrix::MomentumFactor(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j)
+EFMatrix::MomentumFactor(EAIndex i, EAIndex j)
 {
-   return this->MomentumFactor(IsInf(i), IsInf(j));
+   return this->MomentumFactor(ToCorner(i), ToCorner(j));
 }
 
 std::vector<KMatrixPolyType>
-EFMatrix::GetE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
+EFMatrix::GetE(EAIndex i, EAIndex j, int n)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -709,15 +711,15 @@ EFMatrix::GetE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
       throw std::runtime_error("EFMatrix::GetE: fatal: n is out of bounds.");
 }
 
-std::map<std::vector<ExtendedInt>, StateComponent>
-EFMatrix::GetWPrev(std::vector<ExtendedInt> i, int n, bool Upper)
+std::map<EFMatrix::EAIndex, StateComponent>
+EFMatrix::GetWPrev(EAIndex i, int n, bool Upper)
 {
-   std::map<std::vector<ExtendedInt>, StateComponent> Result;
+   std::map<EAIndex, StateComponent> Result;
 
    if (!IsCorner(i))
    {
       // Get the index for the previous element
-      std::vector<ExtendedInt> Index = i;
+      EAIndex Index = i;
       for (auto& I : Index)
          if (!IsCorner(I))
             I = I.value() - 1;
@@ -728,7 +730,7 @@ EFMatrix::GetWPrev(std::vector<ExtendedInt> i, int n, bool Upper)
    {
       // For a corner element, we may have multiple windows, so we get the
       // index for the diagonal window, and construct the rest recursively.
-      std::vector<ExtendedInt> DiagIndex = i;
+      EAIndex DiagIndex = i;
       for (auto& I : DiagIndex)
          if (I.is_inf())
             I = 1;
@@ -740,14 +742,14 @@ EFMatrix::GetWPrev(std::vector<ExtendedInt> i, int n, bool Upper)
 }
 
 void
-EFMatrix::GetWPrevCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Result, std::vector<ExtendedInt> i, int n, bool Upper)
+EFMatrix::GetWPrevCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, int n, bool Upper)
 {
    // Call this function replacing each 1 in the input with infinity.
    for (auto& I : i)
    {
       if (I == 1)
       {
-         I = true;
+         I = Infinity;
          this->GetWPrevCorner(Result, i, n, Upper);
          I = 1;
       }
@@ -758,12 +760,12 @@ EFMatrix::GetWPrevCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Res
    {
       int Max = Upper ? IMax[i] : JMax[i];
 
-      std::vector<ExtendedInt> Index = i;
+      EAIndex Index = i;
       for (auto& I : Index)
          if (I == 1)
             I = Max;
 
-      std::vector<ExtendedInt> IndexMinusOne = i;
+      EAIndex IndexMinusOne = i;
       for (auto& I : IndexMinusOne)
          if (I == 1)
             I = Max-1;
@@ -773,18 +775,18 @@ EFMatrix::GetWPrevCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Res
 }
 
 void
-EFMatrix::CalculateE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j)
+EFMatrix::CalculateE(EAIndex i, EAIndex j)
 {
    auto O = Op.as_generic_mpo().begin();
    LinearWavefunction::const_iterator CUpper, CLower;
 
    bool CornerUpper = IsCorner(i);
    if (CornerUpper)
-      CUpper = PsiUpper[IsInf(i)].begin();
+      CUpper = PsiUpper[ToCorner(i)].begin();
 
    bool CornerLower = IsCorner(j);
    if (CornerLower)
-      CLower = PsiLower[IsInf(j)].begin();
+      CLower = PsiLower[ToCorner(j)].begin();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>(O->Basis2().size());
@@ -826,19 +828,18 @@ EFMatrix::CalculateE(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j)
 
    // Run the linear solver for corner elements.
    if (CornerUpper && CornerLower)
-      this->SolveE(IsInf(i), IsInf(j), delta_shift(CTriK, QShift));
+      this->SolveE(ToCorner(i), ToCorner(j), delta_shift(CTriK, QShift));
 }
 
 void
-EFMatrix::SolveE(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPolyType> CTriK)
+EFMatrix::SolveE(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK)
 {
-   std::pair<std::vector<ExtendedInt>, std::vector<ExtendedInt>>
-      Index(std::vector<ExtendedInt>(i.begin(), i.end()), std::vector<ExtendedInt>(j.begin(), j.end()));
+   std::pair<EAIndex, EAIndex> Index(EAIndex(i.begin(), i.end()), EAIndex(j.begin(), j.end()));
 
    EMatK[Index][UnitCellSize-1].clear();
 
-   bool FirstElement = i == std::vector<bool>(NUpper, false) && j == std::vector<bool>(NLower, false);
-   bool FinalElement = i == std::vector<bool>(NUpper, true) && j == std::vector<bool>(NLower, true);
+   bool FirstElement = i == CornerIndex(NUpper, 0) && j == CornerIndex(NLower, 0);
+   bool FinalElement = i == CornerIndex(NUpper, Infinity) && j == CornerIndex(NLower, Infinity);
 
    // Initialize the first element of the first E matrix.
    if (FirstElement)
@@ -875,7 +876,7 @@ EFMatrix::SolveE(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPo
 }
 
 std::vector<KMatrixPolyType>
-EFMatrix::GetF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
+EFMatrix::GetF(EAIndex i, EAIndex j, int n)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -898,15 +899,15 @@ EFMatrix::GetF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
       throw std::runtime_error("EFMatrix::GetF: fatal: n is out of bounds.");
 }
 
-std::map<std::vector<ExtendedInt>, StateComponent>
-EFMatrix::GetWNext(std::vector<ExtendedInt> i, int n, bool Upper)
+std::map<EFMatrix::EAIndex, StateComponent>
+EFMatrix::GetWNext(EAIndex i, int n, bool Upper)
 {
-   std::map<std::vector<ExtendedInt>, StateComponent> Result;
+   std::map<EAIndex, StateComponent> Result;
 
    if (!IsCorner(i))
    {
       // Get the index for the first element in this window.
-      std::vector<ExtendedInt> FirstIndex = i;
+      EAIndex FirstIndex = i;
       int Site = 0;
       for (auto& I : FirstIndex)
       {
@@ -920,12 +921,12 @@ EFMatrix::GetWNext(std::vector<ExtendedInt> i, int n, bool Upper)
       int Max = Upper ? IMax[FirstIndex] : JMax[FirstIndex];
 
       // Get the index for the next element and the next window.
-      std::vector<ExtendedInt> Index = i;
+      EAIndex Index = i;
       for (auto& I : Index)
          if (!IsCorner(I))
-            I = Site == Max-1 ? ExtendedInt(true) : ExtendedInt(Site+1);
+            I = Site == Max-1 ? ExtendedInt(Infinity) : ExtendedInt(Site+1);
 
-      std::vector<ExtendedInt> WindowIndex = i;
+      EAIndex WindowIndex = i;
       for (auto& I : WindowIndex)
          if (!IsCorner(I))
             I = Site+1;
@@ -936,7 +937,7 @@ EFMatrix::GetWNext(std::vector<ExtendedInt> i, int n, bool Upper)
    {
       // For a corner element, we may have multiple windows, so we get the
       // index for the diagonal window, and construct the rest recursively.
-      std::vector<ExtendedInt> DiagIndex = i;
+      EAIndex DiagIndex = i;
       for (auto& I : DiagIndex)
          if (I == 0)
             I = 1;
@@ -948,7 +949,7 @@ EFMatrix::GetWNext(std::vector<ExtendedInt> i, int n, bool Upper)
 }
 
 void
-EFMatrix::GetWNextCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Result, std::vector<ExtendedInt> i, int n, bool Upper)
+EFMatrix::GetWNextCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, int n, bool Upper)
 {
    // Call this function replacing each 1 in the input with 0.
    for (auto& I : i)
@@ -967,29 +968,29 @@ EFMatrix::GetWNextCorner(std::map<std::vector<ExtendedInt>, StateComponent>& Res
       int Max = Upper ? IMax[i] : JMax[i];
 
       // The index for the next element is infinity if the window size is one.
-      std::vector<ExtendedInt> Index = i;
+      EAIndex Index = i;
       if (Max == 1)
          for (auto& I : Index)
             if (I == 1)
-               I = true;
+               I = Infinity;
 
       Result[Index] = this->GetW(i, n, Upper);
    }
 }
 
 void
-EFMatrix::CalculateF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j)
+EFMatrix::CalculateF(EAIndex i, EAIndex j)
 {
    auto O = Op.as_generic_mpo().end();
    LinearWavefunction::const_iterator CUpper, CLower;
 
    bool CornerUpper = IsCorner(i);
    if (CornerUpper)
-      CUpper = PsiUpper[IsInf(i)].end();
+      CUpper = PsiUpper[ToCorner(i)].end();
 
    bool CornerLower = IsCorner(j);
    if (CornerLower)
-      CLower = PsiLower[IsInf(j)].end();
+      CLower = PsiLower[ToCorner(j)].end();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>((O-1)->Basis1().size());
@@ -1031,19 +1032,18 @@ EFMatrix::CalculateF(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j)
 
    // Run the linear solver for corner elements.
    if (CornerUpper && CornerLower)
-      this->SolveF(IsInf(i), IsInf(j), delta_shift(CTriK, adjoint(QShift)));
+      this->SolveF(ToCorner(i), ToCorner(j), delta_shift(CTriK, adjoint(QShift)));
 }
 
 void
-EFMatrix::SolveF(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPolyType> CTriK)
+EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK)
 {
-   std::pair<std::vector<ExtendedInt>, std::vector<ExtendedInt>>
-      Index(std::vector<ExtendedInt>(i.begin(), i.end()), std::vector<ExtendedInt>(j.begin(), j.end()));
+   std::pair<EAIndex, EAIndex> Index(EAIndex(i.begin(), i.end()), EAIndex(j.begin(), j.end()));
 
    FMatK[Index][0].clear();
 
-   bool FirstElement = i == std::vector<bool>(NUpper, true) && j == std::vector<bool>(NLower, true);
-   bool FinalElement = i == std::vector<bool>(NUpper, false) && j == std::vector<bool>(NLower, false);
+   bool FirstElement = i == CornerIndex(NUpper, Infinity) && j == CornerIndex(NLower, Infinity);
+   bool FinalElement = i == CornerIndex(NUpper, 0) && j == CornerIndex(NLower, 0);
 
    // Initialize the first element of the first F matrix.
    if (FirstElement)
@@ -1116,7 +1116,7 @@ EFMatrix::SolveF(std::vector<bool> i, std::vector<bool> j, std::vector<KMatrixPo
 
 // TODO: Could these be implemented in a better way?
 StateComponent
-EFMatrix::GetESC(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
+EFMatrix::GetESC(EAIndex i, EAIndex j, int n)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -1133,7 +1133,7 @@ EFMatrix::GetESC(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
 }
 
 StateComponent
-EFMatrix::GetFSC(std::vector<ExtendedInt> i, std::vector<ExtendedInt> j, int n)
+EFMatrix::GetFSC(EAIndex i, EAIndex j, int n)
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(j.size(), NLower);
@@ -1154,16 +1154,16 @@ EFMatrix::GetHEff(int i)
 {
    std::deque<StateComponent> Result;
 
-   int iMax = IMax[std::vector<ExtendedInt>(NUpper, 1)];
-   int jMax = JMax[std::vector<ExtendedInt>(NLower, 1)];
+   int iMax = IMax[EAIndex(NUpper, 1)];
+   int jMax = JMax[EAIndex(NLower, 1)];
 
-   auto CLeft = PsiLower[std::vector<bool>(NLower, false)].begin();
-   auto CRight = PsiLower[std::vector<bool>(NLower, true)].begin();
+   auto CLeft = PsiLower[CornerIndex(NLower, 0)].begin();
+   auto CRight = PsiLower[CornerIndex(NLower, Infinity)].begin();
    auto O = Op.as_generic_mpo().begin();
 
    ExtendedInt iNext;
    if (i == iMax-1)
-      iNext = true;
+      iNext = Infinity;
    else
       iNext = i+1;
 
@@ -1177,14 +1177,14 @@ EFMatrix::GetHEff(int i)
       {
          ExtendedInt jNext;
          if (j == jMax-1)
-            jNext = true;
+            jNext = Infinity;
          else
             jNext = j+1;
 
          Result.back() += operator_prod_inner(*O, this->GetESC({i}, {j}, n-1), this->GetWLower({j+1}, n), herm(this->GetFSC({iNext}, {jNext}, n+1)));
       }
 
-      Result.back() += operator_prod_inner(*O, this->GetESC({i}, {true}, n-1), *CRight, herm(this->GetFSC({iNext}, {true}, n+1)));
+      Result.back() += operator_prod_inner(*O, this->GetESC({i}, {Infinity}, n-1), *CRight, herm(this->GetFSC({iNext}, {Infinity}, n+1)));
 
       ++CLeft, ++CRight, ++O;
    }

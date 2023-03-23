@@ -60,8 +60,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
-   EF.SetPsi({false}, PsiLeft);
-   EF.SetPsi({true}, PsiRight, ExpIK);
+   EF.SetPsi({0}, PsiLeft);
+   EF.SetPsi({Infinity}, PsiRight, ExpIK);
 
    if (!StringOp.is_null())
    {
@@ -76,8 +76,8 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       SettingsTy.Verbose = Verbose;
 
       EFTy = EFMatrix(StringOp, SettingsTy);
-      EFTy.SetPsi({false}, PsiLeft);
-      EFTy.SetPsi({true}, PsiRight, ExpIK);
+      EFTy.SetPsi({0}, PsiLeft);
+      EFTy.SetPsi({Infinity}, PsiRight, ExpIK);
    }
 
    // Get PsiLeft and PsiRight as LinearWavefunctions.
@@ -145,7 +145,7 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque)
    EFTy.SetWUpper(1, BDeque);
    EFTy.SetWLower(1, BDeque);
 
-   return inner_prod(EFTy.GetRho({true}, {true}), EFTy.GetElement({true}, {true}).front()[1.0].coefficient(1));
+   return inner_prod(EFTy.GetRho({Infinity}, {Infinity}), EFTy.GetElement({Infinity}, {Infinity}).front()[1.0].coefficient(1));
 }
 
 std::deque<StateComponent>
