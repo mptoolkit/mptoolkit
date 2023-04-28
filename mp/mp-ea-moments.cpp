@@ -22,7 +22,6 @@
 #include <boost/program_options.hpp>
 #include "common/environment.h"
 #include "common/terminal.h"
-#include "common/environment.h"
 #include "common/prog_options.h"
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"

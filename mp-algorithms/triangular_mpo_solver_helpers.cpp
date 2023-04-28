@@ -336,7 +336,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
          if (HasEigenvalue1 && F[m].TransformsAs() == Rho.TransformsAs())
          {
             std::complex<double> z = inner_prod(F[m], Rho);
-            if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
+            if (LinearAlgebra::norm_frob_sq(z) > 1E-8)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };

@@ -230,22 +230,10 @@ class EFMatrix
       void SolveE(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK);
       void SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTriK);
 
-      // The number of windows in the upper and lower states.
-      int NUpper, NLower;
-
-      std::map<CornerIndex, LinearWavefunction> PsiUpper, PsiLower;
-      std::map<EAIndex, std::map<int, StateComponent>> WindowUpper, WindowLower;
-      std::map<EAIndex, int> IMax, JMax;
-      std::map<CornerIndex, std::complex<double>> ExpIKUpper, ExpIKLower;
-      std::map<std::pair<CornerIndex, CornerIndex>, MatrixOperator> TLeft, TRight;
-      std::map<std::pair<CornerIndex, CornerIndex>, bool> TCalculated;
-      std::map<std::pair<EAIndex, EAIndex>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
-
-      int UnitCellSize = 0;
-      QuantumNumber QShift;
-
       InfiniteMPO Op;
 
+      // The number of windows in the upper and lower states.
+      int NUpper, NLower;
       int Degree;
       double Tol;
       double UnityEpsilon;
@@ -253,6 +241,17 @@ class EFMatrix
       bool EAOptimization;
       bool SubtractEnergy;
       int Verbose;
+
+      std::map<CornerIndex, LinearWavefunction> PsiUpper, PsiLower;
+      std::map<CornerIndex, std::complex<double>> ExpIKUpper, ExpIKLower;
+      std::map<std::pair<CornerIndex, CornerIndex>, MatrixOperator> TLeft, TRight;
+      std::map<std::pair<CornerIndex, CornerIndex>, bool> TCalculated;
+      std::map<EAIndex, std::map<int, StateComponent>> WindowUpper, WindowLower;
+      std::map<EAIndex, int> IMax, JMax;
+      std::map<std::pair<EAIndex, EAIndex>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
+
+      int UnitCellSize = 0;
+      QuantumNumber QShift;
 };
 
 #endif

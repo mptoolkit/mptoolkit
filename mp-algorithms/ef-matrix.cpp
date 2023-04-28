@@ -79,6 +79,24 @@ ShiftVariable(std::vector<KMatrixPolyType>& EMatK, int Shift)
    }
 }
 
+std::ostream& operator<<(std::ostream& out, ZeroInf const& I)
+{
+   if (I.is_inf())
+      out << "Inf";
+   else
+      out << "0";
+   return out;
+}
+
+std::ostream& operator<<(std::ostream& out, ExtendedInt const& I)
+{
+   if (I.is_inf())
+      out << "Inf";
+   else
+      out << I.value();
+   return out;
+}
+
 // Overloaded comparisons for ExtendedInt.
 // I haven't defined comparisons with int, since they can convert implcitly to ExtendedInt.
 bool
@@ -148,11 +166,21 @@ IsCorner(std::vector<ExtendedInt> Input)
 // so this function maps to the corner index prior to the current index if it
 // is not a corner index.)
 std::vector<ZeroInf>
-ToCorner(std::vector<ExtendedInt> Input)
+ToCornerIndex(std::vector<ExtendedInt> Input)
 {
    std::vector<ZeroInf> Result;
    for (auto const& I : Input)
       Result.push_back(ZeroInf(I.is_inf()));
+   return Result;
+}
+
+// Convert a vector of ZeroInfs to a vector of ExtendedInts.
+std::vector<ExtendedInt>
+ToFullIndex(std::vector<ZeroInf> Input)
+{
+   std::vector<ExtendedInt> Result;
+   for (auto const& I : Input)
+      Result.push_back(ExtendedInt(I));
    return Result;
 }
 
@@ -684,7 +712,7 @@ EFMatrix::MomentumFactor(CornerIndex i, CornerIndex j)
 std::complex<double>
 EFMatrix::MomentumFactor(EAIndex i, EAIndex j)
 {
-   return this->MomentumFactor(ToCorner(i), ToCorner(j));
+   return this->MomentumFactor(ToCornerIndex(i), ToCornerIndex(j));
 }
 
 std::vector<KMatrixPolyType>
@@ -782,11 +810,11 @@ EFMatrix::CalculateE(EAIndex i, EAIndex j)
 
    bool CornerUpper = IsCorner(i);
    if (CornerUpper)
-      CUpper = PsiUpper[ToCorner(i)].begin();
+      CUpper = PsiUpper[ToCornerIndex(i)].begin();
 
    bool CornerLower = IsCorner(j);
    if (CornerLower)
-      CLower = PsiLower[ToCorner(j)].begin();
+      CLower = PsiLower[ToCornerIndex(j)].begin();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>(O->Basis2().size());
@@ -828,7 +856,7 @@ EFMatrix::CalculateE(EAIndex i, EAIndex j)
 
    // Run the linear solver for corner elements.
    if (CornerUpper && CornerLower)
-      this->SolveE(ToCorner(i), ToCorner(j), delta_shift(CTriK, QShift));
+      this->SolveE(ToCornerIndex(i), ToCornerIndex(j), delta_shift(CTriK, QShift));
 }
 
 void
@@ -986,11 +1014,11 @@ EFMatrix::CalculateF(EAIndex i, EAIndex j)
 
    bool CornerUpper = IsCorner(i);
    if (CornerUpper)
-      CUpper = PsiUpper[ToCorner(i)].end();
+      CUpper = PsiUpper[ToCornerIndex(i)].end();
 
    bool CornerLower = IsCorner(j);
    if (CornerLower)
-      CLower = PsiLower[ToCorner(j)].end();
+      CLower = PsiLower[ToCornerIndex(j)].end();
 
    // Cumulative sum for corner elements.
    std::vector<KMatrixPolyType> CTriK = std::vector<KMatrixPolyType>((O-1)->Basis1().size());
@@ -1032,7 +1060,7 @@ EFMatrix::CalculateF(EAIndex i, EAIndex j)
 
    // Run the linear solver for corner elements.
    if (CornerUpper && CornerLower)
-      this->SolveF(ToCorner(i), ToCorner(j), delta_shift(CTriK, adjoint(QShift)));
+      this->SolveF(ToCornerIndex(i), ToCornerIndex(j), delta_shift(CTriK, adjoint(QShift)));
 }
 
 void
@@ -1061,9 +1089,9 @@ EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
    FMatK[Index][0] = delta_shift(FMatK[Index][0], QShift);
 
    // Subtract the contribution due to the energy density: this is to ensure
-   // that the expectation value obtained by taking product of E and F matrices
-   // corresponds to the value we would obtain by solving the full E or F
-   // matrix.
+   // that the expectation value obtained by taking the product of E and F
+   // matrices corresponds to the value we would obtain by solving the full E
+   // or F matrix.
    if (FirstElement && SubtractEnergy)
    {
       // The first contribution can be extracted from the expectation value of the F matrix.
@@ -1081,7 +1109,7 @@ EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
       EMatKRight[0][1.0] = MatrixPolyType(this->GetTLeft(i, j));
 
       SolveMPO_EA_Left(EMatKRight, std::vector<KMatrixPolyType>(), PsiUpper[i], PsiLower[j], QShift,
-                       Op, this->GetTLeft(i, j), this->GetTRight(i, j), std::conj(this->MomentumFactor(i, j)),
+                       Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
                        Degree, Tol, UnityEpsilon, true, false, Verbose-1);
 
       std::complex<double> BondEnergy = 0.0;
