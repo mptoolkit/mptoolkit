@@ -33,6 +33,7 @@
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H)
 #define MPTOOLKIT_MP_ALGORITHMS_TRIANGULAR_MPO_SOLVER_H
 
+#include "mpo/infinite_mpo.h"
 #include "wavefunction/momentum_operations.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/infinitewavefunctionright.h"
@@ -157,38 +158,55 @@ std::complex<double>
 SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi,
                      BasicTriangularMPO const& Op, double Tol = DefaultTol, int Verbose = 0);
 
-// Solvers for excitation ansatz wavefunctions, where PsiTri is the
-// "triangular" unit cell and ExpIK is the complex phase per MPS unit cell.
+// Solvers for excitation ansatz wavefunctions, where CTriK is the off-diagonal
+// contribution w.r.t. the EA indices and ExpIK is the complex phase per MPS
+// unit cell.
 
 void
-SolveFirstOrderMPO_EA_Left(StateComponent& E2, StateComponent const& E1,
-                           LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                           LinearWavefunction const& PsiTri,
-                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                           MatrixOperator const& Ident, MatrixOperator const& Rho,
-                           std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                 bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
 void
-SolveStringMPO_EA_Left(MatrixOperator& E1, MatrixOperator const& E0,
-                       LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                       LinearWavefunction const& PsiTri,
-                       QuantumNumber const& QShift, ProductMPO const& Op,
-                       MatrixOperator const& Ident, MatrixOperator const& Rho,
-                       std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 
 void
-SolveFirstOrderMPO_EA_Right(StateComponent& F2, StateComponent const& F1,
-                            LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                            LinearWavefunction const& PsiTri,
-                            QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                            MatrixOperator const& Rho, MatrixOperator const& Ident,
-                            std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, ProductMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
+                 double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 void
-SolveStringMPO_EA_Right(MatrixOperator& F1, MatrixOperator const& F0,
-                        LinearWavefunction const& PsiLeft, LinearWavefunction const& PsiRight,
-                        LinearWavefunction const& PsiTri,
-                        QuantumNumber const& QShift, ProductMPO const& Op,
-                        MatrixOperator const& Rho, MatrixOperator const& Ident,
-                        std::complex<double> ExpIK = 1.0, double Tol = DefaultTol, int Verbose = 0);
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, ProductMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
+                  double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+void
+SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
+                 LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                 QuantumNumber const& QShift, InfiniteMPO const& Op,
+                 MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                 std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                 bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+
+void
+SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
+                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                  QuantumNumber const& QShift, InfiniteMPO const& Op,
+                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
+                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
 #endif

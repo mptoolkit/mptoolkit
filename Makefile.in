@@ -225,7 +225,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
         mp-construct mp-ibc-create mp-ibc-join mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation \
-        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice
+        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice mp-ea-moments mp-ea-create mp-ea-extend mp-ea-dmrg
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-aux-project mp-ibc-dmrg mp-fluctuation
 
@@ -511,8 +511,10 @@ mp-itebd : tebd.o number-parser.o
 
 mp-ibc-join : random_wavefunc.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-correlation : number-parser.o
-mp-excitation-ansatz : rangelist.o excitation-ansatz.o triangular_mpo_solver.o ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o triangular_mpo_solver_ea.o
+mp-excitation-ansatz : rangelist.o excitation-ansatz.o ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o
 mp-ibc-wavepacket : rangelist.o
+mp-ea-moments: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o
+mp-ea-dmrg: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o ea-dmrg.o
 
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o

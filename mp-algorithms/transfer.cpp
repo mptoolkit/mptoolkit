@@ -313,6 +313,41 @@ get_transfer_eigenpair(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctio
    return get_transfer_eigenpair(get_left_canonical(Psi1).first, get_left_canonical(Psi2).first, Psi1.qshift(), ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, Verbose);
 }
 
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            ProductMPO const& StringOp, double tol, double UnityEpsilon, int Verbose)
+{
+   std::complex<double> eLeft, eRight;
+   MatrixOperator Left, Right;
+
+   std::tie(eLeft, Left) = get_left_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
+
+   // If the norm of the left eigenvalue is less than one, return early.
+   if (std::abs(std::abs(eLeft) - 1.0) > UnityEpsilon)
+      return std::make_tuple(eLeft, MatrixOperator(), MatrixOperator());
+
+   std::tie(eRight, Right) = get_right_transfer_eigenvector(Psi1, Psi2, QShift, StringOp, tol, Verbose);
+
+   CHECK(norm_frob(eLeft-conj(eRight)) < 1E-10)(eLeft)(eRight);
+   // normalize
+   Right *= 1.0 / norm_frob(Right);
+   Left *= 1.0 / inner_prod(delta_shift(Right, QShift), Left);
+   return std::make_tuple(eLeft, Left, Right);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            QuantumNumber const& q, double tol, double UnityEpsilon, int Verbose)
+{
+   return get_transfer_unit_eigenpair(Psi1, Psi2, QShift, ProductMPO::make_identity(ExtractLocalBasis(Psi1), q), tol, UnityEpsilon, Verbose);
+}
+
+std::tuple<std::complex<double>, MatrixOperator, MatrixOperator>
+get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
+                            double tol, double UnityEpsilon, int Verbose)
+{
+   return get_transfer_unit_eigenpair(Psi1, Psi2, QShift, QuantumNumbers::QuantumNumber(Psi1.GetSymmetryList()), tol, UnityEpsilon, Verbose);
+}
 
 LinearAlgebra::Vector<std::complex<double>>
 get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
