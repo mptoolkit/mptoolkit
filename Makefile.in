@@ -223,8 +223,8 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-idivide mp-ies mp-irepeat mp-norm mp-allcorrelation \
         mp-irotate mp-icorrelation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
-				mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
-                                mp-construct
+        mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
+        mp-construct
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-fluctuation
 
@@ -501,6 +501,8 @@ mp-misc = make-vb-state make-vb-su2
 
 mp-simple-marshall-qmc : random_wavefunc.o
 
+mp-tdvp : tdvp.o ef-optim.o number-parser.o
+
 # infinite tools
 
 mp-tebd : tebd.o number-parser.o
@@ -532,6 +534,7 @@ mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o
 mp-idivide :
 
+mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-matrix : write-matrix.o
 mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
 
