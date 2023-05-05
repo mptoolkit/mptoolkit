@@ -39,6 +39,9 @@ class PackMatrixOperator
                          VectorBasis const& Basis2,
                          QuantumNumbers::QuantumNumber const& q);
 
+                         PackMatrixOperator(VectorBasis const& Basis1,
+                                            VectorBasis const& Basis2);
+
       PackMatrixOperator(MatrixOperator const& m);
 
       value_type* pack(MatrixOperator const& m, value_type* Iter) const;
@@ -119,8 +122,8 @@ class PackStateComponent
 template <typename F>
 struct ApplyToPackedOperator
 {
-   ApplyToPackedOperator(F const& f, VectorBasis const& B1, VectorBasis const& B2, 
-			 QuantumNumbers::QuantumNumber const& q) 
+   ApplyToPackedOperator(F const& f, VectorBasis const& B1, VectorBasis const& B2,
+			 QuantumNumbers::QuantumNumber const& q)
       : f_(f),
 	Pack(B1, B2, q)
    {}
@@ -156,8 +159,8 @@ struct ApplyToPackedOperator
 template <typename F>
 struct ApplyToPackedStateComponent
 {
-   ApplyToPackedStateComponent(F const& f, BasisList const& B, 
-			       VectorBasis const& B1, VectorBasis const& B2) 
+   ApplyToPackedStateComponent(F const& f, BasisList const& B,
+			       VectorBasis const& B1, VectorBasis const& B2)
       : f_(f),
 	Pack(B, B1, B2)
    {}

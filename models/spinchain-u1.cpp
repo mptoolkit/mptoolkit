@@ -62,8 +62,10 @@ int main(int argc, char** argv)
          ("H_B2"   , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
          ("H_mu"   , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
-	 ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
-	 ("H_stag" , "staggered field (-1)^n Sz(n)")
+         ("H_PD"   , "spin-1 projector onto singlet dimers (S(0)+S(1))^2 - 2) * (S(0)+S(1))^2 - 6)")
+         ("H_PT"   , "spin-1 projector onto singlet trimers (S(0)+S(1)+S(2))^2 - 2)*(S(0)+S(1)+S(2))^2 - 6)*(S(0)+S(1)+S(2))^2 - 12)")
+         ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
+	      ("H_stag" , "staggered field (-1)^n Sz(n)")
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
@@ -86,7 +88,18 @@ int main(int argc, char** argv)
       LatticeSite Site = SpinU1(Spin);
       UnitCell Cell(Site);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+      UnitCellOperator I(Cell, "I"), SS(Cell, "SS"), S_2(Cell, "S_2"), S_3(Cell, "S_3");
       InfiniteLattice Lattice(&Cell);
+
+      // Nearest neighbor S(0).S(1)
+      SS = Sz(0)*Sz(1)+ 0.5*(Sp(0)*Sm(1) + Sm(0)*Sp(1));
+      SS.set_description("Shortcut for S(0).S(1)");
+      // (S(0)+S(1))^2
+      S_2 = 4*I(0) + 2*SS(0);
+      S_2.set_description("Shortcut for (S(0)+S(1))^2 (spin-1 only)");
+      // (S(0)+S(1)+S(2))^2
+      S_3 = 6*I(0) + 2*(SS(0) + SS(1) + Sz(0)*Sz(2) + 0.5*(Sp(0)*Sm(2) + Sm(0)*Sp(2)));
+      S_3.set_description("Shortcut for (S(0)+S(1)+S(2))^2 (spin-1 only)");
 
       Lattice["H_J1z"] = sum_unit(Sz(0)*Sz(1));
       Lattice["H_J1t"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
@@ -107,6 +120,10 @@ int main(int argc, char** argv)
 				    - (Sz(1)*Sz(2) + 0.5*(Sp(1)*Sm(2) + Sm(1)*Sp(2))), 2);
 
       Lattice["H_stag"] = sum_unit(Sz(0) - Sz(1), 2);
+
+      Lattice["H_PD"] = (1.0 / 12.0) * sum_unit( (S_2(0) - 2*I(0)) * (S_2(0) - 6*I(0)) );
+      Lattice["H_PT"] = (-1.0 / 144.0) * sum_unit( (S_3(0) - 2*I(0)) * (S_3(0) - 6*I(0)) * (S_3(0) - 12*I(0)) );
+
 
       if (Spin == 1)
       {

@@ -104,6 +104,10 @@ class InfiniteWavefunctionLeft : public CanonicalWavefunctionBase
       // x / |x|
       void scale(std::complex<double> x);
 
+      // Scale the wavefunction by exp(x).  This has the effect of adding x.real() to the
+      // log_amplitude, and rotating the first matrix of the unit cell by exp(i*x.imag())
+      void scale_log(std::complex<double> x);
+
       // Rotates the wavefunction to the left, by taking the left-most site
       // and moving it to the right
       void rotate_left(int Count);
@@ -169,6 +173,18 @@ InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex
 // Return value is the log amplitude from the transfer matrix eigenvalue, Result' = log(sqrt(evalue))
 double
 left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
+
+// Convert an infinite wavefunction to left-orthogonal form, allowing for degeneracy of the principal eigenvalue.
+// Returns the eigenvalue and its degeneracy.  ExpectedDegen is the expected degeneracy of the eigenvalue; the algorithm
+// is less efficient if the degeneracy is greater (although it still works fine).
+std::tuple<double, int>
+left_orthogonalize_degen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, int ExpectedDegen, double tol = 1E-14, int Verbose = 0);
+
+// Given a wavefunction which is known to have Degeneracy degenerate eigenvalues (which must be > 1),
+// block diagonalize the wavefunction and return the different block-diagonal branches.
+// Each wavefunction in the returned set is left orthogonal.
+std::vector<LinearWavefunction>
+left_branch_degen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, int Degeneracy, double tol = 1E-14, int Verbose = 0);
 
 // Take a wavefunction that is already in left orthogonal form, and gauge fix it so that the right
 // transfer matrix eigenvector is diagonal.  Return value is the Lambda matrix on the right-hand-side.

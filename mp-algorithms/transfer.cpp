@@ -88,6 +88,28 @@ MakePackApplyFunc(PackStateComponent const& Pack_, Func f_)
    return PackApplyFunc<Func>(Pack_, f_);
 }
 
+template <typename Func>
+struct PackApplyFuncMatrix
+{
+   PackApplyFuncMatrix(PackMatrixOperator const& Pack_, Func f_) : Pack(Pack_), f(f_) {}
+
+   void operator()(std::complex<double> const* In, std::complex<double>* Out) const
+   {
+      MatrixOperator x = Pack.unpack(In);
+      x = f(x);
+      Pack.pack(x, Out);
+   }
+   PackMatrixOperator const& Pack;
+   Func f;
+};
+
+template <typename Func>
+PackApplyFuncMatrix<Func>
+MakePackApplyFunc(PackMatrixOperator const& Pack_, Func f_)
+{
+   return PackApplyFuncMatrix<Func>(Pack_, f_);
+}
+
 std::tuple<std::complex<double>, MatrixOperator>
 get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
 {
@@ -218,31 +240,6 @@ get_left_transfer_eigenvectors(int N, LinearWavefunction const& Psi1, LinearWave
 //
 
 std::tuple<std::complex<double>, MatrixOperator>
-get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
-                      ProductMPO const& StringOp,
-                      double tol, int Verbose)
-{
-      int ncv = 0;
-      CHECK_EQUAL(Psi1.size(), Psi2.size());
-      CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
-      PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
-      int n = Pack.size();
-      int NumEigen = 1;
-
-      std::vector<std::complex<double>> OutVec;
-      LinearAlgebra::Vector<std::complex<double>> RightEigen =
-         LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
-                                                            RightMultiplyOperator(Psi1, QShift,
-                                                                                 StringOp,
-                                                                                 Psi2, QShift, Psi1.size(), Verbose-1)),
-                                          n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
-
-      StateComponent RightVector = Pack.unpack(&(OutVec[0]));
-
-      return std::make_tuple(RightEigen[0], RightVector[0]);
-}
-
-std::tuple<std::complex<double>, MatrixOperator>
 get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, MatrixOperator InitialGuess, double tol, int Verbose)
 {
    int ncv = 0;
@@ -261,6 +258,30 @@ get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunctio
                                                                               StringOp,
                                                                               Psi2, QShift, Psi1.size(), Verbose-1)),
                                           n, NumEigen, Initial.data(), tol, &OutVec, ncv, false, Verbose);
+
+   StateComponent RightVector = Pack.unpack(&(OutVec[0]));
+
+   return std::make_tuple(RightEigen[0], RightVector[0]);
+}
+
+
+std::tuple<std::complex<double>, MatrixOperator>
+get_right_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
+{
+   int ncv = 0;
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
+   PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis2(), Psi2.Basis2());
+   int n = Pack.size();
+   int NumEigen = 1;
+
+   std::vector<std::complex<double>> OutVec;
+   LinearAlgebra::Vector<std::complex<double>> RightEigen =
+      LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack,
+                                                         RightMultiplyOperator(Psi1, QShift,
+                                                                              StringOp,
+                                                                              Psi2, QShift, Psi1.size(), Verbose-1)),
+                                          n, NumEigen, nullptr, tol, &OutVec, ncv, false, Verbose);
 
    StateComponent RightVector = Pack.unpack(&(OutVec[0]));
 
