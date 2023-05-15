@@ -82,7 +82,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       if (Test.size() == 0)
       {
          std::string ErrorMessage = "fatal: The effective Hamiltonian has dimension zero. "
-                                    "This probably means the bases of the left and right wavefunction have incompatible quantum number sectors: "
+                                    "This probably means the bases of the left and right wavefunctions have incompatible quantum number sectors: "
                                     // This error message may be confusing if this code is ever reused for a tool other than mp-excitation-ansatz.
                                     "try using a different value for the option --quantumnumber.";
          throw std::runtime_error(ErrorMessage);

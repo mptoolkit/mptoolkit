@@ -147,13 +147,6 @@ int main(int argc, char** argv)
       UnitCellMPO Op;
       std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
-      if (!Op.is_scalar())
-      {
-         // TODO
-         std::cerr << "fatal: handling of nonscalar operators is not implemented yet." << std::endl;
-         return 1;
-      }
-
       if (Op.size() > 1)
       {
          // TODO
