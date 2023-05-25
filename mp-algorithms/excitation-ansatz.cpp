@@ -24,15 +24,6 @@
 #include "tensor/tensor_eigen.h"
 #include "wavefunction/operator_actions.h"
 
-// The tolerance of the trace of the left/right boundary eigenvectors for
-// fixing their relative phase.
-double const TraceTol = 1e-8;
-
-// Tolerance for the overlap of PsiLeft/PsiRight when calculating the leading
-// eigenvectors of the mixed transfer matrix: we treat the states as orthogonal
-// if the overlap - 1 is greater than this value.
-double const OverlapTol = 1e-8;
-
 HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight const& PsiRight_,
            BasicTriangularMPO const& HamMPO_, EASettings const& Settings_)
    : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_),
