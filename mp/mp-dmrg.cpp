@@ -148,6 +148,8 @@ int main(int argc, char** argv)
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
          ("random-mix-factor", prog_opt::value(&RandomMixFactor),
           FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
+         ("evolve", prog_opt::value(&EvolveDelta),
+          "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
           FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
          ("miniter", prog_opt::value<int>(&MinIter),
