@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iterator>
 #include <iostream>
+#include <cmath>
 
 // StateParams
 
@@ -87,7 +88,10 @@ StatesList::StatesList(int NumSweeps, int NumStates)
 void StatesList::AppendToken(char const* s)
 {
    // notation is (symbols in quotes are literals, capitals are numbers)
-   // N[[".."M | "+"A] "x"A]["w"]["t"]
+   // N [ [ ".."M | "+"A | "^"M ] "x"A ] [ "w" ] [ "t" ]
+   // N..MxA means increase states from N to M additively, in A sweeps
+   // N^MxA means increase states from N to M multiplicatively, in A sweeps
+   // NOTE: since 2023-06-23, the initial number N is NOT included; the range is half-open
 
    StateParams I;
    if (!Info.empty())
@@ -96,6 +100,7 @@ void StatesList::AppendToken(char const* s)
    int NumSweeps = 1;
    int FinalStates = 0;
    int Increment = 0;
+   bool Multiplicative = false;
 
    char* p = const_cast<char*>(s);
    // parse the leading number
@@ -161,6 +166,31 @@ void StatesList::AppendToken(char const* s)
       }
       s = p;
    }
+   else if (s[0] == '^')
+   {
+      // we have N^M*A notation
+      Multiplicative = true;
+      ++s; // skip over the '^'
+      // parse the final number
+      FinalStates = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+         PANIC("Did not find a final number in N^MxS notation in the StatesList")(s);
+      }
+      // and now we must get the "x"S part
+      s = p;
+      if (s[0] != 'x')
+      {
+         PANIC("N^M must be followed by x<number> in StatesList");
+      }
+      ++s;
+      NumSweeps = std::strtol(s, &p, 10);
+      if (p == s)
+      {
+         PANIC("N+M must be followed by x<number> in StatesList");
+      }
+      s = p;
+   }
    else if (s[0] == 'x')
    {
       // we can have MxA on its own
@@ -200,11 +230,16 @@ void StatesList::AppendToken(char const* s)
    {
       if (FinalStates != 0)
       {
-         I.NumStates = InitialStates + int(i*double((FinalStates-InitialStates)/double(NumSweeps-1)));
+         if (Multiplicative)
+         {
+            I.NumStates = int(std::round(InitialStates * pow(FinalStates/InitialStates, double(i+1) / (NumSweeps+1))));
+         } else {
+            I.NumStates = InitialStates + int((i+1)*double((FinalStates-InitialStates)/double(NumSweeps)));
+         }
       }
       else if (Increment != 0)
       {
-         I.NumStates = InitialStates + i*Increment;
+         I.NumStates = InitialStates + (i+1)*Increment;
       }
       Info.push_back(I);
    }
