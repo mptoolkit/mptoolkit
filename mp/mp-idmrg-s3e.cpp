@@ -365,7 +365,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       // Skip the identity and the Hamiltonian
       for (unsigned i = 1; i < RH.size()-1; ++i)
       {
-         double Prefactor = trace(triple_prod(herm(LeftHam[i]), RhoL, LeftHam[i])).real();
+         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
          if (Prefactor == 0)
             Prefactor = 1;
          RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
@@ -432,7 +432,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
       for (unsigned i = 1; i < LH.size()-1; ++i)
       {
-         double Prefactor = trace(triple_prod(herm(RightHam[i]), RhoR, RightHam[i])).real();
+         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
          if (Prefactor == 0)
             Prefactor = 1;
          RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
