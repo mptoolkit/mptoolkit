@@ -979,6 +979,14 @@ StateComponent RegularizeBasis12(Regularizer const& R1, StateComponent const& M,
    return Result;
 }
 
+MatrixOperator
+Regularize(MatrixOperator const& M)
+{
+   Regularizer R1(M.Basis1());
+   Regularizer R2(M.Basis2());
+   return RegularizeBasis12(R1, M, R2);
+}
+
 StateComponent
 NullSpace1(StateComponent A)
 {
