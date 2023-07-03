@@ -22,49 +22,54 @@
 namespace Tensor
 {
 
-
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-Regularize(VectorBasis const& b)
+Regularizer::Regularizer(VectorBasis const& b)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> ResultType;
+   if (is_regular_basis(b))
+   {
+      Trivial = true;
+      RegularBasis = b;
+      return;
+   }
+
+   Trivial = false;
+   IrregularBasis = b;
    // Iterate through b and determine the total dimension of
    // each quantum number space, and also map the subspaces of b
    // onto a range of the total space.
-   typedef std::map<QuantumNumbers::QuantumNumber, int> SizeMapType;
-   SizeMapType SizeMap;
-   std::vector<LinearAlgebra::Range> RangeOfSubspace;
-   RangeOfSubspace.reserve(b.size());
+   std::map<QuantumNumbers::QuantumNumber, int> SizeMap;
+   BasisMappingRange.reserve(b.size());
 
    for (std::size_t i = 0; i < b.size(); ++i)
    {
       int Sz = SizeMap[b[i]];
-      RangeOfSubspace.push_back(LinearAlgebra::range(Sz, Sz+b.dim(i)));
+      BasisMappingRange.push_back(LinearAlgebra::range(Sz, Sz+b.dim(i)));
       SizeMap[b[i]] += b.dim(i);
    }
 
-   // Now construct the basis
-   SizeMapType IndexOfQ;
+   RegularBasis = VectorBasis(SizeMap.begin(), SizeMap.end());
+
+   // <Map the quantum numbers in the basis to the index in the regular basis
+   std::map<QuantumNumbers::QuantumNumber, int> IndexOfQ;
    {
       int i = 0;
-      for (SizeMapType::const_iterator I = SizeMap.begin(); I != SizeMap.end(); ++I)
+      for (auto I = SizeMap.begin(); I != SizeMap.end(); ++I)
          IndexOfQ[I->first] = i++;
    }
-
-   VectorBasis RegularBasis(SizeMap.begin(), SizeMap.end());
-   ResultType Result(RegularBasis, b, QuantumNumbers::QuantumNumber(b.GetSymmetryList()));
+   BasisMappingIndex.reserve(b.size());
    for (std::size_t i = 0; i < b.size(); ++i)
    {
-      int Dest = IndexOfQ[b[i]];
-      if (size1(Result(Dest, i)) == 0)
-         Result(Dest, i) = LinearAlgebra::Matrix<double>(RegularBasis.dim(Dest),
-                                                         b.dim(i),
-                                                         0.0);
-
-      Result(Dest,i)(RangeOfSubspace[i], LinearAlgebra::all)
-         = LinearAlgebra::identity_matrix<double>(b.dim(i));
+      BasisMappingIndex.push_back(IndexOfQ[b[i]]);
    }
+}
 
-   return Result;
+int Regularizer::IndexOf(int i) const
+{
+   return Trivial ? 1 : BasisMappingIndex[i];
+}
+
+LinearAlgebra::Range Regularizer::RangeOf(int i) const
+{
+   return Trivial ? LinearAlgebra::Range(0, RegularBasis.dim(i)) : BasisMappingRange[i];
 }
 
 bool is_regular_basis(VectorBasis const& b)

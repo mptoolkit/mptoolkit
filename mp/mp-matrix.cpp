@@ -42,11 +42,11 @@ bool FileExists(std::string const& Name)
 }
 
 MatrixOperator
-RegularizeM(MatrixOperator const& M)
+Regularize(MatrixOperator const& M)
 {
-   MatrixOperator U = Regularize(M.Basis1());
-   MatrixOperator V = Regularize(M.Basis2());
-   return U * M * herm(V);
+   Regularizer R1(M.Basis1());
+   Regularizer R2(M.Basis2());
+   return RegularizeBasis12(R1, M, R2);
 }
 
 int main(int argc, char** argv)
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
       RealDiagonalOperator D;
       std::tie(PsiL, D) = get_left_canonical(InfPsi);
       MatrixOperator Rho = D;
-      Rho = RegularizeM(scalar_prod(Rho, herm(Rho)));
+      Rho = Regularize(scalar_prod(Rho, herm(Rho)));
       if (Rho.size1() != 1 || Rho.size2() != 1)
       {
          std::cerr << "mp-matrix: error: mps has non-trivial symmetries.\n";
