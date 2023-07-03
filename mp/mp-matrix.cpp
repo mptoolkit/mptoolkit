@@ -41,14 +41,6 @@ bool FileExists(std::string const& Name)
    return stat(Name.c_str(), &buf) != -1 && S_ISREG(buf.st_mode);
 }
 
-MatrixOperator
-Regularize(MatrixOperator const& M)
-{
-   Regularizer R1(M.Basis1());
-   Regularizer R2(M.Basis2());
-   return RegularizeBasis12(R1, M, R2);
-}
-
 int main(int argc, char** argv)
 {
    try
