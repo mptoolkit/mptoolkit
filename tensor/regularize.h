@@ -33,9 +33,6 @@ class Regularizer
 
       explicit Regularizer(VectorBasis const& b);
 
-      // returns true if the regularizer is trivial, i.e. the original basis was already regular.
-      bool is_trivial() const { return Trivial; }
-
       // returns the index into the regular basis of the component i
       int IndexOf(int i) const;
 
@@ -44,11 +41,10 @@ class Regularizer
 
       VectorBasis const& Basis() const { return RegularBasis; }
 
-      VectorBasis const& OriginalBasis() const { return this->is_trivial() ? RegularBasis : IrregularBasis; }
+      VectorBasis const& OriginalBasis() const { return IrregularBasis; }
 
 
    private:
-      bool                              Trivial;
       std::vector<int>                  BasisMappingIndex;
       std::vector<LinearAlgebra::Range> BasisMappingRange;
       VectorBasis                       IrregularBasis;

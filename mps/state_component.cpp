@@ -864,9 +864,9 @@ OrthogonalizeBasis1(StateComponent& A)
 
 MatrixOperator ReshapeBasis1(StateComponent const& A)
 {
-   // TODO: we should make a regular basis
    ProductBasis<VectorBasis, BasisList> FullBasis1(A.Basis1(), adjoint(A.LocalBasis()));
-   MatrixOperator Result(FullBasis1.Basis(), A.Basis2());
+   Regularizer R(FullBasis1.Basis());
+   MatrixOperator Result(R.Basis(), A.Basis2());
    for (int s = 0; s < A.size(); ++s)
    {
       for (auto I = iterate(A[s]); I; ++I)
@@ -880,8 +880,14 @@ MatrixOperator ReshapeBasis1(StateComponent const& A)
                ++t;
             if (t != FullBasis1.end(I.index(), s))
             {
+               auto r = iterate_at(Result.data(), R.IndexOf(*t), J.index2());
+               if (!r)
+               {
+                  Result(R.IndexOf(*t), J.index2()) = LinearAlgebra::Matrix<std::complex<double>>(R.Basis().dim(R.IndexOf(*t)), A.Basis2().dim(J.index2()), 0.0);
+                  r = iterate_at(Result.data(), R.IndexOf(*t), J.index2());
+               }
                // Scale factor for non-abelian symmetries sqrt(qdim(index1) / qdim(index2))
-               Result(*t, J.index2()) = (*J) * std::sqrt(double(degree(A.Basis1()[I.index1()])) / degree(A.Basis2()[J.index2()]));
+               (*r)(R.RangeOf(*t), LinearAlgebra::all) = (*J) * std::sqrt(double(degree(A.Basis1()[I.index1()])) / degree(A.Basis2()[J.index2()]));
             }
          }
       }
@@ -892,15 +898,20 @@ MatrixOperator ReshapeBasis1(StateComponent const& A)
 StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1)
 {
    ProductBasis<VectorBasis, BasisList> FullBasis1(B1, adjoint(LB));
-   CHECK_EQUAL(X.Basis1(), FullBasis1.Basis());
+   Regularizer R(FullBasis1.Basis());
+   CHECK_EQUAL(X.Basis1(), R.Basis());
    StateComponent Result(LB, B1, X.Basis2());
-   for (auto I = iterate(X); I; ++I)
+   for (int i = 0; i < FullBasis1.Basis().size(); ++i)
    {
-      auto t = FullBasis1.rmap(I.index());
-      for (auto J = iterate(I); J; ++J)
+      int ii = R.IndexOf(i);
+      auto t = FullBasis1.rmap(i);
+      for (int j = 0; j < X.Basis2().size(); ++j)
       {
-         // Scale factor for non-abelian symmetries
-         Result[t.second](t.first, J.index2()) = (*J) * std::sqrt(double(degree(X.Basis2()[J.index2()])) / degree(B1[t.first]));
+         auto r = iterate_at(X.data(), ii, j);
+         if (r)
+         {
+            Result[t.second](t.first, j) = (*r)(R.RangeOf(i), LinearAlgebra::all) * std::sqrt(double(degree(X.Basis2()[j])) / degree(B1[t.first]));
+         }
       }
    }
    return Result;
@@ -908,9 +919,9 @@ StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, V
 
 MatrixOperator ReshapeBasis2(StateComponent const& A)
 {
-   // TODO: we should make a regular basis
    ProductBasis<BasisList, VectorBasis> FullBasis2(A.LocalBasis(), A.Basis2());
-   MatrixOperator Result(A.Basis1(), FullBasis2.Basis());
+   Regularizer R(FullBasis2.Basis());
+   MatrixOperator Result(A.Basis1(), R.Basis());
    for (int s = 0; s < A.size(); ++s)
    {
       for (auto I = iterate(A[s]); I; ++I)
@@ -924,8 +935,14 @@ MatrixOperator ReshapeBasis2(StateComponent const& A)
                ++t;
             if (t != FullBasis2.end(s, J.index2()))
             {
+               auto r = iterate_at(Result.data(), I.index(), R.IndexOf(*t));
+               if (!r)
+               {
+                  Result(I.index(), R.IndexOf(*t)) = LinearAlgebra::Matrix<std::complex<double>>(A.Basis1().dim(I.index()), R.Basis().dim(R.IndexOf(*t)), 0.0);
+                  r = iterate_at(Result.data(), I.index(), R.IndexOf(*t));
+               }
                // No scale factor in this case - the coupling coefficient is 1.0
-               Result(I.index(), *t) = *J;
+               (*r)(LinearAlgebra::all, R.RangeOf(*t)) = *J;
             }
          }
       }
@@ -936,14 +953,20 @@ MatrixOperator ReshapeBasis2(StateComponent const& A)
 StateComponent ReshapeFromBasis2(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B2)
 {
    ProductBasis<BasisList, VectorBasis> FullBasis2(LB, B2);
-   CHECK_EQUAL(X.Basis2(), FullBasis2.Basis());
+   Regularizer R(FullBasis2.Basis());
+   CHECK_EQUAL(X.Basis2(), R.Basis());
    StateComponent Result(LB, X.Basis1(), B2);
-   for (auto I = iterate(X); I; ++I)
+   for (int i = 0; i < X.Basis1().size(); ++i)
    {
-      for (auto J = iterate(I); J; ++J)
+      for (int j = 0; j < FullBasis2.Basis().size(); ++j)
       {
-         auto t = FullBasis2.rmap(J.index2());
-         Result[t.first](I.index(), t.second) = *J;
+         int jj = R.IndexOf(j);
+         auto r = iterate_at(X.data(), i, jj);
+         if (r)
+         {
+            auto t = FullBasis2.rmap(j);
+            Result[t.first](i, t.second) = (*r)(LinearAlgebra::all, R.RangeOf(j));
+         }
       }
    }
    return Result;
@@ -1258,13 +1281,14 @@ StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& 
    return Result;
 }
 
+#if 0
 StateComponent
 contract_local_tensor_prod_left(LinearAlgebra::HermitianProxy<StateComponent> const& A,
    StateComponent L, Tensor::ProductBasis<BasisList, BasisList> const& PB)
 {
    PANIC("not yet implemented");
 }
-
+#endif
 
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
                                         VectorBasis const& B2,

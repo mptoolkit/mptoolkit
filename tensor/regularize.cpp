@@ -24,14 +24,6 @@ namespace Tensor
 
 Regularizer::Regularizer(VectorBasis const& b)
 {
-   if (is_regular_basis(b))
-   {
-      Trivial = true;
-      RegularBasis = b;
-      return;
-   }
-
-   Trivial = false;
    IrregularBasis = b;
    // Iterate through b and determine the total dimension of
    // each quantum number space, and also map the subspaces of b
@@ -60,16 +52,6 @@ Regularizer::Regularizer(VectorBasis const& b)
    {
       BasisMappingIndex.push_back(IndexOfQ[b[i]]);
    }
-}
-
-int Regularizer::IndexOf(int i) const
-{
-   return Trivial ? 1 : BasisMappingIndex[i];
-}
-
-LinearAlgebra::Range Regularizer::RangeOf(int i) const
-{
-   return Trivial ? LinearAlgebra::Range(0, RegularBasis.dim(i)) : BasisMappingRange[i];
 }
 
 bool is_regular_basis(VectorBasis const& b)

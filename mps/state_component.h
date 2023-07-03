@@ -714,6 +714,7 @@ StateComponent NullSpace1(StateComponent A);
 StateComponent NullSpace2(StateComponent A);
 
 // Reshape A-matrix into (dm)x(m) matrix
+// The reshaped basis is a regular basis.
 MatrixOperator ReshapeBasis1(StateComponent const& A);
 StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1);
 

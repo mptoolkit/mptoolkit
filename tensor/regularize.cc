@@ -20,6 +20,18 @@
 namespace Tensor
 {
 
+inline
+int Regularizer::IndexOf(int i) const
+{
+   return BasisMappingIndex[i];
+}
+
+inline
+LinearAlgebra::Range Regularizer::RangeOf(int i) const
+{
+   return BasisMappingRange[i];
+}
+
 template <typename T>
 IrredTensor<T, BasisList, BasisList>
 map_1x1_operator(IrredTensor<LinearAlgebra::Matrix<T>, BasisList, BasisList> const& Op)
@@ -53,9 +65,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 RegularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
 {
-   if (R.is_trivial())
-      return M;
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R.Basis(), M.Basis2(), M.TransformsAs());
    for (auto I = iterate(M); I; ++I)
    {
@@ -77,9 +86,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 UnregularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
 {
-   if (R.is_trivial())
-      return M;
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R.OriginalBasis(), M.Basis2(), M.TransformsAs());
    for (int i = 0; i < Result.Basis1().size(); ++i)
    {
@@ -99,9 +105,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R)
 {
-   if (R.is_trivial())
-      return M;
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(M.Basis1(), R.Basis(), M.TransformsAs());
    for (auto I = iterate(M); I; ++I)
    {
@@ -123,9 +126,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 UnregularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R)
 {
-   if (R.is_trivial())
-      return M;
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(M.Basis1(), R.OriginalBasis(), M.TransformsAs());
    for (int i = 0; i < Result.Basis1().size(); ++i)
    {
@@ -145,13 +145,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 RegularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R2)
 {
-   if (R1.is_trivial() && R2.is_trivial())
-      return M;
-   else if (R1.is_trivial())
-      return RegularizeBasis2(M, R2);
-   else if (R2.is_trivial())
-      return RegularizeBasis1(R1, M);
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R1.Basis(), R2.Basis(), M.TransformsAs());
    for (auto I = iterate(M); I; ++I)
    {
@@ -173,13 +166,6 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R2)
 {
-   if (R1.is_trivial() && R2.is_trivial())
-      return M;
-   else if (R1.is_trivial())
-      return UnregularizeBasis2(M, R2);
-   else if (R2.is_trivial())
-      return UnregularizeBasis1(R1, M);
-
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R1.OriginalBasis(), R2.OriginalBasis(), M.TransformsAs());
    for (int i = 0; i < Result.Basis1().size(); ++i)
    {
