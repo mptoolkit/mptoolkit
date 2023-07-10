@@ -216,4 +216,67 @@ operator<<(std::ostream& out, angle_map<T> const& m)
    return out;
 }
 
+template <typename T>
+angle_map<T>
+operator+=(angle_map<T>& Input1, angle_map<T> const& Input2)
+{
+   for (auto const& I : Input2)
+      Input1[I.first] += I.second;
+   return Input1;
+}
+
+template <typename T>
+angle_map<T>
+operator-=(angle_map<T>& Input1, angle_map<T> const& Input2)
+{
+   for (auto const& I : Input2)
+      Input1[I.first] -= I.second;
+   return Input1;
+}
+
+template <typename T>
+angle_map<T>
+operator+(angle_map<T> const& Input1, angle_map<T> const& Input2)
+{
+   angle_map<T> Result(Input1);
+   Result += Input2;
+   return Result;
+}
+
+template <typename T>
+angle_map<T>
+operator-(angle_map<T> const& Input1, angle_map<T> const& Input2)
+{
+   angle_map<T> Result(Input1);
+   Result -= Input2;
+   return Result;
+}
+
+template <typename T, typename Scalar>
+angle_map<T>
+operator*=(angle_map<T>& Input, Scalar const& x)
+{
+   for (auto& I : Input)
+      I.second *= x;
+   return Input;
+}
+
+template <typename T, typename Scalar>
+angle_map<T>
+operator*(angle_map<T> Input, Scalar const& x)
+{
+   for (auto& I : Input)
+      I.second = I.second * x;
+   return Input;
+}
+
+template <typename T, typename Scalar>
+angle_map<T>
+operator*(Scalar const& x, angle_map<T> Input)
+{
+   for (auto& I : Input)
+      I.second = x * I.second;
+   return Input;
+}
+
 #endif

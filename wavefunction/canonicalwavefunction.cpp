@@ -53,12 +53,6 @@
 PStream::VersionTag
 CanonicalWavefunctionBase::VersionT(4);
 
-CanonicalWavefunctionBase::CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi)
-   : Data(Psi.Data), Lambda(Psi.Lambda),
-     Basis1_(Psi.Basis1_), Basis2_(Psi.Basis2_)
-{
-}
-
 void
 CanonicalWavefunctionBase::check_structure() const
 {
@@ -77,16 +71,6 @@ CanonicalWavefunctionBase::check_structure() const
    this->lambda(this->size()).check_structure();
    CHECK_EQUAL(Basis1_, this->lambda(0).Basis1());
    CHECK_EQUAL(Basis2_, this->lambda(this->size()).Basis2());
-}
-
-CanonicalWavefunctionBase&
-CanonicalWavefunctionBase::operator=(CanonicalWavefunctionBase const& Psi)
-{
-   Data = Psi.Data;
-   Lambda = Psi.Lambda;
-   Basis1_ = Psi.Basis1_;
-   Basis2_ = Psi.Basis2_;
-   return *this;
 }
 
 QuantumNumbers::QuantumNumber

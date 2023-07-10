@@ -389,9 +389,9 @@ StateComponent::operator_type
 TruncateBasis1(StateComponent& A)
 {
    typedef StateComponent::operator_type operator_type;
-   operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A)
+   operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A), Trunc is m x dm matrix
    // Do the singular value decomposition via a (reduced) density matrix
-   DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc));
+   DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc)); // DM is a dm x dm matrix
 
    //   DM.DensityMatrixReport(std::cerr);
    DensityMatrix<operator_type>::const_iterator E = DM.begin();
@@ -420,6 +420,51 @@ TruncateBasis2(StateComponent& A)
    // apply the truncation
    A = prod(A, herm(U));
    return prod(U, Trunc, QuantumNumber(Trunc.GetSymmetryList()));
+}
+
+inline
+StateComponent
+NullSpace1(StateComponent A)
+{
+   StateComponent AOriginal = A;
+   typedef StateComponent::operator_type operator_type;
+   operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A), Trunc is m x dm matrix
+   // Do the singular value decomposition via a (reduced) density matrix
+   DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc)); // DM is a dm x dm matrix
+
+   //   DM.DensityMatrixReport(std::cerr);
+   DensityMatrix<operator_type>::const_iterator E = DM.begin();
+   // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
+   while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;
+   operator_type UOriginal = DM.ConstructTruncator(DM.begin(), E);
+   operator_type UTangent = DM.ConstructTruncator(E, DM.end());
+
+   // original A is Trunc * herm(UOriginal) * UOriginal * A  [final A]
+   DEBUG_CHECK(norm_frob(AOriginal - prod(Trunc * herm(UOriginal) * UOriginal, A)) < 1E-10);
+   StateComponent ANew = prod(UTangent, A);
+
+   DEBUG_CHECK(norm_frob(scalar_prod(AOriginal, herm(ANew))) < 1E-10);
+
+   return ANew;
+}
+
+inline
+StateComponent
+NullSpace2(StateComponent A)
+{
+   typedef StateComponent::operator_type OperatorType;
+   OperatorType Trunc = ExpandBasis2(A);  // the original component is prod(A, Trunc)
+   // Do the singular value decomposition via a (reduced) density matrix
+   DensityMatrix<OperatorType> DM(scalar_prod(Trunc, herm(Trunc)));
+
+   // DM.DensityMatrixReport(std::cerr);
+   DensityMatrix<OperatorType>::const_iterator E = DM.begin();
+   // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
+   while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;
+   OperatorType UOriginal = DM.ConstructTruncator(DM.begin(), E);
+   OperatorType UTangent = DM.ConstructTruncator(E, DM.end());
+
+   return prod(A, herm(UTangent));
 }
 
 // template definitions

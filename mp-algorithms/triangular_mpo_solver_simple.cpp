@@ -47,7 +47,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    EMat.resize(Dim);
 
    if (Verbose > 0)
-      std::cerr << "SolveMPO_Left: dimension is " << Dim << std::endl;
+      std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
 
    // Make sure the (0,0) part is identity
    DEBUG_TRACE(UnityEpsilon);
@@ -56,6 +56,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
       // the (0,0) component isn't the identity operator, which is a fatal error.
       // Show some diagnosics and quit.
       std::cerr << "SolveSimpleMPO_Left: fatal: (0,0) component of the MPO must be the identity operator.\n";
+      PANIC("Fatal");
    }
 
    if (EMat[0].empty())
@@ -184,10 +185,10 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                      int Degree, double Tol,
                      double UnityEpsilon, int Verbose)
 {
-   CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis1(), Psi.Basis1());
-   CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
+   CHECK_EQUAL(Identity.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(Identity.Basis2(), Psi.Basis2());
+   CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
+   CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -404,7 +405,7 @@ SolveHamiltonianMPO_Left(StateComponent& E, InfiniteWavefunctionLeft const& Psi,
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(PsiLinear, Lambda) = get_left_canonical(Psi);
-   MatrixOperator Rho = Lambda*Lambda;
+   MatrixOperator Rho = delta_shift(Lambda*Lambda, Psi.qshift());
    return SolveHamiltonianMPO_Left(E, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }
 
@@ -462,6 +463,6 @@ SolveHamiltonianMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Ps
    LinearWavefunction PsiLinear;
    RealDiagonalOperator Lambda;
    std::tie(Lambda, PsiLinear) = get_right_canonical(Psi);
-   MatrixOperator Rho = Lambda*Lambda;
+   MatrixOperator Rho = delta_shift(Lambda*Lambda, adjoint(Psi.qshift()));
    return SolveHamiltonianMPO_Right(F, PsiLinear, Psi.qshift(), Op, Rho, Tol, Verbose);
 }

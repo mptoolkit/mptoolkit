@@ -21,7 +21,7 @@
 
 // maximum number of iterations used in GMRES.  In some cases of slow convergence
 // it is necessary to increase this.
-int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 50000);
 
 // A note on orthogonalizing vectors in non-orthogonal Hilbert spaces.
 // Suppose <l| and |r> are left and right eigenvectors, satisfying <l|r>=1.
@@ -230,8 +230,6 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                      Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
 
-         DEBUG_TRACE(m)(norm_frob(E[m]))(inner_prod(E[m], Rho));
-
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {
@@ -347,6 +345,31 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
       }
    }
    return F;
+}
+
+KMatrixPolyType
+DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
+                            BasicFiniteMPO const& Diag,
+                            MatrixOperator const& Identity,
+                            MatrixOperator const& Rho,
+                            LinearWavefunction const& Psi1,
+                            LinearWavefunction const& Psi2,
+                            QuantumNumber const& QShift,
+                            std::complex<double> Scale,
+                            bool HasEigenvalue1,
+                            double Tol,
+                            int Verbose)
+{
+   // Identity and Rho are only used if HasEigenvalue1 is true
+   // Components perpendicular to the identity satisfy equation (24)
+   KMatrixPolyType E;
+   for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
+   {
+      std::complex<double> K = I->first;  // the momentum (complex phase)
+      E[K] = DecomposePerpendicularPartsRight(I->second, I->first, Diag, Identity, Rho,
+                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+   }
+   return E;
 }
 
 // Solve the components for the case where the diagonal operator is zero

@@ -72,9 +72,11 @@ int main(int argc, char** argv)
          ("H_Vx"   , "nearest-neighbour Coulomb repulsion in x-direction")
          ("H_Vy"   , "nearest-neighbour Coulomb repulsion in x-direction")
          ("H_V"    , "nearest-neighbour Coulomb repulsion")
-         ("H_delta", "QLM link site potential", "x = 0, y even, QLM enabled",
+         ("H_delta", "QLM gauge site potential", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ("H_eta"  , "QLM forbidden site potential", "x = 0, y even, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
+         ("H_alpha", "QLM matter site interaction", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ;
       OpDescriptions.add_functions()
@@ -159,16 +161,18 @@ int main(int argc, char** argv)
       if (x == 0 && y%2 == 0 && QLM)
       {
          // Define QLM potentials.
-         UnitCellMPO H_delta, H_eta;
+         UnitCellMPO H_delta, H_eta, H_alpha;
 
          for (int i = 0; i < CellSize/2; ++i)
          {
             H_delta += N(0)[2*i+1] + N(1)[2*i];
             H_eta += N(1)[2*i+1];
+            H_alpha += 0.5*N2(0)[2*i];
          }
 
          Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
          Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
+         Lattice["H_alpha"] = sum_unit(H_alpha, 2*CellSize);
 
          // Define Gauss' law operators.
          // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.

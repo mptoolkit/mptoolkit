@@ -81,6 +81,7 @@ int main(int argc, char** argv)
          ("H_ty" , "nearest-neighbor hopping in x-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
+         ("H_J"  , "plaquette interactions")
          ("H_flux"     , "electric flux")
          ("H_stag_flux", "staggered electric flux")
          ;
@@ -114,7 +115,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m, flux, stag_flux;
+      UnitCellMPO tx, ty, m, J, flux, stag_flux;
       // the XY configuration is special
       if (x == 0)
       {
@@ -125,6 +126,10 @@ int main(int argc, char** argv)
             ty += Sp(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Sm(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
             // This term is intentionally negative.
             ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Sm(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
+            J += Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2];
+            J += Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2];
+            J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
+            J += Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y];
             flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
          }
          for (int i = 0; i < 3*y; i += 6)
@@ -153,6 +158,7 @@ int main(int argc, char** argv)
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
       Lattice["H_m"] = sum_unit(m);
+      Lattice["H_J"] = sum_unit(J);
       Lattice["H_flux"] = sum_unit(flux);
       Lattice["H_stag_flux"] = sum_unit(stag_flux);
 

@@ -63,6 +63,7 @@ int main(int argc, char** argv)
          ("H_J1yt"  , "nearest neighbor spin exchange transverse component in the y direction")
          ("H_J1y"  , "nearest neighbor spin exchange in the y direction (H_J1yz + H_J1yt)")
          ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
+         ("H_B1"   , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -71,8 +72,8 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          std::cerr << "Spin cylinder.  Wrapping vector is (x,y).  y is the width, x is the offset.  (0,y) is the\n"
-                   << "YC configuration with width and unit cell size y.  (x,y) is with y cylinder\n"
-                   << "with offset x.  The unit cell size is x.\n";
+                   << "YC configuration with width and unit cell size y.  (x,y) is width y cylinder\n"
+                   << "with offset x.  The unit cell size is x (unless x==0, in which case the cell size is y).\n";
          std::cout << OpDescriptions << '\n';
          return 1;
       }
@@ -84,7 +85,7 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO J1xz, J1xt, J1yz, J1yt;
+      UnitCellMPO J1xz, J1xt, J1yz, J1yt, B1x, B1y;
       // the XY configuration is special
       if (x == 0)
       {
@@ -94,6 +95,9 @@ int main(int argc, char** argv)
             J1xt += 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
             J1yz += Sz(0)[i]*Sz(0)[(i+1)%y];
             J1yt += 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%y] + Sm(0)[i]*Sp(0)[(i+1)%y]);
+
+            B1x += pow(Sz(0)[i]*Sz(1)[i] + 0.5*(Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]), 2);
+            B1y += pow(Sz(0)[i]*Sz(0)[(i+1)%y] + 0.5*(Sp(0)[i]*Sm(0)[(i+1)%y] + Sm(0)[i]*Sp(0)[(i+1)%y]), 2);
          }
       }
       else
@@ -102,13 +106,16 @@ int main(int argc, char** argv)
          {
             J1xz += Sz(0)[i]*Sz(0)[i+1];
             J1xt += 0.5 * (Sp(0)[i]*Sm(0)[i+1] + Sm(0)[i]*Sp(0)[i+1]);
+            B1x += pow(Sz(0)[i]*Sz(0)[i+1] + 0.5*(Sp(0)[i]*Sm(0)[i+1] + Sm(0)[i]*Sp(0)[i+1]), 2);
          }
          J1xz += Sz(0)[x-1]*Sz(y+1)[0];
          J1xt += 0.5 * (Sp(0)[x-1]*Sm(y+1)[0] + Sm(0)[x-1]*Sp(y+1)[0]);
+         B1x += pow(Sz(0)[x-1]*Sz(0)[y+1] + 0.5*(Sp(0)[x-1]*Sm(0)[y+1] + Sm(0)[x-1]*Sp(0)[y+1]), 2);
          for (int i = 0; i < x; ++i)
          {
             J1yz += Sz(0)[i]*Sz(1)[i];
             J1yt += 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
+            B1y += pow(Sz(0)[i]*Sz(1)[i] + 0.5*(Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]), 2);
          }
       }
 
@@ -119,6 +126,7 @@ int main(int argc, char** argv)
       Lattice["H_J1x"] = sum_unit(J1xz+J1xt);
       Lattice["H_J1y"] = sum_unit(J1yz+J1yt);
       Lattice["H_J1"] = sum_unit(J1xz+J1xt+J1yz+J1yt);
+      Lattice["H_B1"] = sum_unit(B1x+B1y);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

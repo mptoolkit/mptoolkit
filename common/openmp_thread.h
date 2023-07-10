@@ -26,42 +26,9 @@
 namespace omp
 {
 
-inline
-void initialize(int Verbose = 0)
-{
-   if (Verbose > 0)
-   {
-      std::cout << "Using OpenMP\n";
-   }
-   int NumProcs = omp_get_num_procs();
-   char const* Str = getenv("MP_NUM_THREADS");
-   if (Str)
-   {
-      int n = std::stoi(std::string(Str));
-      omp_set_num_threads(n);
-      if (Verbose > 0)
-      {
-         std::cout << "MP_NUM_THREADS is " << n << '\n';
-      }
-   }
-   if (Verbose > 0)
-   {
-      std::cout << "Number of processors: " << NumProcs << '\n';
-      std::cout << "Max threads per section: " << omp_get_max_threads() << '\n';
-      #pragma omp parallel
-      {
-         #pragma omp master
-         std::cout << "Actual number of threads: " << omp_get_num_threads() << '\n';
-      }
-      //std::cout << "Max threads: " << omp_get_thread_limit() << '\n';
-   }
-}
+void initialize(int Verbose = 0);
 
-inline
-int threads_to_use(int Request)
-{
-   return Request;
-}
+int threads_to_use(int Request);
 
 } // namespace omp
 

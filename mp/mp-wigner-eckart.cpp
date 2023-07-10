@@ -100,6 +100,7 @@ wigner_project(InfiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
    Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
    Result.setBasis2(W2.AbelianBasis());
+   Result.LogAmplitude = Psi.LogAmplitude;
 
    Result.check_structure();
 
@@ -138,6 +139,7 @@ wigner_project(InfiniteWavefunctionRight const& Psi, SymmetryList const& FinalSL
    Result.push_back_lambda(wigner_eckart(Psi.lambda_r(), IdentP, W2, W2));
 
    Result.setBasis2(W2.AbelianBasis());
+   //Result.LogAmplitude = Psi.LogAmplitude;
 
    Result.check_structure();
 
@@ -153,12 +155,12 @@ wigner_project(WavefunctionSectionLeft const& Psi, SymmetryList const& FinalSL)
 IBCWavefunction
 wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
 {
-   return IBCWavefunction(wigner_project(Psi.Left, FinalSL),
-                          wigner_project(Psi.Window, FinalSL),
-                          wigner_project(Psi.Right, FinalSL),
+   return IBCWavefunction(wigner_project(Psi.left(), FinalSL),
+                          wigner_project(Psi.window(), FinalSL),
+                          wigner_project(Psi.right(), FinalSL),
                           Psi.window_offset(),
-                          Psi.WindowLeftSites,
-                          Psi.WindowRightSites);
+                          Psi.window_left_sites(),
+                          Psi.window_right_sites());
 }
 
 FiniteWavefunctionLeft

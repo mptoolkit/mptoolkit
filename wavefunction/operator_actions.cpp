@@ -85,6 +85,44 @@ inject_left(StateComponent const& In,
 }
 
 MatrixOperator
+inject_left(MatrixOperator const& m,
+            LinearWavefunction const& Psi1,
+            QuantumNumbers::QuantumNumber const& QShift,
+            GenericMPO const& Op,
+            LinearWavefunction const& Psi2)
+{
+   CHECK_EQUAL(Psi1.size(), Psi2.size());
+   DEBUG_CHECK_EQUAL(m.Basis1(), Psi1.Basis2());
+   DEBUG_CHECK_EQUAL(m.Basis2(), Psi2.Basis2());
+   if (Op.is_null())
+      return MatrixOperator();
+
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   CHECK_EQUAL(Op.Basis1()[0], m.TransformsAs());
+   MatrixOperator mm = delta_shift(m, QShift);
+   StateComponent E(Op.Basis1(), mm.Basis1(), mm.Basis2());
+   E[0] = mm;
+   E.debug_check_structure();
+   LinearWavefunction::const_iterator I1 = Psi1.begin();
+   LinearWavefunction::const_iterator I2 = Psi2.begin();
+   GenericMPO::const_iterator OpIter = Op.begin();
+   while (OpIter != Op.end())
+   {
+      if (I1 == Psi1.end())
+      {
+         I1 = Psi1.begin();
+         I2 = Psi2.begin();
+         E = delta_shift(E, QShift);
+      }
+      E = contract_from_left(*OpIter, herm(*I1), E, *I2);
+      ++I1; ++I2; ++OpIter;
+   }
+   return E[0]; //delta_shift(E[0], QShift);
+}
+
+MatrixOperator
 inject_right(MatrixOperator const& m,
              GenericMPO const& Op,
              LinearWavefunction const& Psi)
@@ -147,9 +185,39 @@ inject_right_qshift(MatrixOperator const& m,
    return delta_shift(inject_right(m, Op, Psi), adjoint(QShift));
 }
 
+MatrixOperator
+inject_right(MatrixOperator const& m,
+             LinearWavefunction const& Psi1,
+             QuantumNumbers::QuantumNumber const& QShift,
+             GenericMPO const& Op,
+             LinearWavefunction const& Psi2)
+{
+   PRECONDITION_EQUAL(Psi1.size(), Psi2.size());
+   if (Op.is_null())
+      return MatrixOperator();
 
-
-
+   // we currently only support simple irreducible operators
+   CHECK_EQUAL(Op.Basis1().size(), 1);
+   CHECK_EQUAL(Op.Basis2().size(), 1);
+   StateComponent E(Op.Basis2(), m.Basis1(), m.Basis2());
+   E[0] = m;
+   MatrixOperator Result = m;
+   LinearWavefunction::const_iterator I1 = Psi1.end();
+   LinearWavefunction::const_iterator I2 = Psi2.end();
+   GenericMPO::const_iterator OpIter = Op.end();
+   while (OpIter != Op.begin())
+   {
+      if (I1 == Psi1.begin())
+      {
+         I1 = Psi1.end();
+         I2 = Psi2.end();
+         E = delta_shift(E, adjoint(QShift));
+      }
+      --I1; --I2; --OpIter;
+      E = contract_from_right(herm(*OpIter), *I1, E, herm(*I2));
+   }
+   return delta_shift(E[0], adjoint(QShift));
+}
 
 StateComponent
 contract_from_left_mask(OperatorComponent const& M,

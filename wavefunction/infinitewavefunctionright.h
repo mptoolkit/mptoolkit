@@ -36,26 +36,27 @@ class InfiniteWavefunctionLeft;
 class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 {
    public:
-      InfiniteWavefunctionRight() {}
+      InfiniteWavefunctionRight() = default;
+      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& x) = default;
+      InfiniteWavefunctionRight(InfiniteWavefunctionRight&& x) = default;
+      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight const& Psi) = default;
+      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight&& Psi) = default;
 
-      // construction from a LinearWavefunction (in right-canonical form with
-      // lambda matrix on the left)
-      InfiniteWavefunctionRight(MatrixOperator const& Lambda, LinearWavefunction const& Psi,
-                                QuantumNumbers::QuantumNumber const& QShift_);
-
-      // constructs and canonicalizes the wavefunction
-      InfiniteWavefunctionRight(LinearWavefunction const& Psi,
-                                QuantumNumbers::QuantumNumber const& QShift_);
-
-      InfiniteWavefunctionRight(InfiniteWavefunctionRight const& Psi)
-         : CanonicalWavefunctionBase(Psi), QShift(Psi.QShift) {}
-
-      InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
-
-      InfiniteWavefunctionRight& operator=(InfiniteWavefunctionRight const& Psi)
-      { CanonicalWavefunctionBase::operator=(Psi); QShift = Psi.QShift; return *this; }
+      // Construction from an InfiniteWavefunctionLeft
+      explicit InfiniteWavefunctionRight(InfiniteWavefunctionLeft const& Psi);
 
       QuantumNumber qshift() const { return QShift; }
+
+      double log_amplitude() const { return LogAmplitude; }
+
+      // Scale the wavefunction by the complex number x.  This has the effect of adding
+      // log(x).real() to the log_amplitude, and rotating the first matrix of the unit cell by
+      // x / |x|
+      void scale(std::complex<double> x);
+
+      // Scale the wavefunction by exp(x).  This has the effect of adding x.real() to the
+      // log_amplitude, and rotating the first matrix of the unit cell by exp(i*x.imag())
+      void scale_log(std::complex<double> x);
 
       // Rotates the wavefunction to the left, by taking the left-most site and moving
       // it to the right
@@ -64,9 +65,6 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       // Rotates the wavefunction to the left, by taking the right-most site and moving
       // it to the left
       void rotate_right(int Count);
-
-      // returns the orthogonality fidelity.  Normally this should be epsilon
-      double orthogonality_fidelity() const;
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -84,15 +82,18 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
       void debug_check_structure() const;
 
    private:
-      void Initialize(MatrixOperator const& Lambda, LinearWavefunction const& Psi);
-
+      // The quantum number shift per unit cell
       QuantumNumber QShift;
+
+      // The wavefunction amplitude (log) per unit cell
+      double LogAmplitude;
 
       // All functions that can modify the internal representation but preserve the canonical form
       // are friend functions.  This is so that we have a central list of such functions,
       // so can update them if the class changes.
       friend void inplace_reflect(InfiniteWavefunctionRight& Psi);
       friend void inplace_conj(InfiniteWavefunctionRight& Psi);
+      friend void inplace_qshift(InfiniteWavefunctionRight& Psi, QuantumNumbers::QuantumNumber const& Shift);
       friend InfiniteWavefunctionRight wigner_project(InfiniteWavefunctionRight const& Psi,
                                                       SymmetryList const& FinalSL);
       friend InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi,
@@ -101,6 +102,9 @@ class InfiniteWavefunctionRight : public CanonicalWavefunctionBase
 };
 
 class InfiniteWavefunctionLeft;
+
+// Multiplication by a scalar does the same as psi.scale(x)
+InfiniteWavefunctionRight& operator*=(InfiniteWavefunctionRight& psi, std::complex<double> x);
 
 // Convert a, infinite wavefunction to right-canonical form,
 // and returns the Lambda matrix on the right-hand-side.
@@ -127,7 +131,7 @@ get_right_canonical(InfiniteWavefunctionRight const& Psi);
 // herm(U)*lambda*(U) and transform Psi as Psi*U.  This makes lambda no longer a diagonal operator.
 // The other alternative is to keep lambda as diagonal, but change the basis at the unit cell
 // boundary.  To do this, transform Psi as U*Psi.
-std::tuple<LinearWavefunction, RealDiagonalOperator, MatrixOperator>
+std::tuple<LinearWavefunction, RealDiagonalOperator>
 get_left_canonical(InfiniteWavefunctionRight const& Psi);
 
 // function to extract the local basis (as a vector of BasisList) from a wavefunction
@@ -139,6 +143,23 @@ ExtractLocalBasis(InfiniteWavefunctionRight const& Psi)
    return ExtractLocalBasis(get_right_canonical(Psi).second);
 }
 
+// calculates the overlap of two iMPS, per unit cell.
+// The eigenvector can be in any allowable symmetry sector.
+// x and y must have the same size
+std::pair<std::complex<double>, StateComponent>
+overlap(InfiniteWavefunctionRight const& x,  InfiniteWavefunctionRight const& y,
+        QuantumNumbers::QuantumNumber const& Sector,
+        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
+
+// This version allows the wavefunctions and operator to have different sizes.
+// The overlap is returned as a quantity per length, which is the lowest
+// common multiple of x.size(), y.size(), StringOp.size()
+// The length is returned as the second component of the tuple
+std::tuple<std::complex<double>, int, StateComponent>
+overlap(InfiniteWavefunctionRight const& x, ProductMPO const& StringOp,
+        InfiniteWavefunctionRight const& y,
+        QuantumNumbers::QuantumNumber const& Sector,
+        int Iter = 20, double Tol = 1E-12, int Verbose = 0);
 
 // Reflect a wavefunction in place
 void inplace_reflect(InfiniteWavefunctionRight& Psi);

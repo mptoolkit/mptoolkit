@@ -43,12 +43,12 @@ typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                             VectorBasis,
                             VectorBasis> MatrixOperator;
 
- inline
- MatrixOperator
- commutator(MatrixOperator const& x, MatrixOperator const& y)
- {
-    return x*y - y*x;
- }
+inline
+MatrixOperator
+commutator(MatrixOperator const& x, MatrixOperator const& y)
+{
+   return x*y - y*x;
+}
 
 // an operator that acts trivially in each subspace
 typedef IrredTensor<LinearAlgebra::ScalarMatrix<std::complex<double>>,
@@ -63,7 +63,7 @@ typedef IrredTensor
    , VectorBasis
    , Tensor::DiagonalStructure
    >
-RealDiagonalOperator;
+RealDiagonalOperator; // typedef
 
 // RealSemiDiagonalOperator is an IrredTensor that is not diagonal
 // in the outer index, but made up of a DiagonalMatrix.  This
@@ -534,6 +534,30 @@ StateComponent prod(StateComponent const& A, HermitianProxy<MatrixOperator> cons
 StateComponent prod(MatrixOperator const& Op, StateComponent const& A);
 
 StateComponent prod(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A);
+
+inline
+StateComponent operator*(StateComponent const& A, MatrixOperator const& Op)
+{
+   return prod(A, Op);
+}
+
+inline
+StateComponent operator*(StateComponent const& A, HermitianProxy<MatrixOperator> const& Op)
+{
+   return prod(A, Op);
+}
+
+inline
+StateComponent operator*(MatrixOperator const& Op, StateComponent const& A)
+{
+   return prod(Op, A);
+}
+
+inline
+StateComponent operator*(HermitianProxy<MatrixOperator> const& Op, StateComponent const& A)
+{
+   return prod(Op, A);
+}
 
 namespace LinearAlgebra
 {

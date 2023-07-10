@@ -53,8 +53,8 @@ LatticeSite SpinSite(half_int Spin)
    {
       OpDescriptions.add_operators()
          ("X", "Pauli Sigma-X")
-         ("Y", "Pauli Sigma-X")
-         ("Z", "Pauli Sigma-X")
+         ("Y", "Pauli Sigma-Y")
+         ("Z", "Pauli Sigma-Z")
          ;
    }
 

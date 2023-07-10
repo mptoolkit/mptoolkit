@@ -32,15 +32,20 @@ namespace Tensor
 //(ie. at most one subspace per quantum number).
 // Note, this interface differs from LinearAlgebra::DiagonalizeSymmetric
 IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x);
+DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>& x);
 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                      VectorBasis, VectorBasis>& x);
 
-LinearAlgebra::Vector<double>
-EigenvaluesHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-                     VectorBasis, VectorBasis> const& x);
+// This version returns a diagonal matrix
+std::tuple<IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>,
+           IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>>
+DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> x);
+
+std::tuple<IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>,
+           IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> x);
 
 void
 InvertHPD(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>& x);
@@ -154,12 +159,25 @@ IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<T>,
                VectorBasis, VectorBasis> const& Op);
 
+// Take the diagonal part of a tensor
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractDiagonal(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> A);
+
+// Take the real diagonal part of a tensor
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+ExtractDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<T>>, VectorBasis, VectorBasis> A);
 
 // takes the square root of a positive diagonal matrix, with some allowance
 // for a slightly negative entry (within -tol)
-IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-SqrtDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-             VectorBasis, VectorBasis> const& Op, double Tol = 1E-15);
+IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double>>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<std::complex<double>>,
+             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-14);
+
+IrredTensor<LinearAlgebra::DiagonalMatrix<double>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+SqrtDiagonal(IrredTensor<LinearAlgebra::DiagonalMatrix<double>,
+             VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& Op, double Tol = 1E-14);
 
 // Cholesky factorization of a hermitian positive definite matrix.  We assume here that
 // Basis1 == Basis2

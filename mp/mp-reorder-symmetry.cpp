@@ -59,6 +59,7 @@ InfiniteWavefunctionLeft ReorderSymmetry(InfiniteWavefunctionLeft const& Psi, Sy
 
    Result.setBasis1(Result.lambda_l().Basis1());
    Result.setBasis2(Result.lambda_r().Basis2());
+   Result.LogAmplitude = Psi.LogAmplitude;
 
    return Result;
 }
@@ -78,6 +79,8 @@ InfiniteWavefunctionRight ReorderSymmetry(InfiniteWavefunctionRight const& Psi, 
 
    Result.setBasis1(Result.lambda_l().Basis1());
    Result.setBasis2(Result.lambda_r().Basis2());
+   //Result.LogAmplitude = Psi.LogAmplitude;
+
    return Result;
 }
 
@@ -99,12 +102,12 @@ WavefunctionSectionLeft ReorderSymmetry(WavefunctionSectionLeft const& Psi, Symm
 
 IBCWavefunction ReorderSymmetry(IBCWavefunction const& Psi, SymmetryList const& NewSL)
 {
-   return IBCWavefunction(ReorderSymmetry(Psi.Left, NewSL),
-                          ReorderSymmetry(Psi.Window, NewSL),
-                          ReorderSymmetry(Psi.Right, NewSL),
+   return IBCWavefunction(ReorderSymmetry(Psi.left(), NewSL),
+                          ReorderSymmetry(Psi.window(), NewSL),
+                          ReorderSymmetry(Psi.right(), NewSL),
                           Psi.window_offset(),
-                          Psi.WindowLeftSites,
-                          Psi.WindowRightSites);
+                          Psi.window_left_sites(),
+                          Psi.window_right_sites());
 }
 
 FiniteWavefunctionLeft ReorderSymmetry(FiniteWavefunctionLeft const& Psi, SymmetryList const& NewSL)

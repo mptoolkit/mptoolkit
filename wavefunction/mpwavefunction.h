@@ -35,9 +35,9 @@
 #include "interface/history.h"
 
 typedef boost::variant<InfiniteWavefunctionLeft,
-		       IBCWavefunction,
-		       FiniteWavefunctionLeft,
-		       InfiniteWavefunctionRight> WavefunctionTypes;
+                       IBCWavefunction,
+                       FiniteWavefunctionLeft,
+                       InfiniteWavefunctionRight> WavefunctionTypes;
 
 class InvalidWavefunction : public std::runtime_error
 {

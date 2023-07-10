@@ -102,6 +102,7 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
+// **DEPRECATED**
 template <typename T>
 std::complex<double>
 FindClosestUnitEigenvalue(MatrixOperator& M, T Func, double tol, int Verbose)
@@ -177,6 +178,19 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  BasicFiniteMPO const& Diag,
                                  MatrixOperator const& Identity,
                                  MatrixOperator const& Rho,
+                                 LinearWavefunction const& Psi1,
+                                 LinearWavefunction const& Psi2,
+                                 QuantumNumber const& QShift,
+                                 std::complex<double> Scale,
+                                 bool HasEigenvalue1,
+                                 double Tol,
+                                 int Verbose);
+
+KMatrixPolyType
+DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
+                                 BasicFiniteMPO const& Diag,
+                                 MatrixOperator const& UnitMatrixLeft,
+                                 MatrixOperator const& UnitMatrixRight,
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,

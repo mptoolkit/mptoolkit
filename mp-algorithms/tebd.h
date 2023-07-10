@@ -41,12 +41,19 @@ class LTSDecomposition
          CHECK_CLOSE(std::accumulate(b.begin(), b.end(), 0.0), 1.0);
       }
 
+      int order() const { return Order_; }
+      std::string description() const { return Description_; }
+      std::vector<double> const& a() const { return a_; }
+      std::vector<double> const& b() const { return b_; }
+
+   private:
       int Order_;
       std::string Description_;
       std::vector<double> a_;
       std::vector<double> b_;
 };
 
+// The list of all available decompositions.  See tebd.cpp for the complete list
 extern std::map<std::string, LTSDecomposition> Decompositions;
 
 // Do a TEBD iteration.

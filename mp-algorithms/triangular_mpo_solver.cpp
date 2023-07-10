@@ -19,7 +19,9 @@
 
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
+
 #include "schwinger_hack.h"
+#include "transfer.h"
 
 void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
@@ -149,16 +151,18 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
             // Find the largest eigenvalue
             // We need initial guess vectors in the correct symmetry sector
-            UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
+            //UnitMatrixLeft = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
 
             DEBUG_TRACE(norm_frob(UnitMatrixLeft));
             double lnorm = norm_frob(UnitMatrixLeft);
             //UnitMatrixLeft *= 1.0 / lnorm;
             //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
             //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
-               std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
-                                                                     InjectLeftQShift(Diag, Psi, QShift),
-                                                                     Tol, Verbose);
+            std::complex<double> EtaL;
+            std::tie(EtaL, UnitMatrixLeft) = get_left_transfer_eigenvector(Psi, Psi, QShift, ProductMPO(Diag), Tol, Verbose);
+             // = FindClosestUnitEigenvalue(UnitMatrixLeft,
+             //                                                         InjectLeftQShift(Diag, Psi, QShift),
+             //                                                         Tol, Verbose);
             //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
             if (Verbose > 0)
@@ -171,16 +175,18 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                   std::cerr << "Found an eigenvalue 1, so we need the right eigenvector..." << std::endl;
 
                // we have an eigenvalue of magnitude 1.  Find the right eigenvalue too
-               UnitMatrixRight = UnitMatrixLeft;
-               UnitMatrixRight = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
+               //UnitMatrixRight = UnitMatrixLeft;
+               //UnitMatrixRight = MakeRandomMatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), Diag.Basis2()[0]);
                //UnitMatrixRight *= 1.0 / norm_frob(UnitMatrixRight);
                DEBUG_TRACE(norm_frob(UnitMatrixRight));
                double ddd = norm_frob(UnitMatrixRight);
                //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
-               std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
-                                                                     InjectRightQShift(Diag, Psi,
-                                                                                       QShift),
-                                                                     Tol, Verbose);
+               std::complex<double> EtaR;
+               std::tie(EtaR, UnitMatrixRight) = get_right_transfer_eigenvector(Psi, Psi, QShift, ProductMPO(Diag), Tol, Verbose);
+                // = FindClosestUnitEigenvalue(UnitMatrixRight,
+                //                                                      InjectRightQShift(Diag, Psi,
+                //                                                                        QShift),
+                //                                                      Tol, Verbose);
                //UnitMatrixRight *= 3.141;
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;

@@ -84,6 +84,10 @@ class CanonicalWavefunctionBase
       RealDiagonalOperator lambda_l() const { return this->lambda(0); }
       RealDiagonalOperator lambda_r() const { return this->lambda(this->size()); }
 
+      // shortcuts to the density operators
+      RealDiagonalOperator density_l() const { return this->lambda(0) * this->lambda(0); }
+      RealDiagonalOperator density_r() const { return this->lambda(this->size()) * this->lambda(this->size()); }
+
       // precondition: is_irreducible
       QuantumNumbers::QuantumNumber TransformsAs() const;
 
@@ -110,7 +114,7 @@ class CanonicalWavefunctionBase
       { DEBUG_RANGE_CHECK_OPEN(i, 0, int(Data.size())); return *Data[i].lock(); }
 
       // returns the final MPS matrix
-      mps_type get_back() { return *Data.back().lock(); }
+      mps_type get_back() const { return *Data.back().lock(); }
 
       // returns the lambda matrix at partition i
       lambda_type lambda(int i) const
@@ -123,10 +127,14 @@ class CanonicalWavefunctionBase
 
    protected:
       // don't allow construction except via derived classes
-      CanonicalWavefunctionBase() {}
-      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi);
+      CanonicalWavefunctionBase() = default;
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase const& Psi) = default;
+      CanonicalWavefunctionBase(CanonicalWavefunctionBase&& Psi) = default;
 
-      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi);
+      CanonicalWavefunctionBase(VectorBasis const& B1, VectorBasis const& B2) {}
+
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase const& Psi) = default;
+      CanonicalWavefunctionBase& operator=(CanonicalWavefunctionBase&& Psi) = default;
 
       // non-const iterators.  Note the final underscore to prevent mismatches with the const versions
 
@@ -154,6 +162,27 @@ class CanonicalWavefunctionBase
       void set(int i, mps_type const& A) { Data[i] = new mps_type(A); }
       void set_back(mps_type const& A) { Data.back() = new mps_type(A); }
       void set_lambda(int i, lambda_type const& L) { Lambda[i] = new lambda_type(L); }
+
+      // set the A-matrices from a container
+      template <typename I1, typename I2>
+      void set_A_matrices_from_handle(I1 first, I2 last)
+      {
+         Data = mps_container_type(first, last);
+      }
+
+      // set the Lambda-matrices from a container
+      template <typename I1, typename I2>
+      void set_lambda_matrices(I1 first, I2 last)
+      {
+         Lambda = lambda_container_type(last-first);
+         int i = 0;
+         while (first != last)
+         {
+            this->set_lambda(i, *first);
+            ++i;
+            ++first;
+         }
+      }
 
       void setBasis1(VectorBasis const& B) { Basis1_ = B; }
       void setBasis2(VectorBasis const& B) { Basis2_ = B; }

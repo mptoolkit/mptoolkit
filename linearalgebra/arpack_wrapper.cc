@@ -25,15 +25,79 @@
 namespace LinearAlgebra
 {
 
+inline std::string ToStr(WhichEigenvalues w)
+{
+   switch (w)
+   {
+      case WhichEigenvalues::LargestMagnitude : return "LM";
+      case WhichEigenvalues::SmallestMagnitude : return "SM";
+      case WhichEigenvalues::LargestReal : return "LR";
+      case WhichEigenvalues::SmallestReal : return "SR";
+      case WhichEigenvalues::LargestImag : return "LI";
+      case WhichEigenvalues::SmallestImag : return "SI";
+      case WhichEigenvalues::LargestAlgebraic : return "LA";
+      case WhichEigenvalues::SmallestAlgebraic : return "SA";
+      case WhichEigenvalues::BothEnds : return "BE";
+   }
+   return "(unknown)";
+}
+
+struct CompareEigenvalues
+{
+   CompareEigenvalues(WhichEigenvalues w_) : w(w_) {}
+
+   template <typename T>
+   bool operator()(T a, T b)
+   {
+      switch (w)
+      {
+         case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
+         case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
+         case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
+         case WhichEigenvalues::LargestImag : return false;
+         case WhichEigenvalues::SmallestImag : return false;
+         case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
+         case WhichEigenvalues::BothEnds : return a < b;
+      }
+      return false;
+   }
+
+   template <typename T>
+   bool operator()(std::complex<T> a, std::complex<T> b)
+   {
+      switch (w)
+      {
+         case WhichEigenvalues::LargestMagnitude : return std::abs(a) > std::abs(b);
+         case WhichEigenvalues::SmallestMagnitude : return std::abs(a) < std::abs(b);
+         case WhichEigenvalues::LargestReal : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestReal : return std::real(a) < std::real(b);
+         case WhichEigenvalues::LargestImag : return std::imag(a) > std::imag(b);
+         case WhichEigenvalues::SmallestImag : return std::imag(a) < std::imag(b);
+         case WhichEigenvalues::LargestAlgebraic : return std::real(a) > std::real(b);
+         case WhichEigenvalues::SmallestAlgebraic : return std::real(a) < std::real(b);
+         case WhichEigenvalues::BothEnds : PANIC("undefined"); return false;
+      }
+      PANIC("invalid");
+      return false;
+   }
+
+   WhichEigenvalues w;
+};
+
 template <typename MultFunc>
-Vector<std::complex<double> >
-DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
+Vector<std::complex<double>>
+DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, std::complex<double> const* InitialGuess, double tol,
                   std::vector<std::complex<double>>* OutputVectors,
                   int ncv, bool Sort, int Verbose)
 {
+   std::set<WhichEigenvalues> ValidEigenvaluesComplex = { WhichEigenvalues::LargestMagnitude, WhichEigenvalues::SmallestMagnitude, WhichEigenvalues::LargestReal, WhichEigenvalues::SmallestReal, WhichEigenvalues::LargestImag, WhichEigenvalues::SmallestImag };
+
+   CHECK(ValidEigenvaluesComplex.count(which))("Invalid eigenvalue selection for DiagonalizeARPACK<complex>()");
    if (Verbose >= 1)
    {
-      std::cerr << "Total dimension = " << n << '\n';
+      std::cerr << "Total dimension = " << n << std::endl;
    }
    // save the arpack debug log level so we can restore it later
    int DebugOutputLevelSave = ARPACK::debug().mceupd;
@@ -53,7 +117,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       // more elements in the array than expected.  Truncate the eigenvalue array if we get more than expected.
       if (Verbose >= 1)
       {
-         std::cerr << "Constructing matrix for direct diagonalization\n";
+         std::cerr << "Constructing matrix for direct diagonalization" << std::endl;
       }
       LinearAlgebra::Vector<std::complex<double>> e(n, 0.0), Out(n);
       LinearAlgebra::Matrix<std::complex<double>> Mat(n, n);
@@ -68,7 +132,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       Result = LinearAlgebra::Diagonalize(Mat, LV, RV);
       if (OutputVectors)
       {
-         (*OutputVectors) = std::vector<std::complex<double> >(n*n);
+         (*OutputVectors) = std::vector<std::complex<double>>(n*n);
          for (int k =0; k < n; ++k)
          {
             LinearAlgebra::make_vec(&(*OutputVectors)[n*k], n) = RV(k, LinearAlgebra::all);
@@ -83,11 +147,11 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       // arpack parameters
       int ido = 0;  // first call
       char bmat = 'I'; // standard eigenvalue problem
-      char which[3] = "LM";                      // largest magnitude
+      std::string w = ToStr(which);
       int const nev = std::min(NumEigen, n-2); // number of eigenvalues to be computed
-      std::vector<std::complex<double> > resid(n);  // residual
+      std::vector<std::complex<double>> resid(n);  // residual
       ncv = std::min(std::max(ncv, 2*nev + 10), n);            // length of the arnoldi sequence
-      std::vector<std::complex<double> > v(n*ncv);   // arnoldi vectors
+      std::vector<std::complex<double>> v(n*ncv);   // arnoldi vectors
       int const ldv = n;
       ARPACK::iparam_t iparam;
       iparam.ishift = 1;      // exact shifts
@@ -98,18 +162,22 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       int const lworkl = 3*ncv*ncv + 5*ncv;
       std::vector<std::complex<double>> workl(lworkl);
       std::vector<double> rwork(ncv);
-      int info = 0;  // no initial residual
+      if (InitialGuess)
+      {
+         std::copy(InitialGuess, InitialGuess+n, resid.data());
+      }
+      int info = InitialGuess ? 1 : 0;  // this is the indicator whether to use the initial residual, or create one randomly
 
       if (Verbose >= 1)
       {
-         std::cerr << "Starting ARPACK mode LM\n";
+         std::cerr << "Starting ARPACK mode " << w << std::endl;
          if (Verbose >= 2)
-            std::cerr << "n=" << n << ", nev=" << nev << ", ncv=" << ncv << '\n';
+            std::cerr << "n=" << n << ", nev=" << nev << ", ncv=" << ncv << std::endl;
       }
 
       int NumMultiplies = 0;
 
-      ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
+      ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
                      &v[0], ldv, &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
       CHECK(info >= 0)(info)(n)(nev)(ncv);
@@ -128,7 +196,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
             PANIC("unexpected reverse communication operation.")(ido);
          }
 
-         ARPACK::znaupd(&ido, bmat, n, which, nev, tol, &resid[0], ncv,
+         ARPACK::znaupd(&ido, bmat, n, w.c_str(), nev, tol, &resid[0], ncv,
                         &v[0], ldv, &iparam, &ipntr, &workd[0],
                         &workl[0], lworkl, &rwork[0], &info);
          if (info == -9)
@@ -136,6 +204,10 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
             // info == -9 indicates that the starting vector is zero.  Since we have already done a matrix-vector
             // multiply, the only way this can happen is if the matrix itself is zero.  Hence we know what the
             // eigenvalues are.
+            if (Verbose >= 1)
+            {
+               std::cerr << "ARPACK early return; matrix is zero.\n";
+            }
             Result = LinearAlgebra::Vector<std::complex<double>>(nev, std::complex<double>(0.0, 0.0));
             if (OutputVectors)
             {
@@ -154,7 +226,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
 
       if (Verbose >= 1)
       {
-         std::cerr << "\nFinished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << '\n';
+         std::cerr << "Finished ARPACK, nev=" << nev << ", ncv=" << ncv << ", NumMultiplies=" << NumMultiplies << " " << iparam << std::endl;
       }
 
       // get the eigenvalues
@@ -167,7 +239,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
       std::complex<double> sigma;   // not referenced
       std::vector<std::complex<double>> workev(2*ncv);
       ARPACK::zneupd(rvec, howmny, &select[0], &d[0], &z[0], ldz, sigma, &workev[0],
-                     bmat, n, which, nev, tol, &resid[0], ncv, &v[0], ldv,
+                     bmat, n, w.c_str(), nev, tol, &resid[0], ncv, &v[0], ldv,
                      &iparam, &ipntr, &workd[0],
                      &workl[0], lworkl, &rwork[0], &info);
       CHECK(info >= 0)("arpack::zneupd")(info)(nev)(ncv);
@@ -184,22 +256,22 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, double tol,
          OutputVectors->empty();
          std::swap(z, *OutputVectors);
       }
-
    }
 
    if (Sort)
    {
+      CompareEigenvalues C(which);
       // a simple exchange sort
       for (unsigned i = 0; i < Result.size()-1; ++i)
       {
          for (unsigned j = i+1; j < Result.size(); ++j)
          {
-            if (norm_frob(Result[j]) > norm_frob(Result[i]))
+            if (C(Result[j], Result[i]))
             {
                std::swap(Result[i], Result[j]);
                if (OutputVectors)
                {
-                  std::vector<std::complex<double> > Temp(&(*OutputVectors)[n*i],
+                  std::vector<std::complex<double>> Temp(&(*OutputVectors)[n*i],
                                                           &(*OutputVectors)[n*i]+n);
                   LinearAlgebra::fast_copy(&(*OutputVectors)[n*j],
                                            &(*OutputVectors)[n*j]+n,

@@ -43,9 +43,11 @@ int main(int argc, char** argv)
       std::string PsiStr;
       std::string Expression;
       int UnitCell = 0;
+      bool Log = false;
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("unitcell,u", prog_opt::value(&UnitCell), "For iMPS, interpret the scaling factor as per this unit cell size")
+         ("log", prog_opt::bool_switch(&Log), "For an iMPS, interpret the value as the logarithm of the scale factor")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
          ("help", "show this help message")
          ;
@@ -85,6 +87,10 @@ int main(int argc, char** argv)
 
       if (Psi->is<FiniteWavefunctionLeft>())
       {
+         if (vm.count("log"))
+         {
+            x = std::exp(x);
+         }
          if (vm.count("unitcell"))
          {
             std::cerr << basename(argv[0]) << ": error: <unitcell> option is not valid for finite wavefunctions.\n";
@@ -94,17 +100,55 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionLeft>())
       {
-         if (vm.count("unitcell"))
+         if (vm.count("log"))
          {
-            int u = Psi->get<InfiniteWavefunctionLeft>().size();
-            x = std::pow(x, double(u) / double(UnitCell));
-            if (Verbose > 0)
+            if (vm.count("unitcell"))
             {
-               std::cout << "Rescaling to unit cell " << UnitCell << " with scaling factor "
-                  << format_complex(x) << '\n';
+               int u = Psi->get<InfiniteWavefunctionLeft>().size();
+               x = x * (double(u) / double(UnitCell));
             }
+            Psi.mutate()->get<InfiniteWavefunctionLeft>().scale_log(x);
          }
-         Psi.mutate()->get<InfiniteWavefunctionLeft>() *= x;
+         else
+         {
+            if (vm.count("unitcell"))
+            {
+               int u = Psi->get<InfiniteWavefunctionLeft>().size();
+               x = std::pow(x, double(u) / double(UnitCell));
+               if (Verbose > 0)
+               {
+                  std::cout << "Rescaling to unit cell " << UnitCell << " with scaling factor "
+                     << format_complex(x) << '\n';
+               }
+            }
+            Psi.mutate()->get<InfiniteWavefunctionLeft>() *= x;
+         }
+      }
+      else if (Psi->is<InfiniteWavefunctionRight>())
+      {
+         if (vm.count("log"))
+         {
+            if (vm.count("unitcell"))
+            {
+               int u = Psi->get<InfiniteWavefunctionRight>().size();
+               x = x * (double(u) / double(UnitCell));
+            }
+            Psi.mutate()->get<InfiniteWavefunctionRight>().scale_log(x);
+         }
+         else
+         {
+            if (vm.count("unitcell"))
+            {
+               int u = Psi->get<InfiniteWavefunctionRight>().size();
+               x = std::pow(x, double(u) / double(UnitCell));
+               if (Verbose > 0)
+               {
+                  std::cout << "Rescaling to unit cell " << UnitCell << " with scaling factor "
+                     << format_complex(x) << '\n';
+               }
+            }
+            Psi.mutate()->get<InfiniteWavefunctionRight>() *= x;
+         }
       }
       else
       {

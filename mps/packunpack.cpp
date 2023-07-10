@@ -24,6 +24,11 @@
 // PackMatrixOperator
 //
 
+PackMatrixOperator::PackMatrixOperator(VectorBasis const& Basis1, VectorBasis const& Basis2)
+: PackMatrixOperator(Basis1, Basis2, QuantumNumbers::QuantumNumber(Basis1.GetSymmetryList()))
+{
+}
+
 void PackMatrixOperator::Initialize(VectorBasis const& Basis1,
                                      VectorBasis const& Basis2,
                                      QuantumNumbers::QuantumNumber const& q)
