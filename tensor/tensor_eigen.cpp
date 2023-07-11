@@ -50,28 +50,25 @@ DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<double>, VectorBas
 }
 
 
-IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
+DiagonalizeHermitianInPlace(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>,
                      VectorBasis, VectorBasis>& x)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
       TensorType;
 
    DEBUG_CHECK(is_scalar(x.TransformsAs()));
    DEBUG_CHECK_EQUAL(x.Basis1(), x.Basis2());
-   //   DEBUG_CHECK(is_regular_basis(x.Basis1()))(x.Basis1());
 
    // handle the case of a non-regular basis
    if (!is_regular_basis(x.Basis1()))
    {
-      IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-         U = Regularize(x.Basis1());
-      IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-         M = triple_prod(U, x, herm(U));
-      IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
-         Result = DiagonalizeHermitianInPlace(M);
-      x = triple_prod(herm(U), M, U);
-      return triple_prod(herm(U), Result, U);
+      DEBUG_WARNING("DiagonalizeHermitianInPlace with an irregular basis");
+      Regularizer R(x.Basis1());
+      auto M = RegularizeBasis12(R, x, R);
+      auto Result = UnregularizeBasis12(R, DiagonalizeHermitianInPlace(M), R);
+      M = UnregularizeBasis12(R, M, R);
+      return Result;
    }
 
    TensorType Result(x);
@@ -125,12 +122,11 @@ DiagonalizeHermitian(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, Ve
    // handle the case of a non-regular basis
    if (!is_regular_basis(x.Basis1()))
    {
-      auto U = Regularize(x.Basis1());
-      x = triple_prod(U, x, herm(U));
+      Regularizer R(x.Basis1());
+      x = RegularizeBasis12(R, x, R);
       auto Result = DiagonalizeHermitian(x);
-      std::get<1>(Result) = triple_prod(herm(U), std::get<1>(Result), U);
-      PANIC("Not implemented");
-      //std::get<0>(Result) = triple_prod(herm(U), std::get<0>(Result), U);
+      std::get<1>(Result) = UnregularizeBasis12(R, std::get<1>(Result), R);
+      std::get<0>(Result) = UnregularizeBasis12(R, std::get<0>(Result), R);
       return Result;
    }
 
@@ -199,10 +195,10 @@ InvertIrregularHPD(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, Vec
 {
    DEBUG_CHECK(is_scalar(x.TransformsAs()));
    DEBUG_CHECK_EQUAL(x.Basis1(), x.Basis2());
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> U = Regularize(x.Basis1());
-   x = triple_prod(U, x, herm(U));
+   Regularizer R(x.Basis1());
+   x = RegularizeBasis12(R, x, R);
    InvertHPD(x);
-   x = triple_prod(herm(U), x, U);
+   x = UnregularizeBasis12(R, x, R);
 }
 
 void
@@ -298,12 +294,12 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
    }
    // else
 
-   MatrixOperator U1 = Regularize(m.Basis1());
-   MatrixOperator U2 = Regularize(m.Basis2());
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
 
-   SingularValueDecompositionRegular(triple_prod(U1, m, herm(U2)), U, D, Vh);
-   U = herm(U1) * U;
-   Vh = Vh * U2;
+   SingularValueDecompositionRegular(RegularizeBasis12(R1, m, R2), U, D, Vh);
+   U = UnregularizeBasis1(R1, U);
+   Vh = UnregularizeBasis2(Vh, R2);
 }
 
 void
@@ -717,12 +713,12 @@ SingularValueDecompositionFull(IrredTensor<LinearAlgebra::Matrix<std::complex<do
    }
    // else
 
-   MatrixOperator U1 = Regularize(m.Basis1());
-   MatrixOperator U2 = Regularize(m.Basis2());
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
 
-   SingularValueDecompositionFullRegular(triple_prod(U1, m, herm(U2)), U, D, Vh);
-   U = herm(U1) * U;
-   Vh = Vh * U2;
+   SingularValueDecompositionFullRegular(RegularizeBasis12(R1, m, R2), U, D, Vh);
+   U = UnregularizeBasis1(R1, U);
+   Vh = UnregularizeBasis2(Vh, R2);
 }
 
 void
@@ -746,12 +742,12 @@ SingularValueDecompositionKeepBasis1(IrredTensor<LinearAlgebra::Matrix<std::comp
    }
    // else
 
-   MatrixOperator U1 = Regularize(m.Basis1());
-   MatrixOperator U2 = Regularize(m.Basis2());
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
 
-   SingularValueDecompositionKeepBasis1Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
-   U = herm(U1) * U;
-   Vh = Vh * U2;
+   SingularValueDecompositionKeepBasis1Regular(RegularizeBasis12(R1, m, R2), U, D, Vh);
+   U = UnregularizeBasis1(R1, U);
+   Vh = UnregularizeBasis2(Vh, R2);
 }
 
 void
@@ -775,19 +771,19 @@ SingularValueDecompositionKeepBasis2(IrredTensor<LinearAlgebra::Matrix<std::comp
    }
    // else
 
-   MatrixOperator U1 = Regularize(m.Basis1());
-   MatrixOperator U2 = Regularize(m.Basis2());
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
 
-   SingularValueDecompositionKeepBasis1Regular(triple_prod(U1, m, herm(U2)), U, D, Vh);
-   U = herm(U1) * U;
-   Vh = Vh * U2;
+   SingularValueDecompositionKeepBasis1Regular(RegularizeBasis12(R1, m, R2), U, D, Vh);
+   U = UnregularizeBasis1(R1, U);
+   Vh = UnregularizeBasis2(Vh, R2);
 }
 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                VectorBasis, VectorBasis> const& Op, double Cutoff)
 {
-   IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
       Result(Op.Basis2(), Op.Basis1());
 
    for (unsigned i = 0; i < Op.Basis1().size(); ++i)
@@ -947,8 +943,8 @@ CholeskyFactorizeUpper(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    if (is_regular_basis(m.Basis1()))
       return CholeskyFactorizeUpperRegular(m);
    // else
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> R = Regularize(m.Basis1());
-   return triple_prod(herm(R), CholeskyFactorizeUpperRegular(triple_prod(R, m, herm(R))), R);
+   Regularizer R(m.Basis1());
+   return UnregularizeBasis12(R, CholeskyFactorizeUpperRegular(RegularizeBasis12(R, m, R)), R);
 }
 
 // CholeskyFactorizeLower
@@ -994,8 +990,8 @@ CholeskyFactorizeLower(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    if (is_regular_basis(m.Basis1()))
       return CholeskyFactorizeLowerRegular(m);
    // else
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> R = Regularize(m.Basis1());
-   return triple_prod(herm(R), CholeskyFactorizeLowerRegular(triple_prod(R, m, herm(R))), R);
+   Regularizer R(m.Basis1());
+   return UnregularizeBasis12(R, CholeskyFactorizeLowerRegular(RegularizeBasis12(R, m, R)), R);
 }
 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
@@ -1028,8 +1024,8 @@ SingularFactorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
    if (is_regular_basis(m.Basis1()))
       return SingularFactorizeRegular(m);
    // else
-   IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> R = Regularize(m.Basis1());
-   return triple_prod(herm(R), SingularFactorize(triple_prod(R, m, herm(R))), R);
+   Regularizer R(m.Basis1());
+   return UnregularizeBasis12(R, SingularFactorize(RegularizeBasis12(R, m, R)), R);
 }
 
 } // namespace Tensor

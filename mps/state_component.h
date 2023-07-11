@@ -28,6 +28,7 @@
 #include "tensor/tensorsum.h"
 #include "tensor/basis.h"
 #include "tensor/tensorproduct.h"
+#include "tensor/regularize.h"
 #include "linearalgebra/scalarmatrix.h"
 
 using namespace Tensor;
@@ -693,13 +694,43 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
 
 enum Normalization { Intensive, Extensive };
 
+// Expands the Basis1 of A so that it is dm dimensional and orthogonalized, such that
+// A = Result' * A', and Result' is a m x dm matrix
 MatrixOperator ExpandBasis1(StateComponent& A);
+
+// Expands the Basis2 of A so that it is dm dimensional and orthogonalized, such that
+// A = A' * Result', and Result' is a dm x m matrix
 MatrixOperator ExpandBasis2(StateComponent& A);
 
 // Expand the basis, but incorporate only those matrix elements that are actually used in
 // the A-matrix.  Zero matrix elements are excluded.
 MatrixOperator ExpandBasis1Used(StateComponent& A, std::vector<int> const& Used);
 MatrixOperator ExpandBasis2Used(StateComponent& A, std::vector<int> const& Used);
+
+// Get the null-space of Basis 1 of A.  A is assumed to be right-orthogonal.
+StateComponent NullSpace1(StateComponent A);
+
+// Get the null-space of Basis 2 of A.  A is assumed to be left-orthogonal.
+StateComponent NullSpace2(StateComponent A);
+
+// Reshape A-matrix into (dm)x(m) matrix
+// The reshaped basis is a regular basis.
+MatrixOperator ReshapeBasis1(StateComponent const& A);
+StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1);
+
+// Reshape A-matrix into (m)x(dm) matrix
+MatrixOperator ReshapeBasis2(StateComponent const& A);
+StateComponent ReshapeFromBasis2(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B2);
+
+// Regularize a StateComponent
+StateComponent RegularizeBasis1(Regularizer const& R, StateComponent const& M);
+StateComponent RegularizeBasis2(StateComponent const& M, Regularizer const& R);
+StateComponent RegularizeBasis12(Regularizer const& R1, StateComponent const& M, Regularizer const& R2);
+
+// Shortcut function, when we just want to regularize an operator and we don't care what the Regularizer is
+MatrixOperator Regularize(MatrixOperator const& M);
+
+// We could also unregularize a StateComponent, but so far we don't need it
 
 // left-orthogonalizes an MPS
 // basically equivalent to ExpandBasis2() followed by an SVD

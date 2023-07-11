@@ -629,19 +629,17 @@ iTDVP::ExpandRightBond()
 
       // Construct new basis.
       SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
-      // Construct a unitary to regularize the new basis.
-      MatrixOperator UReg = Regularize(NewBasis);
+      // Regularize the new basis.
+      Regularizer R(NewBasis);
 
       MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
       // Add the new states to CExpand.
-      StateComponent CExpand = tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis);
-      CExpand = prod(CExpand, herm(UReg));
+      StateComponent CExpand = RegularizeBasis2(tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis), R);
 
       // Add a zero tensor of the same dimensions to C.
       StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
-      *C = tensor_row_sum(*C, Z, NewBasis);
-      *C = prod(*C, herm(UReg));
+      *C = RegularizeBasis2(tensor_row_sum(*C, Z, NewBasis), R);
 
       if (Verbose > 1)
       {
@@ -672,8 +670,7 @@ iTDVP::ExpandRightBond()
 
          // Add zeros to LambdaR so the bonds match.
          MatrixOperator Z = MatrixOperator(Vh.Basis1(), LambdaR.Basis2());
-         LambdaR = tensor_col_sum(LambdaR, Z, NewBasis);
-         LambdaR = UReg * LambdaR;
+         LambdaR = RegularizeBasis1(R, tensor_col_sum(LambdaR, Z, NewBasis));
       }
 
       ++Site;
@@ -683,8 +680,7 @@ iTDVP::ExpandRightBond()
 
       // Add zeros to the current site so the left bond matches.
       Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
-      *C = tensor_col_sum(*C, Z, NewBasis);
-      *C = prod(UReg, *C);
+      *C = RegularizeBasis1(R, tensor_col_sum(*C, Z, NewBasis));
    }
    else // If we don't need to add any more states.
    {

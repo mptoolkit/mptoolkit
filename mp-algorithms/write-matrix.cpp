@@ -21,20 +21,12 @@
 #include "tensor/basis.h"
 #include "tensor/regularize.h"
 
-MatrixOperator
-Regularize(MatrixOperator const& M)
-{
-   MatrixOperator U = Regularize(M.Basis1());
-   MatrixOperator V = Regularize(M.Basis2());
-   return U * M * herm(V);
-}
-
 StateComponent
 Regularize(StateComponent const& M)
 {
-   MatrixOperator U = Regularize(M.Basis1());
-   MatrixOperator V = Regularize(M.Basis2());
-   return prod(U, prod(M, herm(V)));
+   Regularizer R1(M.Basis1());
+   Regularizer R2(M.Basis2());
+   return RegularizeBasis12(R1, M, R2);
 }
 
 //
