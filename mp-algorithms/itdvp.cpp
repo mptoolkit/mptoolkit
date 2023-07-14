@@ -437,7 +437,8 @@ iTDVP::CalculateEps()
       OrthogonalizeBasis1(CRightOrtho);
 
       // Calculate the right half of epsilon_2 for the left end of the unit cell.
-      Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
+      //Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
+      Y.push_back(contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(*C)));
    }
 
    while (Site < RightStop)
@@ -465,7 +466,8 @@ iTDVP::CalculateEps()
       HamR.pop_front();
 
       // Calculate the right half of epsilon_2.
-      Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
+      //Y.push_back(contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C)));
+      Y.push_back(contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(*C)));
 
       if (Epsilon)
       {
@@ -605,8 +607,22 @@ iTDVP::ExpandRightBond()
 {
    if ((*C).Basis2().total_dimension() < SInfo.MaxStates)
    {
-      // Take the truncated SVD of P_2 H |Psi>.
-      CMatSVD P2H(scalar_prod(X.front(), herm(Y.front())));
+      StateComponent x = X.front();
+      StateComponent y = Y.front();
+      x.front() *= 0.0;
+      x.back() *= 0.0;
+      for (int i = 1; i < x.size()-1; ++i)
+      {
+         double Prefactor = norm_frob(y[i]);
+         TRACE(norm_frob(x[i]))(Prefactor);
+         if (Prefactor < 1e-12)
+            Prefactor = 1.0;
+         x[i] *= Prefactor;
+      }
+
+      // Take the truncated SVD of X.
+      MatrixOperator XU = ExpandBasis1(x);
+      CMatSVD P2H(XU);
       TruncationInfo Info;
       StatesInfo SInfoLocal = SInfo;
       // Subtract the current bond dimension from the number of additional states to be added.

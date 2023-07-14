@@ -468,17 +468,40 @@ TDVP::ExpandLeftBond()
 
    StateComponent NL = NullSpace2(*CNext);
 
-   // Perform SVD to right-orthogonalize current site for NullSpace1.
+   // Perform SVD to right-orthogonalize current site and extract singular value matrix.
    StateComponent CRightOrtho = *C;
-   OrthogonalizeBasis1(CRightOrtho);
+   MatrixOperator URight;
+   RealDiagonalOperator DRight;
+   std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
+   
+   SimpleOperator Projector(HNext->Basis2(), BasisList(HNext->Basis2().begin()+1, HNext->Basis2().end()-1));
+   for (int i = 0; i < Projector.Basis2().size(); ++i)
+      Projector(i+1, i) = 1.0;
+      
+   StateComponent X = contract_from_left(*HNext * Projector, herm(NL), HamL.back(), *CNext*URight*DRight);
+   StateComponent Y = contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(*C));
+   //StateComponent Y = contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(CRightOrtho));
+   for (int i = 0; i < X.size(); ++i)
+   {
+#if 1
+      double Prefactor = norm_frob(Y[i+1]);
+      //TRACE(norm_frob(X[i]))(Prefactor);
+      if (Prefactor < 1e-12)
+         Prefactor = 1.0;
+      X[i] *= Prefactor;
+#else
+      MatrixOperator Identity = MatrixOperator::make_identity(Y.Basis1());
+      MatrixOperator Rho = DRight * DRight;
+      TRACE(norm_frob(X[i]));
+      X[i] = X[i] * (Y[i+1] - inner_prod(Rho, Y[i+1])*Identity);
+      //X[i] = X[i] * norm_frob(Y[i+1] - inner_prod(Rho, Y[i+1])*Identity);
+      TRACE(norm_frob(X[i]));
+#endif
+   }
 
-   StateComponent NR = NullSpace1(CRightOrtho);
-
-   StateComponent X = contract_from_left(*HNext, herm(NL), HamL.back(), *CNext);
-   StateComponent Y = contract_from_right(herm(*H), NR, HamR.front(), herm(*C));
-
-   // Take the truncated SVD of P_2 H |Psi>.
-   CMatSVD P2H(scalar_prod(X, herm(Y)));
+   // Take the truncated SVD of X.
+   MatrixOperator XU = ExpandBasis1(X);
+   CMatSVD P2H(XU);
    TruncationInfo Info;
    StatesInfo SInfoLocal = SInfo;
    // Subtract the current bond dimension from the number of additional states to be added.
