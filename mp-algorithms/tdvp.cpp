@@ -455,32 +455,30 @@ TDVP::Evolve()
    Time += (*Gamma)*Timestep;
 }
 
-void
-TDVP::ExpandLeftBond()
+TruncationInfo
+ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      StatesInfo SInfo, bool ForceExpand)
 {
-   // Construct the projection of H|Psi> onto the space of two-site variations.
-   LinearWavefunction::iterator CNext = C;
-   --CNext;
-   BasicTriangularMPO::const_iterator HNext = H;
-   --HNext;
+   // Calculate left null space of left site.
+   StateComponent NLeft = NullSpace2(CLeft);
 
-   HamL.pop_back();
-
-   StateComponent NL = NullSpace2(*CNext);
-
-   // Perform SVD to right-orthogonalize current site and extract singular value matrix.
-   StateComponent CRightOrtho = *C;
+   // Perform SVD to right-orthogonalize right site and extract singular value matrix.
+   StateComponent CRightOrtho = CRight;
    MatrixOperator URight;
    RealDiagonalOperator DRight;
    std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
    
-   SimpleOperator Projector(HNext->Basis2(), BasisList(HNext->Basis2().begin()+1, HNext->Basis2().end()-1));
+   // Project out the first and last columns of HLeft.
+   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
    for (int i = 0; i < Projector.Basis2().size(); ++i)
       Projector(i+1, i) = 1.0;
       
-   StateComponent X = contract_from_left(*HNext * Projector, herm(NL), HamL.back(), *CNext*URight*DRight);
-   StateComponent Y = contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(*C));
-   //StateComponent Y = contract_from_right(herm(*H), CRightOrtho, HamR.front(), herm(CRightOrtho));
+   StateComponent X = contract_from_left(HLeft*Projector, herm(NLeft), E, CLeft*URight*DRight);
+   StateComponent Y = contract_from_right(herm(HRight), CRightOrtho, F, herm(CRight));
+
+   // Multiply each element of X by a prefactor depending on the corresponding element of Y.
    for (int i = 0; i < X.size(); ++i)
    {
 #if 1
@@ -501,46 +499,62 @@ TDVP::ExpandLeftBond()
 
    // Take the truncated SVD of X.
    MatrixOperator XU = ExpandBasis1(X);
-   CMatSVD P2H(XU);
+   CMatSVD SVD(XU);
    TruncationInfo Info;
-   StatesInfo SInfoLocal = SInfo;
    // Subtract the current bond dimension from the number of additional states to be added.
-   SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis1().total_dimension());
-   SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis1().total_dimension());
+   SInfo.MinStates = std::max(0, SInfo.MinStates - CRight.Basis1().total_dimension());
+   SInfo.MaxStates = std::max(0, SInfo.MaxStates - CRight.Basis1().total_dimension());
 
    CMatSVD::const_iterator Cutoff;
    if (ForceExpand)
    {
-      Cutoff = P2H.begin();
-      for (int i = 0; Cutoff != P2H.end() && i < SInfoLocal.MaxStates; ++i)
+      Cutoff = SVD.begin();
+      for (int i = 0; Cutoff != SVD.end() && i < SInfo.MaxStates; ++i)
          ++Cutoff;
    }
    else
-      Cutoff = TruncateFixTruncationErrorAbsolute(P2H.begin(), P2H.end(), SInfoLocal, Info);
+      Cutoff = TruncateFixTruncationErrorAbsolute(SVD.begin(), SVD.end(), SInfo, Info);
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   P2H.ConstructMatrices(P2H.begin(), Cutoff, U, D, Vh);
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
 
    // Construct new basis.
-   SumBasis<VectorBasis> NewBasis((*CNext).Basis2(), U.Basis2());
+   SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), U.Basis2());
    // Regularize the new basis.
    Regularizer R(NewBasis);
 
-   MaxStates = std::max(MaxStates, NewBasis.total_dimension());
+   // Add the new states to CLeft, and add zeros to CRight.
+   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, U), NewBasis), R);
 
-   // Add the new states to CNext, and add zeros to C.
-   *CNext = RegularizeBasis2(tensor_row_sum(*CNext, prod(NL, U), NewBasis), R);
+   StateComponent Z = StateComponent(CRight.LocalBasis(), Vh.Basis1(), CRight.Basis2());
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
 
-   StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
-   *C = RegularizeBasis1(R, tensor_col_sum(*C, Z, NewBasis));
+   return Info;
+}
+
+void
+TDVP::ExpandLeft()
+{
+   auto CNext = C;
+   --CNext;
+   auto HNext = H;
+   --HNext;
+
+   HamL.pop_back();
+
+   TruncationInfo Info = ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H, SInfo, ForceExpand);
+
+   int TotalStates = C->Basis1().total_dimension();
+
+   MaxStates = std::max(MaxStates, TotalStates);
 
    if (Verbose > 1)
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " NewStates=" << Info.KeptStates()
-                << " TotalStates=" << NewBasis.total_dimension()
+                << " TotalStates=" << TotalStates
                 << std::endl;
    }
 
@@ -554,7 +568,7 @@ TDVP::SweepLeftExpand(std::complex<double> Tau)
    while (Site > LeftStop)
    {
       if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
-         this->ExpandLeftBond();
+         this->ExpandLeft();
       this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
    }

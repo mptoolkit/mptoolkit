@@ -125,10 +125,10 @@ class TDVP
       // Evolve the chain by one timestep using single-site TDVP.
       void Evolve();
 
-      // Expand the dimension of the left bond of the current site using the
-      // projection of H|Psi> onto the subspace of orthogonal two-site
+      // Expand the dimension of the left environment of the current site using
+      // the projection of H|Psi> onto the subspace of orthogonal two-site
       // variations.
-      void ExpandLeftBond();
+      void ExpandLeft();
 
       // Sweep left through the chain for timestep Tau, expanding the bond dimensions.
       void SweepLeftExpand(std::complex<double> Tau);

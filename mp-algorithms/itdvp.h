@@ -68,8 +68,8 @@ class iTDVP : public TDVP
       // Calculate the error measures epsilon_3 to epsilon_NEps.
       void CalculateEpsN();
 
-      // Expand the dimension of the right bond of the current site and move right.
-      void ExpandRightBond();
+      // Expand the dimension of the left environment of the next site.
+      void ExpandLeftNext();
 
       // Expands the bond dimensions of the chain (must be run after
       // CalculateEps to generate X and Y)

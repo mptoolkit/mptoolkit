@@ -603,7 +603,7 @@ iTDVP::CalculateEpsN()
 }
 
 void
-iTDVP::ExpandRightBond()
+iTDVP::ExpandLeftNext()
 {
    if ((*C).Basis2().total_dimension() < SInfo.MaxStates)
    {
@@ -614,7 +614,7 @@ iTDVP::ExpandRightBond()
       for (int i = 1; i < x.size()-1; ++i)
       {
          double Prefactor = norm_frob(y[i]);
-         TRACE(norm_frob(x[i]))(Prefactor);
+         //TRACE(norm_frob(x[i]))(Prefactor);
          if (Prefactor < 1e-12)
             Prefactor = 1.0;
          x[i] *= Prefactor;
@@ -746,7 +746,7 @@ iTDVP::ExpandBonds()
    COld = PsiOld.begin();
 
    while (Site <= RightStop)
-      this->ExpandRightBond();
+      this->ExpandLeftNext();
 
    *C = delta_shift(*C, QShift);
 
