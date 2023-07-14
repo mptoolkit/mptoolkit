@@ -80,10 +80,8 @@ exp(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, Vector
 
    if (!is_regular_basis(m.Basis1()))
    {
-      IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis> X
-         = Regularize(m.Basis1());
-
-      return triple_prod(herm(X), exp(triple_prod(X, m, herm(X))), X);
+      Regularizer R(m.Basis1());
+      return UnregularizeBasis12(R, exp(RegularizeBasis12(R, m, R)), R);
    }
 
    IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>

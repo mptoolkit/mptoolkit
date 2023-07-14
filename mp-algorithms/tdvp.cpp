@@ -524,18 +524,16 @@ TDVP::ExpandLeftBond()
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis((*CNext).Basis2(), U.Basis2());
-   // Construct a unitary to regularize the new basis.
-   MatrixOperator UReg = Regularize(NewBasis);
+   // Regularize the new basis.
+   Regularizer R(NewBasis);
 
    MaxStates = std::max(MaxStates, NewBasis.total_dimension());
 
    // Add the new states to CNext, and add zeros to C.
-   *CNext = tensor_row_sum(*CNext, prod(NL, U), NewBasis);
-   *CNext = prod(*CNext, herm(UReg));
+   *CNext = RegularizeBasis2(tensor_row_sum(*CNext, prod(NL, U), NewBasis), R);
 
    StateComponent Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
-   *C = tensor_col_sum(*C, Z, NewBasis);
-   *C = prod(UReg, *C);
+   *C = RegularizeBasis1(R, tensor_col_sum(*C, Z, NewBasis));
 
    if (Verbose > 1)
    {
@@ -594,7 +592,7 @@ TDVP::EvolveExpand()
       Time += (*Gamma)*Timestep;
       ++Gamma;
    }
-   
+
    this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
 
    if (Epsilon)
@@ -823,7 +821,7 @@ TDVP::Evolve2()
       Time += (*Gamma)*Timestep;
       ++Gamma;
    }
-   
+
    if (Epsilon)
       this->CalculateEps();
 }
