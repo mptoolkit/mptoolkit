@@ -30,6 +30,12 @@
 namespace LinearAlgebra
 {
 
+namespace detail
+{
+   // put the ARPACK mutex here, avoids having another .cpp file
+   std::mutex ArpackMutex;
+}
+
 namespace Private
 {
 

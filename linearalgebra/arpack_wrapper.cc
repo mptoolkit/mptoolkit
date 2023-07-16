@@ -21,6 +21,7 @@
 #include "linearalgebra/vectormemproxy.h"
 #include "linearalgebra/matrix.h"
 #include "linearalgebra/eigen.h"
+#include <mutex>
 
 namespace LinearAlgebra
 {
@@ -86,6 +87,12 @@ struct CompareEigenvalues
    WhichEigenvalues w;
 };
 
+namespace detail
+{
+   // ARPACK is not thread-safe or reenterant so we need a mutex.  This could be an inline varible in C++17
+   extern std::mutex ArpackMutex;
+}
+
 template <typename MultFunc>
 Vector<std::complex<double>>
 DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, std::complex<double> const* InitialGuess, double tol,
@@ -99,6 +106,11 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
    {
       std::cerr << "Total dimension = " << n << std::endl;
    }
+
+   // ARPACK is not thread-safe or reenterant so grab a mutex.
+
+   std::lock_guard<std::mutex> Lock(detail::ArpackMutex);
+
    // save the arpack debug log level so we can restore it later
    int DebugOutputLevelSave = ARPACK::debug().mceupd;
    ARPACK::debug().mceupd = Verbose;
