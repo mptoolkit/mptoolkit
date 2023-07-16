@@ -1,8 +1,8 @@
 dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [(git)], [ianmcc@physics.uq.edu.au],
-        [mptoolkit], [https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/])
+AC_INIT([Matrix Product Toolkit], [(git)], [https://github.com/mptoolkit/mptoolkit/issues],
+        [mptoolkit], [https://github.com/mptoolkit])
 
 dnl use C++ mode by default
 AC_LANG(C++)

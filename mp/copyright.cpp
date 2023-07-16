@@ -59,8 +59,7 @@
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
-      "Copyright (C) Ian McCulloch 1999-2022\n"
-      "Contact: " PACKAGE_BUGREPORT "\n"
+      "Copyright (C) Ian McCulloch 1999-2023\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
       "Compiler flags: " CONFIG_CXXFLAGS "\n"
@@ -68,6 +67,7 @@ void print_copyright(std::ostream& out)
       "Using Boost version " << (BOOST_VERSION / 100000)
        << "." << (BOOST_VERSION / 100 % 1000)
        << "." << (BOOST_VERSION % 100) << "\n"
+       "Post bugs at: " PACKAGE_BUGREPORT "\n"
       "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
       "This is free software, and you are welcome to redistribute it under certain conditions;\n"
       "run 'mp-info --copying' for details.\n"
@@ -102,7 +102,7 @@ void print_copying(std::ostream& out)
 
 void print_citations(std::ostream& out)
 {
-   out << "Email " PACKAGE_BUGREPORT " for details.\n";
+   out << "See https://github.com/mptoolkit\n";
 }
 
 #undef AS_STRING
