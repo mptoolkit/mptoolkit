@@ -252,11 +252,6 @@ int main(int argc, char** argv)
 
       std::vector<std::complex<double>> Guess;
 
-      // FIXME: Passing PackH to the ARPACK wrapper causes memory issues, but
-      // applying the effetive Hamiltonian once before seems to mitigate it?
-      std::deque<MatrixOperator> X = H.InitialGuess();
-      X = H(X);
-
       // Calculate the excitation spectrum for each k desired.
       for (double const k : KList)
       {

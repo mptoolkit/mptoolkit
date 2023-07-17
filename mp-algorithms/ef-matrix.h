@@ -162,6 +162,11 @@ class EFMatrix
       MatrixOperator GetTLeft(CornerIndex i, CornerIndex j, bool F = false);
       MatrixOperator GetTRight(CornerIndex i, CornerIndex j, bool F = false);
 
+      // Calculate all of the uncalculated transfer matrix eigenvalues: use
+      // this if the EFMatrix class needs to be passed to ARPACK, since we need
+      // ARPACK to calculate the TEVs and ARPACK isn't reentrant.
+      void CalculateAllTEVs();
+
       // Ident is the TEV in the same direction as the E/F matrix.
       MatrixOperator GetIdent(CornerIndex i, CornerIndex j, bool F = false)
          { return F ? this->GetTRight(i, j, true) : this->GetTLeft(i, j); }

@@ -53,6 +53,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    EF = EFMatrix(HamMPO, Settings);
    EF.SetPsi({0}, PsiLeft);
    EF.SetPsi({Infinity}, PsiRight, ExpIK);
+   EF.CalculateAllTEVs();
 
    if (!StringOp.is_null())
    {
@@ -69,6 +70,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       EFTy = EFMatrix(StringOp, SettingsTy);
       EFTy.SetPsi({0}, PsiLeft);
       EFTy.SetPsi({Infinity}, PsiRight, ExpIK);
+      EFTy.CalculateAllTEVs();
    }
 
    // Get PsiLeft and PsiRight as LinearWavefunctions.

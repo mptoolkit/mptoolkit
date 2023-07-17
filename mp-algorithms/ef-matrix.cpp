@@ -228,6 +228,8 @@ EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionLeft const& Psi, std::comple
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
+   // TODO: We do not allow changing boundary wavefunctions at the moment.
+   CHECK(PsiUpper.count(i) == 0)(PsiLower.count(i) == 0);
 
    // If we haven't set QShift, set it now, otherwise, check that it is the same.
    if (QShift.is_null())
@@ -271,6 +273,8 @@ EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionRight const& Psi, std::compl
 {
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
+   // TODO: We do not allow changing boundary wavefunctions at the moment.
+   CHECK(PsiUpper.count(i) == 0)(PsiLower.count(i) == 0);
 
    // If we haven't set QShift, set it now, otherwise, check that it is the same.
    if (QShift.is_null())
@@ -701,6 +705,15 @@ EFMatrix::CalculateTEVs(CornerIndex i, CornerIndex j)
       Normalize(TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)]);
 
    TCalculated[std::make_pair(i, j)] = true;
+}
+
+void
+EFMatrix::CalculateAllTEVs()
+{
+   for (auto const& I : PsiUpper)
+      for (auto const& J : PsiLower)
+         if (!TCalculated[std::make_pair(I.first, J.first)])
+            this->CalculateTEVs(I.first, J.first);
 }
 
 std::complex<double>

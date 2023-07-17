@@ -95,12 +95,13 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
    EF.SetPsi({Infinity}, PsiRight, Psi.exp_ik());
    EF.SetWindowUpper(WindowVec);
    EF.SetWindowLower(WindowVec);
+   EF.CalculateAllTEVs();
 
-   // FIXME: If we do not run GetHEff before using the ARPACK wrapper, we run into memory issues.
-   std::deque<StateComponent> HWDeque = EF.GetHEff(Site);
    // Calculate and print the initial energy.
    if (!Quiet)
    {
+      std::deque<StateComponent> HWDeque = EF.GetHEff(Site);
+
       double InitialE = 0.0;
       auto WI = WIVec.begin();
       auto HW = HWDeque.begin();
