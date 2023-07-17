@@ -88,29 +88,44 @@ int main(int argc, char** argv)
       return 1;
    }
 
+   double const Tol = 1E-15;
+
    int const N = boost::lexical_cast<int>(argv[1]);
 
-   int Niter = 100;  // guess - this needs to be bigger for large chains!
+   int Niter = 50;  // guess - this needs to be bigger for large chains!
+   int TotalIter = 0;
 
    int r = N/2;   // for the groundstate, we have N/2 spinons
 
    std::vector<double> z(r, 0.0);
    std::vector<double> zn(r, 0.0);
 
-   for (int i = 0; i < Niter; ++i)
+   bool Converged = false;
+   double OldEnergy = 0.0;
+   double Energy = 0.0;
+   while (!Converged)
    {
-      Iterate(N, zn, z);
-      Iterate(N, z, zn);
-   }
 
-   // energy
-   double Energy = 0;
-   for (int i = 0; i < r; ++i)
-   {
-      //      cout << i << ' ' << Ir(N,i) << ' ' << z[i] << '\n';
-      Energy += epsilon(z[i]);
+      for (int i = 0; i < Niter; ++i)
+      {
+         Iterate(N, zn, z);
+         Iterate(N, z, zn);
+      }
+      TotalIter += Niter;
+
+      // energy
+      OldEnergy = Energy;
+      Energy = 0;
+      for (int i = 0; i < r; ++i)
+      {
+         //      cout << i << ' ' << Ir(N,i) << ' ' << z[i] << '\n';
+         Energy += epsilon(z[i]);
+      }
+      Converged = (std::abs(Energy-OldEnergy) / std::abs(Energy) < Tol);
    }
 
    cout.precision(16);
-   cout << "Energy is " << ((Energy/N)+0.25) << endl;
+   cout << "Converged in " << TotalIter << " iterations.\n";
+   cout << "Total energy is " << (Energy + N*0.25) << '\n';
+   cout << "Energy per site is " << ((Energy/N)+0.25) << endl;
 }

@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "state_component.h"
+#include "density.h"
 #include "common/openmp.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "quantumnumbers/u1.h"
@@ -25,6 +26,8 @@
 #include <tuple>
 #include "linearalgebra/matrix_utility.h"
 #include "tensor/tensor_eigen.h"
+
+double const EigenvalueEpsilon = std::numeric_limits<double>::epsilon() * 4;
 
 StateComponent make_vacuum_state(QuantumNumbers::SymmetryList const& S)
 {
@@ -840,26 +843,214 @@ ExpandBasis1_(StateComponent const& A)
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A)
 {
-   // TODO: optimize this implementation
-
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   MatrixOperator M = ExpandBasis2(A);
+   MatrixOperator M = ReshapeBasis1(A);   // M is md x m
    SingularValueDecomposition(M, U, D, Vh);
-   A = prod(A, U);
+   A = ReshapeFromBasis1(U, A.LocalBasis(), A.Basis1());
    return std::make_pair(D, Vh);
 }
 
 std::pair<MatrixOperator, RealDiagonalOperator>
 OrthogonalizeBasis1(StateComponent& A)
 {
-   // TODO: optimize this implementation
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   MatrixOperator M = ExpandBasis1(A);
+   MatrixOperator M = ReshapeBasis2(A);
    SingularValueDecomposition(M, U, D, Vh);
-   A = prod(Vh, A);
+   A = ReshapeFromBasis2(Vh, A.LocalBasis(), A.Basis2());
    return std::make_pair(U, D);
+}
+
+MatrixOperator ReshapeBasis1(StateComponent const& A)
+{
+   ProductBasis<VectorBasis, BasisList> FullBasis1(A.Basis1(), adjoint(A.LocalBasis()));
+   Regularizer R(FullBasis1.Basis());
+   MatrixOperator Result(R.Basis(), A.Basis2());
+   for (int s = 0; s < A.size(); ++s)
+   {
+      for (auto I = iterate(A[s]); I; ++I)
+      {
+         for (auto J = iterate(I); J; ++J)
+         {
+            // Find the element in FullBasis1 that matches the quantum number
+            // **TODO** This will have an outer multiplicity problem
+            auto t = FullBasis1.begin(I.index(), s);
+            while (t != FullBasis1.end(I.index(), s) && FullBasis1[*t] != A.Basis2()[J.index2()])
+               ++t;
+            if (t != FullBasis1.end(I.index(), s))
+            {
+               auto r = iterate_at(Result.data(), R.IndexOf(*t), J.index2());
+               if (!r)
+               {
+                  Result(R.IndexOf(*t), J.index2()) = LinearAlgebra::Matrix<std::complex<double>>(R.Basis().dim(R.IndexOf(*t)), A.Basis2().dim(J.index2()), 0.0);
+                  r = iterate_at(Result.data(), R.IndexOf(*t), J.index2());
+               }
+               // Scale factor for non-abelian symmetries sqrt(qdim(index1) / qdim(index2))
+               (*r)(R.RangeOf(*t), LinearAlgebra::all) = (*J) * std::sqrt(double(degree(A.Basis1()[I.index1()])) / degree(A.Basis2()[J.index2()]));
+            }
+         }
+      }
+   }
+   return Result;
+}
+
+StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1)
+{
+   ProductBasis<VectorBasis, BasisList> FullBasis1(B1, adjoint(LB));
+   Regularizer R(FullBasis1.Basis());
+   CHECK_EQUAL(X.Basis1(), R.Basis());
+   StateComponent Result(LB, B1, X.Basis2());
+   for (int i = 0; i < FullBasis1.Basis().size(); ++i)
+   {
+      int ii = R.IndexOf(i);
+      auto t = FullBasis1.rmap(i);
+      for (int j = 0; j < X.Basis2().size(); ++j)
+      {
+         auto r = iterate_at(X.data(), ii, j);
+         if (r)
+         {
+            Result[t.second](t.first, j) = (*r)(R.RangeOf(i), LinearAlgebra::all) * std::sqrt(double(degree(X.Basis2()[j])) / degree(B1[t.first]));
+         }
+      }
+   }
+   return Result;
+}
+
+MatrixOperator ReshapeBasis2(StateComponent const& A)
+{
+   ProductBasis<BasisList, VectorBasis> FullBasis2(A.LocalBasis(), A.Basis2());
+   Regularizer R(FullBasis2.Basis());
+   MatrixOperator Result(A.Basis1(), R.Basis());
+   for (int s = 0; s < A.size(); ++s)
+   {
+      for (auto I = iterate(A[s]); I; ++I)
+      {
+         for (auto J = iterate(I); J; ++J)
+         {
+            // Find the element in FullBasis2 that matches the quantum number
+            // **TODO** This will have an outer multiplicity problem
+            auto t = FullBasis2.begin(s, J.index2());
+            while (t != FullBasis2.end(s, J.index2()) && FullBasis2[*t] != A.Basis1()[I.index()])
+               ++t;
+            if (t != FullBasis2.end(s, J.index2()))
+            {
+               auto r = iterate_at(Result.data(), I.index(), R.IndexOf(*t));
+               if (!r)
+               {
+                  Result(I.index(), R.IndexOf(*t)) = LinearAlgebra::Matrix<std::complex<double>>(A.Basis1().dim(I.index()), R.Basis().dim(R.IndexOf(*t)), 0.0);
+                  r = iterate_at(Result.data(), I.index(), R.IndexOf(*t));
+               }
+               // No scale factor in this case - the coupling coefficient is 1.0
+               (*r)(LinearAlgebra::all, R.RangeOf(*t)) = *J;
+            }
+         }
+      }
+   }
+   return Result;
+}
+
+StateComponent ReshapeFromBasis2(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B2)
+{
+   ProductBasis<BasisList, VectorBasis> FullBasis2(LB, B2);
+   Regularizer R(FullBasis2.Basis());
+   CHECK_EQUAL(X.Basis2(), R.Basis());
+   StateComponent Result(LB, X.Basis1(), B2);
+   for (int i = 0; i < X.Basis1().size(); ++i)
+   {
+      for (int j = 0; j < FullBasis2.Basis().size(); ++j)
+      {
+         int jj = R.IndexOf(j);
+         auto r = iterate_at(X.data(), i, jj);
+         if (r)
+         {
+            auto t = FullBasis2.rmap(j);
+            Result[t.first](i, t.second) = (*r)(LinearAlgebra::all, R.RangeOf(j));
+         }
+      }
+   }
+   return Result;
+}
+
+StateComponent RegularizeBasis1(Regularizer const& R, StateComponent const& M)
+{
+   StateComponent Result(M.LocalBasis(), R.Basis(), M.Basis2());
+   for (int i = 0; i < M.size(); ++i)
+   {
+      Result[i] = RegularizeBasis1(R, M[i]);
+   }
+   return Result;
+}
+
+StateComponent RegularizeBasis2(StateComponent const& M, Regularizer const& R)
+{
+   StateComponent Result(M.LocalBasis(), M.Basis1(), R.Basis());
+   for (int i = 0; i < M.size(); ++i)
+   {
+      Result[i] = RegularizeBasis2(M[i], R);
+   }
+   return Result;
+}
+
+StateComponent RegularizeBasis12(Regularizer const& R1, StateComponent const& M, Regularizer const& R2)
+{
+   StateComponent Result(M.LocalBasis(), R1.Basis(), R2.Basis());
+   for (int i = 0; i < M.size(); ++i)
+   {
+      Result[i] = RegularizeBasis12(R1, M[i], R2);
+   }
+   return Result;
+}
+
+MatrixOperator
+Regularize(MatrixOperator const& M)
+{
+   Regularizer R1(M.Basis1());
+   Regularizer R2(M.Basis2());
+   return RegularizeBasis12(R1, M, R2);
+}
+
+StateComponent
+NullSpace1(StateComponent A)
+{
+   StateComponent AOriginal = A;
+   typedef StateComponent::operator_type operator_type;
+   operator_type Trunc = ExpandBasis1(A);  // the original component is prod(Trunc, A), Trunc is m x dm matrix
+   // Do the singular value decomposition via a (reduced) density matrix
+   DensityMatrix<operator_type> DM(scalar_prod(herm(Trunc), Trunc)); // DM is a dm x dm matrix
+
+   //   DM.DensityMatrixReport(std::cerr);
+   DensityMatrix<operator_type>::const_iterator E = DM.begin();
+   // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
+   while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;
+   operator_type UOriginal = DM.ConstructTruncator(DM.begin(), E);
+   operator_type UTangent = DM.ConstructTruncator(E, DM.end());
+
+   // original A is Trunc * herm(UOriginal) * UOriginal * A  [final A]
+   DEBUG_CHECK(norm_frob(AOriginal - prod(Trunc * herm(UOriginal) * UOriginal, A)) < 1E-10);
+   StateComponent ANew = prod(UTangent, A);
+
+   DEBUG_CHECK(norm_frob(scalar_prod(AOriginal, herm(ANew))) < 1E-10);
+
+   return ANew;
+}
+
+StateComponent
+NullSpace2(StateComponent A)
+{
+   typedef StateComponent::operator_type OperatorType;
+   OperatorType Trunc = ExpandBasis2(A);  // the original component is prod(A, Trunc)
+   // Do the singular value decomposition via a (reduced) density matrix
+   DensityMatrix<OperatorType> DM(scalar_prod(Trunc, herm(Trunc)));
+
+   // DM.DensityMatrixReport(std::cerr);
+   DensityMatrix<OperatorType>::const_iterator E = DM.begin();
+   // take all eigenvalues that are bigger than EigenvalueEpsilon (normalized to EigenSum)
+   while (E != DM.end() && E->Eigenvalue > EigenvalueEpsilon * DM.EigenSum()) ++E;
+   OperatorType UOriginal = DM.ConstructTruncator(DM.begin(), E);
+   OperatorType UTangent = DM.ConstructTruncator(E, DM.end());
+
+   return prod(A, herm(UTangent));
 }
 
 StateComponent ConstructFromRightBasis(BasisList const& LocalBasis,
@@ -1090,13 +1281,14 @@ StateComponent local_tensor_prod(StateComponent const& A, StateComponent const& 
    return Result;
 }
 
+#if 0
 StateComponent
 contract_local_tensor_prod_left(LinearAlgebra::HermitianProxy<StateComponent> const& A,
    StateComponent L, Tensor::ProductBasis<BasisList, BasisList> const& PB)
 {
    PANIC("not yet implemented");
 }
-
+#endif
 
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
                                         VectorBasis const& B2,

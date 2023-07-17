@@ -25,19 +25,79 @@
 namespace Tensor
 {
 
-// Regularizes the basis, returns the transform matrix.
-// The regular basis is Result'.Basis1()
-// Result'.Basis2() is b.
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, VectorBasis>
-Regularize(VectorBasis const& b);
+// Class to keep track of the index mapping for mapping a VectorBasis onto a regular basis
+class Regularizer
+{
+   public:
+      Regularizer() = delete;
+
+      explicit Regularizer(VectorBasis const& b);
+
+      // returns the index into the regular basis of the component i
+      int IndexOf(int i) const;
+
+      // returns the range mapping of the component i in the regular basis
+      LinearAlgebra::Range RangeOf(int i) const;
+
+      VectorBasis const& Basis() const { return RegularBasis; }
+
+      VectorBasis const& OriginalBasis() const { return IrregularBasis; }
+
+
+   private:
+      std::vector<int>                  BasisMappingIndex;
+      std::vector<LinearAlgebra::Range> BasisMappingRange;
+      VectorBasis                       IrregularBasis;
+      VectorBasis                       RegularBasis;
+};
+
+// Regularize Basis1 of a tensor, more efficiently than multiplying by the transformation tensor.
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M);
+
+// Regularize Basis2 of a tensor, more efficiently than multiplying by the transformation tensor.
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R);
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R2);
+
+// Not yet implemented
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+RegularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& M, Regularizer const& R2);
+
+// Inverse of Regularize
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+UnregularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M);
+
+// Regularize Basis2 of a tensor, more efficiently than multiplying by the transformation tensor.
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+UnregularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R);
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R2);
+
+// Not yet implemented
+template <typename T>
+IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
+UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& M, Regularizer const& R2);
+
+// Legacy Regularize for BasisList.  This would be better viewed as mapping a BasisList to a VectorBasis,
+// with the inverse operation being SplitBasis (better renamed as something else?)
+
+IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
+Regularize(BasisList const& b);
 
 // is_regular_basis
 // Returns true if the basis is regular
 bool is_regular_basis(VectorBasis const& b);
-
-// regularize a BasisList
-IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
-Regularize(BasisList const& b);
 
 // split a VectorBasis into a BasisList.  Returns the transpose of the tranform matrix
 IrredTensor<LinearAlgebra::Matrix<double>, VectorBasis, BasisList>
