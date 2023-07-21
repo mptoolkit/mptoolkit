@@ -26,6 +26,8 @@
 #include "linearalgebra/eigen.h"
 #include "common/statistics.h"
 
+double const PrefactorEpsilon = 1e-16;
+
 std::complex<double> const I(0.0, 1.0);
 
 struct HEff2
@@ -605,7 +607,7 @@ iTDVP::CalculateEpsN()
 void
 iTDVP::ExpandLeftNext()
 {
-   if ((*C).Basis2().total_dimension() < SInfo.MaxStates)
+   if (C->Basis2().total_dimension() < SInfo.MaxStates)
    {
       StateComponent x = X.front();
       StateComponent y = Y.front();
@@ -613,10 +615,7 @@ iTDVP::ExpandLeftNext()
       x.back() *= 0.0;
       for (int i = 1; i < x.size()-1; ++i)
       {
-         double Prefactor = norm_frob(y[i]);
-         //TRACE(norm_frob(x[i]))(Prefactor);
-         if (Prefactor < 1e-12)
-            Prefactor = 1.0;
+         double Prefactor = norm_frob(y[i]) + PrefactorEpsilon;
          x[i] *= Prefactor;
       }
 
@@ -626,25 +625,17 @@ iTDVP::ExpandLeftNext()
       TruncationInfo Info;
       StatesInfo SInfoLocal = SInfo;
       // Subtract the current bond dimension from the number of additional states to be added.
-      SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - (*C).Basis2().total_dimension());
-      SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - (*C).Basis2().total_dimension());
+      SInfoLocal.MinStates = std::max(0, SInfoLocal.MinStates - C->Basis2().total_dimension());
+      SInfoLocal.MaxStates = std::max(0, SInfoLocal.MaxStates - C->Basis2().total_dimension());
 
-      CMatSVD::const_iterator Cutoff;
-      if (ForceExpand)
-      {
-         Cutoff = P2H.begin();
-         for (int i = 0; Cutoff != P2H.end() && i < SInfoLocal.MaxStates; ++i)
-            ++Cutoff;
-      }
-      else
-         Cutoff = TruncateFixTruncationError(P2H.begin(), P2H.end(), SInfoLocal, Info);
+      auto Cutoff = TruncateFixTruncationError(P2H.begin(), P2H.end(), SInfoLocal, Info);
 
       MatrixOperator U, Vh;
       RealDiagonalOperator D;
       P2H.ConstructMatrices(P2H.begin(), Cutoff, U, D, Vh);
 
       // Construct new basis.
-      SumBasis<VectorBasis> NewBasis((*C).Basis2(), U.Basis2());
+      SumBasis<VectorBasis> NewBasis(C->Basis2(), U.Basis2());
       // Regularize the new basis.
       Regularizer R(NewBasis);
 
@@ -654,7 +645,7 @@ iTDVP::ExpandLeftNext()
       StateComponent CExpand = RegularizeBasis2(tensor_row_sum(*COld, prod(NullSpace2(*COld), U), NewBasis), R);
 
       // Add a zero tensor of the same dimensions to C.
-      StateComponent Z = StateComponent((*C).LocalBasis(), (*C).Basis1(), U.Basis2());
+      StateComponent Z = StateComponent(C->LocalBasis(), C->Basis1(), U.Basis2());
       *C = RegularizeBasis2(tensor_row_sum(*C, Z, NewBasis), R);
 
       if (Verbose > 1)
@@ -695,7 +686,7 @@ iTDVP::ExpandLeftNext()
       Y.pop_front();
 
       // Add zeros to the current site so the left bond matches.
-      Z = StateComponent((*C).LocalBasis(), Vh.Basis1(), (*C).Basis2());
+      Z = StateComponent(C->LocalBasis(), Vh.Basis1(), C->Basis2());
       *C = RegularizeBasis1(R, tensor_col_sum(*C, Z, NewBasis));
    }
    else // If we don't need to add any more states.

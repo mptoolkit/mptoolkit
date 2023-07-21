@@ -83,7 +83,6 @@ struct TDVPSettings
    double ErrTol = 1e-16;
    StatesInfo SInfo;
    bool Epsilon = false;
-   bool ForceExpand = false;
    bool Normalize = true;
    int Verbose = 0;
 };
@@ -125,13 +124,16 @@ class TDVP
       // Evolve the chain by one timestep using single-site TDVP.
       void Evolve();
 
-      // Expand the dimension of the left environment of the current site using
+      // Expand the dimension of the left/right environment of the current site using
       // the projection of H|Psi> onto the subspace of orthogonal two-site
       // variations.
       void ExpandLeft();
+      void ExpandRight();
 
-      // Sweep left through the chain for timestep Tau, expanding the bond dimensions.
+      // Sweep left/right through the chain for timestep Tau, expanding the bond dimensions.
       void SweepLeftExpand(std::complex<double> Tau);
+      void SweepRightExpand(std::complex<double> Tau);
+      void SweepRightExpandFinal(std::complex<double> Tau);
 
       // Evolve the chain by one time step using 1TDVP, expanding the bond
       // dimensions on the first sweep.
@@ -180,7 +182,6 @@ class TDVP
       double ErrTol;
       StatesInfo SInfo;
       bool Epsilon;
-      bool ForceExpand;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
 

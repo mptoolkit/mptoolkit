@@ -54,7 +54,7 @@ int main(int argc, char** argv)
       std::string TimeVar = "t";
 
       TDVPSettings Settings;
-      Settings.SInfo.MinStates = 1;
+      Settings.SInfo.MinStates = 2;
       Settings.SInfo.TruncationCutoff = 0;
       Settings.SInfo.EigenvalueCutoff = 1e-16;
 
@@ -82,7 +82,6 @@ int main(int argc, char** argv)
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
-         ("force-expand", prog_opt::bool_switch(&Settings.ForceExpand), "Force bond dimension expansion [1TDVP only; use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
@@ -203,9 +202,8 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
 
-      // Turn on bond expansion if trunc or eigen-cutoff have been specified,
-      // or if forced bond expansion is specified.
-      if (vm.count("trunc") || vm.count("eigen-cutoff") || Settings.ForceExpand)
+      // Turn on bond expansion if trunc or eigen-cutoff have been specified.
+      if (vm.count("trunc") || vm.count("eigen-cutoff"))
          Expand = true;
 
       if (Expand || TwoSite)
