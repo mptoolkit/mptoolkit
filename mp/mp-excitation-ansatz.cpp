@@ -40,8 +40,8 @@ int main(int argc, char** argv)
    {
       int Verbose = 0;
       int Quiet = 0;
-      std::string InputFileLeft;
-      std::string InputFileRight;
+      std::string LeftFilename;
+      std::string RightFilename;
       std::string HamStr;
       std::string KStr = "0";
       double Tol = 1e-10;
@@ -90,8 +90,8 @@ int main(int argc, char** argv)
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("psi", prog_opt::value(&InputFileLeft), "psi")
-         ("psi2", prog_opt::value(&InputFileRight), "psi2")
+         ("psi", prog_opt::value(&LeftFilename), "psi")
+         ("psi2", prog_opt::value(&RightFilename), "psi2")
          ;
 
       prog_opt::positional_options_description p;
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
 
       RangeList KList(KStr);
 
-      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
+      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(LeftFilename);
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
       if (HamStr.empty())
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
       InfiniteWavefunctionRight PsiRight;
       if (vm.count("psi2"))
       {
-         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
+         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(RightFilename);
          if (InPsiRight->is<InfiniteWavefunctionRight>())
             PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
          else if (InPsiRight->is<InfiniteWavefunctionLeft>())
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
       else
       {
          // This condition could be relaxed, in that case we would only save
-         // the left boundary by reference, but we assume that the user want
+         // the left boundary by reference, but we assume that the user wants
          // both boundaries saved by reference.
          if (Streaming)
          {
@@ -296,8 +296,8 @@ int main(int argc, char** argv)
 
                if (Streaming)
                {
-                  PsiEA.set_left_filename(InputFileLeft);
-                  PsiEA.set_right_filename(InputFileRight);
+                  PsiEA.set_left_filename(LeftFilename);
+                  PsiEA.set_right_filename(RightFilename);
                }
 
                MPWavefunction Wavefunction;

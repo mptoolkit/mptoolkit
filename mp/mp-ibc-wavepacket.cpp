@@ -295,7 +295,8 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 || (vm.count("momentum") == 0) == (vm.count("sma") == 0))
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("output") == 0 ||
+          (vm.count("momentum") == 0) == (vm.count("sma") == 0)) // i.e. momentum XNOR sma
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;

@@ -103,7 +103,7 @@ int main(int argc, char** argv)
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "Extra debug output [can be used multiple times]")
+         "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("lhs") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [<psi2>]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [psi2]" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }

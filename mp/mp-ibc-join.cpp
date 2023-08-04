@@ -58,42 +58,44 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      std::string OutputFile;
-      std::string InputFileLeft;
-      std::string InputFileRight;
+      std::string OutputFilename;
+      std::string LeftFilename;
+      std::string RightFilename;
       std::string HamStr;
       bool Random = false;
+      bool BoundaryLambda = false;
       bool Force = false;
-      double GMRESTol = 1E-13;    // tolerance for GMRES for the initial H matrix elements.
-      double Tol = 1E-15;
+      double GMRESTol = 1e-13;
+      double Tol = 1e-15;
       bool Streaming = false;
       bool NoStreaming = false;
       int NumEigen = 1;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
-         ("help", "show this help message")
-         ("left,l", prog_opt::value(&InputFileLeft),
-          "input iMPS wavefunction for the left semi-infinite strip [required]")
-         ("right,r", prog_opt::value(&InputFileRight),
-          "input iMPS wavefunction for the right semi-infinite strip [required]")
-         ("output,o", prog_opt::value(&OutputFile), "output IBC wavefuction [required]")
-         ("force,f", prog_opt::bool_switch(&Force), "overwrite output files")
-         ("random", prog_opt::bool_switch(&Random), "Don't minimize the Hamiltonian, make a random state instead")
+         ("help", "Show this help message")
+         ("output,o", prog_opt::value(&OutputFilename), "Output IBC filename [required]")
+         ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "model Hamiltonian, of the form lattice:operator")
+          "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
          ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance of the eigensolver", Tol).c_str())
-         ("gmrestol", prog_opt::value(&GMRESTol),
-          FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
+         ("gmrestol", prog_opt::value(&GMRESTol), FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "extra debug output [can be used multiple times]")
+         ("random", prog_opt::bool_switch(&Random), "Use a random lambda matrix instead of minimizing the Hamiltonian")
+         ("boundary-lambda", prog_opt::bool_switch(&BoundaryLambda), "Use the left boundary's lambda matrix instead of minimzing the Hamiltonian")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("psi-left", prog_opt::value(&LeftFilename), "psi-left")
+         ("psi-right", prog_opt::value(&RightFilename), "psi-right")
+         ;
 
       prog_opt::positional_options_description p;
+      p.add("psi-left", 1);
+      p.add("psi-right", 1);
 
       prog_opt::options_description opt;
       opt.add(desc).add(hidden);
@@ -103,11 +105,11 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || InputFileLeft.empty() || InputFileRight.empty() || OutputFile.empty())
+      if (vm.count("help") > 0 || vm.count("psi-left") == 0 || vm.count("output") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] -l <left_psi> -r <right_psi> -o <output_psi>\n";
-         std::cerr << desc << '\n';
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> [psi-right] -o <psi-out>" << std::endl;
+         std::cerr << desc << std::endl;
          return 1;
       }
 
@@ -122,30 +124,47 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+      pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
-      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
-      pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
-
+      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(LeftFilename);
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
       InfiniteWavefunctionRight PsiRight;
-      if (InPsiRight->is<InfiniteWavefunctionRight>())
-         PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
-      else if (InPsiRight->is<InfiniteWavefunctionLeft>())
+      if (vm.count("psi-right"))
       {
-         if (!InPsiRight->is<InfiniteWavefunctionRight>() && Streaming)
+         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(RightFilename);
+         if (InPsiRight->is<InfiniteWavefunctionRight>())
+            PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
+         else if (InPsiRight->is<InfiniteWavefunctionLeft>())
          {
-            std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight if streaming is enabled." << std::endl;
+            if (!InPsiRight->is<InfiniteWavefunctionRight>() && Streaming)
+            {
+               std::cerr << "fatal: right_psi must be an InfiniteWavefunctionRight if streaming is enabled." << std::endl;
+               return 1;
+            }
+
+            PsiRight = InfiniteWavefunctionRight(InPsiRight->get<InfiniteWavefunctionLeft>());
+         }
+         else
+         {
+            std::cerr << "fatal: right_psi must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
             return 1;
          }
-
-         PsiRight = InfiniteWavefunctionRight(InPsiRight->get<InfiniteWavefunctionLeft>());
       }
       else
       {
-         std::cerr << "fatal: right_psi must be an InfiniteWavefunctionLeft or InfiniteWavefunctionRight." << std::endl;
-         return 1;
+         // This condition could be relaxed, in that case we would only save
+         // the left boundary by reference, but we assume that the user wants
+         // both boundaries saved by reference.
+         if (Streaming)
+         {
+            std::cerr << "fatal: psi-right must be specified if streaming is enabled." << std::endl;
+            return 1;
+         }
+
+         PsiRight = InfiniteWavefunctionRight(PsiLeft);
+         // In this case, we shouldn't need to solve for the ground state.
+         BoundaryLambda = true;
       }
 
       // If the bases of the two boundary unit cells have only one quantum
@@ -162,17 +181,38 @@ int main(int argc, char** argv)
 
       WavefunctionSectionLeft Window;
 
-      // To join the wavefunctions we need a matrix to represent the wavefunction in the
-      // left/right bipartite basis. We can do that by minimizing the energy, or we
-      // can make a random state. We need a random state anyway, as input for the Lanczos
-      MatrixOperator C = MakeRandomMatrixOperator(PsiLeft.Basis2(), PsiRight.Basis1());
+      // To join the wavefunctions we need a matrix to represent the
+      // wavefunction in the left/right bipartite basis. We can do that by
+      // minimizing the energy, or we can make a random state. We need a random
+      // state anyway, as input for the Lanczos algorithm.
+
+      // NOTE: This is between the Basis1 of PsiLeft and the Basis2 of
+      // PsiRight, since we implicitly use the qshifted version of PsiLeft
+      // here: once the wavefunction is loaded, PsiLeft can be qshifted explicitly.
+      MatrixOperator C = MakeRandomMatrixOperator(PsiLeft.Basis1(), PsiRight.Basis1());
       C *= 1.0 / norm_frob(C);
       if (Random)
       {
-         // we don't need to do anything here
+         // We don't need to do anything here.
       }
-      else if (!HamStr.empty())
+      else if (BoundaryLambda)
       {
+         CHECK_EQUAL(PsiLeft.Basis1(), PsiRight.Basis1());
+         // We use lambda_l because we implicitly qshift PsiLeft (compare above).
+         C = PsiLeft.lambda_l();
+      }
+      else
+      {
+         if (HamStr.empty())
+         {
+            if (InPsiLeft->Attributes().count("Hamiltonian") == 0)
+            {
+               std::cerr << "fatal: no Hamiltonian specified, use -H option or set wavefunction attribute Hamiltonian." << std::endl;
+               return 1;
+            }
+            HamStr = InPsiLeft->Attributes()["Hamiltonian"].as<std::string>();
+         }
+
          InfiniteLattice Lattice;
          BasicTriangularMPO HamMPO, HamMPOLeft, HamMPORight;
          std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
@@ -206,16 +246,11 @@ int main(int argc, char** argv)
 
          for (auto e : Eigs)
          {
-            std::cout << "Energy = " << formatting::format_complex(remove_small_imag(e)) << '\n';
+            std::cout << "Energy = " << formatting::format_complex(remove_small_imag(e)) << std::endl;
          }
       }
-      else
-      {
-         std::cerr << basename(argv[0]) << ": fatal: no Hamiltonian specified\n";
-         return 1;
-      }
 
-      // Make the window from our centre matrix
+      // Make the window from our centre matrix.
       Window = WavefunctionSectionLeft(C);
 
       inplace_qshift(PsiRight, adjoint(QRight));
@@ -224,14 +259,18 @@ int main(int argc, char** argv)
 
       if (Streaming)
       {
-         ResultPsi.set_left_filename(InputFileLeft);
-         ResultPsi.set_right_filename(InputFileRight);
+         ResultPsi.set_left_filename(LeftFilename);
+         ResultPsi.set_right_filename(RightFilename);
       }
 
       MPWavefunction Result(ResultPsi);
 
       // Attributes
       Result.SetDefaultAttributes();
+
+      // Set the Hamiltonian if we specified it.
+      if (!HamStr.empty())
+         Result.Attributes()["Hamiltonian"] = HamStr;
 
       // History log
       Result.AppendHistoryCommand(EscapeCommandline(argc, argv));
@@ -241,17 +280,24 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
       return 1;
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!\n";
+      std::cerr << "Unknown exception!" << std::endl;
       return 1;
    }
 }

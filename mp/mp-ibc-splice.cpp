@@ -50,8 +50,6 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("left,l", prog_opt::value(&LeftFilename), "Left input IBC filename [required]")
-         ("right,r", prog_opt::value(&RightFilename), "Right input IBC filename [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output IBC filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance in the squared Frobenius norm of the difference of the window boundary Lambda matrix and the translationally invariant fixed point", Tol).c_str())
@@ -60,18 +58,28 @@ int main(int argc, char** argv)
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
+      prog_opt::options_description hidden("Hidden options");
+      hidden.add_options()
+         ("psi-left", prog_opt::value(&LeftFilename), "psi-left")
+         ("psi-right", prog_opt::value(&RightFilename), "psi-right")
+         ;
+
+      prog_opt::positional_options_description p;
+      p.add("psi-left", 1);
+      p.add("psi-right", 1);
+
       prog_opt::options_description opt;
-      opt.add(desc);
+      opt.add(desc).add(hidden);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("left") == 0 || vm.count("right") == 0 || vm.count("output") == 0)
+      if (vm.count("help") || vm.count("psi-right") == 0 || vm.count("output") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] -l <psi-left> -r <psi-right> -o <psi-out>" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi-left> <psi-right> -o <psi-out>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }

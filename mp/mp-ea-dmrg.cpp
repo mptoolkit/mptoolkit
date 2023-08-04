@@ -118,6 +118,12 @@ int main(int argc, char** argv)
 
       pheap::ShutdownPersistent(PsiPtr);
    }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
+      pheap::Cleanup();
+      return 1;
+   }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;

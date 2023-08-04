@@ -141,6 +141,18 @@ int main(int argc, char** argv)
 
       pheap::ShutdownPersistent(PsiPtr);
    }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+      return 1;
+   }
    catch (std::exception& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;

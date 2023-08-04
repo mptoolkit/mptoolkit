@@ -36,8 +36,8 @@ int main(int argc, char** argv)
    try
    {
       int Verbose = 0;
-      std::string InputFileLeft;
-      std::string InputFileRight;
+      std::string LeftFilename;
+      std::string RightFilename;
       std::string OpStr;
       double K = 0.0;
       std::string OutputFilename;
@@ -59,8 +59,8 @@ int main(int argc, char** argv)
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
          ("op", prog_opt::value(&OpStr), "op")
-         ("psi", prog_opt::value(&InputFileLeft), "psi")
-         ("psi2", prog_opt::value(&InputFileRight), "psi2")
+         ("psi", prog_opt::value(&LeftFilename), "psi")
+         ("psi2", prog_opt::value(&RightFilename), "psi2")
          ;
 
       prog_opt::positional_options_description p;
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("psi") == 0 || vm.count("output") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <psi> [psi-right] -o <output-psi>" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <psi> [psi-right] -o <psi-out>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -97,13 +97,13 @@ int main(int argc, char** argv)
 
       pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
-      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(InputFileLeft);
+      pvalue_ptr<MPWavefunction> InPsiLeft = pheap::ImportHeap(LeftFilename);
       InfiniteWavefunctionLeft PsiLeft = InPsiLeft->get<InfiniteWavefunctionLeft>();
 
       InfiniteWavefunctionRight PsiRight;
       if (vm.count("psi2"))
       {
-         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(InputFileRight);
+         pvalue_ptr<MPWavefunction> InPsiRight = pheap::ImportHeap(RightFilename);
          if (InPsiRight->is<InfiniteWavefunctionRight>())
             PsiRight = InPsiRight->get<InfiniteWavefunctionRight>();
          else if (InPsiRight->is<InfiniteWavefunctionLeft>())
@@ -174,8 +174,8 @@ int main(int argc, char** argv)
 
       if (Streaming)
       {
-         PsiEA.set_left_filename(InputFileLeft);
-         PsiEA.set_right_filename(InputFileRight);
+         PsiEA.set_left_filename(LeftFilename);
+         PsiEA.set_right_filename(RightFilename);
       }
 
       MPWavefunction Wavefunction;
@@ -195,6 +195,9 @@ int main(int argc, char** argv)
    catch (pheap::PHeapCannotCreateFile& e)
    {
       std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+      return 1;
    }
    catch (std::exception& e)
    {

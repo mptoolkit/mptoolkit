@@ -43,30 +43,25 @@ int main(int argc, char** argv)
       int Verbose = 0;
       std::string OpStrLeft;
       std::string OpStrWindow;
-      std::string InputFile;
-      std::string OutputFile;
+      std::string InputFilename;
+      std::string OutputFilename;
       bool Force = false;
       bool Normalize = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
-         ("help", "show this help message")
-         ("left,l", prog_opt::value(&OpStrLeft),
-          "operator for the left boundary")
-         ("window,w", prog_opt::value(&OpStrWindow),
-          "operator for the window")
-         ("force,f", prog_opt::bool_switch(&Force),
-          "allow overwriting the output file, if it already exists")
-         ("normalize", prog_opt::bool_switch(&Normalize),
-          "normalize the output wavefunction")
-         ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
-          "extra debug output [can be used multiple times]")
+         ("help", "Show this help message")
+         ("left,l", prog_opt::value(&OpStrLeft), "Operator for the left boundary")
+         ("window,w", prog_opt::value(&OpStrWindow), "Operator for the window")
+         ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the output wavefunction")
+         ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
-         ("psi1", prog_opt::value(&InputFile), "psi1")
-         ("psi2", prog_opt::value(&OutputFile), "psi2")
+         ("psi1", prog_opt::value(&InputFilename), "psi1")
+         ("psi2", prog_opt::value(&OutputFilename), "psi2")
          ;
 
       prog_opt::positional_options_description p;
@@ -84,8 +79,8 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi2") < 1 || (vm.count("left") < 1 && vm.count("window") < 1))
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <input-psi> <output-psi>\n";
-         std::cerr << desc << '\n';
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi-in> <psi-out>" << std::endl;
+         std::cerr << desc << std::endl;
          return 1;
       }
 
@@ -96,12 +91,12 @@ int main(int argc, char** argv)
          std::cout << "Loading wavefunction..." << std::endl;
 
       pvalue_ptr<MPWavefunction> PsiPtr;
-      if (InputFile == OutputFile)
-         PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
+      if (InputFilename == OutputFilename)
+         PsiPtr = pheap::OpenPersistent(InputFilename.c_str(), mp_pheap::CacheSize());
       else
       {
-         pheap::Initialize(OutputFile, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
-         PsiPtr = pheap::ImportHeap(InputFile);
+         pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
+         PsiPtr = pheap::ImportHeap(InputFilename);
       }
 
       IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
@@ -317,19 +312,26 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
       pheap::Cleanup();
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
       return 1;
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << '\n';
+      std::cerr << "Exception: " << e.what() << std::endl;
       pheap::Cleanup();
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!\n";
+      std::cerr << "Unknown exception!" << std::endl;
       pheap::Cleanup();
       return 1;
    }

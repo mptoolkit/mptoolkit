@@ -69,7 +69,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("psi-out") == 0 || vm.count("momentum") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi-in> <psi-out>" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] <psi-in> <psi-out> -k <momentum>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }
@@ -104,6 +104,18 @@ int main(int argc, char** argv)
       PsiPtr.mutate()->SetDefaultAttributes();
 
       pheap::ShutdownPersistent(PsiPtr);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
+      return 1;
+   }
+   catch (pheap::PHeapCannotCreateFile& e)
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      if (e.Why == "File exists")
+         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+      return 1;
    }
    catch (std::exception& e)
    {
