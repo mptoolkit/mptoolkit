@@ -225,7 +225,8 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
         mp-construct mp-ibc-create mp-ibc-join mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation \
-        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice mp-ea-moments mp-ea-create mp-ea-extend mp-ea-dmrg
+        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice \
+        mp-ea-moments mp-ea-create mp-ea-extend mp-ea-change-k mp-ea-dmrg
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-aux-project mp-ibc-dmrg mp-fluctuation
 
