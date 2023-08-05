@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 
       MatrixOperator Rho = D;
       Rho = scalar_prod(Rho, herm(Rho));
-      Rho = delta_shift(Rho, Psi.qshift());
+      Rho = delta_shift(Rho, Psi.qshift());  // SolveMPO_Left expects that Identity and Rho are both in the Basis1
 
       MatrixOperator Identity = MatrixOperator::make_identity(Phi.Basis1());
 
