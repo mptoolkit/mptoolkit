@@ -27,8 +27,6 @@
 #include "lattice/infinitelattice.h"
 #include "tdvp-compositions.h"
 
-extern std::map<std::string, Composition> Compositions;
-
 // Class to handle time-dependent Hamiltonian operators.
 class Hamiltonian
 {

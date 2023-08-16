@@ -49,4 +49,6 @@ class Composition
 Composition
 ToComposition(std::string Description, LTSDecomposition d);
 
+extern std::map<std::string, Composition> Compositions;
+
 #endif

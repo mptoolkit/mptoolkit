@@ -63,38 +63,6 @@ struct HEff2
    StateComponent const& F;
 };
 
-std::map<std::string, Composition>
-Compositions = {
-   {"secondorder", Composition(2, "Standard second-order symmetric composition", {0.5, 0.5})},
-   {"triplejump4", Composition(4, "Fourth-order triple jump composition",
-         {0.5/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0)),
-         -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)), -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)),
-         0.5/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0))})},
-   {"suzukifractal4", Composition(4, "Fourth-order Suzuki fractal composition",
-         {0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)), -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0))})},
-   {"mclachlan4-10", ToComposition("Symmetric fourth-order 10-term McLachlan composition",
-         SymmetricDecomposition(4, "",
-            {(14.0-std::sqrt(19.0))/108.0, (20.0-7.0*std::sqrt(19.0))/108.0},
-            {0.4, -0.1}))},
-   {"symmetric4-10", ToComposition("Symmetric fourth-order 10-term Barthel-Zhang composition",
-         SymmetricDecomposition(4, "",
-            {0.095848502741203681182, -0.078111158921637922695},
-            {0.42652466131587616168, -0.12039526945509726545}))},
-   {"leapfrog4-10", ToComposition("Leapfrog fourth-order 10-term Barthel-Zhang composition",
-            LeapfrogDecompositionOdd(4, "",
-            {0.25686635900587695859, 0.67762403230558747362}))},
-   {"eq-10", Composition(2, "Equally spaced 10-term composition",
-         {0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1})}
-};
-
 Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
                          std::string Magnus_, std::string TimeVar_)
    : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_)
