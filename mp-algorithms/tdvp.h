@@ -25,22 +25,7 @@
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "lattice/infinitelattice.h"
-
-class Composition
-{
-   public:
-      Composition() : Order(0) {}
-      Composition(int Order_, std::string Description_, std::vector<double> Gamma_)
-         : Order(Order_), Description(Description_), Gamma(Gamma_)
-      {
-         CHECK(Gamma.size() % 2 == 0);
-         CHECK_CLOSE(std::accumulate(Gamma.begin(), Gamma.end(), 0.0), 1.0);
-      }
-
-      int Order;
-      std::string Description;
-      std::vector<double> Gamma;
-};
+#include "tdvp-compositions.h"
 
 extern std::map<std::string, Composition> Compositions;
 

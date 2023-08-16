@@ -112,7 +112,19 @@ int main(int argc, char** argv)
          std::cerr << desc << std::endl;
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
+         {
             std::cerr << c.first << " : " << c.second.Description << std::endl;
+            if (Verbose > 0)
+            {
+               // Print the prefactors of the composition.
+               std::cerr << "(";
+               auto g = c.second.Gamma.begin();
+               std::cerr << *g;
+               while (++g != c.second.Gamma.end())
+                  std::cerr << ", " << *g;
+               std::cerr << ")" << std::endl;
+            }
+         }
          return 1;
       }
 
