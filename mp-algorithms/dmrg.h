@@ -47,22 +47,22 @@ class DMRG
       // Adds x to the 'orthogonal set', that we explicitly orthogonalize the
       // wavefunction against
       void AddOrthogonalState(FiniteWavefunctionLeft x);
-      
+
       void StartSweep(bool IncrementSweepNumber = true, double Broad = 0);
-      
+
       void EndSweep();    // statistics for end of sweep
-      
+
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
-      
+
       void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
       void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
-      
+
       //   int LeftSize() const { return Psi.LeftSize(); }
       //   int RightSize() const { return Psi.RightSize(); }
-      
+
       LocalEigensolver& Solver() { return Solver_; }
-      
+
       // Invoke the local eigensolver
       std::complex<double> Solve();
 
@@ -84,6 +84,11 @@ class DMRG
 
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo);
+
+      // Expand the environment basis to that it contains at least StatesWanted states, if possible.
+      // Returns the actual environment size.
+      int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
+      int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
 
       void debug_check_structure() const;
 
@@ -122,7 +127,7 @@ class DMRG
       double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
       double SweepEnergyError;       // standard error of the energy at each iteration
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
-      
+
       // some statistics, for current iteration
       int IterationNumMultiplies;
       int IterationNumStates;

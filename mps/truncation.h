@@ -28,12 +28,17 @@
 struct EigenInfo
 {
    double Eigenvalue;
-   int Degree;              // degree of the representation
    int Subspace, Index;     // subspace/index into the basis
+   QuantumNumbers::QuantumNumber Q;
+
+   double Degree() const
+   {
+      return degree(Q);
+   }
 
    double Weight() const
    {
-      return Degree*Eigenvalue;
+      return degree(Q)*Eigenvalue;
    }
 
    double Entropy(double TotalWeight) const
@@ -41,11 +46,10 @@ struct EigenInfo
       if (TotalWeight < std::numeric_limits<double>::epsilon())
          return 0;
       double x = Eigenvalue/TotalWeight;
-      return x > 0 ? -x * Degree * log(x) : 0;
+      return x > 0 ? -x * this->Degree() * log(x) : 0;
    }
-
-   EigenInfo(double Eigen_, int Degree_, int QuantumNumber_, int LinearIndex_)
-      : Eigenvalue(Eigen_), Degree(Degree_), Subspace(QuantumNumber_), Index(LinearIndex_) {}
+   EigenInfo(double Eigen_, int QuantumNumber_, int LinearIndex_, QuantumNumber Q_)
+      : Eigenvalue(Eigen_), Subspace(QuantumNumber_), Index(LinearIndex_), Q(Q_) {}
 
    bool operator==(EigenInfo const& Other) const
    {
@@ -67,15 +71,14 @@ struct EigenInfo
    {
       typedef bool result_type;
 
-      QuantumNumberEqualTo(VectorBasis const& B_, QuantumNumbers::QuantumNumber const& q_)
-         : B(B_), q(q_) {}
+      QuantumNumberEqualTo(QuantumNumbers::QuantumNumber const& q_)
+         :q(q_) {}
 
       bool operator()(EigenInfo const& e) const
       {
-         return B[e.Subspace] == q;
+         return e.Q == q;
       }
 
-      VectorBasis const& B;
       QuantumNumbers::QuantumNumber q;
    };
 
@@ -92,7 +95,7 @@ struct EigenInfo
 inline
 bool EigenCompareWeight(EigenInfo const& x, EigenInfo const& y)
 {
-   return y.Eigenvalue*y.Degree < x.Eigenvalue*x.Degree;
+   return y.Eigenvalue*degree(y.Q) < x.Eigenvalue*degree(x.Q);
 }
 
 inline
@@ -194,7 +197,7 @@ double DensitySigma(FwdIter first, FwdIter last)
    double Acc = 0;
    while (first != last)
    {
-      Acc += first->Eigenvalue * first->Degree;
+      Acc += first->Eigenvalue * degree(first->Q);
       ++first;
    }
    return Acc;
@@ -211,7 +214,7 @@ double DensityEntropyBase2(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-         E -= x * log2(x) * first->Degree;
+         E -= x * log2(x) * degree(first->Q);
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -231,7 +234,7 @@ double DensityEntropyBaseE(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-         E -= x * log(x) * first->Degree;
+         E -= x * log(x) * degree(first->Q);
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -257,7 +260,7 @@ double DensityTruncation(FwdIter first, FwdIter last, double EigenSum)
    double E = 0;
    while (first != last)
    {
-      double x = first->Eigenvalue * first->Degree;
+      double x = first->Eigenvalue * degree(first->Q);
       if (x > 0)
          E += x;
 
@@ -340,6 +343,56 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
    return States.TruncateRelative
       ? TruncateFixTruncationErrorRelative(first, last, States, Info)
       : TruncateFixTruncationErrorAbsolute(first, last, States, Info);
+}
+
+// Intended for finding optimal states to keep in an expanded environment.
+// We keep, if possible, at least StatesPerSector states in each distinct quantum number
+// sector.  Normally we want this to be small, typically 1 state should suffice.
+// We do this even if the weight of the state is zero.
+// Secondly, we attempt to keep at least NumStatesWithWeight number of states that have non-zero weight.
+// The states in each sector count towards this number if they have non-zero weight.
+// (If some states in quantum number sectors only have zero weight then we might end up keeping more than
+// NumStatesWithWeight total states.)
+// We don't return a TruncationInfo object, since there isn't much meaningful information that it
+// could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
+template <typename FwdIter>
+std::list<EigenInfo>
+TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight, int StatesPerSector)
+{
+   // We need to copy the EigenInfo, because we need to do two passes over it, and
+   // possibly remove some elements on the first pass.
+   std::list<EigenInfo> States(first, last);
+
+   std::list<EigenInfo> Result;
+   std::map<QuantumNumber, int> KeptStatesPerSector;
+
+   // first pass: keep at least StatesPerSector states in each quantum number sector.
+   // If the kept state has non-zero weight, then it subtracts from NumStatesWithWeight.
+   auto f = States.cbegin();
+   while (f != States.cend())
+   {
+      if (KeptStatesPerSector[f->Q] < StatesPerSector)
+      {
+         Result.push_back(*f);
+         if (f->Eigenvalue > 0.0)
+            --NumStatesWithWeight;
+         ++KeptStatesPerSector[f->Q];
+         f = States.erase(f);
+      }
+      ++f;
+   }
+
+   // second pass: keep the next NumStatesWithWeight in order from heighest weight,
+   // as long as they have non-zero weight.
+   f = States.cbegin();
+   while (NumStatesWithWeight > 0 && f != States.cend() && f->Eigenvalue > 0.0)
+   {
+      Result.push_back(*f);
+      ++f;
+      --NumStatesWithWeight;
+   }
+
+   return Result;
 }
 
 #endif
