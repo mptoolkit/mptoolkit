@@ -32,6 +32,8 @@
 #include "common/environment.h"
 #include "tensor/tensor_eigen.h"
 
+double const PrefactorEpsilon = 1e-16;
+
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
@@ -601,6 +603,210 @@ DMRG::Solve()
 bool DMRG::IsConverged() const
 {
    return IsConvergedValid && IsPsiConverged;
+}
+
+// Expand the Basis1 of CRight
+// Returns the number of states that were added to the environment basis
+int
+ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      int StatesWanted, int ExtraStatesPerSector)
+{
+   CHECK_EQUAL(E.Basis1(), CLeft.Basis1());
+   CHECK_EQUAL(F.Basis1(), CRight.Basis2());
+
+   int ExtraStates = StatesWanted - CRight.Basis1().total_dimension();
+   // Calculate left null space of left site.
+   StateComponent NLeft = NullSpace2(CLeft);
+
+   // Perform SVD to right-orthogonalize the right site and extract singular value matrix.
+   StateComponent CRightOrtho = CRight;
+   MatrixOperator URight;
+   RealDiagonalOperator DRight;
+   std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
+
+   // Project out the first and last columns of HLeft.
+   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
+   for (int i = 0; i < Projector.Basis2().size(); ++i)
+      Projector(i+1, i) = 1.0;
+
+   StateComponent X = contract_from_left(HLeft*Projector, herm(NLeft), E, CLeft*URight*DRight);
+   StateComponent FRight = contract_from_right(herm(herm(Projector)*HRight), CRightOrtho, F, herm(CRight));
+
+   // Multiply each element of X by a prefactor depending on the corresponding element of F.
+   for (int i = 0; i < X.size(); ++i)
+   {
+      // We add an epsilon term to the prefactor to avoid the corner case where
+      // the prefactor is zero for all elements, and any possible new states
+      // are ignored.
+      double Prefactor = norm_frob(FRight[i]) + PrefactorEpsilon;
+      X[i] *= Prefactor;
+   }
+
+   // Take the truncated SVD of X.
+   MatrixOperator XExpand = ExpandBasis1(X);
+   CMatSVD SVD(XExpand);
+
+   auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(StatesToKeep.begin(), StatesToKeep.end(), U, D, Vh);
+
+   // Construct new basis.
+   SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), U.Basis2());
+   // Regularize the new basis.
+   Regularizer R(NewBasis);
+
+   // Add the new states to CLeft, and add zeros to CRight.
+   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, U), NewBasis), R);
+
+   StateComponent Z = StateComponent(CRight.LocalBasis(), Vh.Basis1(), CRight.Basis2());
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
+
+   return StatesToKeep.size();
+}
+
+int
+ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      int StatesWanted, int ExtraStatesPerSector)
+{
+   int ExtraStates = StatesWanted - CLeft.Basis2().total_dimension();
+
+   // Calculate right null space of right site.
+   StateComponent NRight = NullSpace1(CRight);
+
+   // Perform SVD to left-orthogonalize the left site and extract singular value matrix.
+   StateComponent CLeftOrtho = CLeft;
+   MatrixOperator VhLeft;
+   RealDiagonalOperator DLeft;
+   std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
+
+   // Project out the first and last columns of HRight.
+   SimpleOperator Projector(HRight.Basis1(), BasisList(HRight.Basis1().begin()+1, HRight.Basis1().end()-1));
+   for (int i = 0; i < Projector.Basis1().size(); ++i)
+      Projector(i, i+1) = 1.0;
+
+   StateComponent X = contract_from_right(herm(Projector*HRight), NRight, F, herm(DLeft*VhLeft*CRight));
+   StateComponent ELeft = contract_from_left(HLeft*herm(Projector), herm(CLeftOrtho), E, CLeft);
+
+   // Multiply each element of X by a prefactor depending on the corresponding element of E.
+   for (int i = 0; i < X.size(); ++i)
+   {
+      // We add an epsilon term to the prefactor to avoid the corner case where
+      // the prefactor is zero for all elements, and any possible new states
+      // are ignored.
+      double Prefactor = norm_frob(ELeft[i]) + PrefactorEpsilon;
+      X[i] *= Prefactor;
+   }
+
+   // Take the truncated SVD of X.
+   MatrixOperator XExpand = ExpandBasis1(X);
+   CMatSVD SVD(XExpand);
+
+   auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(StatesToKeep.begin(), StatesToKeep.end(), U, D, Vh);
+
+   // Construct new basis.
+   SumBasis<VectorBasis> NewBasis(CRight.Basis1(), U.Basis2());
+   // Regularize the new basis.
+   Regularizer R(NewBasis);
+
+   // Add the new states to CRight, and add zeros to CLeft.
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(U), NRight), NewBasis));
+
+   StateComponent Z = StateComponent(CLeft.LocalBasis(), Vh.Basis1(), CLeft.Basis1());
+   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
+
+   return StatesToKeep.size();
+}
+
+#if 0
+void DMRG::ExpandEnvironmentLeft(int ExtraStates)
+{
+   // Expand the environment for Basis2 of *C
+
+   // Merge E and A matrices
+   StateComponent A = *C;
+   StateComponent EA = local_tensor_prod(LeftHamiltonian.back(), A);
+   // EA is m x (w*d) x m
+
+   ProductBasis<BasisList, BasisList> PBasis(A.LocalBasis(), EA.LocalBasis());
+
+   SimpleOperator Ham = reshape_to_matrix(*H);
+
+   // Apply the MPO
+   EA = local_prod(herm(Ham), EA);
+   // EA is now m x (d*w) x m
+
+   // project onto null space
+   EA -= local_tensor_prod(A, contract_local_tensor_prod_left(herm(A), EA, PBasis));
+
+   // Pre-SVD to make the final SVD faster
+   TruncateBasis2(EA);
+
+   // SVD again to get the expanded basis
+   AMatSVD SL(EA, PBasis);
+
+   // How to choose which states to keep?
+   // If we do any expansion at all then we ought to keep at least one state in each possible quantum number sector, if possible.
+   TruncationInfo Info;
+   RealDiagonalOperator L;
+   StateComponent X;
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfo, Info);
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, L, X);  // L and X are not used here
+
+   // A is now the expanded set of states.  Merge it into *C
+   A = tensor_row_sum(*C, A, SumBasis<VectorBasis>(C->Basis2(), A.Basis2()));
+
+   // The added rows are not going to be exactly orthogonal to the existing states, especially if we forced a few states that
+   // have zero singular values. We ought to do another SVD, or a QR decomposition to orthogonalize the basis.
+
+   // Reconstruct the Hamiltonian
+   // In principle we could just construct the new rows using A, but easier to just reconstruct the full matrices.
+
+   // We also need Lambda in the new basis
+
+
+}
+#endif
+
+int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
+{
+   auto CLeft = C;
+   --CLeft;
+   HamMatrices.pop_left();
+   auto HLeft = H;
+   --HLeft;
+
+   auto EnvStates = ::ExpandLeftEnvironment(*CLeft, *C, HamMatrices.left(), HamMatrices.right(), *HLeft, *H, StatesWanted, ExtraStatesPerSector);
+
+   // reconstruct the E matrix with the expanded environment
+   HamMatrices.push_left(contract_from_left(*HLeft, herm(*CLeft), HamMatrices.left(), *CLeft));
+
+   return C->Basis1().total_dimension();
+}
+
+int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
+{
+   auto CRight = C;
+   ++CRight;
+   HamMatrices.pop_right();
+   auto HRight = H;
+   ++HRight;
+
+   auto EnvStates = ::ExpandRightEnvironment(*C, *CRight, HamMatrices.left(), HamMatrices.right(), *H, *HRight, StatesWanted, ExtraStatesPerSector);
+
+   // reconstsruct the F matrix with the expanded environment
+   HamMatrices.push_right(contract_from_right(herm(*HRight), *CRight, HamMatrices.right(), herm(*CRight)));
+
+   return C->Basis2().total_dimension();
 }
 
 TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)

@@ -125,13 +125,13 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
       double EVal = Iter->Eigenvalue / this->EigenSum();
       double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
 
-      int OuterDegen = ShowDegen ? Iter->Degree : 1;
-      int DisplayDegen = ShowDegen ? 1 : Iter->Degree;
+      int OuterDegen = ShowDegen ? Iter->Degree() : 1;
+      int DisplayDegen = ShowDegen ? 1 : Iter->Degree();
 
       for (int i = 0; i < OuterDegen; ++i)
       {
-         double Weight = EVal * Iter->Degree / OuterDegen;
-         TotalDegree += Iter->Degree;
+         double Weight = EVal * Iter->Degree() / OuterDegen;
+         TotalDegree += Iter->Degree();
          ++n;
          out << std::right << std::setw(7) << n << "  "
              << std::right << std::setw(20) << Iter->Eigenvalue
@@ -159,7 +159,7 @@ DensityMatrixBase::Entropy(bool Base2) const
    {
       double EVal = Iter->Eigenvalue / this->EigenSum();
       if (EVal > 0)
-         x -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree;
+         x -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree();
    }
    return x;
 }
@@ -171,7 +171,7 @@ DensityMatrixBase::EvaluateCasimir(int n) const
    double ESum = this->EigenSum();
    for (const_iterator Iter = begin(); Iter != end(); ++Iter)
    {
-      x += (Iter->Eigenvalue / ESum) * Iter->Degree * casimir(this->Lookup(Iter->Subspace), n);
+      x += (Iter->Eigenvalue / ESum) * Iter->Degree() * casimir(this->Lookup(Iter->Subspace), n);
    }
    return x;
 }
@@ -185,7 +185,7 @@ DensityMatrixBase::EvaluateCasimirMoment(int n) const
    for (const_iterator Iter = begin(); Iter != end(); ++Iter)
    {
       double xx = casimir(this->Lookup(Iter->Subspace), n);
-      x += (Iter->Eigenvalue / ESum) * Iter->Degree * (xx-c) * (xx-c);
+      x += (Iter->Eigenvalue / ESum) * Iter->Degree() * (xx-c) * (xx-c);
    }
    return x;
 }
@@ -207,7 +207,7 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       // add the eigenvalues and eigenvector pointers to EigenInfoList
       for (std::size_t i = 0; i < RawDMList[q1].size1(); ++i)
       {
-         EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
+         EigenInfoList.push_back(EigenInfo(Eigenvalues[i], q1, i, this->Lookup(q1)));
          ESum += Eigenvalues[i] * CurrentDegree;
       }
    }
@@ -456,7 +456,7 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
       for (unsigned j = 0; j < size(D); ++j)
       {
          double Weight = D[j]*D[j];
-         EigenInfoList.push_back(EigenInfo(Weight, CurrentDegree, i, j));
+         EigenInfoList.push_back(EigenInfo(Weight, i, j, this->Lookup(i)));
          ESum += Weight * CurrentDegree;
       }
    }

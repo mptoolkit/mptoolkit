@@ -85,6 +85,11 @@ class DMRG
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo);
 
+      // Expand the environment basis to that it contains at least StatesWanted states, if possible.
+      // Returns the actual environment size.
+      int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
+      int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
+
       void debug_check_structure() const;
 
       OperatorStackType HamMatrices;
