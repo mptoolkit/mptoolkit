@@ -90,6 +90,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    //TRACE(Rho);
 
    DensityMatrix<MatrixOperator> DM(Rho);
+
    //DM.DensityMatrixReport(std::cout);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
@@ -100,12 +101,12 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList,
-		  AddedQN,
-		  DM.Basis(),
-		  KeptStates,
-		  DiscardStates,
-		  Info);
+   // UpdateKeepList(KeepList,
+	// 	  AddedQN,
+	// 	  DM.Basis(),
+	// 	  KeptStates,
+	// 	  DiscardStates,
+	// 	  Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
    Lambda = Lambda * herm(UKeep);
@@ -176,12 +177,12 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList,
-		  AddedQN,
-		  DM.Basis(),
-		  KeptStates,
-		  DiscardStates,
-		  Info);
+   // UpdateKeepList(KeepList,
+	// 	  AddedQN,
+	// 	  DM.Basis(),
+	// 	  KeptStates,
+	// 	  DiscardStates,
+	// 	  Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
 
@@ -695,7 +696,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
 
    // Project out the first and last columns of HRight.
-   SimpleOperator Projector(HRight.Basis1(), BasisList(HRight.Basis1().begin()+1, HRight.Basis1().end()-1));
+   SimpleOperator Projector(BasisList(HRight.Basis1().begin()+1, HRight.Basis1().end()-1), HRight.Basis1());
    for (int i = 0; i < Projector.Basis1().size(); ++i)
       Projector(i, i+1) = 1.0;
 
@@ -730,7 +731,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Add the new states to CRight, and add zeros to CLeft.
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(U), NRight), NewBasis));
 
-   StateComponent Z = StateComponent(CLeft.LocalBasis(), Vh.Basis1(), CLeft.Basis1());
+   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), Vh.Basis1());
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
 
    return StatesToKeep.size();
