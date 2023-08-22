@@ -639,6 +639,8 @@ TDVP::ExpandRight()
 void
 TDVP::SweepLeftExpand(std::complex<double> Tau)
 {
+   MaxStates = 0;
+
    while (Site > LeftStop)
    {
       if (C->Basis1().total_dimension() < SInfo.MaxStates)
@@ -653,6 +655,8 @@ TDVP::SweepLeftExpand(std::complex<double> Tau)
 void
 TDVP::SweepRightExpand(std::complex<double> Tau)
 {
+   MaxStates = 0;
+
    while (Site < RightStop)
    {
       if (C->Basis2().total_dimension() < SInfo.MaxStates)
@@ -667,6 +671,8 @@ TDVP::SweepRightExpand(std::complex<double> Tau)
 void
 TDVP::SweepRightExpandFinal(std::complex<double> Tau)
 {
+   MaxStates = 0;
+
    if (C->Basis2().total_dimension() < SInfo.MaxStates)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);

@@ -386,6 +386,9 @@ iTDVP::Evolve(bool Expand)
 
       this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
 
+      if (Expand)
+         this->ExpandBondsRight();
+
       this->EvolveRight((*Gamma)*Timestep);
       Time += (*Gamma)*Timestep;
       ++Gamma;
@@ -652,6 +655,8 @@ iTDVP::ExpandLeft()
 void
 iTDVP::ExpandBondsLeft()
 {
+   MaxStates = 0;
+
    HamLOld = HamL;
    HamLOld.pop_back();
    HamL = std::deque<StateComponent>();
@@ -661,13 +666,13 @@ iTDVP::ExpandBondsLeft()
       if (C->Basis1().total_dimension() < SInfo.MaxStates)
          this->ExpandLeft();
 
-      --C, --H, --Site;
-
       HamLOld.pop_back();
-      // For expanding leftmost site, we need to save the environment to the
-      // left of the rightmost site of the unit cell.
-      if (Site == RightStop-1)
+      // For expanding the leftmost site, we need to save the environment to
+      // the left of the rightmost site of the unit cell.
+      if (Site == RightStop)
          HamLOld.push_front(HamL.front());
+
+      --C, --H, --Site;
 
       *C = prod(*C, LambdaR);
    }
@@ -693,6 +698,110 @@ iTDVP::ExpandBondsLeft()
    // Update the left block Hamiltonian.
    BlockHamL = delta_shift(HamL.front(), adjoint(QShift));
    BlockHamL.back() -= E * BlockHamL.front();
+}
+
+void
+iTDVP::ExpandRight()
+{
+   auto CNext = C;
+   ++CNext;
+   // Shift to the end of the chain if we are at the beginning.
+   if (Site == RightStop)
+   {
+      CNext = Psi.begin();
+      *CNext = delta_shift(*CNext, adjoint(QShift));
+      HamROld.front() = delta_shift(HamROld.front(), adjoint(QShift));
+   }
+
+   auto HNext = H;
+   ++HNext;
+   if (HNext == HamMPO.end())
+      HNext = HamMPO.begin();
+
+   TruncationInfo Info = ExpandRightEnvironment(*C, *CNext, HamL.back(), HamROld.front(), *H, *HNext, SInfo);
+
+   int TotalStates = C->Basis2().total_dimension();
+
+   MaxStates = std::max(MaxStates, TotalStates);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " NewStates=" << Info.KeptStates()
+                << " TotalStates=" << TotalStates
+                << std::endl;
+   }
+
+   // Create a copy of the site to right-orthogonalize.
+   StateComponent Tmp = *C;
+   MatrixOperator Vh;
+   RealDiagonalOperator D;
+   std::tie(D, Vh) = OrthogonalizeBasis2(Tmp);
+   // Ensure we do not change the basis.
+   Tmp = prod(Tmp, Vh);
+
+   // Update the lambda matrix.
+   LambdaR = herm(Vh)*(D*Vh);
+
+   // Left-orthogonalize current site.
+   MatrixOperator U;
+   std::tie(U, std::ignore) = OrthogonalizeBasis1(*C);
+   *C = prod(U, *C);
+
+   // Update the left block Hamiltonian.
+   HamL.push_back(contract_from_left(*H, herm(Tmp), HamL.back(), Tmp));
+   // Update the right block Hamiltonian.
+   HamR.push_back(contract_from_right(herm(*HNext), *CNext, HamROld.front(), herm(*CNext)));
+
+   if (Site == RightStop)
+      *CNext = delta_shift(*CNext, QShift);
+}
+
+void
+iTDVP::ExpandBondsRight()
+{
+   MaxStates = 0;
+
+   HamROld = HamR;
+   HamROld.pop_front();
+   HamR = std::deque<StateComponent>();
+
+   while (Site < RightStop)
+   {
+      if (C->Basis2().total_dimension() < SInfo.MaxStates)
+         this->ExpandRight();
+
+      HamROld.pop_front();
+      // For expanding the rightmost site, we need to save the environment to
+      // the left of the rightmost site of the unit cell.
+      if (Site == LeftStop)
+         HamROld.push_back(HamR.back());
+
+      ++C, ++H, ++Site;
+
+      *C = prod(LambdaR, *C);
+   }
+
+   // Handle rightmost site separately.
+   if (C->Basis2().total_dimension() < SInfo.MaxStates)
+      this->ExpandRight();
+
+   // Move back to the leftend of the unit cell.
+   C = Psi.begin();
+   H = HamMPO.begin();
+   Site = LeftStop;
+
+   LambdaR = delta_shift(LambdaR, QShift);
+
+   // Update the left block Hamiltonian.
+   BlockHamL = HamL.back();
+   BlockHamL.back() -= E * BlockHamL.front();
+   HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
+
+   // Update the right block Hamiltonian.
+   BlockHamR = delta_shift(HamR.back(), QShift);
+   BlockHamR.front() -= E * BlockHamR.back();
 }
 
 void
