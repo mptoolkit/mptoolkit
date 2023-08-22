@@ -4,8 +4,7 @@
 //
 // mp-algorithms/itdvp.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -58,22 +57,22 @@ class iTDVP : public TDVP
       void EvolveRight(std::complex<double> Tau);
 
       // Evolve the chain by one timestep using single-site TDVP.
-      void Evolve();
+      void Evolve(bool Expand);
 
       // Calculate the error measures epsilon_1 and epsilon_2.
-      // (If Epsilon == false, this just calculates the X/Y arrays for
-      // ExpandBonds.)
       void CalculateEps();
 
       // Calculate the error measures epsilon_3 to epsilon_NEps.
-      void CalculateEpsN();
+      void CalculateEpsN(std::deque<StateComponent> X, std::deque<StateComponent> Y);
 
-      // Expand the dimension of the left environment of the next site.
-      void ExpandLeftNext();
+      // Expand the dimension of the left/right environment of the current site.
+      void ExpandLeft();
+      void ExpandRight();
 
-      // Expands the bond dimensions of the chain (must be run after
-      // CalculateEps to generate X and Y)
-      void ExpandBonds();
+      // Sweep the unit cell from right to left, expanding the left environments of each site.
+      void ExpandBondsLeft();
+      // Sweep the unit cell from left to right, expanding the right environments of each site.
+      void ExpandBondsRight();
 
       // Update the Hamiltonian if time-dependent, recalculating the left/right
       // environments.
@@ -84,29 +83,14 @@ class iTDVP : public TDVP
       MatrixOperator LambdaR;
       MatrixOperator LambdaROld;
       QuantumNumber QShift;
-      std::deque<StateComponent> HamLOld;
+      std::deque<StateComponent> HamLOld, HamROld;
       StateComponent BlockHamL;
       StateComponent BlockHamR;
-      LinearWavefunction::iterator COld;
 
       double GMRESTol;
       double LambdaTol;
       int MaxSweeps;
       int NEps;
-
-      // Partial terms used to calculate epsilon_1/2 and expand the bond
-      // dimension of the unit cell.
-      std::deque<StateComponent> X;
-      std::deque<StateComponent> Y;
-
-      // Flag to determine whether X and Y have been calculated for the current
-      // timestep.
-      bool XYCalculated = false;
-
-      // Flag for whether the time-dependent Hamiltonian has already been
-      // updated, for when the bonds are exanded before performing a left
-      // sweep.
-      bool HamUpdated = true;
 
       // Error measures epsilon_3^2 to epsilon_NEps^2.
       std::vector<double> EpsNSqSum;

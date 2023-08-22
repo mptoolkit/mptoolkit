@@ -4,8 +4,7 @@
 //
 // mp-algorithms/tdvp.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -202,5 +201,21 @@ class TDVP
       // The logarithm of the norm of the state.
       double LogAmplitude = 0.0;
 };
+
+// Expand the left environment of CRight by adding extra states to CLeft.
+// Assumes CRight is the current orthogonality center.
+TruncationInfo
+ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      StatesInfo SInfo);
+
+// Expand the right environment of CLeft by adding extra states to CRight.
+// Assumes CLeft is the current orthogonality center.
+TruncationInfo
+ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      StatesInfo SInfo);
 
 #endif
