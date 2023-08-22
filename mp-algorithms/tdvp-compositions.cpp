@@ -83,6 +83,29 @@ LeapfrogDecompositionOdd(int Order, std::string Description, std::vector<double>
    return SymmetricDecomposition(Order, Description, a, b);
 }
 
+std::ostream&
+operator<<(std::ostream& out, Composition const& Comp)
+{
+   out << Comp.Description << "\n";
+
+   // Print the prefactors of the composition.
+   out << "Alpha: (";
+   auto A = Comp.Alpha.begin();
+   out << *A;
+   while (++A != Comp.Alpha.end())
+      out << ", " << *A;
+   out << ")\n";
+
+   out << "Beta:  (";
+   auto B = Comp.Beta.begin();
+   out << *B;
+   while (++B != Comp.Beta.end())
+      out << ", " << *B;
+   out << ")";
+
+   return out;
+}
+
 Composition
 ToComposition(std::string Description, LTSDecomposition d)
 {
@@ -92,38 +115,34 @@ ToComposition(std::string Description, LTSDecomposition d)
    auto A = a.begin();
    auto B = b.begin();
 
-   std::vector<double> Gamma;
+   std::vector<double> Alpha, Beta;
 
-   Gamma.push_back(*A);
-   Gamma.push_back(*B - Gamma.back());
+   Alpha.push_back(*A);
+   Beta.push_back(*B - Alpha.back());
    ++A, ++B;
 
    while (A != a.end()-1)
    {
-      Gamma.push_back(*A - Gamma.back());
-      Gamma.push_back(*B - Gamma.back());
+      Alpha.push_back(*A - Beta.back());
+      Beta.push_back(*B - Alpha.back());
       ++A, ++B;
    }
 
    if (Description.empty())
       Description = d.description();
 
-   return Composition(d.order(), Description, Gamma);
+   return Composition(d.order(), Description, Alpha, Beta);
 }
 
 std::map<std::string, Composition>
 Compositions = {
-   {"secondorder", Composition(2, "Standard second-order symmetric composition", {0.5, 0.5})},
+   {"secondorder", Composition(2, "Standard second-order symmetric composition", {0.5}, {0.5})},
    {"triplejump4", Composition(4, "Fourth-order triple jump composition",
-         {0.5/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0)),
-         -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)), -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)),
-         0.5/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0))})},
+         {0.5/(2.0-std::pow(2.0, 1.0/3.0)), -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0))},
+         {0.5/(2.0-std::pow(2.0, 1.0/3.0)), -0.5*std::pow(2.0, 1.0/3.0)/(2.0-std::pow(2.0, 1.0/3.0)), 0.5/(2.0-std::pow(2.0, 1.0/3.0))})},
    {"suzukifractal4", Composition(4, "Fourth-order Suzuki fractal composition",
-         {0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)), -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)),
-         0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0))})},
+         {0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)), -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0))},
+         {0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)), -0.5*std::pow(4.0, 1.0/3.0)/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0)), 0.5/(4.0-std::pow(4.0, 1.0/3.0))})},
    {"mclachlan4-10", ToComposition("Symmetric fourth-order 10-term McLachlan composition",
          SymmetricDecomposition(4, "",
             {(14.0-std::sqrt(19.0))/108.0, (20.0-7.0*std::sqrt(19.0))/108.0},
@@ -136,9 +155,6 @@ Compositions = {
             LeapfrogDecompositionOdd(4, "",
             {0.25686635900587695859, 0.67762403230558747362}))},
    {"eq-10", Composition(2, "Equally spaced 10-term composition",
-         {0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1})}
+         {0.1, 0.1, 0.1, 0.1, 0.1},
+         {0.1, 0.1, 0.1, 0.1, 0.1})}
 };

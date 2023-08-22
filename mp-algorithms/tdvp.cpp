@@ -146,7 +146,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, TDVPSett
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   std::complex<double> dt = Comp.Beta.back()*Timestep;
    HamMPO = Ham(Time-dt, dt);
 
    if (Verbose > 0)
@@ -384,36 +384,35 @@ TDVP::Evolve()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-   this->SweepLeft((*Gamma)*Timestep);
-   Time += (*Gamma)*Timestep;
-   ++Gamma;
+   this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+   this->SweepLeft((*Alpha)*Timestep);
+   Time += (*Alpha)*Timestep;
+   ++Alpha;
 
-   while (Gamma != GammaEnd)
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      this->SweepRight((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
+      this->SweepRight((*Beta)*Timestep);
+      Time += (*Beta)*Timestep;
+      ++Beta;
 
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-      this->SweepLeft((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+      this->SweepLeft((*Alpha)*Timestep);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
    }
 
-   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+   this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
 
    if (Epsilon)
-      this->SweepRightFinal((*Gamma)*Timestep);
+      this->SweepRightFinal((*Beta)*Timestep);
    else
-      this->SweepRight((*Gamma)*Timestep);
+      this->SweepRight((*Beta)*Timestep);
 
-   Time += (*Gamma)*Timestep;
+   Time += (*Beta)*Timestep;
 }
 
 void
@@ -509,36 +508,35 @@ TDVP::EvolveExpand()
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-   this->SweepLeftExpand((*Gamma)*Timestep);
-   Time += (*Gamma)*Timestep;
-   ++Gamma;
+   this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+   this->SweepLeftExpand((*Alpha)*Timestep);
+   Time += (*Alpha)*Timestep;
+   ++Alpha;
 
-   while (Gamma != GammaEnd)
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      this->SweepRight((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
+      this->SweepRight((*Beta)*Timestep);
+      Time += (*Beta)*Timestep;
+      ++Beta;
 
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-      this->SweepLeftExpand((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+      this->SweepLeftExpand((*Alpha)*Timestep);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
    }
 
-   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+   this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
 
    if (Epsilon)
-      this->SweepRightFinal((*Gamma)*Timestep);
+      this->SweepRightFinal((*Beta)*Timestep);
    else
-      this->SweepRight((*Gamma)*Timestep);
+      this->SweepRight((*Beta)*Timestep);
 
-   Time += (*Gamma)*Timestep;
+   Time += (*Beta)*Timestep;
 }
 
 void
@@ -738,26 +736,27 @@ TDVP::Evolve2()
 
    TruncErrSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   while (Gamma != Comp.Gamma.cend())
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
+      this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
 
-      this->SweepLeft2((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->SweepLeft2((*Alpha)*Timestep);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
 
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
       if (Ham.is_time_dependent())
       {
          ++H;
          HamR.pop_front();
       }
 
-      this->SweepRight2((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->SweepRight2((*Beta)*Timestep);
+      Time += (*Beta)*Timestep;
+      ++Beta;
    }
 
    if (Epsilon)

@@ -34,20 +34,21 @@ class Composition
 {
    public:
       Composition() : Order(0) {}
-      Composition(int Order_, std::string Description_, std::vector<double> Gamma_)
-         : Order(Order_), Description(Description_), Gamma(Gamma_)
+      Composition(int Order_, std::string Description_, std::vector<double> Alpha_, std::vector<double> Beta_)
+         : Order(Order_), Description(Description_), Alpha(Alpha_), Beta(Beta_)
       {
-         CHECK(Gamma.size() % 2 == 0);
-         CHECK_CLOSE(std::accumulate(Gamma.begin(), Gamma.end(), 0.0), 1.0);
+         CHECK_EQUAL(Alpha.size(), Beta.size());
+         CHECK_CLOSE(std::accumulate(Alpha.begin(), Alpha.end(), 0.0) + std::accumulate(Beta.begin(), Beta.end(), 0.0), 1.0);
       }
 
       int Order;
       std::string Description;
-      std::vector<double> Gamma;
+      std::vector<double> Alpha, Beta;
 };
 
-Composition
-ToComposition(std::string Description, LTSDecomposition d);
+std::ostream& operator<<(std::ostream& out, Composition const& Comp);
+
+Composition ToComposition(std::string Description, LTSDecomposition d);
 
 extern std::map<std::string, Composition> Compositions;
 
