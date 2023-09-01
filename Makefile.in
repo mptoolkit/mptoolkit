@@ -298,14 +298,14 @@ dep : $(cxx_depend)
 # and sorting the files (which removes duplicates)
 % : %.cpp
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(sort $(patsubst ./%,%, $(filter %.o %.cpp, $^))) $(LIBS_$@) $(LIB) -o $@
+	+$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) $(LDFLAGS) $(sort $(patsubst ./%,%, $(filter %.o %.cpp, $^))) $(LIBS_$@) $(LIB) -o $@
 
 %.o : %.cpp %.d
 	@$(MAKEDEPEND_INFO)
-	$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) -c $< -o $@
+	+$(CXX) $(CXXFLAGS) $(CXXFLAGS_$@) -c $< -o $@
 
 %.o : %.f
-	$(F77) $(FFLAGS) -c $< -o $@
+	+$(F77) $(FFLAGS) -c $< -o $@
 
 %.d :
 	\

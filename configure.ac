@@ -1,14 +1,13 @@
 dnl -$- Autoconf -$-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([Matrix Product Toolkit], [(git)], [https://github.com/mptoolkit/mptoolkit/issues],
-        [mptoolkit], [https://github.com/mptoolkit])
+AC_INIT([Matrix Product Toolkit],[(git)],[https://github.com/mptoolkit/mptoolkit/issues],[mptoolkit],[https://github.com/mptoolkit])
 
 dnl use C++ mode by default
 AC_LANG(C++)
 
 AC_CONFIG_SRCDIR([common/trace.h])
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/macros.m4])
 AC_PREFIX_DEFAULT("$HOME")
@@ -34,13 +33,13 @@ if test "x$enable_debug" != "xyes" ; then
       CXXFLAGS="${CXXFLAGS} -O2"
       AC_LANG_PUSH(C++)
       AX_CHECK_COMPILE_FLAG("-march=native", [CXXFLAGS="${CXXFLAGS} -march=native"], , [-Werror])
-      AX_CHECK_COMPILE_FLAG("-flto", [CXXFLAGS="${CXXFLAGS} -flto"], ,[-Werror])
-      AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"], , [-Werror])
+      AX_CHECK_COMPILE_FLAG("-flto=auto", [CXXFLAGS="${CXXFLAGS} -flto=auto"], ,[-Werror])
+      dnl AX_CHECK_COMPILE_FLAG("-Wno-lto-type-mismatch", [CXXFLAGS="${CXXFLAGS} -Wno-lto-type-mismatch"], , [-Werror])
       AC_LANG_POP(C++)
       AC_LANG_PUSH([Fortran 77])
       dnl only attempt -flto for fortran if we also use LTO with C++
       AS_VAR_IF([ax_cv_cxxflags__Werror__flto], [yes],
-      	[ AX_CHECK_COMPILE_FLAG("-flto", [FFLAGS="${FFLAGS} -flto"], , [-Werror]) ] )
+      	[ AX_CHECK_COMPILE_FLAG("-flto=auto", [FFLAGS="${FFLAGS} -flto=auto"], , [-Werror]) ] )
       AC_LANG_POP([Fortran 77])
       AC_MSG_NOTICE([CXXFLAGS are $CXXFLAGS])
    fi
@@ -50,7 +49,7 @@ dnl C++14 support
 AX_CXX_COMPILE_STDCXX_14(noext,mandatory)
 
 dnl we have C++14 as mandatory, but set it in config.h too
-dnl AC_DEFINE(HAVE_CXX14,1, [define if the compiler supports C++17 syntax])
+dnl AC_DEFINE(HAVE_CXX14,1, [define if the compiler supports C++14 syntax])
 AC_SUBST(HAVE_CXX14)
 
 AX_CXX_VAR_PRETTYFUNC
@@ -67,7 +66,7 @@ dnl large file support
 AC_SYS_LARGEFILE
 
 dnl openmp support, defines variable OPENMP_CXXFLAGS and sets HAVE_OPENMP
-AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP parallelization @<:@default=no@:>@])],
+AC_ARG_WITH([openmp], [AS_HELP_STRING([--with-openmp],[enable OpenMP parallelization @<:@default=no@:>@])],
   [],
   [with_openmp=no])
   if test "x$with_openmp" != xno; then
@@ -88,7 +87,7 @@ AC_ARG_WITH([openmp], [AC_HELP_STRING([--with-openmp], [enable OpenMP paralleliz
 AC_SUBST([OPENMP_CXXFLAGS])
 
 dnl MPI support, if found sets HAVE_MPI and defines MPICXX and MPILIBS
-AC_ARG_WITH([mpi], [AC_HELP_STRING([--with-mpi], [enable MPI @<:@default=check@:>@])],
+AC_ARG_WITH([mpi], [AS_HELP_STRING([--with-mpi],[enable MPI @<:@default=check@:>@])],
 	[],
 	[with_mpi=check])
 if test "x$with_mpi" != xno; then
@@ -100,13 +99,13 @@ if test "x$with_mpi" != xno; then
    AC_LANG_POP(C++)
 fi
 
-AC_ARG_WITH([pstream], AC_HELP_STRING([--without-pstream],[disables persistent streams support]))
+AC_ARG_WITH([pstream], AS_HELP_STRING([--without-pstream],[disables persistent streams support]))
 test x"$with_pstream" != xno && AC_DEFINE([USE_PSTREAM], [], [Define if you want persistent streams])
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
 
 dnl PBS integration (eg for PBS walltime)
-AC_ARG_WITH([pbs], AC_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
+AC_ARG_WITH([pbs], AS_HELP_STRING([--with-pbs@<:@=ARG@:>@],[PBS queue integration for checkpointing, libpbs from standard location (ARG=yes), from the specified location (ARG=<path>) or disable it (ARG=no) @<:@ARG=yes@:>@]),
            [], [with_pbs=check])
 
 if test "x$with_pbs" != xno; then
@@ -143,8 +142,7 @@ AC_TYPE_SIZE_T
 AC_CHECK_TYPE([long long], [])
 
    AC_DEFINE([HAVE_LONGLONG], [], [Do we have long long?])
-   AC_ARG_WITH([longlong], AC_HELP_STRING([--without-longlong],
-               [disables 'long long' support in the streaming lib]))
+   AC_ARG_WITH([longlong], AS_HELP_STRING([--without-longlong],[disables 'long long' support in the streaming lib]))
    test x"$with_longlong" != xno && AC_DEFINE([USE_LONGLONG], [], [If we need to use long long])
    AC_CHECK_SIZEOF(long long)
 
@@ -194,7 +192,6 @@ ACX_CXX_RESTRICT
 
 dnl Checks for library functions.
 AC_FUNC_MEMCMP
-AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(gettimeofday)
 AC_HEADER_TIOCGWINSZ
 AC_CHECK_HEADERS(sys/ioctl.h)
@@ -208,7 +205,7 @@ AC_PROG_INSTALL
 dnl shared library configuration
 # Check for enable shared library build option
 private_enable_shared=yes
-AC_ARG_ENABLE(shared, AC_HELP_STRING([--disable-shared],[build static libraries (default is shared libraries)]),
+AC_ARG_ENABLE(shared, AS_HELP_STRING([--disable-shared],[build static libraries (default is shared libraries)]),
  [
   if test "x$enableval" = "xno"
   then
@@ -225,4 +222,6 @@ escopenmpcxxflags="${OPENMP_CXXFLAGS//\"/\\\"}"
 AC_DEFINE_UNQUOTED([CONFIG_OPENMP_CXXFLAGS], ["${OPENMP_CXXFLAGS//\"/\\\"}"], [C++ OpenMP compiler flags])
 
 
-AC_OUTPUT(Makefile, echo timestamp > stamp-h)
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_COMMANDS([default],[echo timestamp > stamp-h],[])
+AC_OUTPUT
