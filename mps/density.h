@@ -34,6 +34,10 @@ typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 
 // For the quantum numbers in KeepList, make sure that at least one state
 // in KeepList \otimes SiteQN is represented in the KeepStates.
+// States are shifted from DiscardedStates to KeepStates in order to satisfy
+// this condition.
+// FullBasis is the actual basis (kept + discarded states), which is used to
+// get the quantum number from the subspace index of the kept and discarded states.
 // The updated KeepList is then set to the quantum numbers in the final basis.
 void UpdateKeepList(KeepListType& KeepList,
                     std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
