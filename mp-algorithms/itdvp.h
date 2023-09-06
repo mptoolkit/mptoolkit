@@ -79,13 +79,16 @@ class iTDVP : public TDVP
       void UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt);
       void UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt);
 
+      QuantumNumber QShift;
+      StateComponent BlockHamL, BlockHamR;
+
       LinearWavefunction PsiOld;
       MatrixOperator LambdaR;
       MatrixOperator LambdaROld;
-      QuantumNumber QShift;
       std::deque<StateComponent> HamLOld, HamROld;
-      StateComponent BlockHamL;
-      StateComponent BlockHamR;
+      StateComponent CBoundary;
+      StateComponent CCenter;
+      VectorBasis AddBasisBoundary;
 
       double GMRESTol;
       double LambdaTol;

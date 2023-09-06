@@ -204,7 +204,7 @@ class TDVP
 
 // Expand the left environment of CRight by adding extra states to CLeft.
 // Assumes CRight is the current orthogonality center.
-TruncationInfo
+std::pair<TruncationInfo, VectorBasis>
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
@@ -212,7 +212,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
 
 // Expand the right environment of CLeft by adding extra states to CRight.
 // Assumes CLeft is the current orthogonality center.
-TruncationInfo
+std::pair<TruncationInfo, VectorBasis>
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,

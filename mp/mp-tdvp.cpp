@@ -87,16 +87,8 @@ int main(int argc, char** argv)
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
-      // Bond expansion is turned on automatically if an option which uses it
-      // is specified, so this option is redundant now. It is kept as a hidden
-      // option to ensure compatibility with old scripts.
-      prog_opt::options_description hidden("Hidden options");
-      hidden.add_options()
-         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
-         ;
-
       prog_opt::options_description opt;
-      opt.add(desc).add(hidden);
+      opt.add(desc);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).

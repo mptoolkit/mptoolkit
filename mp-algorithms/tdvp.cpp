@@ -456,7 +456,7 @@ TDVP::Evolve()
    Time += (*Gamma)*Timestep;
 }
 
-TruncationInfo
+std::pair<TruncationInfo, VectorBasis>
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
@@ -514,10 +514,10 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    StateComponent Z = StateComponent(CRight.LocalBasis(), Vh.Basis1(), CRight.Basis2());
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
 
-   return Info;
+   return std::make_pair(Info, U.Basis2());
 }
 
-TruncationInfo
+std::pair<TruncationInfo, VectorBasis>
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
@@ -575,7 +575,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), Vh.Basis1());
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
 
-   return Info;
+   return std::make_pair(Info, U.Basis2());
 }
 
 void
@@ -588,7 +588,8 @@ TDVP::ExpandLeft()
 
    HamL.pop_back();
 
-   TruncationInfo Info = ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H, SInfo);
+   TruncationInfo Info;
+   std::tie(Info, std::ignore) = ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H, SInfo);
 
    int TotalStates = C->Basis1().total_dimension();
 
@@ -617,7 +618,8 @@ TDVP::ExpandRight()
 
    HamR.pop_front();
 
-   TruncationInfo Info = ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext, SInfo);
+   TruncationInfo Info;
+   std::tie(Info, std::ignore) = ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext, SInfo);
 
    int TotalStates = C->Basis2().total_dimension();
 
