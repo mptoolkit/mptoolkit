@@ -109,34 +109,25 @@ class TDVP
       void IterateLeft(std::complex<double> Tau);
       void IterateRight(std::complex<double> Tau);
 
-      // Sweep left/right through the chain for timestep Tau.
-      void SweepLeft(std::complex<double> Tau);
-      void SweepRight(std::complex<double> Tau);
-
-      // Calculate the contribution to epsilon_1/2 for the current site.
-      void CalculateEps1();
-      void CalculateEps12();
-
-      // The final sweep right, in which we also calculate epsilon_1/2.
-      void SweepRightFinal(std::complex<double> Tau);
-
-      // Evolve the chain by one timestep using single-site TDVP.
-      void Evolve();
-
       // Expand the dimension of the left/right environment of the current site using
       // the projection of H|Psi> onto the subspace of orthogonal two-site
       // variations.
       void ExpandLeft();
       void ExpandRight();
 
-      // Sweep left/right through the chain for timestep Tau, expanding the bond dimensions.
-      void SweepLeftExpand(std::complex<double> Tau);
-      void SweepRightExpand(std::complex<double> Tau);
-      void SweepRightExpandFinal(std::complex<double> Tau);
+      // Sweep left/right through the chain for timestep Tau.
+      void SweepLeft(std::complex<double> Tau, bool Expand);
+      void SweepRight(std::complex<double> Tau, bool Expand);
 
-      // Evolve the chain by one time step using 1TDVP, expanding the bond
-      // dimensions on the first sweep.
-      void EvolveExpand();
+      // Calculate the contribution to epsilon_1/2 for the current site.
+      void CalculateEps1();
+      void CalculateEps12();
+
+      // The final sweep right, in which we also calculate epsilon_1/2.
+      void SweepRightFinal(std::complex<double> Tau, bool Expand);
+
+      // Evolve the chain by one timestep using single-site TDVP.
+      void Evolve(bool Expand);
 
       // Evolve the current site and move left using 2TDVP.
       void IterateLeft2(std::complex<double> Tau);

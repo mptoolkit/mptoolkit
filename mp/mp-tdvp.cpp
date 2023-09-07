@@ -222,10 +222,8 @@ int main(int argc, char** argv)
       {
          if (TwoSite)
             tdvp.Evolve2();
-         else if (Expand)
-            tdvp.EvolveExpand();
          else
-            tdvp.Evolve();
+            tdvp.Evolve(Expand);
 
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)

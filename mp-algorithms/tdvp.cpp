@@ -323,139 +323,6 @@ TDVP::IterateRight(std::complex<double> Tau)
    HamR.pop_front();
 }
 
-void
-TDVP::SweepLeft(std::complex<double> Tau)
-{
-   while (Site > LeftStop)
-   {
-      this->EvolveCurrentSite(Tau);
-      this->IterateLeft(Tau);
-   }
-
-   this->EvolveCurrentSite(Tau);
-}
-
-void
-TDVP::SweepRight(std::complex<double> Tau)
-{
-   this->EvolveCurrentSite(Tau);
-
-   while (Site < RightStop)
-   {
-      this->IterateRight(Tau);
-      this->EvolveCurrentSite(Tau);
-   }
-}
-
-void
-TDVP::CalculateEps1()
-{
-   // Calculate error measure epsilon_1 and add to sum.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C));
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
-   Eps1SqSum += Eps1Sq;
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " Eps1Sq=" << Eps1Sq
-                << std::endl;
-   }
-}
-
-void
-TDVP::CalculateEps12()
-{
-   // Calculate the left half of epsilon_2.
-   StateComponent HamLBack = HamL.back();
-   HamL.pop_back();
-
-   LinearWavefunction::const_iterator CPrev = C;
-   --CPrev;
-   BasicTriangularMPO::const_iterator HPrev = H;
-   --HPrev;
-
-   StateComponent X = contract_from_left(*HPrev, herm(NullSpace2(*CPrev)), HamL.back(), *CPrev);
-
-   HamL.push_back(HamLBack);
-
-   // Perform SVD to right-orthogonalize current site for NullSpace1.
-   StateComponent CRightOrtho = *C;
-   OrthogonalizeBasis1(CRightOrtho);
-
-   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C));
-   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
-   double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
-   Eps1SqSum += Eps1Sq;
-   Eps2SqSum += Eps2Sq;
-
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " Eps1Sq=" << Eps1Sq
-                << " Eps2Sq=" << Eps2Sq
-                << std::endl;
-   }
-}
-
-void
-TDVP::SweepRightFinal(std::complex<double> Tau)
-{
-   this->EvolveCurrentSite(Tau);
-   this->CalculateEps1();
-
-   while (Site < RightStop)
-   {
-      this->IterateRight(Tau);
-      this->EvolveCurrentSite(Tau);
-      this->CalculateEps12();
-   }
-}
-
-void
-TDVP::Evolve()
-{
-   Time = InitialTime + ((double) TStep)*Timestep;
-   ++TStep;
-
-   Eps1SqSum = 0.0;
-   Eps2SqSum = 0.0;
-
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
-
-   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-   this->SweepLeft((*Gamma)*Timestep);
-   Time += (*Gamma)*Timestep;
-   ++Gamma;
-
-   while (Gamma != GammaEnd)
-   {
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      this->SweepRight((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
-
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-      this->SweepLeft((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
-   }
-
-   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-
-   if (Epsilon)
-      this->SweepRightFinal((*Gamma)*Timestep);
-   else
-      this->SweepRight((*Gamma)*Timestep);
-
-   Time += (*Gamma)*Timestep;
-}
-
 std::pair<TruncationInfo, VectorBasis>
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
@@ -639,13 +506,11 @@ TDVP::ExpandRight()
 }
 
 void
-TDVP::SweepLeftExpand(std::complex<double> Tau)
+TDVP::SweepLeft(std::complex<double> Tau, bool Expand)
 {
-   MaxStates = 0;
-
    while (Site > LeftStop)
    {
-      if (C->Basis1().total_dimension() < SInfo.MaxStates)
+      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
          this->ExpandLeft();
       this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
@@ -655,13 +520,11 @@ TDVP::SweepLeftExpand(std::complex<double> Tau)
 }
 
 void
-TDVP::SweepRightExpand(std::complex<double> Tau)
+TDVP::SweepRight(std::complex<double> Tau, bool Expand)
 {
-   MaxStates = 0;
-
    while (Site < RightStop)
    {
-      if (C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->IterateRight(Tau);
@@ -671,11 +534,65 @@ TDVP::SweepRightExpand(std::complex<double> Tau)
 }
 
 void
-TDVP::SweepRightExpandFinal(std::complex<double> Tau)
+TDVP::CalculateEps1()
+{
+   // Calculate error measure epsilon_1 and add to sum.
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
+   Eps1SqSum += Eps1Sq;
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " Eps1Sq=" << Eps1Sq
+                << std::endl;
+   }
+}
+
+void
+TDVP::CalculateEps12()
+{
+   // Calculate the left half of epsilon_2.
+   StateComponent HamLBack = HamL.back();
+   HamL.pop_back();
+
+   LinearWavefunction::const_iterator CPrev = C;
+   --CPrev;
+   BasicTriangularMPO::const_iterator HPrev = H;
+   --HPrev;
+
+   StateComponent X = contract_from_left(*HPrev, herm(NullSpace2(*CPrev)), HamL.back(), *CPrev);
+
+   HamL.push_back(HamLBack);
+
+   // Perform SVD to right-orthogonalize current site for NullSpace1.
+   StateComponent CRightOrtho = *C;
+   OrthogonalizeBasis1(CRightOrtho);
+
+   // Calculate error measures epsilon_1 and epsilon_2 and add to sums.
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C));
+   double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
+   double Eps2Sq = norm_frob_sq(scalar_prod(X, herm(Y)));
+   Eps1SqSum += Eps1Sq;
+   Eps2SqSum += Eps2Sq;
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " Eps1Sq=" << Eps1Sq
+                << " Eps2Sq=" << Eps2Sq
+                << std::endl;
+   }
+}
+
+void
+TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 {
    MaxStates = 0;
 
-   if (C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
@@ -683,7 +600,7 @@ TDVP::SweepRightExpandFinal(std::complex<double> Tau)
    while (Site < RightStop)
    {
       this->IterateRight(Tau);
-      if (Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
@@ -691,7 +608,7 @@ TDVP::SweepRightExpandFinal(std::complex<double> Tau)
 }
 
 void
-TDVP::EvolveExpand()
+TDVP::Evolve(bool Expand)
 {
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
@@ -704,19 +621,19 @@ TDVP::EvolveExpand()
    --GammaEnd;
 
    this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-   this->SweepLeftExpand((*Gamma)*Timestep);
+   this->SweepLeft((*Gamma)*Timestep, Expand);
    Time += (*Gamma)*Timestep;
    ++Gamma;
 
    while (Gamma != GammaEnd)
    {
       this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      this->SweepRightExpand((*Gamma)*Timestep);
+      this->SweepRight((*Gamma)*Timestep, Expand);
       Time += (*Gamma)*Timestep;
       ++Gamma;
 
       this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-      this->SweepLeftExpand((*Gamma)*Timestep);
+      this->SweepLeft((*Gamma)*Timestep, Expand);
       Time += (*Gamma)*Timestep;
       ++Gamma;
    }
@@ -724,9 +641,9 @@ TDVP::EvolveExpand()
    this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
 
    if (Epsilon)
-      this->SweepRightExpandFinal((*Gamma)*Timestep);
+      this->SweepRightFinal((*Gamma)*Timestep, Expand);
    else
-      this->SweepRightExpand((*Gamma)*Timestep);
+      this->SweepRight((*Gamma)*Timestep, Expand);
 
    Time += (*Gamma)*Timestep;
 }
