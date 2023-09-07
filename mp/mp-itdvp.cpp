@@ -4,8 +4,7 @@
 //
 // mp/mp-itdvp.cpp
 //
-// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -55,7 +54,7 @@ int main(int argc, char** argv)
       bool NoNormalize = false;
 
       iTDVPSettings Settings;
-      Settings.SInfo.MinStates = 1;
+      Settings.SInfo.MinStates = 2;
       Settings.SInfo.TruncationCutoff = 0;
       Settings.SInfo.EigenvalueCutoff = 1e-16;
 
@@ -89,7 +88,6 @@ int main(int argc, char** argv)
           FormatDefault("Maximum number of sweeps", Settings.MaxSweeps).c_str())
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("neps,N", prog_opt::value(&Settings.NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
-         ("force-expand", prog_opt::bool_switch(&Settings.ForceExpand), "Force bond dimension expansion [use with caution!]")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
@@ -98,16 +96,8 @@ int main(int argc, char** argv)
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
-      // Bond expansion is turned on automatically if an option which uses it
-      // is specified, so this option is redundant now. It is kept as a hidden
-      // option to ensure compatibility with old scripts.
-      prog_opt::options_description hidden("Hidden options");
-      hidden.add_options()
-         ("expand,x", prog_opt::bool_switch(&Expand), "Use single-site TDVP with bond dimension expansion")
-         ;
-
       prog_opt::options_description opt;
-      opt.add(desc).add(hidden);
+      opt.add(desc);
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
@@ -227,9 +217,8 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of sweeps: " << Settings.MaxSweeps << std::endl;
       std::cout << "Error tolerance for LambdaR: " << Settings.LambdaTol << std::endl;
 
-      // Turn on bond expansion if trunc or eigen-cutoff have been specified,
-      // or if forced bond expansion is specified.
-      if (vm.count("trunc") || vm.count("eigen-cutoff") || Settings.ForceExpand)
+      // Turn on bond expansion if trunc or eigen-cutoff have been specified.
+      if (vm.count("trunc") || vm.count("eigen-cutoff"))
          Expand = true;
 
       if (Expand)
@@ -263,10 +252,7 @@ int main(int argc, char** argv)
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
-         if (Expand)
-            itdvp.ExpandBonds();
-
-         itdvp.Evolve();
+         itdvp.Evolve(Expand);
 
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)

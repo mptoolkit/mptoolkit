@@ -4,8 +4,7 @@
 //
 // mp-algorithms/tdvp.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,7 +65,6 @@ struct TDVPSettings
    double ErrTol = 1e-16;
    StatesInfo SInfo;
    bool Epsilon = false;
-   bool ForceExpand = false;
    bool Normalize = true;
    int Verbose = 0;
 };
@@ -108,13 +106,16 @@ class TDVP
       // Evolve the chain by one timestep using single-site TDVP.
       void Evolve();
 
-      // Expand the dimension of the left bond of the current site using the
-      // projection of H|Psi> onto the subspace of orthogonal two-site
+      // Expand the dimension of the left/right environment of the current site using
+      // the projection of H|Psi> onto the subspace of orthogonal two-site
       // variations.
-      void ExpandLeftBond();
+      void ExpandLeft();
+      void ExpandRight();
 
-      // Sweep left through the chain for timestep Tau, expanding the bond dimensions.
+      // Sweep left/right through the chain for timestep Tau, expanding the bond dimensions.
       void SweepLeftExpand(std::complex<double> Tau);
+      void SweepRightExpand(std::complex<double> Tau);
+      void SweepRightExpandFinal(std::complex<double> Tau);
 
       // Evolve the chain by one time step using 1TDVP, expanding the bond
       // dimensions on the first sweep.
@@ -163,7 +164,6 @@ class TDVP
       double ErrTol;
       StatesInfo SInfo;
       bool Epsilon;
-      bool ForceExpand;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
 
@@ -184,5 +184,21 @@ class TDVP
       // The logarithm of the norm of the state.
       double LogAmplitude = 0.0;
 };
+
+// Expand the left environment of CRight by adding extra states to CLeft.
+// Assumes CRight is the current orthogonality center.
+std::pair<TruncationInfo, VectorBasis>
+ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      StatesInfo SInfo);
+
+// Expand the right environment of CLeft by adding extra states to CRight.
+// Assumes CLeft is the current orthogonality center.
+std::pair<TruncationInfo, VectorBasis>
+ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                      StateComponent const& E, StateComponent const& F,
+                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      StatesInfo SInfo);
 
 #endif
