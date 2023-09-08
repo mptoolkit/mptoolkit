@@ -116,15 +116,15 @@ class TDVP
       void ExpandRight();
 
       // Sweep left/right through the chain for timestep Tau.
-      void SweepLeft(std::complex<double> Tau, bool Expand);
-      void SweepRight(std::complex<double> Tau, bool Expand);
+      void SweepLeft(std::complex<double> Tau, bool Expand = false);
+      void SweepRight(std::complex<double> Tau, bool Expand = false);
 
       // Calculate the contribution to epsilon_1/2 for the current site.
       void CalculateEps1();
       void CalculateEps12();
 
       // The final sweep right, in which we also calculate epsilon_1/2.
-      void SweepRightFinal(std::complex<double> Tau, bool Expand);
+      void SweepRightFinal(std::complex<double> Tau, bool Expand = false);
 
       // Evolve the chain by one timestep using single-site TDVP.
       void Evolve(bool Expand);
