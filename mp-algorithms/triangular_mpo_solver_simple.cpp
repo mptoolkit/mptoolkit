@@ -40,7 +40,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
 
-   DEBUG_TRACE(Verbose)(Degree)(Tol);
+   //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMat.resize(Dim);
@@ -49,7 +49,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
       std::cerr << "SolveSimpleMPO_Left: dimension is " << Dim << std::endl;
 
    // Make sure the (0,0) part is identity
-   DEBUG_TRACE(UnityEpsilon);
+   //DEBUG_TRACE(UnityEpsilon);
    if (!classify(Op(0,0), UnityEpsilon).is_identity())
    {
       // the (0,0) component isn't the identity operator, which is a fatal error.
@@ -83,7 +83,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
 
       if (Classification.is_null())
       {
-         DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
+         //DEBUG_TRACE("Zero diagonal element")(Col)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at column " << Col << std::endl;
          EMat[Col] = SolveZeroDiagonal(C);
@@ -156,7 +156,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
    CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
    CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
 
-   DEBUG_TRACE(Verbose)(Degree)(Tol);
+   //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    FMat.resize(Dim);
@@ -192,7 +192,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
 
       if (Classification.is_null())
       {
-         DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
+         //DEBUG_TRACE("Zero diagonal element")(Row)(Diag);
          if (Verbose > 0)
             std::cerr << "Zero diagonal matrix element at row " << Row << std::endl;
          FMat[Row] = SolveZeroDiagonal(C);
@@ -277,9 +277,9 @@ SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    {
       std::cerr << "SolveHamiltonianMPO_Left: warning: Hamiltonian has diverging matrix elements.\n";
       std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(Rho, Remainder));
+      //DEBUG_TRACE(Remainder);
+      //DEBUG_TRACE(norm_frob(Remainder));
+      //DEBUG_TRACE(inner_prod(Rho, Remainder));
       //std::abort();
    }
    if (EMat.back().degree() > 1)
@@ -333,9 +333,9 @@ SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    {
       std::cerr << "SolveHamiltonianMPO_Right: warning: Hamiltonian has diverging matrix elements.\n";
       std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
-      DEBUG_TRACE(Remainder);
-      DEBUG_TRACE(norm_frob(Remainder));
-      DEBUG_TRACE(inner_prod(Rho, Remainder));
+      //DEBUG_TRACE(Remainder);
+      //DEBUG_TRACE(norm_frob(Remainder));
+      //DEBUG_TRACE(inner_prod(Rho, Remainder));
       //std::abort();
    }
    if (FMat.front().degree() > 1)

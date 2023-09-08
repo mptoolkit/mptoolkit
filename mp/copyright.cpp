@@ -139,9 +139,9 @@ std::string Wikify(std::string const& x, bool itool)
 void print_copyright(std::ostream& out, std::string const& Category, std::string const& Name)
 {
    print_copyright(out);
-   std::string URL = "index.php?n=" + Wikify(Category) + "." + Wikify(Name, Name != "mp-info");
+   std::string URL = Wikify(Category) + "/" + Wikify(Name, Name != "mp-info");
    out << "Documentation: "
-       << " https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/" << URL << "\n";
+       << " https://mptoolkit.qusim.net/" << URL << "\n";
 }
 
 // The basename() function is useful in help messages for printing the program name

@@ -624,10 +624,10 @@ struct OneMinusTransferLeft_Ortho
       MatrixOperator r = x-delta_shift(inject_left(x, Psi1_, Op_, Psi2_), QShift_)*Scale_;
       if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
          {
-            DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
-            DEBUG_TRACE(inner_prod(LeftUnit_, r));
+            //DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
+            //DEBUG_TRACE(inner_prod(LeftUnit_, r));
             r -= std::conj(inner_prod(r, RightUnit_)) * LeftUnit_; // orthogonalize to the identity
-            DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
+            //DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be zero");
          }
       return r;
    }
