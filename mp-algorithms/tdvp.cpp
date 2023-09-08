@@ -64,45 +64,6 @@ struct HEff2
    StateComponent const& F;
 };
 
-std::map<std::string, Composition>
-Compositions = {
-   {"secondorder", Composition(2, "Standard second-order symmetric composition", {0.5, 0.5})},
-   {"triplejump4", Composition(4, "Fourth-order triple jump composition",
-         {0.6756035959798289, 0.6756035959798289,
-         -0.8512071919596577, -0.8512071919596577,
-         0.6756035959798289, 0.6756035959798289})},
-   {"suzukifractal4", Composition(4, "Fourth-order Suzuki fractal composition",
-         {0.20724538589718786, 0.20724538589718786,
-         0.20724538589718786, 0.20724538589718786,
-         -0.3289815435887514, -0.3289815435887514,
-         0.20724538589718786, 0.20724538589718786,
-         0.20724538589718786, 0.20724538589718786})},
-   {"mclachlan4-10", Composition(4, "Fourth-order 10-term McLachlan composition",
-         {0.08926945422647525, 0.31073054577352477,
-         -0.40806658841042026, 0.3080665884104203,
-         0.2, 0.2,
-         0.3080665884104203, -0.40806658841042026,
-         0.31073054577352477, 0.08926945422647525})},
-   {"symmetric4-10", Composition(4, "Symmetric fourth-order 10-term Barthel-Zhang composition",
-         {0.12843317950293848, 0.12843317950293848,
-         0.3388120161527937, 0.3388120161527937,
-         -0.4344903913114644, -0.4344903913114644,
-         0.3388120161527937, 0.3388120161527937,
-         0.12843317950293848, 0.12843317950293848})},
-   {"optimized4-10", Composition(4, "Optimized fourth-order 10-term Barthel-Zhang composition",
-         {0.09584850274120368, 0.3306761585746725,
-         -0.40878731749631037, 0.2883920480412131,
-         0.19387060813922113, 0.19387060813922113,
-         0.2883920480412131, -0.40878731749631037,
-         0.3306761585746725, 0.09584850274120368})},
-   {"lazy-10", Composition(4, "Lazy 10-term composition",
-         {0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1,
-         0.1, 0.1})}
-};
-
 Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
                          std::string Magnus_, std::string TimeVar_)
    : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_)
@@ -186,7 +147,7 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, TDVPSett
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   std::complex<double> dt = Comp.Beta.back()*Timestep;
    HamMPO = Ham(Time-dt, dt);
 
    if (Verbose > 0)
@@ -616,36 +577,35 @@ TDVP::Evolve(bool Expand)
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-   this->SweepLeft((*Gamma)*Timestep, Expand);
-   Time += (*Gamma)*Timestep;
-   ++Gamma;
+   this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+   this->SweepLeft((*Alpha)*Timestep, Expand);
+   Time += (*Alpha)*Timestep;
+   ++Alpha;
 
-   while (Gamma != GammaEnd)
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
-      this->SweepRight((*Gamma)*Timestep, Expand);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
+      this->SweepRight((*Beta)*Timestep, Expand);
+      Time += (*Beta)*Timestep;
+      ++Beta;
 
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
-      this->SweepLeft((*Gamma)*Timestep, Expand);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
+      this->SweepLeft((*Alpha)*Timestep, Expand);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
    }
 
-   this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+   this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
 
    if (Epsilon)
-      this->SweepRightFinal((*Gamma)*Timestep, Expand);
+      this->SweepRightFinal((*Beta)*Timestep, Expand);
    else
-      this->SweepRight((*Gamma)*Timestep, Expand);
+      this->SweepRight((*Beta)*Timestep, Expand);
 
-   Time += (*Gamma)*Timestep;
+   Time += (*Beta)*Timestep;
 }
 
 void
@@ -845,26 +805,27 @@ TDVP::Evolve2()
 
    TruncErrSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   while (Gamma != Comp.Gamma.cend())
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
+      this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
 
-      this->SweepLeft2((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->SweepLeft2((*Alpha)*Timestep);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
 
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
       if (Ham.is_time_dependent())
       {
          ++H;
          HamR.pop_front();
       }
 
-      this->SweepRight2((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->SweepRight2((*Beta)*Timestep);
+      Time += (*Beta)*Timestep;
+      ++Beta;
    }
 
    if (Epsilon)

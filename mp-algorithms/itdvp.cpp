@@ -51,7 +51,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
-   std::complex<double> dt = Comp.Gamma.back()*Timestep;
+   std::complex<double> dt = Comp.Beta.back()*Timestep;
    HamMPO = Ham(Time-dt, dt);
 
    // Make sure that Psi and HamMPO have the same unit cell.
@@ -63,7 +63,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
       std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
       PsiCanonical = repeat(PsiCanonical, UnitCellSize / PsiCanonical.size());
       Ham.set_size(UnitCellSize);
-      std::complex<double> dt = Comp.Gamma.back()*Timestep;
+      std::complex<double> dt = Comp.Beta.back()*Timestep;
       HamMPO = Ham(Time-dt, dt);
    }
 
@@ -369,29 +369,30 @@ iTDVP::Evolve(bool Expand)
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   while (Gamma != Comp.Gamma.cend())
+   while (Alpha != Comp.Alpha.cend())
    {
       // We do not need/cannot update the Hamiltonian on the first timestep.
       if (TStep > 1)
-         this->UpdateHamiltonianLeft(Time, (*Gamma)*Timestep);
+         this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
 
       if (Expand)
          this->ExpandBondsLeft();
 
-      this->EvolveLeft((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->EvolveLeft((*Alpha)*Timestep);
+      Time += (*Alpha)*Timestep;
+      ++Alpha;
 
-      this->UpdateHamiltonianRight(Time, (*Gamma)*Timestep);
+      this->UpdateHamiltonianRight(Time, (*Beta)*Timestep);
 
       if (Expand)
          this->ExpandBondsRight();
 
-      this->EvolveRight((*Gamma)*Timestep);
-      Time += (*Gamma)*Timestep;
-      ++Gamma;
+      this->EvolveRight((*Beta)*Timestep);
+      Time += (*Beta)*Timestep;
+      ++Beta;
    }
 
    if (Epsilon)

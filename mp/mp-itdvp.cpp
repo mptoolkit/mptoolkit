@@ -111,7 +111,15 @@ int main(int argc, char** argv)
          std::cerr << desc << std::endl;
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
-            std::cerr << c.first << " : " << c.second.Description << std::endl;
+         {
+            std::cerr << c.first << " : ";
+            if (Verbose > 0)
+               // Print the full composition.
+               std::cerr << c.second;
+            else
+               std::cerr << c.second.Description;
+            std::cerr << std::endl;
+         }
          return 1;
       }
 
