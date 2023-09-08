@@ -68,16 +68,12 @@ class IBC_TDVP : public TDVP
       double CalculateLambdaDiffRight();
 
       // Sweep left/right, expanding the window if LambdaDiff exceeds FidTol.
-      void SweepLeftEW(std::complex<double> Tau);
-      void SweepRightEW(std::complex<double> Tau);
-      void SweepRightFinalEW(std::complex<double> Tau);
-      void SweepLeftExpandEW(std::complex<double> Tau);
+      void SweepLeftEW(std::complex<double> Tau, bool Expand);
+      void SweepRightEW(std::complex<double> Tau, bool Expand);
+      void SweepRightFinalEW(std::complex<double> Tau, bool Expand);
 
       // Evolve the window for one time step.
-      void Evolve();
-
-      // Evolve the window for one time step, with bond expansion.
-      void EvolveExpand();
+      void Evolve(bool Expand);
 
       // Evolve the window by one time step using 2TDVP.
       void Evolve2();

@@ -551,9 +551,7 @@ TDVP::CalculateEps12()
 void
 TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 {
-   MaxStates = 0;
-
-   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();

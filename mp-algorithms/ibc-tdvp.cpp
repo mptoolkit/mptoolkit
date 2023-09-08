@@ -4,8 +4,7 @@
 //
 // mp-algorithms/ibc-tdvp.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +30,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
    // We do not (currently) support time dependent Hamiltonians.
+   // (We would need to recalculate the left and right block Hamiltonians each timestep.)
    CHECK(Ham.is_time_dependent() == false);
 
    LeftQShift = Psi_.left_qshift();
@@ -539,93 +539,6 @@ IBC_TDVP::CalculateLambdaDiffRight()
    return norm_frob_sq(LambdaR - LambdaRight);
 }
 
-void
-IBC_TDVP::SweepLeftEW(std::complex<double> Tau)
-{
-   this->SweepLeft(Tau);
-
-   double FidLoss = this->CalculateFidelityLossLeft();
-   double LambdaDiff = this->CalculateLambdaDiffLeft();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
-   {
-      if (Verbose > 0)
-         std::cout << "FidelityLossLeft=" << FidLoss
-                   << " LambdaDiffLeft=" << LambdaDiff
-                   << ", expanding window..." << std::endl;
-
-      this->ExpandWindowLeft();
-
-      this->IterateLeft(Tau);
-      this->SweepLeft(Tau);
-
-      FidLoss = this->CalculateFidelityLossLeft();
-      LambdaDiff = this->CalculateLambdaDiffLeft();
-   }
-
-   if (Verbose > 0)
-      std::cout << "FidelityLossLeft=" << FidLoss
-                << " LambdaDiffLeft=" << LambdaDiff << std::endl;
-}
-
-void
-IBC_TDVP::SweepRightEW(std::complex<double> Tau)
-{
-   this->SweepRight(Tau);
-
-   double FidLoss = this->CalculateFidelityLossRight();
-   double LambdaDiff = this->CalculateLambdaDiffRight();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
-   {
-      if (Verbose > 0)
-         std::cout << "FidelityLossRight=" << FidLoss
-                   << " LambdaDiffRight=" << LambdaDiff
-                   << ", expanding window..." << std::endl;
-
-      this->ExpandWindowRight();
-
-      this->IterateRight(Tau);
-      this->SweepRight(Tau);
-
-      FidLoss = this->CalculateFidelityLossRight();
-      LambdaDiff = this->CalculateLambdaDiffRight();
-   }
-
-   if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss
-                << " LambdaDiffRight=" << LambdaDiff << std::endl;
-}
-
-void
-IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
-{
-   this->SweepRightFinal(Tau);
-
-   double FidLoss = this->CalculateFidelityLossRight();
-   double LambdaDiff = this->CalculateLambdaDiffRight();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
-   {
-      if (Verbose > 0)
-         std::cout << "FidelityLossRight=" << FidLoss
-                   << " LambdaDiffRight=" << LambdaDiff
-                   << ", expanding window..." << std::endl;
-
-      this->ExpandWindowRight();
-
-      while (Site < RightStop)
-      {
-         this->IterateRight(Tau);
-         this->EvolveCurrentSite(Tau);
-         this->CalculateEps12();
-      }
-      FidLoss = this->CalculateFidelityLossRight();
-      LambdaDiff = this->CalculateLambdaDiffRight();
-   }
-
-   if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss
-                << " LambdaDiffRight=" << LambdaDiff << std::endl;
-}
-
 // TODO: At the moment, the handling of expanding the bond at the edge of the
 // window is inefficient: we first evolve the leftmost site and then check if
 // we want to expand the window, and if we do, we unevolve the site, expand the
@@ -634,12 +547,12 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau)
 // site, and if we do need to expand the bond, we can just expand the window as
 // well.
 void
-IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
+IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
 {
    while (Site > LeftStop)
    {
-      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
-         this->ExpandLeftBond();
+      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+         this->ExpandLeft();
       this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
    }
@@ -658,18 +571,18 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
 
       this->ExpandWindowLeft();
 
-      if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
+      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
       {
          *C = Tmp;
-         this->ExpandLeftBond();
+         this->ExpandLeft();
          this->EvolveCurrentSite(Tau);
       }
       this->IterateLeft(Tau);
 
       while (Site > LeftStop)
       {
-         if ((*C).Basis1().total_dimension() < SInfo.MaxStates)
-            this->ExpandLeftBond();
+         if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+            this->ExpandLeft();
          this->EvolveCurrentSite(Tau);
          this->IterateLeft(Tau);
       }
@@ -687,89 +600,159 @@ IBC_TDVP::SweepLeftExpandEW(std::complex<double> Tau)
 }
 
 void
-IBC_TDVP::Evolve()
+IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
+{
+   while (Site < RightStop)
+   {
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+         this->ExpandRight();
+      this->EvolveCurrentSite(Tau);
+      this->IterateRight(Tau);
+   }
+
+   StateComponent Tmp = *C;
+   this->EvolveCurrentSite(Tau);
+
+   double FidLoss = this->CalculateFidelityLossRight();
+   double LambdaDiff = this->CalculateLambdaDiffRight();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "FidelityLossRight=" << FidLoss
+                   << " LambdaDiffRight=" << LambdaDiff
+                   << ", expanding window..." << std::endl;
+
+      this->ExpandWindowRight();
+
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      {
+         *C = Tmp;
+         this->ExpandRight();
+         this->EvolveCurrentSite(Tau);
+      }
+      this->IterateRight(Tau);
+
+      while (Site < RightStop)
+      {
+         if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+            this->ExpandRight();
+         this->EvolveCurrentSite(Tau);
+         this->IterateRight(Tau);
+      }
+
+      Tmp = *C;
+      this->EvolveCurrentSite(Tau);
+
+      FidLoss = this->CalculateFidelityLossRight();
+      LambdaDiff = this->CalculateLambdaDiffRight();
+   }
+
+   if (Verbose > 0)
+      std::cout << "FidelityLossRight=" << FidLoss
+                << " LambdaDiffRight=" << LambdaDiff << std::endl;
+}
+
+void
+IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
+{
+   StateComponent Tmp = *C;
+
+   if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+      this->ExpandRight();
+   this->EvolveCurrentSite(Tau);
+   this->CalculateEps1();
+
+   while (Site < RightStop)
+   {
+      this->IterateRight(Tau);
+      Tmp = *C;
+      if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+         this->ExpandRight();
+      this->EvolveCurrentSite(Tau);
+      this->CalculateEps12();
+   }
+
+   double FidLoss = this->CalculateFidelityLossRight();
+   double LambdaDiff = this->CalculateLambdaDiffRight();
+   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
+   {
+      if (Verbose > 0)
+         std::cout << "FidelityLossRight=" << FidLoss
+                   << " LambdaDiffRight=" << LambdaDiff
+                   << ", expanding window..." << std::endl;
+
+      this->ExpandWindowRight();
+
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      {
+         *C = Tmp;
+         this->ExpandRight();
+         this->EvolveCurrentSite(Tau);
+      }
+      this->IterateRight(Tau);
+
+      while (Site < RightStop)
+      {
+         if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+            this->ExpandRight();
+         this->EvolveCurrentSite(Tau);
+         this->CalculateEps12();
+         this->IterateRight(Tau);
+      }
+
+      Tmp = *C;
+      this->EvolveCurrentSite(Tau);
+      this->CalculateEps12();
+
+      FidLoss = this->CalculateFidelityLossRight();
+      LambdaDiff = this->CalculateLambdaDiffRight();
+   }
+
+   if (Verbose > 0)
+      std::cout << "FidelityLossRight=" << FidLoss
+                << " LambdaDiffRight=" << LambdaDiff << std::endl;
+}
+
+void
+IBC_TDVP::Evolve(bool Expand)
 {
    ++TStep;
    Eps1SqSum = 0.0;
    Eps2SqSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
    if (NExpand != 0 && Comoving == 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
    if (Comoving == 0)
-      this->SweepLeftEW((*Gamma)*Timestep);
+      this->SweepLeftEW((*Alpha)*Timestep, Expand);
    else
-      this->SweepLeft((*Gamma)*Timestep);
-   ++Gamma;
+      this->SweepLeft((*Alpha)*Timestep, Expand);
+   ++Alpha;
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   while (Gamma != GammaEnd)
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->SweepRightEW((*Gamma)*Timestep);
-      ++Gamma;
+      this->SweepRightEW((*Beta)*Timestep, Expand);
+      ++Beta;
 
       if (Comoving == 0)
-         this->SweepLeftEW((*Gamma)*Timestep);
+         this->SweepLeftEW((*Alpha)*Timestep, Expand);
       else
-         this->SweepLeft((*Gamma)*Timestep);
-      ++Gamma;
+         this->SweepLeft((*Alpha)*Timestep, Expand);
+      ++Alpha;
    }
 
    if (Epsilon)
-      this->SweepRightFinalEW((*Gamma)*Timestep);
+      this->SweepRightFinalEW((*Beta)*Timestep, Expand);
    else
-      this->SweepRightEW((*Gamma)*Timestep);
-}
-
-void
-IBC_TDVP::EvolveExpand()
-{
-   ++TStep;
-   Eps1SqSum = 0.0;
-   Eps2SqSum = 0.0;
-
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
-   std::vector<double>::const_iterator GammaEnd = Comp.Gamma.cend();
-   --GammaEnd;
-
-   if (NExpand != 0)
-      if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
-
-   if (Comoving == 0)
-      this->SweepLeftExpandEW((*Gamma)*Timestep);
-   else
-      this->SweepLeftExpand((*Gamma)*Timestep);
-   ++Gamma;
-
-   if (NExpand != 0)
-      if (TStep % NExpand == 0)
-         this->ExpandWindowRight();
-
-   while (Gamma != GammaEnd)
-   {
-      this->SweepRightEW((*Gamma)*Timestep);
-      ++Gamma;
-
-      if (Comoving == 0)
-         this->SweepLeftExpandEW((*Gamma)*Timestep);
-      else
-         this->SweepLeftExpand((*Gamma)*Timestep);
-      ++Gamma;
-   }
-
-   if (Epsilon)
-      this->SweepRightFinalEW((*Gamma)*Timestep);
-   else
-      this->SweepRightEW((*Gamma)*Timestep);
+      this->SweepRightEW((*Beta)*Timestep, Expand);
 }
 
 void
@@ -778,29 +761,30 @@ IBC_TDVP::Evolve2()
    ++TStep;
    TruncErrSum = 0.0;
 
-   std::vector<double>::const_iterator Gamma = Comp.Gamma.cbegin();
+   std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
+   std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowLeft();
 
-   this->SweepLeft2((*Gamma)*Timestep);
-   ++Gamma;
+   this->SweepLeft2((*Alpha)*Timestep);
+   ++Alpha;
 
    if (NExpand != 0)
       if (TStep % NExpand == 0)
          this->ExpandWindowRight();
 
-   this->SweepRight2((*Gamma)*Timestep);
-   ++Gamma;
+   this->SweepRight2((*Beta)*Timestep);
+   ++Beta;
 
-   while (Gamma != Comp.Gamma.cend())
+   while (Alpha != Comp.Alpha.cend())
    {
-      this->SweepLeft2((*Gamma)*Timestep);
-      ++Gamma;
+      this->SweepLeft2((*Alpha)*Timestep);
+      ++Alpha;
 
-      this->SweepRight2((*Gamma)*Timestep);
-      ++Gamma;
+      this->SweepRight2((*Beta)*Timestep);
+      ++Beta;
    }
 
    if (Epsilon)
