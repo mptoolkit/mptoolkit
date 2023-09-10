@@ -613,7 +613,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
 					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
-					      HamMatrices.left(), UpdateKeepList);
+					      HamMatrices.left(), DoUpdateKeepList);
 
    if (Verbose > 1)
    {
@@ -651,7 +651,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
-					      HamMatrices.right(), UpdateKeepList);
+					      HamMatrices.right(), DoUpdateKeepList);
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
