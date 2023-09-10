@@ -125,6 +125,7 @@ int main(int argc, char** argv)
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       std::string States = "100";
       double EvolveDelta = 0.0;
+      bool NoKeepList = false;
 
       std::cout.precision(14);
 
@@ -164,6 +165,7 @@ int main(int argc, char** argv)
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
+         ("no-keep-list", prog_opt::bool_switch(&NoKeepList), "Don't use the KeepList for quantum number subspaces")
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
 	  "For the shift-invert and shift-invert-direct solver, the target energy")
 	 ("subspacesize", prog_opt::value(&SubspaceSize),
@@ -230,6 +232,7 @@ int main(int argc, char** argv)
       DMRG dmrg(Psi, HamMPO, Verbose);
 
       dmrg.UseDGKS = UseDGKS;
+      dmrg.DoUpdateKeepList = !NoKeepList;
       dmrg.Solver().SetSolver(Solver);
 
       dmrg.Solver().MaxTol = MaxTol;

@@ -47,22 +47,22 @@ class DMRG
       // Adds x to the 'orthogonal set', that we explicitly orthogonalize the
       // wavefunction against
       void AddOrthogonalState(FiniteWavefunctionLeft x);
-      
+
       void StartSweep(bool IncrementSweepNumber = true, double Broad = 0);
-      
+
       void EndSweep();    // statistics for end of sweep
-      
+
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
-      
+
       void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
       void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
-      
+
       //   int LeftSize() const { return Psi.LeftSize(); }
       //   int RightSize() const { return Psi.RightSize(); }
-      
+
       LocalEigensolver& Solver() { return Solver_; }
-      
+
       // Invoke the local eigensolver
       std::complex<double> Solve();
 
@@ -122,7 +122,7 @@ class DMRG
       double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
       double SweepEnergyError;       // standard error of the energy at each iteration
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
-      
+
       // some statistics, for current iteration
       int IterationNumMultiplies;
       int IterationNumStates;
@@ -148,6 +148,7 @@ class DMRG
       bool NormalizeWavefunction; // should we normalize the wavefunction after each truncation?
       bool MixUseEnvironment;
       bool UseDGKS;  // use DGKS correction in the lanczos for orthogonal states
+      bool DoUpdateKeepList; // set to true to use the KeepList to ensure quantum number subspaces are represented
       LocalEigensolver Solver_;
       int Verbose;
 
