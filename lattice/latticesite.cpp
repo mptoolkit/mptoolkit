@@ -91,6 +91,12 @@ LatticeSite::Basis2() const
    return this->operator[]("I").Basis2();
 }
 
+LatticeSite::basis1_type const&
+LatticeSite::Basis() const
+{
+   return this->Basis1();
+}
+
 void
 LatticeSite::set_operator_descriptions(OperatorDescriptions const& Desc)
 {

@@ -568,8 +568,6 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
    // which is the desired operator.  This is quite straightforward,
    // since X,A have 1 row, and F,I have 1 column.
 
-   DEBUG_TRACE(Op.size())(UnitCellSize)(SiteList.size());
-
    // To construct this operator, we firstly split Op into UnitCellSize pieces
    std::vector<std::vector<OperatorComponent>> SplitOp = SplitOperator(Op, UnitCellSize);
 

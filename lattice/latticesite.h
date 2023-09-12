@@ -25,6 +25,9 @@
 
   This also has a description, which is just used for informational
   purposes, eg "Fermion site", "Boson site", etc
+
+  A LatticeSite has a well-defined local Hilbert space, i.e. every operator that is part of the lattice site
+  has Basis1() == Basis2()
 */
 
 #if !defined(MPTOOLKIT_LATTICE_LATTICESITE_H)
@@ -81,6 +84,7 @@ class LatticeSite
       SymmetryList GetSymmetryList() const;
 
       // precondition: !empty()
+      basis1_type const& Basis() const;
       basis1_type const& Basis1() const;
       basis2_type const& Basis2() const;
 

@@ -186,6 +186,9 @@ class UnitCell
       // Lookup a local operator on a given unit cell index
       operator_type local_operator(std::string const& Op, int Cell, int Site) const;
 
+      // Given a SimpleOperator, and a JW string operator, map it into a UnitCellMPO at the given (Cell)[Site] coordinates
+      operator_type map_local_operator(SimpleOperator const& Op, LatticeCommute Commute, std::string Description, int Cell, int Site) const;
+
       // Given a SiteOperator, map it into a UnitCellMPO at the given (Cell)[Site] coordinates
       operator_type map_local_operator(SiteOperator const& Op, int Cell, int Site) const;
 
