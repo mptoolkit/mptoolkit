@@ -30,13 +30,6 @@ The allowed input strings are:
    greatest value (Start + i*Step) for integer i which is less than End.)
 
 3. A range specified as Start:End,Num.
-
-TODO:
-
-* At the moment the list of values is generated at construction and stored in a
-  vector. It would be more efficient for large ranges if there were a custom
-  iterator for this class which generates the range on the fly.
-
 */
 
 #if !defined(MPTOOLKIT_COMMON_RANGELIST_H)

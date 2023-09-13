@@ -48,7 +48,12 @@ RangeList::RangeList(std::string Str)
          if (Str.at(Sep2) == ':')
          {
             Step = std::stod(Str.substr(Sep2+1));
-            Num = floor((End-Start)/Step) + 1;
+            // Add an epsilon to ensure the end point is included if intended.
+            Num = floor((End-Start)/Step + 1e-8) + 1;
+
+            // If the step does not evenly divide the distance, we update the endpoint.
+            if (std::abs(End-Start - (Num-1)*Step) / std::abs(Step) > 1e-8)
+               End = Start + (Num-1)*Step;
          }
          // If the number of points is specified.
          else
@@ -66,6 +71,6 @@ RangeList::RangeList(std::string Str)
    List = std::vector<double>();
    for (int i = 0; i < Num; ++i)
    {
-      List.push_back(Start + Step * i);
+      List.push_back(Start * (Num-1-i) / (Num-1) + End * i / (Num-1));
    }
 }
