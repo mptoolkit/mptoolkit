@@ -43,7 +43,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "Show this help message")
          ("momentum,k", prog_opt::value(&K), "Change the momentum to this value")
-         ("latticeucsize", prog_opt::value(&LatticeUCSize), FormatDefault("Size of lattice unit cell", LatticeUCSize).c_str())
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -86,6 +86,10 @@ int main(int argc, char** argv)
          pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
          PsiPtr = pheap::ImportHeap(InputFilename);
       }
+
+      // Get the lattice unit cell size if unspecified.
+      if (!vm.count("latticeucsize"))
+         LatticeUCSize = PsiPtr->Attributes()["LatticeUnitCellSize"].get_or_default<int>(1);
 
       EAWavefunction Psi = PsiPtr->get<EAWavefunction>();
 

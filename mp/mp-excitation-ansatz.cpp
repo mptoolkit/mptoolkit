@@ -50,6 +50,7 @@ int main(int argc, char** argv)
       int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
+      int LatticeUCSize = 1;
       int OutputDigits = -1;
       bool Random = false;
       bool Streaming = false;
@@ -70,6 +71,7 @@ int main(int argc, char** argv)
          ("quantumnumber,q", prog_opt::value(&QuantumNumber),
           "The quantum number sector for the excitation [default identity]")
          ("rotate,r", prog_opt::value(&Rotate), "Rotate the right boundary by this many sites to the left")
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")
@@ -163,8 +165,13 @@ int main(int argc, char** argv)
          std::tie(Settings.StringOp, std::ignore) = ParseProductOperatorAndLattice(String);
       }
 
+      // Set the lattice unit cell size.
+      if (!vm.count("latticeucsize"))
+         LatticeUCSize = Lattice.GetUnitCell().size();
+      // Set the wavefunction unit cell size.
+      int PsiSize = PsiLeft.size();
       // The number of lattice unit cells in Psi.
-      int LatticeUCsPerPsiUC = PsiLeft.size() / Lattice.GetUnitCell().size();
+      int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
       // Scale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.
       Settings.k = KList.get_start() * LatticeUCsPerPsiUC;
 
@@ -238,6 +245,18 @@ int main(int argc, char** argv)
       // Print column headers.
       if (Quiet == 0)
       {
+         print_preamble(std::cout, argc, argv);
+
+         std::cout << "#Wavefunction unit cell size is " << PsiSize
+                   << (PsiSize == 1 ? " site" : " sites") << std::endl
+                   << "#Using a lattice unit cell size of " << LatticeUCSize
+                   << (LatticeUCSize == 1 ? " site" : " sites") << std::endl
+                   // Use some logic to print the end point of the FBZ as a fraction.
+                   << "#FBZ ranges from 0 to " << ((LatticeUCsPerPsiUC % 2 == 0) ? "pi" : "2pi");
+         if (LatticeUCsPerPsiUC > 2)
+            std::cout << "/" << ((LatticeUCsPerPsiUC % 2 == 0) ? LatticeUCsPerPsiUC/2 : LatticeUCsPerPsiUC);
+         std::cout << std::endl;
+
          if (vm.count("string"))
             std::cout << "#kx/pi                ";
          else
@@ -305,6 +324,7 @@ int main(int argc, char** argv)
                Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
                Wavefunction.SetDefaultAttributes();
                Wavefunction.Attributes()["Prefix"] = OutputPrefix;
+               Wavefunction.Attributes()["LatticeUnitCellSize"] = LatticeUCSize;
                Wavefunction.Attributes()["ExcitationEnergy"] = std::real(*E) + Settings.Alpha;
                Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 

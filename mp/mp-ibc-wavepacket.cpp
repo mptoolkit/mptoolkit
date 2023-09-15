@@ -273,7 +273,7 @@ int main(int argc, char** argv)
          ("momentum,k", prog_opt::value(&KStr), "Momentum range of the form start:end:step or start:end,num (in units of pi) [required]")
          ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
          ("ky", prog_opt::value(&KYStr), "y-momentum range (in units of pi)")
-         ("latticeucsize", prog_opt::value(&LatticeUCSize), FormatDefault("Size of lattice unit cell", LatticeUCSize).c_str())
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
@@ -362,6 +362,10 @@ int main(int argc, char** argv)
 
          pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
          EAWavefunction Psi = InPsi->get<EAWavefunction>();
+
+         // Get the lattice unit cell size if unspecified.
+         if (!vm.count("latticeucsize"))
+            LatticeUCSize = InPsi->Attributes()["LatticeUnitCellSize"].get_or_default<int>(1);
 
          // If the input streams the boundaries, then we save them so we can
          // stream them in the output as well.

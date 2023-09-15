@@ -75,6 +75,7 @@ int main(int argc, char** argv)
    {
       int Verbose = 0;
       double K = 0.0;
+      int LatticeUCSize = 1;
       int Power = 1;
       bool CalculateMoments = false;
       bool CalculateMomentsFull = false;
@@ -109,6 +110,7 @@ int main(int argc, char** argv)
          ("overlap", prog_opt::bool_switch(&Overlap), "Calculate the overlap")
          ("momentum,k", prog_opt::value(&K),
           "Use this momentum for the EA wavefunction instead of the one in the file (in units of pi)")
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("power", prog_opt::value(&Power),
           FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
          ("moments", prog_opt::bool_switch(&CalculateMoments),
@@ -233,6 +235,10 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(InputFilename, CacheSize, true);
       EAWavefunction Psi = PsiPtr->get<EAWavefunction>();
 
+      // Get the lattice unit cell size if unspecified.
+      if (!vm.count("latticeucsize"))
+         LatticeUCSize = PsiPtr->Attributes()["LatticeUnitCellSize"].get_or_default<int>(1);
+
       EAWavefunction Psi2;
       if (vm.count("psi2"))
       {
@@ -325,7 +331,7 @@ int main(int argc, char** argv)
 
       // If we are calculating the overlap, then we do not have the lattice,
       // but ExpIK shouldn't matter in that case anyway, so we can set this to zero.
-      int LatticeUCsPerPsiUC = Overlap ? 0 : PsiLeft.size() / Lattice.GetUnitCell().size();
+      int LatticeUCsPerPsiUC = PsiLeft.size() / LatticeUCSize;
 
       // Use the phase factor from the input file by default, otherwise, use the specified value.
       std::complex<double> ExpIK;

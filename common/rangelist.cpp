@@ -34,6 +34,8 @@ RangeList::RangeList(std::string Str)
          End = Start;
          Step = 0.0;
          Num = 1;
+         List = std::vector<double>(1, Start);
+         return;
       }
       // If a range of numbers is specfied.
       else
