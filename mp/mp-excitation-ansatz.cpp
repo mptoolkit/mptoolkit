@@ -44,13 +44,13 @@ int main(int argc, char** argv)
       std::string RightFilename;
       std::string HamStr;
       std::string KStr = "0";
+      int LatticeUCSize = 1;
       double Tol = 1e-10;
       int NumEigen = 1;
       std::string QuantumNumber;
       int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
-      int LatticeUCSize = 1;
       int OutputDigits = -1;
       bool Random = false;
       bool Streaming = false;
@@ -64,6 +64,7 @@ int main(int argc, char** argv)
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
          ("momentum,k", prog_opt::value(&KStr), FormatDefault("The momentum, in units of pi: this can be a single number, or a range of the form start:end:step or start:end,num", KStr).c_str())
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
          ("ky", prog_opt::value(&Settings.ky), "Target this value of the y-momentum [2D cylinders]")
          ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
@@ -71,7 +72,6 @@ int main(int argc, char** argv)
          ("quantumnumber,q", prog_opt::value(&QuantumNumber),
           "The quantum number sector for the excitation [default identity]")
          ("rotate,r", prog_opt::value(&Rotate), "Rotate the right boundary by this many sites to the left")
-         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
          ("string", prog_opt::value(&String),
           "Use this string MPO representation for the cylinder translation operator")
          ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files (will not save if not specified)")

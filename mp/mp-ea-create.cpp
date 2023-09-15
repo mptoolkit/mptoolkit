@@ -40,6 +40,7 @@ int main(int argc, char** argv)
       std::string RightFilename;
       std::string OpStr;
       double K = 0.0;
+      int LatticeUCSize = 1;
       std::string OutputFilename;
       bool Streaming = false;
       bool NoStreaming = false;
@@ -49,6 +50,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "Show this help message")
          ("momentum,k", prog_opt::value(&K), FormatDefault("The momentum (in units of pi)", K).c_str())
+         ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
@@ -154,6 +156,14 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      // Set the lattice unit cell size.
+      if (!vm.count("latticeucsize"))
+         LatticeUCSize = Lattice.GetUnitCell().size();
+      // Set the wavefunction unit cell size.
+      int PsiSize = PsiLeft.size();
+      // The number of lattice unit cells in Psi.
+      int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
+
       WavefunctionSectionLeft PsiWindow(PsiLeft);
 
       LinearWavefunction PsiWindowLinear;
@@ -170,7 +180,7 @@ int main(int argc, char** argv)
       PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Identity, Verbose);
 
       EAWavefunction PsiEA(PsiLeft, std::vector<WavefunctionSectionLeft>(1, PsiWindow), PsiRight,
-                           Op.qn1(), Op.qn2(), 0, 0, std::exp(std::complex<double>(0.0, math_const::pi) * K));
+                           Op.qn1(), Op.qn2(), 0, 0, std::exp(std::complex<double>(0.0, math_const::pi) * (K * LatticeUCsPerPsiUC)));
 
       if (Streaming)
       {
@@ -182,6 +192,7 @@ int main(int argc, char** argv)
       Wavefunction.Wavefunction() = std::move(PsiEA);
       Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
       Wavefunction.SetDefaultAttributes();
+      Wavefunction.Attributes()["LatticeUnitCellSize"] = LatticeUCSize;
 
       pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
       pheap::ShutdownPersistent(PsiPtr);
