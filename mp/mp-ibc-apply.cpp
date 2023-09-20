@@ -214,6 +214,9 @@ int main(int argc, char** argv)
             PsiWindowLinear.push_front(delta_shift(*CLeft, LeftQShift));
          }
 
+         if (CLeft == PsiLeft.begin())
+            LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
+
          // If the initial window had no sites and we just added sites from the
          // left, incorporate the lambda matrix now; otherwise, we incorporate it
          // below after adding from the right.
@@ -240,6 +243,9 @@ int main(int argc, char** argv)
             PsiWindowLinear.push_back(delta_shift(*CRight, RightQShift));
             ++CRight;
          }
+
+         if (CRight == PsiRight.end())
+            RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
 
          if (SitesLeft == 0 && Psi.window_size() == 0)
             PsiWindowLinear.set_front(prod(Lambda, PsiWindowLinear.get_front()));

@@ -62,6 +62,7 @@ int main(int argc, char** argv)
       std::string LeftFilename;
       std::string RightFilename;
       std::string HamStr;
+      std::string QuantumNumber;
       bool Random = false;
       bool BoundaryLambda = false;
       bool Force = false;
@@ -78,12 +79,14 @@ int main(int argc, char** argv)
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian (if unspecified, use wavefunction attribute \"Hamiltonian\")")
+         ("quantumnumber,q", prog_opt::value(&QuantumNumber),
+          "Shift the right boundary by this quantum number [default identity]")
          ("tol", prog_opt::value(&Tol), FormatDefault("Tolerance of the eigensolver", Tol).c_str())
          ("gmrestol", prog_opt::value(&GMRESTol), FormatDefault("Error tolerance for the GMRES algorithm", GMRESTol).c_str())
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("random", prog_opt::bool_switch(&Random), "Use a random lambda matrix instead of minimizing the Hamiltonian")
-         ("boundary-lambda", prog_opt::bool_switch(&BoundaryLambda), "Use the left boundary's lambda matrix instead of minimzing the Hamiltonian")
+         ("boundary-lambda", prog_opt::bool_switch(&BoundaryLambda), "Use the left boundary's lambda matrix instead of minimizing the Hamiltonian")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -167,16 +170,35 @@ int main(int argc, char** argv)
          BoundaryLambda = true;
       }
 
+      // Get the QShift for the right boundary.
+      QuantumNumbers::QuantumNumber QRight(PsiRight.GetSymmetryList());
+
+      // If we specified the quantum number as an option.
+      if (vm.count("quantumnumber"))
+         QRight = QuantumNumbers::QuantumNumber(PsiRight.GetSymmetryList(), QuantumNumber);
       // If the bases of the two boundary unit cells have only one quantum
       // number sector, manually ensure that they match.
-      // FIXME: This workaround probably will not work for non-Abelian symmetries.
-      QuantumNumber QRight(PsiRight.GetSymmetryList());
-      if (PsiLeft.Basis1().size() == 1 && PsiRight.Basis1().size() == 1)
+      else if (PsiLeft.Basis1().size() == 1 && PsiRight.Basis1().size() == 1)
       {
          QRight = delta_shift(PsiLeft.Basis1()[0], adjoint(PsiRight.Basis1()[0]));
-         if (Verbose > 0)
-            std::cout << "Shifting PsiRight by " << QRight << std::endl;
-         inplace_qshift(PsiRight, QRight);
+         // If QRight is non-Abelian, we cannot shift by it.
+         if (QRight.degree() != 1)
+         {
+            std::cerr << "fatal: The left and right boundaries do not have any possible common Abelian quantum number sectors." << std::endl;
+            return 1;
+         }
+      }
+
+      if (Verbose > 0)
+         std::cout << "Shifting PsiRight by " << QRight << std::endl;
+      inplace_qshift(PsiRight, QRight);
+
+      // Check that we have common quantum number sectors in the two middle bases.
+      if (PackMatrixOperator(PsiLeft.Basis1(), PsiRight.Basis1()).size() == 0)
+      {
+         std::cerr << "fatal: The left and right boundaries do not have any quantum number sectors in common. "
+                      "You may need to set a different quantum number shift of the right boundary with --quantumnumber." << std::endl;
+         return 1;
       }
 
       WavefunctionSectionLeft Window;
@@ -191,13 +213,19 @@ int main(int argc, char** argv)
       // here: once the wavefunction is loaded, PsiLeft can be qshifted explicitly.
       MatrixOperator C = MakeRandomMatrixOperator(PsiLeft.Basis1(), PsiRight.Basis1());
       C *= 1.0 / norm_frob(C);
+
       if (Random)
       {
          // We don't need to do anything here.
       }
       else if (BoundaryLambda)
       {
-         CHECK_EQUAL(PsiLeft.Basis1(), PsiRight.Basis1());
+         if (PsiLeft.Basis1() != PsiRight.Basis1())
+         {
+            std::cerr << "fatal: The left and right boundaries must have the same middle basis if using --boundary. "
+                         "You may need to set the quantum number shift of the right boundary explicitly with --quantumnumber." << std::endl;
+            return 1;
+         }
          // We use lambda_l because we implicitly qshift PsiLeft (compare above).
          C = PsiLeft.lambda_l();
       }
@@ -236,7 +264,6 @@ int main(int argc, char** argv)
          BlockHamR = delta_shift(BlockHamR, PsiRight.qshift());
 
          CMultiply Mult(BlockHamL, BlockHamR);
-
          std::vector<std::vector<std::complex<double>>> OutputVectors(NumEigen, std::vector<std::complex<double>>(Mult.P.size()));
 
          auto Eigs = LinearAlgebra::DiagonalizeARPACK(Mult, Mult.P.size(), NumEigen, LinearAlgebra::WhichEigenvalues::SmallestReal,

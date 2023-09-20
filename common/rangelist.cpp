@@ -73,6 +73,6 @@ RangeList::RangeList(std::string Str)
    List = std::vector<double>();
    for (int i = 0; i < Num; ++i)
    {
-      List.push_back(Start * (Num-1-i) / (Num-1) + End * i / (Num-1));
+      List.push_back(Start * ((double) (Num-1-i) / (Num-1)) + End * ((double) i / (Num-1)));
    }
 }
