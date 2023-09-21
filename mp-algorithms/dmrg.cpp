@@ -590,7 +590,6 @@ DMRG::Solve()
 
    Solver_.Solve(*C, HamMatrices.left(), *H, HamMatrices.right());
 
-   DEBUG_TRACE("DMRG::Solve");
    StateComponent PsiOld = *C;
 
    IterationEnergy = Solver_.LastEnergy();
@@ -628,7 +627,9 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
 
    // Project out the first and last columns of HLeft.
-   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
+   // NOTE: if the Hamiltonian is 2-dimensional MPO (i.e. there are no interactions here), then
+   // the projector maps onto an empty set, so we need the 3-parameter constructor of the BasisList
+   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.GetSymmetryList(), HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
    for (int i = 0; i < Projector.Basis2().size(); ++i)
       Projector(i+1, i) = 1.0;
 
@@ -687,7 +688,9 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
 
    // Project out the first and last columns of HRight.
-   SimpleOperator Projector(BasisList(HRight.Basis1().begin()+1, HRight.Basis1().end()-1), HRight.Basis1());
+   // NOTE: if the Hamiltonian is 2-dimensional MPO (i.e. there are no interactions here), then
+   // the projector maps onto an empty set, so we need the 3-parameter constructor of the BasisList
+   SimpleOperator Projector(BasisList(HRight.GetSymmetryList(), HRight.Basis1().begin()+1, HRight.Basis1().end()-1), HRight.Basis1());
    for (int i = 0; i < Projector.Basis1().size(); ++i)
       Projector(i, i+1) = 1.0;
 
