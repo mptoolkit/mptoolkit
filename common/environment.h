@@ -51,6 +51,12 @@ std::string cmdline(int argc, char** argv)
 // expands components of the form ${XXX} as the corresponding environment string
 std::string ExpandEnvironment(std::string const& s);
 
+inline
+bool env_exists(std::string const& str)
+{
+   return getenv(str.c_str()) != nullptr;
+}
+
 // getenv_or_default
 // Get an environment string, or if the environment string is not defined, return the specified Default value
 template <typename T>
@@ -74,6 +80,14 @@ T getenv_or_default(std::string const& str, T const& Default)
    }
 
    return Default;
+}
+
+inline
+char const*
+getenv_or_default(std::string const& str, char const* Default)
+{
+   char const* Str = getenv(str.c_str());
+   return Str ? Str : Default;
 }
 
 #endif
