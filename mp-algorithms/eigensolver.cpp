@@ -318,19 +318,18 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       if (Solver_ == Solver::Lanczos)
       {
-	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-			       LastIter_, LastTol_, MinIter, Verbose-1);
+        LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),LastIter_, LastTol_, MinIter, Verbose-1);
       }
       else if (Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiSmallest)
       {
-	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+        LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestMagnitude,
 					      true, Verbose-1);
       }
       else if (Solver_ == Solver::ArnoldiLowest)
       {
-	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+        LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestAlgebraicReal,
 					      true, Verbose-1);
@@ -357,7 +356,7 @@ LocalEigensolver::Solve(StateComponent& C,
 	    {
 	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
 	       {
-		  PANIC(i)(Diag[i])(HMat(i,i));
+		         PANIC(i)(Diag[i])(HMat(i,i));
 	       }
 	    }
 #endif
