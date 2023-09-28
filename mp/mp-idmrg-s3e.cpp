@@ -64,6 +64,7 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/proccontrol.h"
+#include "common/formatting.h"
 #include "common/prog_options.h"
 #include <iostream>
 #include "common/environment.h"
@@ -723,7 +724,7 @@ iDMRG::UpdateRightBlock(double HMix)
    }
 
    // Subtract off the energy
-   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
+   RightHamiltonian.front().front() -= std::conj(Solver_.LastEnergy()) * RightHamiltonian.front().back();
 
    this->CheckConsistency();
 }
@@ -908,12 +909,8 @@ iDMRG::ShowInfo(char c)
 {
    std::cout << c
              << " Sweep=" << SweepNumber
-             << " Energy=";
-   if (Solver_.is_complex())
-      std::cout << Solver_.LastEnergy();
-   else
-      std::cout << Solver_.LastEnergyReal();
-   std::cout << " States=" << Info.KeptStates()
+             << " Energy=" << formatting::format_complex(Solver_.LastEnergy())
+             << " States=" << Info.KeptStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy()
              << " FidelityLoss=" << Solver_.LastFidelityLoss()
