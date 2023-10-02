@@ -23,6 +23,7 @@
 #if !defined(MPSTATE_H_SDHCKJHKJLRHGIURHYULUHR)
 #define MPSTATE_H_SDHCKJHKJLRHGIURHYULUHR
 
+#include "truncation.h"
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
 #include "tensor/tensorsum.h"
@@ -732,14 +733,38 @@ MatrixOperator Regularize(MatrixOperator const& M);
 
 // We could also unregularize a StateComponent, but so far we don't need it
 
-// left-orthogonalizes an MPS
-// basically equivalent to ExpandBasis2() followed by an SVD
+// right-orthogonalizes an MPS, A -> U * D * A'
+// where U is square unitary, D is positive diagonal.
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A);
+
+// left-orthogonalizes an MPS, A -> A' * D * Vh
+// where D is positive diagonal, Vh is square unitary
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A);
 
-// right-orthogonalizes an MPS
+// Similar to OrthogonalizeBasis1, but truncates the singular value matrix D according to the given StatesInfo.
+// The default-constructed StatesInfo removes zero singular values.
 std::pair<MatrixOperator, RealDiagonalOperator>
-OrthogonalizeBasis1(StateComponent& A);
+TruncateBasis1(StateComponent& A, StatesInfo const& States = StatesInfo());
+
+// Similar to OrthogonalizeBasis2, but truncates the singular value matrix D according to the given StatesInfo.
+// The default-constructed StatesInfo removes zero singular values.
+std::pair<RealDiagonalOperator, MatrixOperator>
+TruncateBasis2(StateComponent& A, StatesInfo const& States = StatesInfo());
+
+// Helper function to combine the output matrices from an Orthogonalize or Truncate call
+inline
+MatrixOperator Multiply(std::pair<MatrixOperator, RealDiagonalOperator> const& M)
+{
+   return M.first * M.second;
+}
+
+inline
+MatrixOperator Multiply(std::pair<RealDiagonalOperator, MatrixOperator> const& M)
+{
+   return M.first * M.second;
+}
 
 // experimental ExpandBasis1 variant that returns a SimpleStateComponent
 std::pair<MatrixOperator, SimpleStateComponent>

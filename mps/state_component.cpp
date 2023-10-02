@@ -840,6 +840,17 @@ ExpandBasis1_(StateComponent const& A)
    return std::make_pair(Res, Result);
 }
 
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis2(A);
+   SingularValueDecomposition(M, U, D, Vh);
+   A = ReshapeFromBasis2(Vh, A.LocalBasis(), A.Basis2());
+   return std::make_pair(U, D);
+}
+
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A)
 {
@@ -852,14 +863,29 @@ OrthogonalizeBasis2(StateComponent& A)
 }
 
 std::pair<MatrixOperator, RealDiagonalOperator>
-OrthogonalizeBasis1(StateComponent& A)
+TruncateBasis1(StateComponent& A, StatesInfo const& States)
 {
+   MatrixOperator M = ReshapeBasis2(A);
+   CMatSVD SVD(M);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   MatrixOperator M = ReshapeBasis2(A);
-   SingularValueDecomposition(M, U, D, Vh);
+   TruncationInfo Info;
+   SVD.ConstructMatrices(SVD.begin(), TruncateFixTruncationError(SVD.begin(), SVD.end(), States, Info), U, D, Vh);
    A = ReshapeFromBasis2(Vh, A.LocalBasis(), A.Basis2());
    return std::make_pair(U, D);
+}
+
+std::pair<RealDiagonalOperator, MatrixOperator>
+TruncateBasis2(StateComponent& A, StatesInfo const& States)
+{
+   MatrixOperator M = ReshapeBasis1(A);   // M is md x m
+   CMatSVD SVD(M);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   TruncationInfo Info;
+   SVD.ConstructMatrices(SVD.begin(), TruncateFixTruncationError(SVD.begin(), SVD.end(), States, Info), U, D, Vh);
+   A = ReshapeFromBasis1(U, A.LocalBasis(), A.Basis1());
+   return std::make_pair(D, Vh);
 }
 
 MatrixOperator ReshapeBasis1(StateComponent const& A)
