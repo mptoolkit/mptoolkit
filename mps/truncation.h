@@ -22,6 +22,7 @@
 
 #include <limits>
 #include <iostream>
+#include <quantumnumbers/quantumnumber.h>
 
 // Structure to hold information on a particular density matrix eigenstate,
 // or the square of a singular value
@@ -48,7 +49,7 @@ struct EigenInfo
       double x = Eigenvalue/TotalWeight;
       return x > 0 ? -x * this->Degree() * log(x) : 0;
    }
-   EigenInfo(double Eigen_, int QuantumNumber_, int LinearIndex_, QuantumNumber Q_)
+   EigenInfo(double Eigen_, int QuantumNumber_, int LinearIndex_, QuantumNumbers::QuantumNumber Q_)
       : Eigenvalue(Eigen_), Subspace(QuantumNumber_), Index(LinearIndex_), Q(Q_) {}
 
    bool operator==(EigenInfo const& Other) const
@@ -364,7 +365,7 @@ TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight
    std::list<EigenInfo> States(first, last);
 
    std::list<EigenInfo> Result;
-   std::map<QuantumNumber, int> KeptStatesPerSector;
+   std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
 
    // first pass: keep at least StatesPerSector states in each quantum number sector.
    // If the kept state has non-zero weight, then it subtracts from NumStatesWithWeight.

@@ -1189,7 +1189,7 @@ int main(int argc, char** argv)
          // adjust for periodic basis
          StateComponent x = prod(Psi.get_back(), UR);
          std::tie(R, UR);
-         MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+         MatrixOperator X = Multiply(TruncateBasis2(x)); // the Basis2 is already 1-dim.  This just orthogonalizes x
          MatrixOperator U;
          SingularValueDecomposition(X, U, R, UR);
          x = prod(x, U);

@@ -56,7 +56,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
    while (dmrg.Site < dmrg.RightStop)
    {
       int EnvStates = 0;
-      if (dmrg.Site < dmrg.RightStop-1)
+      if (ExtraStates >= 0 && dmrg.Site < dmrg.RightStop-1)
       {
          int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis2().total_dimension()*ExtraStatesFactor+0.5));
          EnvStates = dmrg.ExpandRightEnvironment(States, ExtraStatesPerSector);
@@ -91,7 +91,7 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraSt
    while (dmrg.Site > dmrg.LeftStop)
    {
       int EnvStates = 0;
-      if (dmrg.Site > dmrg.LeftStop+1)
+      if (ExtraStates >= 0 && dmrg.Site > dmrg.LeftStop+1)
       {
          int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis1().total_dimension()*ExtraStatesFactor+0.5));
          EnvStates = dmrg.ExpandLeftEnvironment(States, ExtraStatesPerSector);
@@ -172,7 +172,7 @@ int main(int argc, char** argv)
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
          ("random-mix-factor", prog_opt::value(&RandomMixFactor),
           FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
-          ("env-states", prog_opt::value(&EnvStates), FormatDefault("Minimum number of additional environment states to keep", EnvStates).c_str())
+          ("env-states", prog_opt::value(&EnvStates), FormatDefault("Minimum number of additional environment states to keep, set to -1 to disable environment expansion completely", EnvStates).c_str())
          ("env-states-per-sector", prog_opt::value(&EnvStatesPerSector), FormatDefault("Minimum number of additional environment states in each quantum number sector", EnvStatesPerSector).c_str())
          ("env-states-factor", prog_opt::value(&EnvStatesFactor), FormatDefault("Expand the environment by this factor (must be >= 1)", EnvStatesFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),

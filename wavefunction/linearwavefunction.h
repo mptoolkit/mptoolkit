@@ -384,6 +384,7 @@ make_identity_string_operator(std::vector<BasisList> const& Basis);
 
 double const EigenvalueEpsilon = std::numeric_limits<double>::epsilon() * 4;
 
+#if 0
 inline
 StateComponent::operator_type
 TruncateBasis1(StateComponent& A)
@@ -421,6 +422,7 @@ TruncateBasis2(StateComponent& A)
    A = prod(A, herm(U));
    return prod(U, Trunc, QuantumNumber(Trunc.GetSymmetryList()));
 }
+#endif
 
 // template definitions
 

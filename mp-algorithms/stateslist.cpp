@@ -253,6 +253,9 @@ void StatesList::AppendToken(char const* s)
       {
          PANIC("StatesList format error: negative scale factor is not allowed in N*F")(s);
       }
+      // if the factor is an integer, then the first . will get eaten by the floating point number
+      if (s[-1] == '.')
+         --s;
       if (s[0] == '.' && s[1] == '.')
       {
          // We have notation N*I..M
@@ -264,7 +267,6 @@ void StatesList::AppendToken(char const* s)
          }
          s = p;
          // we have the form InitialStates*Factor..FinalStates
-
          I.NumStates = int(InitialStates*Factor + 0.5);
          int n = 1;
          if (FinalStates > InitialStates)
@@ -276,8 +278,8 @@ void StatesList::AppendToken(char const* s)
             while (I.NumStates < FinalStates)
             {
                Info.push_back(I);
-               I.NumStates = int(InitialStates*std::pow(Factor, n) + 0.5);
                ++n;
+               I.NumStates = int(InitialStates*std::pow(Factor, n) + 0.5);
             }
          }
          else if (FinalStates < InitialStates)

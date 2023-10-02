@@ -162,7 +162,7 @@ LinearWavefunction WavefunctionFromConfiguration(WavefunctionDesc const& Psi, st
       StateComponent R(Basis[i], B1, B2);
       R[Psi.State[i]] = Next;
       R = prod(R, Center);
-      Center = TruncateBasis1(R);
+      Center = Multiply(TruncateBasis1(R));
       Result.push_front(R);
       B2 = B1;
    }
