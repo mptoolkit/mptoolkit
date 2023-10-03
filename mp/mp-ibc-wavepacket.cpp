@@ -35,6 +35,22 @@
 
 namespace prog_opt = boost::program_options;
 
+LinearAlgebra::Vector<std::complex<double>>
+operator*(LinearAlgebra::Matrix<std::complex<double>> const& M, LinearAlgebra::Vector<std::complex<double>> const& v)
+{
+   LinearAlgebra::Vector<std::complex<double>> Result(size1(M));
+   for (unsigned i = 0; i < size1(M); ++i)
+   {
+      std::complex<double> x = 0.0;
+      for (unsigned j = 0; j < size2(M); ++j)
+      {
+         x += M(i,j) * v[j];
+      }
+      Result[i] = x;
+   }
+   return Result;
+}
+
 // The "wrapped Gaussian" is the sum of the Guassian with mean mu and standard
 // deviation sigma and all displacements of this Gaussian by 2*pi.
 // This can be calculated in terms of the Jacobi theta function.
@@ -266,15 +282,16 @@ int main(int argc, char** argv)
       double Tol = 1e-5;
       std::string LeftBoundaryFilename;
       std::string RightBoundaryFilename;
+      StatesInfo SInfo;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
+         ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("momentum,k", prog_opt::value(&KStr), "Momentum range of the form start:end:step or start:end,num (in units of pi) [required]")
          ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
          ("ky", prog_opt::value(&KYStr), "y-momentum range (in units of pi)")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
-         ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
@@ -284,6 +301,14 @@ int main(int argc, char** argv)
          ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", Tol).c_str())
+         ("min-states", prog_opt::value(&SInfo.MinStates),
+          FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
+         ("max-states", prog_opt::value<int>(&SInfo.MaxStates),
+          FormatDefault("Maximum number of states to keep", SInfo.MaxStates).c_str())
+         ("trunc,r", prog_opt::value<double>(&SInfo.TruncationCutoff),
+          FormatDefault("Truncation error cutoff", SInfo.TruncationCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&SInfo.EigenvalueCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", SInfo.EigenvalueCutoff).c_str())
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -516,10 +541,11 @@ int main(int argc, char** argv)
          int Size = KList.get_num()*KYList.get_num();
 
          int Lambda = 1;
+         int LambdaY = 1;
          bool Finished = false;
          while (Lambda < N/2 && !Finished)
          {
-            int LambdaY = 1;
+            LambdaY = 1;
             // Only try values of LambdaY up to the current value of Lambda.
             // If we aren't localising along the y-axis, then this loop will only
             // run once, since we set NY/2 = 2.
@@ -565,8 +591,10 @@ int main(int argc, char** argv)
             auto F = FVec.begin();
             while (K != KList.end())
             {
-               std::cout << *K << " " << *KY << " "
-                         << formatting::format_complex(*F) << std::endl;
+               std::cout << *K << " ";
+               if (vm.count("ky"))
+                  std::cout << *KY << " ";
+               std::cout << formatting::format_complex(*F) << std::endl;
                ++K, ++KY, ++F;
             }
          }
@@ -612,20 +640,22 @@ int main(int argc, char** argv)
             auto F = FVec.begin();
             while (K != KList.end())
             {
-               std::cout << *K << " " << *KY << " "
-                         << formatting::format_complex(*F) << std::endl;
+               std::cout << *K << " ";
+               if (vm.count("ky"))
+                  std::cout << *KY << " ";
+               std::cout << formatting::format_complex(*F) << std::endl;
                ++K, ++KY, ++F;
             }
          }
 
          if (Verbose > 1)
          {
+            std::vector<std::vector<StateComponent>> WPVecFull = CalculateWPVec(BVec, ExpIKVec, FVec, N/2);
             // Print the norm of the B-matrices in WPVec for each unit cell.
-            std::vector<std::vector<StateComponent>> WPVec = CalculateWPVec(BVec, ExpIKVec, FVec, N/2);
             std::cout << "Printing wavepacket B-matrix norms..." << std::endl;
             std::cout << "#i j norm_frob(B(j)[i])" << std::endl;
             int i = 0;
-            for (auto const& WPCell : WPVec)
+            for (auto const& WPCell : WPVecFull)
             {
                int j = -N/2;
                for (auto const& WP : WPCell)
@@ -633,6 +663,28 @@ int main(int argc, char** argv)
                ++i;
             }
          }
+
+         // Calculate the new value of Lambda post-convolution.
+         int LambdaNew;
+         LinearAlgebra::Vector<std::complex<double>> FVector(FVec.begin(), FVec.end());
+         for (LambdaNew = Lambda; LambdaNew < N/2; ++LambdaNew)
+         {
+            LinearAlgebra::Matrix<std::complex<double>> NLambdaMat
+               = CalculateNLambda(BBVec, ExpIKVec, N, LambdaNew, LambdaY, LatticeUCSize);
+            double Error = std::real(inner_prod(FVector, NLambdaMat * FVector));
+
+            if (Verbose > 2)
+               std::cout << "LambdaNew = " << LambdaNew
+                         << ", Error = " << Error << std::endl;
+
+            if (Error < Tol)
+               break;
+         }
+
+         if (Verbose > 1)
+            std::cout << "Updating Lambda to " << LambdaNew << std::endl;
+
+         Lambda = LambdaNew;
 
          if (Verbose > 1)
             std::cout << "Constructing window..." << std::endl;
@@ -677,12 +729,17 @@ int main(int argc, char** argv)
       WavefunctionSectionLeft PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
 
       if (Verbose > 1)
-         std::cout << "Normalizing window..." << std::endl;
+         std::cout << "Normalizing and truncating window..." << std::endl;
 
       MatrixOperator LambdaWindow;
       std::tie(PsiWindowLinear, LambdaWindow) = get_left_canonical(PsiWindow);
       LambdaWindow *= 1.0 / norm_frob(LambdaWindow);
-      PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), LambdaWindow, Verbose-1);
+
+      PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), LambdaWindow));
+
+      truncate_left_orthogonal(PsiWindowLinear, SInfo, Verbose-1);
+
+      PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
 
       if (Verbose > 1)
          std::cout << "Saving wavefunction..." << std::endl;
