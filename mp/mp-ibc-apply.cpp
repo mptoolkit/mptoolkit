@@ -143,6 +143,7 @@ int main(int argc, char** argv)
 #if 0
          PsiLeft = InfiniteWavefunctionLeft::Construct(PsiLeftLinear, PsiLeft.qshift(), Verbose);
 #else
+         std::cerr << "WARNING: Assuming the left operator preserves the orthogonality of the left boundary." << std::endl;
          PsiLeft = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiLeftLinear, PsiLeft.qshift(), PsiLeft.lambda_r(), Verbose);
 #endif
 
