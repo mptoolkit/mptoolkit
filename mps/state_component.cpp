@@ -26,6 +26,7 @@
 #include <tuple>
 #include "linearalgebra/matrix_utility.h"
 #include "tensor/tensor_eigen.h"
+#include "common/proccontrol.h"
 
 double const EigenvalueEpsilon = std::numeric_limits<double>::epsilon() * 4;
 

@@ -233,6 +233,10 @@ class VectorBasis
       template <typename FwdIter>
       VectorBasis(FwdIter first, FwdIter last);
 
+      // 3-argument version, in case the container is empty
+      template <typename FwdIter>
+      VectorBasis(SymmetryList const& sl, FwdIter first, FwdIter last);
+
       void push_back(QuantumNumber const& q, int Dimension);
 
       void push_back(QuantumNumber const& q)
