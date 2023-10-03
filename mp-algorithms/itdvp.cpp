@@ -652,12 +652,17 @@ iTDVP::ExpandLeft()
       HNext = HamMPO.end();
    --HNext;
 
-   TruncationInfo Info;
-   VectorBasis AddBasis;
    // We need to handle the last bond in the unit cell separately: see below.
    StateComponent CExpand = Site == LeftStop ? CBoundary : *CNext;
+
+   VectorBasis AddBasis(C->Basis1().GetSymmetryList());
+   int NewStates = 0;
    if (CExpand.Basis2().total_dimension() < SInfo.MaxStates)
+   {
+      TruncationInfo Info;
       std::tie(Info, AddBasis) = ExpandLeftEnvironment(CExpand, CCenter, HamLOld.back(), HamROld.front(), *HNext, *H, SInfo);
+      NewStates = Info.KeptStates();
+   }
 
    // We need to save this for dealing with the last bond.
    if (Site == RightStop)
@@ -676,7 +681,7 @@ iTDVP::ExpandLeft()
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
-                << " NewStates=" << Info.KeptStates()
+                << " NewStates=" << NewStates
                 << " TotalStates=" << TotalStates
                 << std::endl;
    }
@@ -766,12 +771,17 @@ iTDVP::ExpandRight()
    if (HNext == HamMPO.end())
       HNext = HamMPO.begin();
 
-   TruncationInfo Info;
-   VectorBasis AddBasis;
    // We need to handle the last bond in the unit cell separately: see below.
    StateComponent CExpand = Site == RightStop ? CBoundary : *CNext;
+
+   VectorBasis AddBasis(C->Basis2().GetSymmetryList());
+   int NewStates = 0;
    if (CExpand.Basis1().total_dimension() < SInfo.MaxStates)
+   {
+      TruncationInfo Info;
       std::tie(Info, AddBasis) = ExpandRightEnvironment(CCenter, CExpand, HamLOld.back(), HamROld.front(), *H, *HNext, SInfo);
+      NewStates = Info.KeptStates();
+   }
 
    // We need to save this for dealing with the last bond.
    if (Site == LeftStop)
@@ -790,7 +800,7 @@ iTDVP::ExpandRight()
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
-                << " NewStates=" << Info.KeptStates()
+                << " NewStates=" << NewStates
                 << " TotalStates=" << TotalStates
                 << std::endl;
    }

@@ -110,7 +110,8 @@ SimpleOperator ProjectBasis(BasisList const& b, QuantumNumbers::QuantumNumber co
 
 std::complex<double> PropIdent(SimpleOperator const& X, double UnityEpsilon)
 {
-   DEBUG_PRECONDITION_EQUAL(X.Basis1(), X.Basis2());
+   if (X.Basis1() != X.Basis2())
+      return 0.0;
    SimpleOperator Ident = SimpleOperator::make_identity(X.Basis1());
    std::complex<double> x = inner_prod(Ident, X) / double(X.Basis1().total_degree());
    if (norm_frob_sq(X-x*Ident) > UnityEpsilon*UnityEpsilon)
