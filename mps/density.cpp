@@ -23,6 +23,8 @@
 
 //typedef LinearAlgebra::Vector<std::pair<int, LinearAlgebra::Range> > BasisMappingType;
 
+// Sort eigenvalues by weight instead of by raw eigenvalue.  This is probably good in
+bool EigenSortByWeight = false;
 
 LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
    : VectorBasis(B.GetSymmetryList()), Orig(B), Mapping(B.size())

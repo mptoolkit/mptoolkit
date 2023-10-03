@@ -37,8 +37,9 @@ double const PrefactorEpsilon = 1e-16;
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
-
-std::pair<MatrixOperator, RealDiagonalOperator>
+// Expand the Basis1 of C.
+// On exit, Result' * C' = C
+MatrixOperator
 SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
                      MixInfo const& Mix, KeepListType& KeepList,
 		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
@@ -46,52 +47,46 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
                      StateComponent const& LeftHam, bool DoUpdateKeepList)
 {
    // truncate - FIXME: this is the s3e step
-#if defined(SSC)
-   MatrixOperator Lambda;
-   SimpleStateComponent CX;
-   std::tie(Lambda, CX) = ExpandBasis1_(C);
-#else
-   MatrixOperator Lambda = ExpandBasis1(C);
-#endif
+   StateComponent CExpand = C;
+   MatrixOperator Lambda = ExpandBasis1(CExpand);
 
-   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
+   MatrixOperator L2 = ReshapeBasis2(C);
+
+   MatrixOperator X;
    if (Mix.MixFactor > 0)
    {
-#if defined(SSC)
-      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
-#else
-      StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
-#endif
-      MatrixOperator RhoMix;
-      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
-
-      // Skip the identity and the Hamiltonian
-      for (unsigned i = 1; i < RH.size()-1; ++i)
+      // Remove the Hamiltonian term, which is the first term
+      SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()), H.Basis1());
+      int Size = H.Basis1().size();
+      for (int i = 0; i < Size-1; ++i)
       {
-         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
-	 //TRACE(i)(Prefactor);
+         Projector(i,i+1) = 1.0;
       }
-      // check for a zero mixing term - can happen if there are no interactions that span
-      // the current bond
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
+      // RH is dm * w * m. expanded basis, MPO, original basis
+      StateComponent RH = contract_from_right(herm(Projector*H), CExpand, RightHam, herm(C));
+      // TRACE(RH.back()); // this is the identity part - a reshaping of Lambda
+      // Normalize the components
+      std::vector<double> Weights(RH.size()-1, 0.0);
+      double NormSqTotal = 0;
+      for (int i = 0; i < Weights.size(); ++i)
+      {
+         Weights[i] = norm_frob(LeftHam[i+1]*L2) + PrefactorEpsilon;
+         NormSqTotal += std::pow(Weights[i],2) * norm_frob_sq(RH[i]);
+      }
+      // Adjust the weights so that all the components except the identity sum to Mix.MixFactor
+      double ScaleFactor = std::sqrt(Mix.MixFactor / NormSqTotal);
+      for (int i = 0; i < Weights.size(); ++i)
+      {
+         RH[i] *= Weights[i] * ScaleFactor;
+      }
+
+      X = ReshapeBasis2(RH);
    }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
+   else
+      X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
 
-   //TRACE(Rho);
+   CMatSVD DM(X);
 
-   DensityMatrix<MatrixOperator> DM(Rho);
-
-   //DM.DensityMatrixReport(std::cout);
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
@@ -105,25 +100,15 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    if (DoUpdateKeepList)
       UpdateKeepList(KeepList, AddedQN, DM.Basis(), KeptStates, DiscardStates, Info);
 
-   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
-   Lambda = Lambda * herm(UKeep);
-
-   //TRACE(Lambda);
-
-#if defined(SSC)
-   C = UKeep*CX; //prod(U, CX);
-#else
-   C = prod(UKeep, C);
-#endif
-
-   MatrixOperator U, Vh;
+   MatrixOperator UKeep, Vh;
    RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
+   DM.ConstructMatrices(KeptStates.begin(), KeptStates.end(), UKeep, D, Vh);
+   // We only care about UKeep here, we can throw D and Vh away
 
-   //TRACE(U)(D)(Vh);
+   MatrixOperator LambdaNew = Lambda*UKeep; // OldBasis, NewBasis
+   C = herm(UKeep)*CExpand;
 
-   C = prod(Vh, C);
-   return std::make_pair(U, D);
+   return LambdaNew;
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
@@ -626,7 +611,8 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    RealDiagonalOperator DRight;
    std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
 
-   // Project out the first and last columns of HLeft.
+   // Now the 3S-inspired step: calculate X = new F matrix projected onto the null space.
+   // Firstly project out the first and last columns of HLeft.
    // NOTE: if the Hamiltonian is 2-dimensional MPO (i.e. there are no interactions here), then
    // the projector maps onto an empty set, so we need the 3-parameter constructor of the BasisList
    SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.GetSymmetryList(), HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
@@ -647,7 +633,8 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    }
 
    // Take the truncated SVD of X.
-   MatrixOperator XExpand = ExpandBasis1(X);
+   MatrixOperator XExpand = ReshapeBasis2(X);
+   //MatrixOperator XExpand = ExpandBasis1(X);
    CMatSVD SVD(XExpand);
 
    auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
@@ -670,6 +657,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    return StatesToKeep.size();
 }
 
+// Expand the Basis2 of CLeft
 int
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
@@ -687,7 +675,8 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    RealDiagonalOperator DLeft;
    std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
 
-   // Project out the first and last columns of HRight.
+   // Now the 3S-inspired step: calculate X = new F matrix projected onto the null space.
+   // Firstly project out the first and last columns of HRight.
    // NOTE: if the Hamiltonian is 2-dimensional MPO (i.e. there are no interactions here), then
    // the projector maps onto an empty set, so we need the 3-parameter constructor of the BasisList
    SimpleOperator Projector(BasisList(HRight.GetSymmetryList(), HRight.Basis1().begin()+1, HRight.Basis1().end()-1), HRight.Basis1());
@@ -707,8 +696,12 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
       X[i] *= Prefactor;
    }
 
-   // Take the truncated SVD of X.
-   MatrixOperator XExpand = ExpandBasis1(X);
+   // Take the truncated SVD of X.  This appears asymmetric compared with ExpandLeftEnvironment, but it
+   // is actually OK: the equivalent 'reflected' operation would be to ReshapeBasis1(herm(X)), but instead
+   // we can just ReshapeBasis2(X), so the rest of the code is essentially identical to ExpandLeftEnvironment,
+   // except for swapping CLeft/CRight and Basis1/Basis2
+   MatrixOperator XExpand = ReshapeBasis2(X);
+   //MatrixOperator XExpand = ExpandBasis1(X);
    CMatSVD SVD(XExpand);
 
    auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
@@ -816,11 +809,10 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
 TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
 {
    MatrixOperator U;
-   RealDiagonalOperator Lambda;
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
-   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
+   U = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
 					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
 					      HamMatrices.left(), DoUpdateKeepList);
@@ -838,7 +830,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    --H;
    --C;
 
-   *C = prod(*C, U*Lambda);
+   *C = prod(*C, U);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);

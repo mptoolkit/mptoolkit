@@ -274,6 +274,8 @@ int main(int argc, char** argv)
       dmrg.MixingInfo.MixFactor = MixFactor;
       dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
 
+      EigenSortByWeight = true; // Global variable in density.cpp, to change the eigenvalue sort function
+
       StatesInfo SInfo;
       SInfo.MinStates = 1;
       SInfo.MaxStates = MaxStates;

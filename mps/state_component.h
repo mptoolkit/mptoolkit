@@ -696,11 +696,11 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
 enum Normalization { Intensive, Extensive };
 
 // Expands the Basis1 of A so that it is dm dimensional and orthogonalized, such that
-// A = Result' * A', and Result' is a m x dm matrix
+// A = Result' * A', A' is a dm x d x m, and Result' is a m x dm matrix
 MatrixOperator ExpandBasis1(StateComponent& A);
 
 // Expands the Basis2 of A so that it is dm dimensional and orthogonalized, such that
-// A = A' * Result', and Result' is a dm x m matrix
+// A = A' * Result', A' is m x d x dm, and Result' is a dm x m matrix
 MatrixOperator ExpandBasis2(StateComponent& A);
 
 // Expand the basis, but incorporate only those matrix elements that are actually used in
@@ -715,11 +715,12 @@ StateComponent NullSpace1(StateComponent A);
 StateComponent NullSpace2(StateComponent A);
 
 // Reshape A-matrix into (dm)x(m) matrix
-// The reshaped basis is a regular basis.
+// This function can replace ExpandBasis2() in most cases.
 MatrixOperator ReshapeBasis1(StateComponent const& A);
 StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1);
 
 // Reshape A-matrix into (m)x(dm) matrix
+// This function can replace ExpandBasis2() in most cases.
 MatrixOperator ReshapeBasis2(StateComponent const& A);
 StateComponent ReshapeFromBasis2(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B2);
 

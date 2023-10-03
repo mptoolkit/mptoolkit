@@ -91,7 +91,11 @@ struct EigenInfo
 // is slightly better for finite systems, but possibly doesnt
 // work well in iDMRG where it favours higher spin representations
 // that increase the degeneracy of the groundstate unnecessarily.
+// Default value is false.
 //
+// For finite DMRG, we can set EigenSortByWeight=true
+
+extern bool EigenSortByWeight;
 
 inline
 bool EigenCompareWeight(EigenInfo const& x, EigenInfo const& y)
@@ -102,7 +106,10 @@ bool EigenCompareWeight(EigenInfo const& x, EigenInfo const& y)
 inline
 bool EigenCompare(EigenInfo const& x, EigenInfo const& y)
 {
-   return y.Eigenvalue < x.Eigenvalue;
+   if (EigenSortByWeight)
+      return y.Eigenvalue*degree(y.Q) < x.Eigenvalue*degree(x.Q);
+   else
+      return y.Eigenvalue < x.Eigenvalue;
 }
 
 // the information we use to determine which states to keep is getting bigger, make it a structure
