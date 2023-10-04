@@ -297,12 +297,14 @@ class SingularDecompositionBase
 
       double EigenSum() const { return ESum; }
 
+      enum WhichVectors { Left, Right, Both };
+
    protected:
       typedef LinearAlgebra::Matrix<std::complex<double> > RawDMType;
 
       SingularDecompositionBase();
 
-      void Diagonalize(std::vector<RawDMType> const& M);
+      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both);
 
    public:
       virtual QuantumNumber Lookup(int Subspace) const = 0;
@@ -338,15 +340,41 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
       typedef MatrixOperator right_type;
       typedef RealDiagonalOperator diagonal_type;
 
-      SingularDecomposition(MatrixOperator const& M);
+      explicit SingularDecomposition(MatrixOperator const& M);
+
+      // Optionally, choose which singular vectors to calculate
+      SingularDecomposition(MatrixOperator const& M, WhichVectors Which);
 
       template <typename FwdIter>
-      void ConstructMatrices(FwdIter first, FwdIter last,
-                             MatrixOperator& A,
-                             RealDiagonalOperator& C,
-                             MatrixOperator& B);
+      void ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);
+
+      // Construct only the left singular vectors
+      template <typename FwdIter>
+      MatrixOperator
+      ConstructLeftVectors(FwdIter first, FwdIter last);
+
+      // Construct only the right singular vectors
+      template <typename FwdIter>
+      MatrixOperator
+      ConstructRightVectors(FwdIter first, FwdIter last);
+
+      LinearBasis<VectorBasis> Basis1() const { return B1; }
+      LinearBasis<VectorBasis> Basis2() const { return B2; }
 
    private:
+      template <typename FwdIter>
+      std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>>
+      ConstructMapping(FwdIter first, FwdIter last);
+
+      MatrixOperator
+      DoConstructLeftVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
+      MatrixOperator
+      DoConstructRightVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
+      RealDiagonalOperator
+      DoConstructSingularValues(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
       QuantumNumber Lookup(int Subspace) const;
 
       LinearBasis<VectorBasis> B1, B2;

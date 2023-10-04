@@ -38,22 +38,14 @@ using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
 // Expand the Basis1 of C.
-// On exit, Result' * C' = C
+// On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
 MatrixOperator
-SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
-                     MixInfo const& Mix, KeepListType& KeepList,
-		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
-		     StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& LeftHam, bool DoUpdateKeepList)
+SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, double MixFactor, KeepListType& KeepList, std::set<QuantumNumbers::QuantumNumber> const& AddedQN, StatesInfo const& States, TruncationInfo& Info, StateComponent const& LeftHam, bool ShouldUpdateKeepList = false)
 {
-   // truncate - FIXME: this is the s3e step
    StateComponent CExpand = C;
    MatrixOperator Lambda = ExpandBasis1(CExpand);
-
-   MatrixOperator L2 = ReshapeBasis2(C);
-
    MatrixOperator X;
-   if (Mix.MixFactor > 0)
+   if (MixFactor > 0)
    {
       // Remove the Hamiltonian term, which is the first term
       SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()), H.Basis1());
@@ -68,13 +60,14 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       // Normalize the components
       std::vector<double> Weights(RH.size()-1, 0.0);
       double NormSqTotal = 0;
+      MatrixOperator L2 = ReshapeBasis2(C);
       for (int i = 0; i < Weights.size(); ++i)
       {
          Weights[i] = norm_frob(LeftHam[i+1]*L2) + PrefactorEpsilon;
          NormSqTotal += std::pow(Weights[i],2) * norm_frob_sq(RH[i]);
       }
-      // Adjust the weights so that all the components except the identity sum to Mix.MixFactor
-      double ScaleFactor = std::sqrt(Mix.MixFactor / NormSqTotal);
+      // Adjust the weights so that all the components except the identity sum to MixFactor
+      double ScaleFactor = std::sqrt(MixFactor / NormSqTotal);
       for (int i = 0; i < Weights.size(); ++i)
       {
          RH[i] *= Weights[i] * ScaleFactor;
@@ -85,7 +78,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    else
       X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
 
-   CMatSVD DM(X);
+   CMatSVD DM(X, CMatSVD::Left);
 
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
@@ -94,86 +87,76 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+   if (ShouldUpdateKeepList)
+      UpdateKeepList(KeepList, AddedQN, DM.Basis1(), KeptStates, DiscardStates, Info);
 
-   // Update the keep list.  It would perhaps be better to do this with respect
-   // to the stage 2 density matrix, but easier to do it here
-   if (DoUpdateKeepList)
-      UpdateKeepList(KeepList, AddedQN, DM.Basis(), KeptStates, DiscardStates, Info);
-
-   MatrixOperator UKeep, Vh;
-   RealDiagonalOperator D;
-   DM.ConstructMatrices(KeptStates.begin(), KeptStates.end(), UKeep, D, Vh);
-   // We only care about UKeep here, we can throw D and Vh away
-
-   MatrixOperator LambdaNew = Lambda*UKeep; // OldBasis, NewBasis
+   MatrixOperator UKeep = DM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
    C = herm(UKeep)*CExpand;
-
-   return LambdaNew;
+   Lambda = Lambda*UKeep; // OldBasis, NewBasis
+   return Lambda;
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
-// Returns Lambda matrix (diagonal) and a unitary matrix
-// Postcondition: C' Lambda' U' = C (up to truncation!)
-std::pair<RealDiagonalOperator, MatrixOperator>
-SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
-                     MixInfo const& Mix, KeepListType& KeepList,
-		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
-		     StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& RightHam, bool DoUpdateKeepList)
+// On exit, C' * Result' = C (up to truncation!), and C is left-orthogonal
+MatrixOperator
+SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam, double MixFactor, KeepListType& KeepList, std::set<QuantumNumbers::QuantumNumber> const& AddedQN, StatesInfo const& States, TruncationInfo& Info, StateComponent const& RightHam, bool ShouldUpdateKeepList = false)
 {
-   // truncate - FIXME: this is the s3e step
-   MatrixOperator Lambda = ExpandBasis2(C);
-
-   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
-   if (Mix.MixFactor > 0)
+   StateComponent CExpand = C;
+   // CExpand * Lambda = C.  Lambda is dm x m, CExpand is m x dm
+   MatrixOperator Lambda = ExpandBasis2(CExpand);
+   MatrixOperator X;
+   if (MixFactor > 0)
    {
-      StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
-      MatrixOperator RhoMix;
-
-      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
-
-      for (unsigned i = 1; i < LH.size()-1; ++i)
+      // Remove the Hamiltonian term, which is the last term.
+      // The first term is the identity.
+      SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin(), H.Basis2().end()-1));
+      int Size = H.Basis1().size();
+      for (int i = 0; i < Size-1; ++i)
       {
-         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
-	 //	 TRACE(i)(Prefactor);
+         Projector(i,i) = 1.0;
       }
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
+
+      // LH is dm * w * m expanded basis, MPO, original basis
+      StateComponent LH = contract_from_left(H*Projector, herm(CExpand), LeftHam, C);
+
+      // Normalize the noise vectors.  Since LH[0] is Lambda itself,
+      // Weights[i] corresponds to the weight of LH[i+1]
+      std::vector<double> Weights(LH.size()-1, 0.0);
+      double NormSqTotal = 0;
+      MatrixOperator L2 = ReshapeBasis1(C);
+      for (int i = 0; i < Weights.size(); ++i)
+      {
+         Weights[i] = norm_frob(L2*RightHam[i+1]) + PrefactorEpsilon;
+         NormSqTotal += std::pow(Weights[i],2) * norm_frob_sq(LH[i+1]);
+      }
+      // Adjust the weights so that all the components except the identity sum to MixFactor
+      double ScaleFactor = std::sqrt(MixFactor / NormSqTotal);
+      for (int i = 0; i < Weights.size(); ++i)
+      {
+         LH[i+1] *= Weights[i] * ScaleFactor;
+      }
+      X = ReshapeBasis2(LH);
    }
-   if (Mix.RandomMixFactor > 0)
+   else
    {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
+      X = Lambda;
    }
-   DensityMatrix<MatrixOperator> DM(Rho);
+
+   CMatSVD DM(X, CMatSVD::Left);
+
    DensityMatrix<MatrixOperator>::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
                                          Info);
    std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
-   // Update the keep list.  It would perhaps be better to do this with respect
-   // to the stage 2 density matrix, but easier to do it here
-   if (DoUpdateKeepList)
-      UpdateKeepList(KeepList, AddedQN, DM.Basis(), KeptStates, DiscardStates, Info);
+   if (ShouldUpdateKeepList)
+      UpdateKeepList(KeepList, AddedQN, DM.Basis1(), KeptStates, DiscardStates, Info);
 
-   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
-
-   Lambda = UKeep * Lambda;
-   C = prod(C, herm(UKeep));
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
-
-   C = prod(C, U);
-
-   return std::make_pair(D, Vh);
+   MatrixOperator UKeep = DM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
+   C = CExpand*UKeep;
+   Lambda = herm(UKeep)*Lambda;
+   return Lambda;
 }
 
 PStream::opstream& operator<<(PStream::opstream& out, DMRG const& d)
@@ -812,7 +795,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
-   U = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
+   U = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor,
 					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
 					      HamMatrices.left(), DoUpdateKeepList);
@@ -845,12 +828,11 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
 TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
 {
    // Truncate right
-   RealDiagonalOperator Lambda;
-   MatrixOperator U;
+   MatrixOperator X;
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    ++CNext;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo,
+   X = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixFactor,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
 					      HamMatrices.right(), DoUpdateKeepList);
@@ -867,7 +849,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    ++H;
    ++C;
 
-   *C = prod(Lambda*U, *C);
+   *C = prod(X, *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);

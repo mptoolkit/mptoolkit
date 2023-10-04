@@ -29,12 +29,6 @@
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
-struct MixInfo
-{
-   double MixFactor;
-   double RandomMixFactor;
-};
-
 class DMRG
 {
    public:
@@ -157,7 +151,7 @@ class DMRG
       LocalEigensolver Solver_;
       int Verbose;
 
-      MixInfo    MixingInfo;
+      double    MixFactor;
       StateComponent PsiPrevC;
 };
 

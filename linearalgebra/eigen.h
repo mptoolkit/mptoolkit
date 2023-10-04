@@ -139,6 +139,40 @@ SingularValueDecomposition(A const& a, U& u, D& d, Vt& vt)
    return ImplementSingularValueDecomposition<A,U,D,Vt>()(a,u,d,vt);
 }
 
+// Version that constructs only the left singular vectors
+
+template <typename A, typename U, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValueDecompositionLeft {};
+
+template <typename A, typename U, typename D>
+inline
+typename ImplementSingularValueDecompositionLeft<A,U,D>::result_type
+SingularValueDecompositionLeft(A const& a, U& u, D& d)
+{
+   return ImplementSingularValueDecompositionLeft<A,U,D>()(a,u,d);
+}
+
+// Version that constructs only the right singular vectors
+
+template <typename A, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionRight {};
+
+template <typename A, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionRight<A,D,Vt>::result_type
+SingularValueDecompositionRight(A const& a, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionRight<A,D,Vt>()(a,d,vt);
+}
+
+// Version that constructs the matrices to have dimension N x max(N,M) x M
+
 template <typename A, typename U, typename D, typename Vt,
           typename Ai = typename interface<A>::type,
           typename Ui = typename interface<U>::type,
@@ -172,7 +206,6 @@ SingularValueDecompositionFullLeft(A const& a, U& u, D& d, Vt& vt)
 {
    return ImplementSingularValueDecompositionFullLeft<A,U,D,Vt>()(a,u,d,vt);
 }
-
 
 // Given MxN matrix,
 // U is MxN

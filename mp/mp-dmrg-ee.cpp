@@ -133,7 +133,6 @@ int main(int argc, char** argv)
       int EnvStates = 10;   /// keep this many additional environment states
       int EnvStatesPerSector = 1;
       double EnvStatesFactor = 1.0; // number of environment states = max(EnvStates, CurrentStates*(EnvStatesFactor-1))
-      double RandomMixFactor = 0.0;
       bool TwoSite = false;
       int NumSweeps = 10;
       double TruncCutoff = 0;
@@ -170,8 +169,6 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-         ("random-mix-factor", prog_opt::value(&RandomMixFactor),
-          FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
           ("env-states", prog_opt::value(&EnvStates), FormatDefault("Minimum number of additional environment states to keep, set to -1 to disable environment expansion completely", EnvStates).c_str())
          ("env-states-per-sector", prog_opt::value(&EnvStatesPerSector), FormatDefault("Minimum number of additional environment states in each quantum number sector", EnvStatesPerSector).c_str())
          ("env-states-factor", prog_opt::value(&EnvStatesFactor), FormatDefault("Expand the environment by this factor (must be >= 1)", EnvStatesFactor).c_str())
@@ -271,8 +268,7 @@ int main(int argc, char** argv)
       dmrg.Solver().SetSubspaceSize(SubspaceSize);
       dmrg.Solver().SetPreconditioning(UsePreconditioning);
 
-      dmrg.MixingInfo.MixFactor = MixFactor;
-      dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
+      dmrg.MixFactor = MixFactor;
 
       EigenSortByWeight = true; // Global variable in density.cpp, to change the eigenvalue sort function
 
