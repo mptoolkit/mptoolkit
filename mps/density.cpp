@@ -441,18 +441,32 @@ SingularDecompositionBase::~SingularDecompositionBase()
 {
 }
 
-void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
+void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which)
 {
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
       LinearAlgebra::Matrix<std::complex<double> > U, Vh;
       LinearAlgebra::Vector<double> D;
-      SingularValueDecomposition(M[i], U, D, Vh);
-
-      LeftVectors.push_back(U);
-      RightVectors.push_back(Vh);
-      SingularValues.push_back(D);
+      if (Which == Both)
+      {
+         SingularValueDecomposition(M[i], U, D, Vh);
+         LeftVectors.push_back(U);
+         RightVectors.push_back(Vh);
+         SingularValues.push_back(D);
+      }
+      if (Which == Left)
+      {
+         SingularValueDecompositionLeft(M[i], U, D);
+         LeftVectors.push_back(U);
+         SingularValues.push_back(D);
+      }
+      else if (Which == Right)
+      {
+         SingularValueDecompositionRight(M[i], D, Vh);
+         RightVectors.push_back(Vh);
+         SingularValues.push_back(D);
+      }
 
       int CurrentDegree = degree(this->Lookup(i));
       for (unsigned j = 0; j < size(D); ++j)
@@ -465,9 +479,12 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
 
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
-
-
 SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M)
+   : SingularDecomposition(M, Both)
+{
+}
+
+SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M, WhichVectors Which)
    : B1(M.Basis1()), B2(M.Basis2()), IndexOfi(B1.size(), -1)
 {
    // Assemble the raw matrices
@@ -513,7 +530,7 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    }
 
    // do the SVD
-   this->Diagonalize(Matrices);
+   this->Diagonalize(Matrices, Which);
 }
 
 QuantumNumber
@@ -522,27 +539,17 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::Lookup(int Subspace) cons
    return UsedQuantumNumbers[Subspace];
 }
 
-void
+MatrixOperator
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+DoConstructLeftVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
 {
-   // Construct the truncated basis
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
    int NumQ = UsedQuantumNumbers.size();
-   VectorBasis NewBasis(B1.GetSymmetryList());
-   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
-   for (int q = 0; q < NumQ; ++q)
-   {
-      if (LinearMapping[q].size() > 0)
-      {
-         NewSubspace[q] = NewBasis.size();
-         NewBasis.push_back(UsedQuantumNumbers[q], LinearMapping[q].size());
-      }
-   }
 
    // Now we construct the actual matrices
-   A = MatrixOperator(B1.MappedBasis(), NewBasis);
-   B = MatrixOperator(NewBasis, B2.MappedBasis());
+   MatrixOperator A(B1.MappedBasis(), NewBasis);
    for (int q = 0; q < NumQ; ++q)
    {
       int ss = NewSubspace[q];
@@ -561,8 +568,34 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
          A(i,ss) = LeftVectors[q](B1.Lookup(i).second, lm);
          i = B1.MappedBasis().find_next(Q, i);
       }
+   }
+   A.debug_check_structure();
+   return A;
+}
 
-      // and B
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+DoConstructRightVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
+{
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
+   int NumQ = UsedQuantumNumbers.size();
+
+   // Now we construct the actual matrices
+   MatrixOperator B(NewBasis, B2.MappedBasis());
+   for (int q = 0; q < NumQ; ++q)
+   {
+      int ss = NewSubspace[q];
+      if (ss == -1) // is this subspace used?
+         continue;
+
+      QuantumNumber Q = UsedQuantumNumbers[q];
+
+      // The set of indices of states we need to keep
+      std::vector<int> lm(LinearMapping[q].begin(), LinearMapping[q].end());
+
+      // Now assemble this quantum number component for B
       int j = B2.MappedBasis().find_first(Q);
       while (j != -1)
       {
@@ -570,9 +603,21 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
          j = B2.MappedBasis().find_next(Q, j);
       }
    }
+   B.debug_check_structure();
+   return B;
+}
+
+RealDiagonalOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+DoConstructSingularValues(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
+{
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
+   int NumQ = UsedQuantumNumbers.size();
 
    // Finally the center matrix
-   C = RealDiagonalOperator(NewBasis, NewBasis);
+   RealDiagonalOperator C(NewBasis, NewBasis);
    for (int i = 0; i < NumQ; ++i)
    {
       if (!LinearMapping[i].empty())
@@ -582,9 +627,9 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       }
    }
 
-   A.debug_check_structure();
-   B.debug_check_structure();
+   return C;
 }
+
 
 QuantumNumber
 SingularDecomposition<StateComponent, StateComponent>::Lookup(int Subspace) const

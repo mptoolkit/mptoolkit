@@ -166,13 +166,12 @@ ConstructMatrices(FwdIter first, FwdIter last,
    this->ConstructOrthoMatrices(LinearMapping, A, C, B);
 }
 
+// CMatSVD
+
 template <typename FwdIter>
-void
+std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>>
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructMatrices(FwdIter first, FwdIter last,
-                       MatrixOperator& A,
-                       RealDiagonalOperator& C,
-                       MatrixOperator& B)
+ConstructMapping(FwdIter first, FwdIter last)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
@@ -182,6 +181,45 @@ ConstructMatrices(FwdIter first, FwdIter last,
    {
       LinearMapping[Iter->Subspace].insert(Iter->Index);
    }
+   // Construct the truncated basis
+   VectorBasis NewBasis(B1.GetSymmetryList());
+   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
+   for (int q = 0; q < NumQ; ++q)
+   {
+      if (LinearMapping[q].size() > 0)
+      {
+         NewSubspace[q] = NewBasis.size();
+         NewBasis.push_back(UsedQuantumNumbers[q], LinearMapping[q].size());
+      }
+   }
+   return std::make_tuple(NewBasis, LinearMapping, NewSubspace);
+}
 
-   this->ConstructOrthoMatrices(LinearMapping, A, C, B);
+template <typename FwdIter>
+void
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   A = this->DoConstructLeftVectors(Mapping);
+   C = this->DoConstructSingularValues(Mapping);
+   B = this->DoConstructRightVectors(Mapping);
+}
+
+template <typename FwdIter>
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructLeftVectors(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructLeftVectors(Mapping);
+}
+
+template <typename FwdIter>
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructRightVectors(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructRightVectors(Mapping);
 }

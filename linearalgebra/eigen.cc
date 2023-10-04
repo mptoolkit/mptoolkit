@@ -47,8 +47,7 @@ void SingularValueDecomposition(int Size1, int Size2,
                                 std::complex<double>* A, std::complex<double>* U,
                                 double* D, std::complex<double>* VH);
 
-void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
-                                    double* D, double* VT);
+void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U, double* D, double* VT);
 
 void SingularValueDecompositionFull(int Size1, int Size2,
                                     std::complex<double>* A, std::complex<double>* U,
@@ -555,6 +554,79 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       assign(vt, Vtres);
    }
 };
+
+template <typename A, typename U, typename D,
+          typename Ai, typename Ui, typename Di>
+struct ImplementSingularValueDecompositionLeft<A, U, D,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
+                                           VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(u, n, min_mn);
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double> > Acopy(a);
+      Matrix<std::complex<double> > Ures(n, min_mn);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < min_mn; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Ures(LinearAlgebra::all,i) *= Phase;
+      }
+#endif
+      assign(u, Ures);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D, typename Vt,
+          typename Ai, typename Di, typename Vti>
+struct ImplementSingularValueDecompositionRight<A, D, Vt,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           VECTOR_EXPRESSION(double, Di),
+                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d, Vt& vt) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+      try_resize(vt, min_mn, m);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double> > Acopy(a);
+      Vector<double> Dres(min_mn);
+      Matrix<std::complex<double> > Vtres(min_mn, m);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < min_mn; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
+      assign(d, Dres);
+      assign(vt, Vtres);
+   }
+};
+
 
 // version taking a diagonal matrix for D
 

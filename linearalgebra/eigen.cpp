@@ -383,8 +383,6 @@ void SingularValueDecomposition(int Size1, int Size2,
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VH^T * D * U^T, which means we have to swap all row/column numbers,
    // and also interchange VH and U.
-   char jobu = 'S';
-   char jobvh = 'S';
    int m = Size2;    // remembering that FORTRAN regards the matrices as the
                      // transpose, rows/cols are reversed.
    int n = Size1;
@@ -393,8 +391,10 @@ void SingularValueDecomposition(int Size1, int Size2,
    int lda = Size2;
    double* s = D;
    std::complex<double>* u = VH;
+   char jobu = u ? 'S' : 'N';
    int ldu = Size2;
    std::complex<double>* vh = U;
+   char jobvh = vh ? 'S' : 'N';
    int ldvh = min_mn;
    DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
    std::complex<double> worksize;
