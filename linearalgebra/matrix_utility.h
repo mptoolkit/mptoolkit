@@ -21,7 +21,7 @@
 #define MATRIX_UTILITY_H_JSHDCUIH78943QY7YPO7YP89
 
 #include "matrix.h"
-#include <stdlib.h>
+#include "common/randutil.h"
 #include <complex>
 
 namespace LinearAlgebra
@@ -64,7 +64,7 @@ template <>
 inline
 double random<double>()
 {
-  return double(rand()) / RAND_MAX;
+  return randutil::rand();
 }
 
 template <>
@@ -82,13 +82,7 @@ template <>
 inline
 double nrandom<double>()
 {
-   double r1 = random<double>();
-   double r2 = random<double>();
-   double u = -std::log(1.0 - r1);
-   double rho = std::sqrt(2.0 * u);
-   double theta =2*math_const::pi * r2;
-   double x = rho*std::cos(theta);           // y = rho*sin(theta), not a bad idea to discard anyway
-   return x;
+   return randutil::randn();
 }
 
 template <>
@@ -105,6 +99,7 @@ template <typename Scalar>
 Matrix<Scalar> nrandom_matrix(size_type Size1, size_type Size2);  // prototype
 
 // work-around for icc that doesn't like the function template
+// FIXME: this was probably fixed a decade ago ...
 #if defined(INTEL_COMPILER) || defined(__INTEL_COMPILER)
 
 template <>
@@ -129,6 +124,25 @@ Matrix<Scalar> random_matrix(size_type Size1, size_type Size2)
 
 #endif
 
+template <typename Scalar>
+Matrix<Scalar> nrandom_matrix(size_type Size1, size_type Size2)
+{
+   return generate_matrix(Size1, Size2, nrandom<Scalar>);
+}
+
+// Random matrix distributed according to the Haar measure.
+// For real types, this generates an orthogonal matrix
+template <typename Scalar>
+Matrix<Scalar>
+random_unitary(size_type Size1, size_type Size2)
+{
+   int sz = std::max(Size1, Size2);
+   Matrix<Scalar> X = nrandom_matrix<Scalar>(sz, sz);
+   auto M = QR_Factorize(X);
+   Matrix<Scalar> Result(Size1, Size2);
+   Result = M(LinearAlgebra::range(0,Size1), LinearAlgebra::range(0,Size2));
+   return Result;
+}
 
 // FIXME: this is a hack in lieu of a proper diagonal matrix type
 

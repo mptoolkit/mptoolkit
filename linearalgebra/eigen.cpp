@@ -431,17 +431,18 @@ void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VT^T * D * U^T, which means we have to swap all row/column numbers,
    // and also interchange VT and U.
-   char jobu = 'A';
-   char jobvt = 'A';
    int m = Size2;    // remembering that FORTRAN regards the matrices as the transpose, rows/cols are reversed.
    int n = Size1;
+   int min_mn = std::min(m,n);
    int max_mn = std::max(m,n);
    double* a = A;
    int lda = m;
    double* s = D;
    double* u = VT;
+   char jobu = u ? 'A' : 'N';
    int ldu = max_mn;
    double* vt = U;
+   char jobvt = vt ? 'A' : 'N';
    int ldvt = n;
    double worksize;
    double* work = &worksize;
@@ -457,6 +458,9 @@ void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
    // do the actual call
    LAPACK::dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
    CHECK(info == 0)("LAPACK::dgesvd")(info);
+
+   // Only the first min_mn singular values are set; the remainder are zero
+   std::memset(s + min_mn*sizeof(double), 0, (max_mn-min_mn)*sizeof(double));
 
    delete[] work;
 }
@@ -484,18 +488,19 @@ void SingularValueDecompositionFull(int Size1, int Size2,
    // For FORTRAN, we have to regard everything as the transpose.  The SDV of A^T is
    // VH^T * D * U^T, which means we have to swap all row/column numbers,
    // and also interchange VH and U.
-   char jobu = 'A';
-   char jobvh = 'A';
    int m = Size2;    // remembering that FORTRAN regards the matrices as the transpose, rows/cols are reversed.
    int n = Size1;
    //int max_mn = std::max(m,n);
    int min_mn = std::min(m,n);
+   int max_mn = std::max(m,n);
    std::complex<double>* a = A;
    int lda = m;
    double* s = D;
    std::complex<double>* u = VH;
+   char jobu = u ? 'A' : 'N';
    int ldu = m;
    std::complex<double>* vh = U;
+   char jobvh = vh ? 'A' : 'N';
    int ldvh = n;
    DEBUG_CHECK(ldvh != 0); // This corner case is not allowed by LAPACK
    std::complex<double> worksize;
@@ -515,6 +520,9 @@ void SingularValueDecompositionFull(int Size1, int Size2,
    // do the actual call
    LAPACK::zgesvd(jobu, jobvh, m, n, a, lda, s, u, ldu, vh, ldvh, work, lwork, rwork, info);
    CHECK(info == 0)("LAPACK::zgesvd")(info);
+
+   // Only the first min_mn singular values are set; the remainder are zero
+   std::memset(s+min_mn, 0, (max_mn-min_mn)*sizeof(double));
 
    delete[] work;
    delete[] rwork;
@@ -625,6 +633,22 @@ void InvertLowerTriangular(int Size, std::complex<double>* A, int ldA)
    CHECK(info == 0)("LAPACK::ztrtri")(info);
 }
 
+void LQ_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau)
+{
+   Fortran::integer info = 0;
+   double worksize;
+   double* Work = &worksize;
+   int lWork = -1;
+   LAPACK::dgelqf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0]);
+   Work = new double[lWork];
+   LAPACK::dgelqf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::dgelqf")(info);
+
+   delete[] Work;
+}
+
 void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau)
 {
    Fortran::integer info = 0;
@@ -637,6 +661,71 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
    Work = new std::complex<double>[lWork];
    LAPACK::zgelqf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
    CHECK(info == 0)("LAPACK::zgelqf")(info);
+
+   delete[] Work;
+}
+
+void LQ_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau)
+{
+   Fortran::integer info = 0;
+   double worksize;
+   double* Work = &worksize;
+   int lWork = -1;
+   LAPACK::dorglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0]);
+   Work = new double[lWork];
+   LAPACK::dorglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::dorglq")(info);
+
+   delete[] Work;
+}
+
+void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau)
+{
+   Fortran::integer info = 0;
+   std::complex<double> worksize;
+   std::complex<double>* Work = &worksize;
+   int lWork = -1;
+   LAPACK::zunglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0].real());
+   Work = new std::complex<double>[lWork];
+   LAPACK::zunglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::zunglq")(info);
+
+   delete[] Work;
+
+}
+
+void QR_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau)
+{
+   Fortran::integer info = 0;
+   double worksize;
+   double* Work = &worksize;
+   int lWork = -1;
+   LAPACK::dgeqrf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0]);
+   Work = new double[lWork];
+   LAPACK::dgeqrf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::dgeqrf")(info);
+
+   delete[] Work;
+}
+
+void QR_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau)
+{
+   Fortran::integer info = 0;
+   std::complex<double> worksize;
+   std::complex<double>* Work = &worksize;
+   int lWork = -1;
+   LAPACK::zgeqrf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0].real());
+   Work = new std::complex<double>[lWork];
+   LAPACK::zgeqrf(Size1, Size2, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::zgeqrf")(info);
 
    delete[] Work;
 }

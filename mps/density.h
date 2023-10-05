@@ -314,7 +314,7 @@ class SingularDecompositionBase
 
       std::vector<RawDMType> LeftVectors, RightVectors;
       std::vector<EigenInfo> EigenInfoList;
-      std::vector<LinearAlgebra::Vector<double> > SingularValues;  // to avoid taking sqrt of density eigenvalues
+      std::vector<LinearAlgebra::Vector<double>> SingularValues;  // to avoid taking sqrt of density eigenvalues
       int MaxLinearDimension;
       double ESum;
 };
