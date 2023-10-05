@@ -19,6 +19,7 @@
 
 #include "matrix.h"
 #include "scalarmatrix.h"
+#include "matrix_utility.h"
 
 // randomize signs of vectors in debug mode
 #if !defined(NDEBUG) && !defined(RANDOMIZE_VECTORS)
@@ -98,7 +99,11 @@ void InvertGeneral(int Size, std::complex<double>* A, int ldA);
 void InvertUpperTriangular(int Size, std::complex<double>* A, int ldA);
 void InvertLowerTriangular(int Size, std::complex<double>* A, int ldA);
 
+void LQ_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau);
 void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void LQ_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
+void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
 
 } // namespace Private
 
@@ -694,7 +699,24 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       try_resize(d, max_mn, max_mn);
       try_resize(vt, max_mn, n);
 
-      if (min_mn == 0) return;
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (min_mn == 0)
+      {
+         if (n == 0)
+         {
+            // set u to be a random m x m orthogonal matrix
+            u = LinearAlgebra::random_unitary<Real>(m, m);
+         }
+         else // m == 0
+         {
+            // set vt to be a random n x n orthogonal matrix
+            vt = LinearAlgebra::random_unitary<Real>(n, n);
+         }
+         zero_all(d);
+         return;
+      }
 
       Matrix<Real> Acopy(a);
       Matrix<Real> Ures(m, m);
@@ -754,6 +776,110 @@ struct ImplementSingularValueDecompositionFullRight<A, U, D, Vt,
          return SingularValueDecomposition(a, u, d, vt);
       else
          return SingularValueDecompositionFull(a, u, d, vt);
+   }
+};
+
+template <typename A, typename U, typename D,
+          typename Ai, typename Ui, typename Di>
+struct ImplementSingularValueDecompositionLeftFull<A, U, D,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
+                                           VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d) const
+   {
+      int m = a.size1();
+      int n = a.size2();
+
+      try_resize(u, m, m);
+      try_resize(d, m);
+
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (n == 0)
+      {
+         if (m > 0)
+         {
+            // set u to be a random m x m orthogonal matrix
+            assign(u, LinearAlgebra::random_unitary<std::complex<double>>(m, m));
+            zero_all(d);
+         }
+         //else we have a 0 x 0 matrix
+         return;
+      }
+
+      Matrix<std::complex<double>> Acopy(a);
+      Matrix<std::complex<double>> Ures(m, m);
+      Vector<double> Dres(m);
+      //TRACE(m)(n);
+
+      if (m < n)
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+      else
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < m; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Ures(LinearAlgebra::all,i) *= Phase;
+      }
+#endif
+      assign(u, Ures);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D, typename Vt,
+          typename Ai, typename Di, typename Vti>
+struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           VECTOR_EXPRESSION(double, Di),
+                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d, Vt& vt) const
+   {
+      int m = a.size1();
+      int n = a.size2();
+
+      try_resize(d, n);
+      try_resize(vt, n, n);
+
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (m == 0)
+      {
+         if (n > 0)
+         {
+            // set vt to be a random n x n orthogonal matrix
+            vt = LinearAlgebra::random_unitary<std::complex<double>>(n, n);
+            zero_all(d);
+         }
+         return;
+      }
+
+      Matrix<std::complex<double> > Acopy(a);
+      Vector<double> Dres(n);
+      Matrix<std::complex<double> > Vtres(n, n);
+
+      if (n < m)
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+      else
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < n; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Vtres(i,LinearAlgebra::all) *= Phase;
+      }
+#endif
+      assign(d, Dres);
+      assign(vt, Vtres);
    }
 };
 
@@ -974,34 +1100,39 @@ struct ImplementQRFactorize<M&, Concepts::MatrixExpression<std::complex<double>,
    }
 };
 
-#if 0
 template <typename M, typename Mi>
 struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
-   typedef Matrix<std::complex<double> > result_type;
+   typedef Matrix<std::complex<double>> result_type;
    result_type operator()(M& m) const
    {
       int s1 = size1(m);
       int s2 = size2(m);
       int sz = std::min(s1, s2);
-      Vector<std::complex<double> > Tau(sz);
+      Vector<std::complex<double>> Tau(sz);
       Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
 
-      Matrix<std::complex<double> > U = ScalarMatrix<double>(size1(m), size1(m), 1.0);
-      Matrix<std::complex<double> > v(size1(m),1, 0.0);
-      for (int i = sz-1; i >= 0; --i)
+      // Convert the product of elementary reflectors into the Q matrix
+      // NOTE: There is an alternative approach, which is to keep the matrix as it is
+      // and use LAPACK dormqr() function to multiply another matrix directly, without explicitly constructing Q.
+      // We could also use LAPACK dlacpy here
+      Matrix<std::complex<double>> Q(s1, s1, 0.0);
+      Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+
+      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes upper-triangular
+      for (int i = 0; i < s1; ++i)
       {
-         v(i,0) = 1.0;
-         for (int j = i+1; j < s1; ++j)
+         int msz = std::min(i,s2);
+         for (int j = 0; j < msz; ++j)
          {
-            v(j,0) = m(j,i); m(j,i) = 0.0;  // zero out the lower part while forming the elementary reflector
+            m(i,j) = 0.0;
          }
-         U = Matrix<std::complex<double>>(ScalarMatrix<double>(size1(m), size1(m), 1.0) - conj(Tau[i])*v*herm(v)) * U;
       }
-      return U;
+      return Q;
    }
 };
-#endif
 
 //
 // InvertHPD

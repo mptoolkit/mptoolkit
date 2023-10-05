@@ -31,10 +31,11 @@ typedef std::complex<double> complex;
 
 void Test(int m, int n)
 {
-   Matrix<std::complex<double> > H = random_matrix<std::complex<double> >(m, n);
-   Matrix<std::complex<double> > R(H);
-   Matrix<std::complex<double> > Q = QR_Factorize(R);
-   CHECK_CLOSE(H,Q*R)(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
+   Matrix<std::complex<double>> H = random_matrix<std::complex<double> >(m, n);
+   Matrix<std::complex<double>> R(H);
+   //TRACE(H);
+   Matrix<std::complex<double>> Q = QR_Factorize(R);
+   CHECK_CLOSE(H,Matrix<complex>(Q*R))(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
 }
 
 int main()

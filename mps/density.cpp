@@ -20,6 +20,7 @@
 #include "density.h"
 #include "common/proccontrol.h"
 #include "linearalgebra/eigen.h"
+#include "common/randutil.h"
 
 //typedef LinearAlgebra::Vector<std::pair<int, LinearAlgebra::Range> > BasisMappingType;
 
@@ -441,11 +442,14 @@ SingularDecompositionBase::~SingularDecompositionBase()
 {
 }
 
-void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which)
+void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which)
 {
+   //TRACE(M.size());
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
+      //TRACE(i);
+      //TRACE(M[i].size1())(M[i].size2());
       LinearAlgebra::Matrix<std::complex<double> > U, Vh;
       LinearAlgebra::Vector<double> D;
       if (Which == Both)
@@ -457,13 +461,14 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M, Wh
       }
       if (Which == Left)
       {
-         SingularValueDecompositionLeft(M[i], U, D);
+         SingularValueDecompositionLeftFull(M[i], U, D);
          LeftVectors.push_back(U);
          SingularValues.push_back(D);
+         //TRACE(D)(U)(M[i]);
       }
       else if (Which == Right)
       {
-         SingularValueDecompositionRight(M[i], D, Vh);
+         SingularValueDecompositionRightFull(M[i], D, Vh);
          RightVectors.push_back(Vh);
          SingularValues.push_back(D);
       }
@@ -476,6 +481,13 @@ void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M, Wh
          ESum += Weight * CurrentDegree;
       }
    }
+
+   // randomize the order of singular values, so that we are guaranteed that
+   // the sort leaves degenerate singular values in a random order.  They might
+   // not be random on entry to this function.
+   randutil::random_stream stream;
+   stream.seed();
+   std::shuffle(EigenInfoList.begin(), EigenInfoList.end(), stream.u_rand);
 
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
@@ -493,24 +505,60 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    // and how they map onto the components in Basis1 and Basis2.
    // We can make use of the fact that each quantum number only appears at most once in
    // the LinearBasis.
-   for (unsigned i = 0; i < B1.size(); ++i)
+   // If we have requested only the left or right singular vectors, then we ensure that we get all of them,
+   // even if there is no matching state in the right basis.  This results in elements in the linear basis
+   // that are effectively m*0 or 0*n matrices.  This is signalled by the Basis.find_first(q) == -1.
+   // If we request both left and right singular vectors, then we ignore these zero singular values.
+   if (Which == Left || Which == Both)
    {
-      QuantumNumber q = B1[i];
-      int j = B2.find_first(q);
-      if (j == -1)
-         continue;
+      for (unsigned i = 0; i < B1.size(); ++i)
+      {
+         QuantumNumber q = B1[i];
+         int j = B2.find_first(q);
 
-      IndexOfi[i] = UsedQuantumNumbers.size();
-      q_iLinear.push_back(i);
-      q_jLinear.push_back(j);
-      UsedQuantumNumbers.push_back(q);
+         IndexOfi[i] = UsedQuantumNumbers.size();
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+         UsedQuantumNumbers.push_back(q);
+      }
+   }
+   else if (Which == Right)
+   {
+      for (unsigned j = 0; j < B2.size(); ++j)
+      {
+         QuantumNumber q = B2[j];
+         int i = B1.find_first(q);
+
+         IndexOfi[i] = UsedQuantumNumbers.size();
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+         UsedQuantumNumbers.push_back(q);
+      }
+   }
+   else if (Which == Both)
+   {
+      for (unsigned i = 0; i < B1.size(); ++i)
+      {
+         QuantumNumber q = B1[i];
+         int j = B2.find_first(q);
+         if (j == -1)
+            continue;
+
+         IndexOfi[i] = UsedQuantumNumbers.size();
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+         UsedQuantumNumbers.push_back(q);
+      }
+
    }
 
    // Now assemble the list of raw matrices, initialized to zero
    std::vector<RawDMType> Matrices(q_iLinear.size());
    for (unsigned n = 0; n < q_iLinear.size(); ++n)
    {
-      Matrices[n] = RawDMType(B1.dim(q_iLinear[n]), B2.dim(q_jLinear[n]), 0.0);
+      // Here we generate 0-dimensional matrices in the case where some quantum number doesn't exist in the basis.
+      // The Diagonalize() function sets the singular vectors in such a case to random unitaries.
+      Matrices[n] = RawDMType(q_iLinear[n] >= 0 ? B1.dim(q_iLinear[n]) : 0, q_jLinear[n] >= 0 ? B2.dim(q_jLinear[n]) : 0, 0.0);
    }
 
    // fill the raw matrices with the components in M
@@ -528,6 +576,47 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
          Matrices[Subspace](iIndex.second, jIndex.second) = *J;
       }
    }
+
+   // // If we are calculating the left or right vectors only, add zero vectors for basis states that have
+   // // zero singular value becasuse there is no corresponding right/left state
+   // if (Which == Left)
+   // {
+   //    // Find states that exist only in Basis1
+   //    for (unsigned i = 0; i < B1.size(); ++i)
+   //    {
+   //       if (B2.find_first(B1[i]) == -1)
+   //       {
+   //          int n = UsedQuantumNumbers.size();
+   //          q_iLinear.push_back(i);
+   //          q_jLinear.push_back(-1);
+   //          UsedQuantumNumbers.push_back(B1[i]);
+   //          // No corresponding state in B2, add zero singular values
+   //          for (int j = 0; j < B1.dim(i); ++j)
+   //          {
+   //             EigenInfoList.push_back(EigenInfo(0.0, n, j, B1[i]));
+   //          }
+   //       }
+   //    }
+   // }
+   // else if (Which == Right)
+   // {
+   //    // Find states that exist only in Basis1
+   //    for (unsigned i = 0; i < B2.size(); ++i)
+   //    {
+   //       if (B1.find_first(B2[i]) == -1)
+   //       {
+   //          int n = UsedQuantumNumbers.size();
+   //          q_iLinear.push_back(-1);
+   //          q_jLinear.push_back(i);
+   //          UsedQuantumNumbers.push_back(B2[i]);
+   //          // No corresponding state in B2, add zero singular values
+   //          for (int j = 0; j < B2.dim(i); ++j)
+   //          {
+   //             EigenInfoList.push_back(EigenInfo(0.0, n, j, B2[i]));
+   //          }
+   //       }
+   //    }
+   // }
 
    // do the SVD
    this->Diagonalize(Matrices, Which);

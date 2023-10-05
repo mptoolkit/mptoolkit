@@ -226,6 +226,38 @@ SingularValueDecompositionFullRight(A const& a, U& u, D& d, Vt& vt)
    return ImplementSingularValueDecompositionFullRight<A,U,D,Vt>()(a,u,d,vt);
 }
 
+// 'Full' singular value decomposition but only calculate the left vectors
+
+template <typename A, typename U, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValueDecompositionLeftFull {};
+
+template <typename A, typename U, typename D>
+inline
+typename ImplementSingularValueDecompositionLeftFull<A,U,D>::result_type
+SingularValueDecompositionLeftFull(A const& a, U& u, D& d)
+{
+   return ImplementSingularValueDecompositionLeftFull<A,U,D>()(a,u,d);
+}
+
+// 'Full' singular value decomposition but only calculate the right vectors
+
+template <typename A, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionRightFull {};
+
+template <typename A, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionRightFull<A,D,Vt>::result_type
+SingularValueDecompositionRightFull(A const& a, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionRightFull<A,D,Vt>()(a,d,vt);
+}
+
 //
 // DiagonalizeSymmetric
 //
@@ -405,8 +437,11 @@ SingularFactorize(M const& m)
 // Performs the QR factorization of a complex matrix.
 // The matrix is replaced by the upper triangular matrix R, and
 // the unitary matrix Q is returned.  QR=X, where X is the original
-// matrix, and R=X'
-//
+// matrix, and R=X'.
+// In the case where X is MxN and M > N, there is a choice for how to represent
+// Q and R; we could choose full rank, Q is MxM, R is MxN, and is augmented by rows of zeros.
+// Or we can choose minimal rank, Q is MxN, R is NxN.
+// For the QR_Factorize() function, we choose the first option, so that R is MxN and so doesn't need resizing.
 
 template <typename M, typename Mi = typename interface<M>::type>
 struct ImplementQRFactorize {};
