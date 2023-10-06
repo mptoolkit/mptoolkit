@@ -243,8 +243,7 @@ int main(int argc, char** argv)
       dmrg.Solver().SetSubspaceSize(SubspaceSize);
       dmrg.Solver().SetPreconditioning(UsePreconditioning);
 
-      dmrg.MixingInfo.MixFactor = MixFactor;
-      dmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
+      dmrg.MixFactor = MixFactor;
 
       StatesInfo SInfo;
       SInfo.MinStates = 1;
