@@ -63,6 +63,14 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    VectorType w = Guess;
 
    double Beta = norm_frob(w);
+   if (Beta == 0.0)
+   {
+      // initial vector is zero; make a random vector instead
+      if (Verbose > 0)
+      {
+         std::cerr << "lanczos: initial vector is null, generating a new random starting vector.\n";
+      }
+   }
    CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
