@@ -17,8 +17,12 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(TRUNCATION_H_SDCHJYUTYFHLUH53247895732489)
-#define TRUNCATION_H_SDCHJYUTYFHLUH53247895732489
+// This header exists to provide some declarations of common classes to avoid
+// recursive includes, since state_component.h uses functionality from
+// density.h, but cannot include.
+
+#if !defined(MPTOOLKIT_MPS_TRUNCATION_H)
+#define MPTOOLKIT_MPS_TRUNCATION_H
 
 #include <limits>
 #include <iostream>
@@ -127,7 +131,7 @@ struct StatesInfo
    // otherwise the cutoff values are in absolute units
 
    StatesInfo()
-      : MinStates(0),
+      : MinStates(1),
         MaxStates(DefaultMaxStates),
         TruncationCutoff(0),
         EigenvalueCutoff(0),

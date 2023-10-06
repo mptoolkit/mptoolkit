@@ -304,6 +304,15 @@ LocalEigensolver::Solve(StateComponent& C,
 
    StateComponent ROld = C;
 
+   if (norm_frob(C) == 0.0)
+   {
+      if (Verbose > 0)
+      {
+         std::cerr << "eigensolver: initial guess vector is zero, making a new random initial state.\n";
+      }
+      C = MakeRandomStateComponent(C.LocalBasis(), C.Basis1(), C.Basis2());
+   }
+
    if (EvolveDelta == 0.0)
    {
       LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
@@ -318,32 +327,32 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       if (Solver_ == Solver::Lanczos)
       {
-        LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),LastIter_, LastTol_, MinIter, Verbose-1);
+         LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),LastIter_, LastTol_, MinIter, Verbose-1);
       }
       else if (Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiSmallest)
       {
-        LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+         LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestMagnitude,
 					      true, Verbose-1);
       }
       else if (Solver_ == Solver::ArnoldiLowest)
       {
-        LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+         LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
 					      LastIter_, LastTol_,
 					      LinearSolvers::SmallestAlgebraicReal,
 					      true, Verbose-1);
       }
       else if (Solver_ == Solver::ShiftInvert)
       {
-	 StateComponent RHS = C;
-	 if (UsePreconditioning)
-	 {
-	    if (Verbose > 2)
-	    {
-	       std::cerr << "Using diagonal preconditioning\n";
-	    }
-	    StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+      StateComponent RHS = C;
+      if (UsePreconditioning)
+      {
+         if (Verbose > 2)
+      {
+         std::cerr << "Using diagonal preconditioning\n";
+      }
+      StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
 
 #if !defined(NDEBUG)
 	    // debug check the diagonal
