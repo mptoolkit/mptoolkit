@@ -219,6 +219,10 @@ int main(int argc, char** argv)
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
 
+      if (Bench)
+         print_preamble(BenchFile, argc, argv);
+
+
       std::cout << "Starting DMRG...\n";
       std::cout << "Input wavefunction: " << FName << std::endl;
 
