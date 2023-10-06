@@ -617,14 +617,13 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
 
    // Take the truncated SVD of X.
    MatrixOperator XExpand = ReshapeBasis2(X);
-   //MatrixOperator XExpand = ExpandBasis1(X);
-   CMatSVD SVD(XExpand);
+   XExpand = MatrixOperator(XExpand.Basis1(), VectorBasis(XExpand.GetSymmetryList()));
+
+   CMatSVD SVD(XExpand, CMatSVD::Left);
 
    auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
 
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SVD.ConstructMatrices(StatesToKeep.begin(), StatesToKeep.end(), U, D, Vh);
+   MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), U.Basis2());
@@ -634,7 +633,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Add the new states to CLeft, and add zeros to CRight.
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, U), NewBasis), R);
 
-   StateComponent Z = StateComponent(CRight.LocalBasis(), Vh.Basis1(), CRight.Basis2());
+   StateComponent Z = StateComponent(CRight.LocalBasis(), U.Basis2(), CRight.Basis2());
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
 
    return StatesToKeep.size();
@@ -684,14 +683,13 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // we can just ReshapeBasis2(X), so the rest of the code is essentially identical to ExpandLeftEnvironment,
    // except for swapping CLeft/CRight and Basis1/Basis2
    MatrixOperator XExpand = ReshapeBasis2(X);
-   //MatrixOperator XExpand = ExpandBasis1(X);
-   CMatSVD SVD(XExpand);
+   XExpand = MatrixOperator(XExpand.Basis1(), VectorBasis(XExpand.GetSymmetryList()));
+
+   CMatSVD SVD(XExpand, CMatSVD::Left);
 
    auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
 
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SVD.ConstructMatrices(StatesToKeep.begin(), StatesToKeep.end(), U, D, Vh);
+   MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis(CRight.Basis1(), U.Basis2());
@@ -701,7 +699,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Add the new states to CRight, and add zeros to CLeft.
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(U), NRight), NewBasis));
 
-   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), Vh.Basis1());
+   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), U.Basis2());
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
 
    return StatesToKeep.size();

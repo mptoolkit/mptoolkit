@@ -1090,13 +1090,36 @@ struct ImplementSingularFactorize<M, Concepts::MatrixExpression<double, Mi>>
 //
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, Concepts::MatrixExpression<std::complex<double>, Mi>>
+struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
 {
-   typedef Matrix<std::complex<double> > result_type;
-   result_type operator()(M const& m) const
+   typedef Matrix<double> result_type;
+   result_type operator()(M& m) const
    {
-      Matrix<std::complex<double> > Mat(m);
-      return QR_Factorize(m);
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<double> Tau(sz);
+      Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      // NOTE: There is an alternative approach, which is to keep the matrix as it is
+      // and use LAPACK dormqr() function to multiply another matrix directly, without explicitly constructing Q.
+      // We could also use LAPACK dlacpy here
+      Matrix<double> Q(s1, s1, 0.0);
+      Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+
+      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes upper-triangular
+      for (int i = 0; i < s1; ++i)
+      {
+         int msz = std::min(i,s2);
+         for (int j = 0; j < msz; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
    }
 };
 

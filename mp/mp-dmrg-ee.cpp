@@ -30,6 +30,7 @@
 #include <iostream>
 #include "common/environment.h"
 #include "common/statistics.h"
+#include "common/formatting.h"
 #include "common/prog_opt_accum.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
@@ -58,19 +59,15 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
       int EnvStates = 0;
       if (ExtraStates >= 0 && dmrg.Site < dmrg.RightStop-1)
       {
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis2().total_dimension()*ExtraStatesFactor+0.5));
+         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*ExtraStatesFactor+0.5));
          EnvStates = dmrg.ExpandRightEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
       TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
-         << " Energy=";
-      if (dmrg.Solver().is_complex())
-         std::cout << dmrg.Solver().LastEnergy();
-      else
-         std::cout << dmrg.Solver().LastEnergyReal();
-      std::cout << " Env=" << EnvStates
+         << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
+         << " Env=" << EnvStates
          << " States=" << States.KeptStates()
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
@@ -93,19 +90,16 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraSt
       int EnvStates = 0;
       if (ExtraStates >= 0 && dmrg.Site > dmrg.LeftStop+1)
       {
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis1().total_dimension()*ExtraStatesFactor+0.5));
+         //int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis1().total_dimension()*ExtraStatesFactor+0.5));
+         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*ExtraStatesFactor+0.5));
          EnvStates = dmrg.ExpandLeftEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
       TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
-         << " Energy=";
-   if (dmrg.Solver().is_complex())
-         std::cout << dmrg.Solver().LastEnergy();
-      else
-         std::cout << dmrg.Solver().LastEnergyReal();
-      std::cout << " Env=" << EnvStates
+         << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
+         << " Env=" << EnvStates
          << " States=" << States.KeptStates()
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()

@@ -361,15 +361,16 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
 // We keep, if possible, at least StatesPerSector states in each distinct quantum number
 // sector.  Normally we want this to be small, typically 1 state should suffice.
 // We do this even if the weight of the state is zero.
-// Secondly, we attempt to keep at least NumStatesWithWeight number of states that have non-zero weight.
-// The states in each sector count towards this number if they have non-zero weight.
-// (If some states in quantum number sectors only have zero weight then we might end up keeping more than
-// NumStatesWithWeight total states.)
+// Secondly, we attempt to keep at least NumStates number of states, ideally states that have
+// non-zero weight, which means that we might end up keeping more than NumStates states if
+// some of the states that we added in StatesPerSector had zero weight.
+// We keep at least NumStates states, even if some have zero weight; the implementation
+// of the SVD ensures that these are unbiased random states.
 // We don't return a TruncationInfo object, since there isn't much meaningful information that it
 // could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight, int StatesPerSector)
+TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStates, int StatesPerSector)
 {
    // We need to copy the EigenInfo, because we need to do two passes over it, and
    // possibly remove some elements on the first pass.
@@ -379,7 +380,8 @@ TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
 
    // first pass: keep at least StatesPerSector states in each quantum number sector.
-   // If the kept state has non-zero weight, then it subtracts from NumStatesWithWeight.
+   // If the kept state has non-zero weight, then it subtracts from the total number of states
+   // that we keep, otherwise it is a 'bonus' extra state.
    auto f = States.cbegin();
    while (f != States.cend())
    {
@@ -387,7 +389,7 @@ TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight
       {
          Result.push_back(*f);
          if (f->Eigenvalue > 0.0)
-            --NumStatesWithWeight;
+            --NumStates;
          ++KeptStatesPerSector[f->Q];
          f = States.erase(f);
       }
@@ -397,11 +399,11 @@ TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStatesWithWeight
    // second pass: keep the next NumStatesWithWeight in order from heighest weight,
    // as long as they have non-zero weight.
    f = States.cbegin();
-   while (NumStatesWithWeight > 0 && f != States.cend() && f->Eigenvalue > 0.0)
+   while (NumStates > 0 && f != States.cend()) // && f->Eigenvalue > 0.0)
    {
       Result.push_back(*f);
       ++f;
-      --NumStatesWithWeight;
+      --NumStates;
    }
 
    return Result;
