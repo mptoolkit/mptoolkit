@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// models/contrib/u1-qlm-cylinder-u1.cpp
+// models/contrib/z2-lgt-cylinder-u1.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// U(1) 2+1D U(1) quantum link model
+// U(1) 2+1D Z2 lattice guage theory
 // Example for (x,y) = (0,2).
 //
 //     UC 1          UC 2
@@ -32,7 +32,7 @@
 // 0--1--6--7--0--1--
 //
 // 0 and 9 are fermions, while 3 and 6 are antifermions.
-// The other sites are link sites represented by spins.
+// The other sites are link sites represented by spin-1/2s.
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          //(",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str()) TODO: twisted boundaries
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
-         ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
+         //("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str()) // This should only be 0.5.
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
@@ -74,17 +74,15 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1) 2+1D U(1) quantum link model (U.-J. Wiese, Annalen der Physik 525, 777 (2013), arXiv:1305.1602)");
+      OpDescriptions.set_description("U(1) 2+1D Z2 lattice gauge theory");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
          ("H_tx" , "nearest-neighbor hopping in y-direction")
          ("H_ty" , "nearest-neighbor hopping in x-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
-         ("H_g"  , "gauge coupling")
          ("H_J"  , "plaquette interactions")
-         ("H_flux"     , "electric flux")
-         ("H_stag_flux", "staggered electric flux")
+         ("H_x"  , "magnetic field in the x direction")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -114,30 +112,25 @@ int main(int argc, char** argv)
       UnitCell Cell = join(Cell1, Cell2);
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
-                       Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+                       X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
 
-      UnitCellMPO tx, ty, m, g, J, flux, stag_flux;
+      UnitCellMPO tx, ty, m, J, x_field;
       // the XY configuration is special
       if (x == 0)
       {
          for (int i = 0; i < 3*y; i += 3)
          {
-            tx += Sp(0)[i+1]     * dot(CH(0)[i],     C(0)[i+3*y])           + Sm(0)[i+1]     * dot(CH(0)[i+3*y], C(0)[i]);
-            tx += Sp(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i])               + Sm(0)[i+1+3*y] * dot(CH(1)[i], C(0)[i+3*y]);
-            ty += Sp(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Sm(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
-            // This term is intentionally negative.
-            ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Sm(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
-            J += Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2];
-            J += Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2];
-            J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
-            J += Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y];
-            flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
-            g += Sz(0)[i+1]*Sz(0)[i+1] + Sz(0)[i+2]*Sz(0)[i+2] + Sz(0)[i+1+3*y]*Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y]*Sz(0)[i+2+3*y];
+            tx += Z(0)[i+1]     * dot(CH(0)[i],     C(0)[i+3*y])           + Z(0)[i+1]     * dot(CH(0)[i+3*y], C(0)[i]);
+            tx += Z(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i])               + Z(0)[i+1+3*y] * dot(CH(1)[i], C(0)[i+3*y]);
+            ty += Z(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Z(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
+            ty += Z(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Z(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
+            J += X(0)[i+1] * X(0)[i+2+3*y] * X(0)[(i+4)%(3*y)] * X(0)[i+2];
+            J += X(0)[i+1+3*y] * X(1)[i+2] * X(0)[(i+4)%(3*y)+3*y] * X(0)[i+2+3*y];
+            x_field += X(0)[i+1] + X(0)[i+2] + X(0)[i+1+3*y] + X(0)[i+2+3*y];
          }
          for (int i = 0; i < 3*y; i += 6)
          {
             m += N(0)[i] - N(0)[i+3] - N(0)[i+3*y] + N(0)[i+3+3*y];
-            stag_flux += 4.0*I(0)[i+1] - Sz(0)[i+1] - Sz(0)[i+2] + Sz(0)[i+4] + Sz(0)[i+5] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y] - Sz(0)[i+4+3*y] - Sz(0)[i+5+3*y];
          }
       }
       // TODO
@@ -160,24 +153,22 @@ int main(int argc, char** argv)
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
       Lattice["H_m"] = sum_unit(m);
-      Lattice["H_g"] = sum_unit(g);
       Lattice["H_J"] = sum_unit(J);
-      Lattice["H_flux"] = sum_unit(flux);
-      Lattice["H_stag_flux"] = sum_unit(stag_flux);
+      Lattice["H_x"] = sum_unit(x_field);
 
       // Gauss's law operators.
       UnitCellMPO G[2*y];
 
       for (int i = 0; i < y; ++i)
       {
-         G[i] = N(0)[3*i] - Sz(0)[3*i+1] + Sz(-1)[3*(i+y)+1] - Sz(0)[3*i+2] + Sz(0)[(3*(i+y)-1)%(3*y)];
+         G[i] = ((i % 2) == 0 ? 1.0 : -1.0) * Z(0)[3*i+1] * Z(-1)[3*(i+y)+1] * Z(0)[3*i+2] * Z(0)[(3*(i+y)-1)%(3*y)];
          G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }
 
       for (int i = y; i < 2*y; ++i)
       {
-         G[i] = N(0)[3*i] - Sz(0)[3*i+1] + Sz(0)[3*(i-y)+1] - Sz(0)[3*i+2] + Sz(0)[(3*i-1)%(3*y)+3*y];
+         G[i] = (((i-y) % 2) == 0 ? -1.0 : 1.0) * Z(0)[3*i+1] * Z(0)[3*(i-y)+1] * Z(0)[3*i+2] * Z(0)[(3*i-1)%(3*y)+3*y];
          G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }

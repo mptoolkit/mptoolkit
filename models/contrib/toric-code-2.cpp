@@ -53,7 +53,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the spin", Spin).c_str())
+         //("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the spin", Spin).c_str()) // This should only be 0.5.
          ("width,w", prog_opt::value(&w), FormatDefault("width of the cylinder", w).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
