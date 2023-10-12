@@ -42,7 +42,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("momentum,k", prog_opt::value(&K), "Change the momentum to this value")
+         ("momentum,k", prog_opt::value(&K), "Change the momentum to this value (in units of pi)")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
