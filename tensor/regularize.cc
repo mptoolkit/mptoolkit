@@ -171,7 +171,7 @@ UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>,
    {
       for (int j = 0; j < Result.Basis2().size(); ++j)
       {
-         auto r = iterate_at(M.data(), R1.IndexOf(i), R2.IndexOf(i));
+         auto r = iterate_at(M.data(), R1.IndexOf(i), R2.IndexOf(j));
          if (r)
          {
             Result(i,j) = (*r)(R1.RangeOf(i), R2.RangeOf(j));

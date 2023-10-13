@@ -42,11 +42,32 @@ using MessageLogger::msg_log;
 MatrixOperator
 SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, double MixFactor, KeepListType& KeepList, std::set<QuantumNumbers::QuantumNumber> const& AddedQN, StatesInfo const& States, TruncationInfo& Info, StateComponent const& LeftHam, bool ShouldUpdateKeepList = false)
 {
+   //TRACE(norm_frob_sq(C));
+
    StateComponent CExpand = C;
    MatrixOperator Lambda = ExpandBasis1(CExpand);
    MatrixOperator X;
-   if (MixFactor > 0)
+
+   if (MixFactor != 0.0)
    {
+      if (MixFactor < 0)
+      {
+         // Calculate the mixing factor, from a percentile of the non-zero singular values
+         LinearAlgebra::Vector<double> SV = SingularValues(Lambda, SingularValueNormalization::SqrtQDim);
+         // count back to get the first non-zero value
+         int LastNonZero = SV.size()-1;
+         while (LastNonZero > 0 && SV[LastNonZero] < 1e-15)
+            --LastNonZero;
+         int Pivot = LastNonZero * (1.0 + MixFactor);
+         double Trunc = 0;
+         for (int i = Pivot; i <= LastNonZero; ++i)
+         {
+            Trunc += std::pow(SV[i], 2);
+         }
+         TRACE(Trunc);
+         MixFactor = (Trunc + 1e-15);
+      }
+
       // Remove the Hamiltonian term, which is the first term
       SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()), H.Basis1());
       int Size = H.Basis1().size();
@@ -58,22 +79,40 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
       StateComponent RH = contract_from_right(herm(Projector*H), CExpand, RightHam, herm(C));
       // TRACE(RH.back()); // this is the identity part - a reshaping of Lambda
       // Normalize the components
-      std::vector<double> Weights(RH.size()-1, 0.0);
+      std::vector<double> LeftWeight(RH.size()-1, 0.0);
+      std::vector<double> RightWeight(RH.size()-1, 0.0);
       double NormSqTotal = 0;
       MatrixOperator L2 = ReshapeBasis2(C);
-      for (int i = 0; i < Weights.size(); ++i)
+      double MinNonZeroWeight = 0.0;
+      for (int i = 0; i < LeftWeight.size(); ++i)
       {
-         Weights[i] = norm_frob(LeftHam[i+1]*L2) + PrefactorEpsilon;
-         NormSqTotal += std::pow(Weights[i],2) * norm_frob_sq(RH[i]);
+         LeftWeight[i] = norm_frob(LeftHam[i+1]*L2);
+         RightWeight[i] = norm_frob(RH[i+1]);
+         double w = LeftWeight[i]*RightWeight[i];
+         if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
+            MinNonZeroWeight = w;
+         //TRACE(i)(w);
+      }
+      // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
+      // it will be normalized later)
+      if (MinNonZeroWeight == 0.0)
+         MinNonZeroWeight = 1.0;
+      // if there are any zero weights, set them equal to the minimum non-zero contribution
+      for (int i = 0; i < LeftWeight.size(); ++i)
+      {
+         if (LeftWeight[i] == 0.0 && RightWeight[i] > 0.0)
+            LeftWeight[i] = MinNonZeroWeight / RightWeight[i];
+         NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
       }
       // Adjust the weights so that all the components except the identity sum to MixFactor
       double ScaleFactor = std::sqrt(MixFactor / NormSqTotal);
-      for (int i = 0; i < Weights.size(); ++i)
+      for (int i = 0; i < LeftWeight.size(); ++i)
       {
-         RH[i] *= Weights[i] * ScaleFactor;
+         RH[i] *= LeftWeight[i] * ScaleFactor;
       }
 
       X = ReshapeBasis2(RH);
+      //TRACE(SingularValues(X));
    }
    else
       X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
@@ -93,6 +132,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    MatrixOperator UKeep = DM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
    C = herm(UKeep)*CExpand;
    Lambda = Lambda*UKeep; // OldBasis, NewBasis
+   //TRACE(norm_frob(C))(norm_frob(Lambda));
    return Lambda;
 }
 
@@ -101,12 +141,32 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 MatrixOperator
 SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam, double MixFactor, KeepListType& KeepList, std::set<QuantumNumbers::QuantumNumber> const& AddedQN, StatesInfo const& States, TruncationInfo& Info, StateComponent const& RightHam, bool ShouldUpdateKeepList = false)
 {
+   //TRACE(norm_frob_sq(C));
    StateComponent CExpand = C;
    // CExpand * Lambda = C.  Lambda is dm x m, CExpand is m x dm
    MatrixOperator Lambda = ExpandBasis2(CExpand);
    MatrixOperator X;
-   if (MixFactor > 0)
+   if (MixFactor != 0.0)
    {
+      if (MixFactor < 0)
+      {
+         // Calculate the mixing factor, from the 90 percentile of the non-zero singular values
+         LinearAlgebra::Vector<double> SV = SingularValues(Lambda, SingularValueNormalization::SqrtQDim);
+         // count back to get the first non-zero value
+         int LastNonZero = SV.size()-1;
+         while (LastNonZero > 0 && SV[LastNonZero] < 1e-15)
+            --LastNonZero;
+         int Pivot = LastNonZero * (1.0 + MixFactor);
+         double Trunc = 0;
+         for (int i = Pivot; i <= LastNonZero; ++i)
+         {
+            Trunc += std::pow(SV[i], 2);
+         }
+         TRACE(Trunc);
+         MixFactor = (Trunc + 1e-15);
+         //TRACE(MixFactor)(norm_frob_sq(Lambda))(SV);
+      }
+
       // Remove the Hamiltonian term, which is the last term.
       // The first term is the identity.
       SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin(), H.Basis2().end()-1));
@@ -121,21 +181,42 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
       // Normalize the noise vectors.  Since LH[0] is Lambda itself,
       // Weights[i] corresponds to the weight of LH[i+1]
-      std::vector<double> Weights(LH.size()-1, 0.0);
+      std::vector<double> LeftWeight(LH.size()-1, 0.0);
+      std::vector<double> RightWeight(LH.size()-1, 0.0);
       double NormSqTotal = 0;
       MatrixOperator L2 = ReshapeBasis1(C);
-      for (int i = 0; i < Weights.size(); ++i)
+      // If there is a component with zero weight, then set it equal to the smallest non-zero weight.
+      // As a last resort, if all of the weights are zero then set them equal to each other.
+      double MinNonZeroWeight = 0.0;
+      for (int i = 0; i < LeftWeight.size(); ++i)
       {
-         Weights[i] = norm_frob(L2*RightHam[i+1]) + PrefactorEpsilon;
-         NormSqTotal += std::pow(Weights[i],2) * norm_frob_sq(LH[i+1]);
+         LeftWeight[i] = norm_frob(LH[i+1]);
+         RightWeight[i] = norm_frob(L2*RightHam[i+1]);
+         double w = LeftWeight[i]*RightWeight[i];
+         if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
+            MinNonZeroWeight = w;
+         //TRACE(i)(w);
+      }
+      // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
+      // it will be normalized later)
+      if (MinNonZeroWeight == 0.0)
+         MinNonZeroWeight = 1.0;
+      // if there are any zero weights, set them equal to the minimum non-zero contribution
+      for (int i = 0; i < LeftWeight.size(); ++i)
+      {
+         if (RightWeight[i] == 0.0 && LeftWeight[i] > 0.0)
+            RightWeight[i] = MinNonZeroWeight / LeftWeight[i];
+         NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
       }
       // Adjust the weights so that all the components except the identity sum to MixFactor
       double ScaleFactor = std::sqrt(MixFactor / NormSqTotal);
-      for (int i = 0; i < Weights.size(); ++i)
+      for (int i = 0; i < RightWeight.size(); ++i)
       {
-         LH[i+1] *= Weights[i] * ScaleFactor;
+         LH[i+1] *= RightWeight[i] * ScaleFactor;
+         //TRACE(norm_frob_sq(LH[i+1]))(RightWeight[i])(ScaleFactor);
       }
       X = ReshapeBasis2(LH);
+      //TRACE(SingularValues(X));
    }
    else
    {
@@ -155,7 +236,9 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
    MatrixOperator UKeep = DM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
    C = CExpand*UKeep;
+   //TRACE(norm_frob_sq(UKeep))(norm_frob_sq(CExpand))(norm_frob_sq(C));
    Lambda = herm(UKeep)*Lambda;
+   //TRACE(norm_frob(Lambda));
    return Lambda;
 }
 
@@ -556,9 +639,13 @@ DMRG::Solve()
    }
 #endif
 
+//TRACE(norm_frob(*C));
+
+
    Solver_.Solve(*C, HamMatrices.left(), *H, HamMatrices.right());
 
-   StateComponent PsiOld = *C;
+   //TRACE(norm_frob(*C));
+   //StateComponent PsiOld = *C;
 
    IterationEnergy = Solver_.LastEnergy();
    IterationNumMultiplies = Solver_.LastIter();
@@ -789,11 +876,11 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
 
 TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
 {
-   MatrixOperator U;
+   MatrixOperator X;
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
-   U = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor,
+   X = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor,
 					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
 					      HamMatrices.left(), DoUpdateKeepList);
@@ -811,7 +898,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    --H;
    --C;
 
-   *C = prod(*C, U);
+   *C = prod(*C, X);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);

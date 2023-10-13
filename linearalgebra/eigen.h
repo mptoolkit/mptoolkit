@@ -120,6 +120,22 @@ LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::compl
 //
 // SingularValueDecomposition
 //
+// Singular values.  Returns the singular values in a LinearAlgebra::Vector<double>
+//
+
+template <typename A, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValues {};
+
+template <typename A, typename D>
+inline
+typename ImplementSingularValues<A,D>::result_type
+SingularValues(A const& a, D& d)
+{
+   return ImplementSingularValues<A,D>()(a,d);
+}
+
 // Singular value decomposition of a real matrix.  For input matrix A,
 // D is a vector containing the singular values, and
 // A = U * D * VT with U and VT near-orthogonal.
