@@ -333,26 +333,70 @@ SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double
 }
 
 LinearAlgebra::Vector<double>
-SingularValues(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-               VectorBasis, VectorBasis> const& m)
+SingularValuesRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> const& m, SingularValueNormalization n)
 {
-   typedef IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis> ITensor;
-
-   ITensor U, D, Vh;
-   SingularValueDecomposition(m, U, D, Vh);
-   LinearAlgebra::Vector<double> Result(D.Basis1().total_dimension());
-   int k = 0;
-   for (unsigned i = 0; i < D.Basis1().size(); ++i)
+   // First pass - calculate the total number of singular vectors
+   std::vector<int> Offset(m.Basis1().size()+1, 0); // offset into the singular value array, as a function of 'i'
+   int Dim = 0; // number of singular values
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
    {
-      for (int j = 0; j < D.Basis1().dim(i); ++j)
+      Offset[i] = Dim;
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
       {
-         if (iterate_at(D.data(), i, i))
-            Result[k++] = D(i,i)(j,j).real();
-         else
-            Result[k++] = 0.0;
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         // if the matrix is zero then so are the singular values, so skip it.
+         if (!iterate_at(m.data(), i, j))
+            continue;
+
+         Dim += std::min(m.Basis1().dim(i), m.Basis2().dim(j));
       }
    }
+   Offset.back() = Dim;
+
+   LinearAlgebra::Vector<double> Result(Dim);
+
+   // Second pass, calculate the singular values
+   for (unsigned i = 0; i < m.Basis1().size(); ++i)
+   {
+      //
+      for (unsigned j = 0; j < m.Basis2().size(); ++j)
+      {
+         if (m.Basis1()[i] != m.Basis2()[j])
+            continue;
+
+         // if the matrix is zero then so are the singular values, so skip it.
+         if (!iterate_at(m.data(), i, j))
+            continue;
+
+         auto Proxy = Result[LinearAlgebra::range(Offset[i], Offset[i+1])];
+         LinearAlgebra::SingularValues(m(i,j), Proxy);
+         if (n == SingularValueNormalization::QDim)
+         {
+            Result[LinearAlgebra::range(Offset[i], Offset[i+1])] *= degree(m.Basis1()[i]);
+         }
+         else if (n == SingularValueNormalization::SqrtQDim)
+         {
+            Result[LinearAlgebra::range(Offset[i], Offset[i+1])] *= std::sqrt(degree(m.Basis1()[i]));
+         }
+      }
+   }
+   std::sort(data(Result), data(Result)+Dim, std::greater<>());
    return Result;
+}
+
+LinearAlgebra::Vector<double>
+SingularValues(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
+               VectorBasis, VectorBasis> const& m, SingularValueNormalization n)
+{
+   // If the basis is already regular, don't bother with the extra work
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      return SingularValuesRegular(m, n);
+   }
+   // else
+   return SingularValuesRegular(RegularizeBasis12(Regularizer(m.Basis1()), m, Regularizer(m.Basis2())), n);
 }
 
 void

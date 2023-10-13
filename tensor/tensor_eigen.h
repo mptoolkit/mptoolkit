@@ -56,9 +56,16 @@ InvertGeneral(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBa
 void InvertIrregularHPD(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                         VectorBasis, VectorBasis>& x);
 
+// Return the singular values of a scalar tensor.  The singular values can be either the raw values
+// (probably not useful)
+// or they can be normalized by the quantum dimension of the quantum number sector, which is what you want
+// if the normalization is with respect to the sum of the singular values,
+// or they can be normalized by the square root of the quantum dimension, which is what you want if
+// the normalization is with respect to the sum of the squares of the singular values.
+enum class SingularValueNormalization { None, QDim, SqrtQDim };
 LinearAlgebra::Vector<double>
 SingularValues(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
-               VectorBasis, VectorBasis> const& m);
+               VectorBasis, VectorBasis> const& m, SingularValueNormalization n = SingularValueNormalization::None);
 
 void
 SingularValueDecomposition(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,

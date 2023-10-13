@@ -473,6 +473,52 @@ struct ImplementDiagonalize<M, L&, R&,
 
 // SingularValueDecomposition
 
+template <typename A, typename D,
+          typename Ai, typename Di>
+struct ImplementSingularValues<A, D, Concepts::MatrixExpression<double, Ai>, VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<double> Acopy(a);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D,
+          typename Ai, typename Di>
+struct ImplementSingularValues<A, D, Concepts::MatrixExpression<std::complex<double>, Ai>, VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double>> Acopy(a);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      assign(d, Dres);
+   }
+};
+
 // TODO: we could avoid some temporaries here with some overloads for CONTIGUOUS_MATRIX
 // But that is hardly necessary with the reference counted implementation
 
