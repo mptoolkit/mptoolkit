@@ -33,6 +33,7 @@
 #include <deque>
 #include <numeric>
 #include <cstdlib>     // for abs(int)
+#include <complex>
 
 namespace statistics
 {

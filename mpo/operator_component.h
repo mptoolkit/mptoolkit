@@ -101,7 +101,7 @@ class OperatorComponent
       // returns the top-left entry, equivalent to operator()(0,0)
       value_type top_left() const;
 
-      // returns the bottom-right entry, equivalent to operator()(size1()-1,size2()-2)
+      // returns the bottom-right entry, equivalent to operator()(size1()-1,size2()-1)
       value_type bottom_right() const;
 
       size_type size1() const { return Basis1_.size(); }
