@@ -656,7 +656,7 @@ InfiniteWavefunctionLeft::InitializeFromLeftOrthogonal(LinearWavefunction Psi, R
    {
       std::cerr << "InfiniteWavefunctionLeft: WARNING: right transfer orthogonalization residual is large: "
          << Eps << '\n';
-      TRACE(Lambda0)(Lambda);
+      TRACE(L0)(L);
    }
 
    this->set_A_matrices_from_handle(Psi.base_begin(), Psi.base_end());
