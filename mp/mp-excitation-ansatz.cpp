@@ -170,6 +170,13 @@ int main(int argc, char** argv)
          LatticeUCSize = Lattice.GetUnitCell().size();
       // Set the wavefunction unit cell size.
       int PsiSize = PsiLeft.size();
+
+      if (PsiSize % LatticeUCSize)
+      {
+         std::cerr << "fatal: the specified lattice unit cell size must divide the wavefunction unit cell size." << std::endl;
+         return 1;
+      }
+
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
       // Scale the momentum by the number of lattice unit cells in the unit cell of PsiLeft.

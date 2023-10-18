@@ -51,7 +51,7 @@ int main(int argc, char** argv)
          ("help", "Show this help message")
          ("momentum,k", prog_opt::value(&K), FormatDefault("The momentum (in units of pi)", K).c_str())
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
-         ("output,o", prog_opt::value(&OutputFilename), "Output filename")
+         ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
@@ -161,6 +161,13 @@ int main(int argc, char** argv)
          LatticeUCSize = Lattice.GetUnitCell().size();
       // Set the wavefunction unit cell size.
       int PsiSize = PsiLeft.size();
+
+      if (PsiSize % LatticeUCSize)
+      {
+         std::cerr << "fatal: the specified lattice unit cell size must divide the wavefunction unit cell size." << std::endl;
+         return 1;
+      }
+
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
 

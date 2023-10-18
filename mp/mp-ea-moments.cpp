@@ -112,11 +112,11 @@ int main(int argc, char** argv)
           "Use this momentum for the EA wavefunction instead of the one in the file (in units of pi)")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("power", prog_opt::value(&Power),
-          FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+          FormatDefault("Calculate expectation values of a triangular operator up to this power", Power).c_str())
          ("moments", prog_opt::bool_switch(&CalculateMoments),
           "Calculate the moments [default, unless --cumulants is specified]")
          ("moments-full", prog_opt::bool_switch(&CalculateMomentsFull),
-          "Print the full moment polynomials containing the ground state and excitation components")
+          "Print the full moment polynomials")
          ("cumulants,t", prog_opt::bool_switch(&CalculateCumulants),
           "Calculate the cumulants")
          ("cart,c", prog_opt::bool_switch(&ShowCartesian),
@@ -329,8 +329,12 @@ int main(int argc, char** argv)
          UnitCellSize = PsiLeft.size();
       double ScaleFactor = double(UnitCellSize) / double(PsiLeft.size());
 
-      // If we are calculating the overlap, then we do not have the lattice,
-      // but ExpIK shouldn't matter in that case anyway, so we can set this to zero.
+      if (PsiLeft.size() % LatticeUCSize)
+      {
+         std::cerr << "fatal: the specified lattice unit cell size must divide the wavefunction unit cell size." << std::endl;
+         return 1;
+      }
+
       int LatticeUCsPerPsiUC = PsiLeft.size() / LatticeUCSize;
 
       // Use the phase factor from the input file by default, otherwise, use the specified value.

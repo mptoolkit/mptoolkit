@@ -46,14 +46,14 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "Show this help message")
          ("Hamiltonian,H", prog_opt::value(&HamStr), "Operator to use for the Hamiltonian (wavefunction attribute \"Hamiltonian\")")
-         ("wavefunction,w", prog_opt::value(&Filename), "EA wavefunction (required)")
+         ("wavefunction,w", prog_opt::value(&Filename), "EA wavefunction to optimize [required]")
          ("num,n", prog_opt::value(&N), FormatDefault("Number of sweeps", N).c_str())
-         ("tol", prog_opt::value(&Settings.Tol), FormatDefault("Error tolerance for the eigensolver", Settings.Tol).c_str())
+         ("tol", prog_opt::value(&Settings.Tol), FormatDefault("Error tolerance for the local eigensolver", Settings.Tol).c_str())
          ("gmrestol", prog_opt::value(&Settings.GMRESTol),
           FormatDefault("Error tolerance for the GMRES algorithm", Settings.GMRESTol).c_str())
          ("unityepsilon", prog_opt::value(&Settings.UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
-         ("quiet", prog_opt::bool_switch(&Settings.Quiet), "Suppress normal output")
+         ("quiet", prog_opt::bool_switch(&Settings.Quiet), "Reduce output")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <psi>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }

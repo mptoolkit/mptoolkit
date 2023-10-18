@@ -42,7 +42,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("momentum,k", prog_opt::value(&K), "Change the momentum to this value (in units of pi)")
+         ("momentum,k", prog_opt::value(&K), "Change the momentum to this value (in units of pi) [required]")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -92,6 +92,12 @@ int main(int argc, char** argv)
          LatticeUCSize = PsiPtr->Attributes()["LatticeUnitCellSize"].get_or_default<int>(1);
 
       EAWavefunction Psi = PsiPtr->get<EAWavefunction>();
+
+      if (Psi.left().size() % LatticeUCSize)
+      {
+         std::cerr << "fatal: the specified lattice unit cell size must divide the wavefunction unit cell size." << std::endl;
+         return 1;
+      }
 
       int LatticeUCsPerPsiUC = Psi.left().size() / LatticeUCSize;
       std::complex<double> ExpIK = exp(std::complex<double>(0.0, math_const::pi) * (K * LatticeUCsPerPsiUC));

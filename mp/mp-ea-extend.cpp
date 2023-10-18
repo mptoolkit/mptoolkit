@@ -41,7 +41,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("num,n", prog_opt::value(&N), "Number of sites to add to the windows")
+         ("num,n", prog_opt::value(&N), FormatDefault("Number of sites to add to the windows", N).c_str())
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;

@@ -419,6 +419,12 @@ int main(int argc, char** argv)
          CHECK(PsiLeft.qshift() == PsiRight.qshift());
       }
 
+      if (UCSize % LatticeUCSize)
+      {
+         std::cerr << "fatal: the specified lattice unit cell size must divide the wavefunction unit cell size." << std::endl;
+         return 1;
+      }
+
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = UCSize / LatticeUCSize;
 
