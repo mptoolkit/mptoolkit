@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-ievolve-mpo.cpp
+// mp/mp-evolve-mpo.cpp
 //
 // Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
@@ -112,8 +112,7 @@ int main(int argc, char** argv)
       int SaveEvery = 1;
       int Verbose = 0;
       int OutputDigits = 0;
-      bool Normalize = false;
-      bool NoNormalize = false;
+      StatesInfo SInfo;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -125,8 +124,14 @@ int main(int argc, char** argv)
 	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
 	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
 	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
-         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
-         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
+         ("min-states", prog_opt::value(&SInfo.MinStates),
+          FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
+         ("max-states", prog_opt::value<int>(&SInfo.MaxStates),
+          FormatDefault("Maximum number of states to keep", SInfo.MaxStates).c_str())
+         ("trunc,r", prog_opt::value<double>(&SInfo.TruncationCutoff),
+          FormatDefault("Truncation error cutoff", SInfo.TruncationCutoff).c_str())
+         ("eigen-cutoff,d", prog_opt::value(&SInfo.EigenvalueCutoff),
+          FormatDefault("Cutoff threshold for density matrix eigenvalues", SInfo.EigenvalueCutoff).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -157,7 +162,7 @@ int main(int argc, char** argv)
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
 
-      InfiniteWavefunctionLeft Psi = PsiPtr->get<InfiniteWavefunctionLeft>();
+      FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
 
       // Output prefix - if it wasn't specified then use the wavefunction attribute, or
       // fallback to the wavefunction name.
@@ -181,16 +186,6 @@ int main(int argc, char** argv)
       std::complex<double> Timestep = 0.0;
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
-
-      if (Timestep.imag() == 0.0)
-         Normalize = true;
-      if (NoNormalize)
-         Normalize = false;
-
-      if (Normalize)
-         std::cout << "Normalizing wavefunction." << std::endl;
-      else
-         std::cout << "Not normalizing wavefunction." << std::endl;
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
@@ -220,16 +215,17 @@ int main(int argc, char** argv)
       if (Psi.size() != HamMPO.size())
       {
          int Size = statistics::lcm(Psi.size(), HamMPO.size());
-         if (Psi.size() < Size)
-            std::cerr << "Warning: extending wavefunction unit cell size to " << Size << " sites." << std::endl;
-         Psi = repeat(Psi, Size / Psi.size());
          HamMPO = repeat(HamMPO, Size / HamMPO.size());
       }
 
       //ProductMPO EvolutionMPO = FirstOrderEvolutionMPO(HamMPO, std::complex<double>(0.0, -1.0) * Timestep);
       ProductMPO EvolutionMPO = OptimalFirstOrderEvolutionMPO(HamMPO, std::complex<double>(0.0, -1.0) * Timestep);
 
-      LinearWavefunction PsiL = get_left_canonical(Psi).first;
+      // Make the first and last MPO elements a row and column matrix, respectively.
+      EvolutionMPO.front() = project_rows(EvolutionMPO.front(), {0});
+      EvolutionMPO.back() = project_columns(EvolutionMPO.back(), {0});
+
+      LinearWavefunction PsiL = LinearWavefunction::FromContainer(Psi.begin(), Psi.end());
 
       if (SaveEvery == 0)
          SaveEvery = N;
@@ -237,8 +233,6 @@ int main(int argc, char** argv)
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << std::endl;
-
-      double LogAmplitude = Psi.log_amplitude();
       
       for (int tstep = 1; tstep <= N; ++tstep)
       {
@@ -251,11 +245,11 @@ int main(int argc, char** argv)
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << std::endl;
 
-         InfiniteWavefunctionLeft PsiSave
-            = InfiniteWavefunctionLeft::ConstructPreserveAmplitude(PsiL, Psi.qshift(), Normalize ? 0.0 : LogAmplitude, Verbose);
+         MatrixOperator M = right_orthogonalize(PsiL, Verbose);
+         PsiL.set_front(prod(M, PsiL.get_front()));
+         truncate_right_orthogonal(PsiL, SInfo, Verbose);
 
-         //PsiL = get_left_canonical(PsiSave).first;
-         LogAmplitude = PsiSave.log_amplitude();
+         FiniteWavefunctionLeft PsiSave = FiniteWavefunctionLeft::Construct(PsiL, Verbose);
 
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {

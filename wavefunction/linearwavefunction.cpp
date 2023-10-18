@@ -545,11 +545,48 @@ double norm_2_sq(LinearWavefunction const& Psi)
    return norm_frob_sq(*Psi.begin());
 }
 
-void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates)
+void truncate_left_orthogonal(LinearWavefunction& Psi, StatesInfo const& SInfo, int Verbose)
+{
+   LinearWavefunction::iterator I = Psi.end();
+   --I;
+   MatrixOperator M = MatrixOperator::make_identity(I->Basis2());
+   ++I;
+   int BondNr = Psi.size();
+
+   while (I != Psi.begin())
+   {
+      --I;
+      --BondNr;
+
+      *I = prod(*I, M);
+      M = ExpandBasis1(*I);
+      DensityMatrix<MatrixOperator> DM(scalar_prod(herm(M), M));
+      TruncationInfo Info;
+      MatrixOperator U =
+         DM.ConstructTruncator(DM.begin(),
+                               TruncateFixTruncationErrorAbsolute(DM.begin(),
+                                                                  DM.end(),
+                                                                  SInfo,
+                                                                  Info));
+      if (Verbose > 0)
+         std::cout << "bond=" << BondNr
+                   << ", states=" << Info.KeptStates()
+                   << ", trunc=" << Info.TruncationError()
+                   << ", largest_discarded_evalue=" << Info.LargestDiscardedEigenvalue()
+                   << '\n';
+      *I = prod(U, *I);
+      M = M*herm(U);
+   }
+
+   *I = prod(M, *I);
+}
+
+void truncate_right_orthogonal(LinearWavefunction& Psi, StatesInfo const& SInfo, int Verbose)
 {
    LinearWavefunction::iterator I = Psi.begin();
    MatrixOperator M = MatrixOperator::make_identity(I->Basis1());
    int BondNr = 1;
+
    while (I != Psi.end())
    {
       *I = prod(M, *I);
@@ -562,27 +599,21 @@ void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates)
                                                                   DM.end(),
                                                                   SInfo,
                                                                   Info));
-      if (ShowStates)
-         std::cerr << "bond=" << BondNr
+      if (Verbose > 0)
+         std::cout << "bond=" << BondNr
                    << ", states=" << Info.KeptStates()
                    << ", trunc=" << Info.TruncationError()
                    << ", largest_discarded_evalue=" << Info.LargestDiscardedEigenvalue()
                    << '\n';
       *I = prod(*I, herm(U));
       M = U*M;
+
       ++I;
       ++BondNr;
    }
 
-   if (ShowStates)
-      std::cerr << "Orthogonalizing...\n";
-
-   M = right_orthogonalize(Psi, M);
-   I = Psi.begin();
-   *I = prod(M, *I);
-
-   if (ShowStates)
-      std::cerr << "Done.\n";
+   --I;
+   *I = prod(*I, M);
 }
 
 void project(LinearWavefunction& x, QuantumNumbers::QuantumNumber const& q)

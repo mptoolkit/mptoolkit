@@ -366,9 +366,11 @@ double scalar_difference(LinearWavefunction const& x, LinearWavefunction const& 
    return std::sqrt(scalar_difference_sq(x,y));
 }
 
-// Truncate the wavefunction to the given parameters.  If ShowStates=true, some info is written to std::cerr
-// as the state is truncated.
-void truncate(LinearWavefunction& Psi, StatesInfo const& SInfo, bool ShowStates = false);
+// Truncate a left orthogonal wavefunction, returning a right orthogonal wavefunction.
+void truncate_left_orthogonal(LinearWavefunction& Psi, StatesInfo const& SInfo, int Verbose = 0);
+
+// Truncate a right orthogonal wavefunction, returning a left orthogonal wavefunction.
+void truncate_right_orthogonal(LinearWavefunction& Psi, StatesInfo const& SInfo, int Verbose = 0);
 
 // this belongs somewhere else
 
