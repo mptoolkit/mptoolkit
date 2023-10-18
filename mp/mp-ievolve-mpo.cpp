@@ -35,7 +35,7 @@
 namespace prog_opt = boost::program_options;
 
 ProductMPO
-FirstOrderEvolveMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
+FirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
 {
    std::deque<OperatorComponent> Result;
 
@@ -52,6 +52,47 @@ FirstOrderEvolveMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
          for (int j = 1; j < Basis2.size(); ++j)
             W(i, j) = I(i, j);
       }
+
+      Result.push_back(W);
+   }
+
+   return ProductMPO(GenericMPO(Result.begin(), Result.end()));
+}
+
+// Calculate the optimal first-order evolution MPO from the Appendix in arXiv:2302.14181.
+ProductMPO
+OptimalFirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
+{
+   std::deque<OperatorComponent> Result;
+
+   for (auto const& I : HamMPO)
+   {
+      // Get the indices for the middle rows and columns.
+      std::set<int> MidRows, MidCols;
+      for (int i = 1; i < I.Basis1().size()-1; ++i)
+         MidRows.insert(i);
+      for (int j = 1; j < I.Basis2().size()-1; ++j)
+         MidCols.insert(j);
+
+      // Get the Identity, A, B, C and D blocks:
+      // (I C D)
+      // (0 A B)
+      // (0 0 I)
+      OperatorComponent Ident = project_columns(project_rows(I, {0}), {0});
+      OperatorComponent A = project_columns(project_rows(I, MidRows), MidCols);
+      OperatorComponent B = project_columns(project_rows(I, MidRows), {(int) I.Basis2().size()-1});
+      OperatorComponent C = project_columns(project_rows(I, {0}), MidCols);
+      OperatorComponent D = project_columns(project_rows(I, {0}), {(int) I.Basis2().size()-1});
+
+      // Calculate the four blocks of the optimal first-order evolution MPO.
+      OperatorComponent WTopLeft = Ident + Tau * D + 0.5*Tau*Tau * aux_tensor_prod(D, D);
+      OperatorComponent WBotLeft = Tau * B + 0.5*Tau*Tau * (aux_tensor_prod(B, D) + aux_tensor_prod(D, B));
+      OperatorComponent WTopRight = C + 0.5*Tau * (aux_tensor_prod(C, D) + aux_tensor_prod(D, C));
+      OperatorComponent WBotRight = A + 0.5*Tau * (aux_tensor_prod(A, D) + aux_tensor_prod(D, A)
+                                                 + aux_tensor_prod(B, C) + aux_tensor_prod(C, B));
+
+      // Construct the evolution MPO.
+      OperatorComponent W = tensor_row_sum(tensor_col_sum(WTopLeft, WBotLeft), tensor_col_sum(WTopRight, WBotRight));
 
       Result.push_back(W);
    }
@@ -185,7 +226,8 @@ int main(int argc, char** argv)
          HamMPO = repeat(HamMPO, Size / HamMPO.size());
       }
 
-      ProductMPO EvolveMPO = FirstOrderEvolveMPO(HamMPO, Timestep);
+      //ProductMPO EvolutionMPO = FirstOrderEvolutionMPO(HamMPO, Timestep);
+      ProductMPO EvolutionMPO = OptimalFirstOrderEvolutionMPO(HamMPO, Timestep);
 
       LinearWavefunction PsiL = get_left_canonical(Psi).first;
 
@@ -201,7 +243,7 @@ int main(int argc, char** argv)
       for (int tstep = 1; tstep <= N; ++tstep)
       {
          // Apply the evolution MPO.
-         auto MI = EvolveMPO.begin();
+         auto MI = EvolutionMPO.begin();
          for (auto I = PsiL.begin(); I != PsiL.end(); ++I, ++MI)
             *I = aux_tensor_prod(*MI, *I);
 
@@ -212,7 +254,7 @@ int main(int argc, char** argv)
          InfiniteWavefunctionLeft PsiSave
             = InfiniteWavefunctionLeft::ConstructPreserveAmplitude(PsiL, Psi.qshift(), Normalize ? 0.0 : LogAmplitude, Verbose);
 
-         PsiL = get_left_canonical(PsiSave).first;
+         //PsiL = get_left_canonical(PsiSave).first;
          LogAmplitude = PsiSave.log_amplitude();
 
          if ((tstep % SaveEvery) == 0 || tstep == N)
