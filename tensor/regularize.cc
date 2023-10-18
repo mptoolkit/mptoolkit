@@ -208,14 +208,12 @@ template <typename T>
 IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
 UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& M, Regularizer const& R2)
 {
-   TRACE(M);
    IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(R1.OriginalBasis(), R2.OriginalBasis(), M.TransformsAs());
    for (int i = 0; i < Result.size1(); ++i)
    {
       int ii = R1.IndexOf(i);
       Result.data().diagonal()[i].diagonal() = M.data().diagonal()[ii].diagonal()[R1.RangeOf(i)];
    }
-   TRACE(Result);
    return Result;
 }
 
