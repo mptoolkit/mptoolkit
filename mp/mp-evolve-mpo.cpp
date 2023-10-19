@@ -112,6 +112,8 @@ int main(int argc, char** argv)
       int SaveEvery = 1;
       int Verbose = 0;
       int OutputDigits = 0;
+      bool Normalize = false;
+      bool NoNormalize = false;
       StatesInfo SInfo;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -132,6 +134,8 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&SInfo.EigenvalueCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", SInfo.EigenvalueCutoff).c_str())
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
+         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -187,6 +191,16 @@ int main(int argc, char** argv)
       if (!TimestepStr.empty())
          Timestep += ParseNumber(TimestepStr);
 
+      if (Timestep.imag() == 0.0)
+         Normalize = true;
+      if (NoNormalize)
+         Normalize = false;
+
+      if (Normalize)
+         std::cout << "Normalizing wavefunction." << std::endl;
+      else
+         std::cout << "Not normalizing wavefunction." << std::endl;
+
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
@@ -233,7 +247,7 @@ int main(int argc, char** argv)
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << std::endl;
-      
+
       for (int tstep = 1; tstep <= N; ++tstep)
       {
          // Apply the evolution MPO.
@@ -245,11 +259,10 @@ int main(int argc, char** argv)
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << std::endl;
 
-         MatrixOperator M = right_orthogonalize(PsiL, Verbose);
-         PsiL.set_front(prod(M, PsiL.get_front()));
-         truncate_right_orthogonal(PsiL, SInfo, Verbose);
+         MatrixOperator M = left_orthogonalize(PsiL, Verbose);
+         truncate_left_orthogonal(PsiL, SInfo, Verbose);
 
-         FiniteWavefunctionLeft PsiSave = FiniteWavefunctionLeft::Construct(PsiL, Verbose);
+         FiniteWavefunctionLeft PsiSave = FiniteWavefunctionLeft::ConstructFromRightOrthogonal(PsiL, Normalize ? 1.0 : trace(M), Verbose);
 
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
