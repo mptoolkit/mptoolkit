@@ -111,7 +111,7 @@ int main(int argc, char** argv)
       UnitCell Cell2(repeat(join(AFCell, FCell), CellSize/12));
       UnitCell Cell = join(Cell1, Cell2);
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), P(Cell, "P"), I(Cell, "I"),
                        X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
 
       UnitCellMPO tx, ty, m, J, x_field;
@@ -161,14 +161,14 @@ int main(int argc, char** argv)
 
       for (int i = 0; i < y; ++i)
       {
-         G[i] = ((i % 2) == 0 ? 1.0 : -1.0) * Z(0)[3*i+1] * Z(-1)[3*(i+y)+1] * Z(0)[3*i+2] * Z(0)[(3*(i+y)-1)%(3*y)];
+         G[i] = ((i % 2) == 0 ? P(0)[3*i] : -P(0)[3*i]) * X(0)[3*i+1] * X(-1)[3*(i+y)+1] * X(0)[3*i+2] * X(0)[(3*(i+y)-1)%(3*y)];
          G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }
 
       for (int i = y; i < 2*y; ++i)
       {
-         G[i] = (((i-y) % 2) == 0 ? -1.0 : 1.0) * Z(0)[3*i+1] * Z(0)[3*(i-y)+1] * Z(0)[3*i+2] * Z(0)[(3*i-1)%(3*y)+3*y];
+         G[i] = ((i % 2) == 0 ? -P(0)[3*i] : P(0)[3*i]) * X(0)[3*i+1] * X(0)[3*(i-y)+1] * X(0)[3*i+2] * X(0)[(3*i-1)%(3*y)+3*y];
          G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }
