@@ -130,10 +130,10 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
 
-      if (vm.count("help") > 0 || vm.count("wavefunction") == 0)
+      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("timestep") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <prefix> -t <timestep>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }

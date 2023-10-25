@@ -53,6 +53,9 @@ int main(int argc, char** argv)
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
 
+      int EvolutionWindowLeft = 0;
+      int EvolutionWindowRight = 0;
+
       IBC_TDVPSettings Settings;
       Settings.SInfo.MinStates = 2;
       Settings.SInfo.TruncationCutoff = 0;
@@ -85,11 +88,10 @@ int main(int argc, char** argv)
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("fidtol,f", prog_opt::value(&Settings.FidTol),
           FormatDefault("Tolerance in the boundary fidelity for expanding the window", Settings.FidTol).c_str())
-         ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
-          FormatDefault("Tolerance in the boundary Lambda matrix for expanding the window", Settings.LambdaTol).c_str())
-         ("uc-expand", prog_opt::bool_switch(&Settings.UCExpand), "Expand the window by whole unit cells rather than single sites")
          ("n-expand", prog_opt::value(&Settings.NExpand), "Expand the window manually every n timesteps")
          ("comoving", prog_opt::value(&Settings.Comoving), "Use a comoving window of fixed width of the specified number of sites")
+         ("ewleft", prog_opt::value(&EvolutionWindowLeft), "Leftmost site of the initial evolution window (wavefunction attribute \"EvolutionWindowLeft\")")
+         ("ewright", prog_opt::value(&EvolutionWindowRight), "Rightmost site of the initial evolution window (wavefunction attribute \"EvolutionWindowRight\")")
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -191,6 +193,27 @@ int main(int argc, char** argv)
 
       Hamiltonian Ham(HamStr);
 
+      // Get EvolutionWindowLeft/Right from the wavefunction attributes if they
+      // weren't specified, or else set them to the window boundaries.
+      if (vm.count("ewleft") == 0)
+      {
+         if (PsiPtr->Attributes().count("EvolutionWindowLeft"))
+            EvolutionWindowLeft = PsiPtr->Attributes()["EvolutionWindowLeft"].as<int>();
+         else
+            EvolutionWindowLeft = Psi.window_offset();
+      }
+
+      if (vm.count("ewright") == 0)
+      {
+         if (PsiPtr->Attributes().count("EvolutionWindowRight"))
+            EvolutionWindowRight = PsiPtr->Attributes()["EvolutionWindowRight"].as<int>();
+         else
+            EvolutionWindowRight = Psi.window_size() - 1 + Psi.window_offset();
+      }
+
+      Settings.EvolutionWindowLeft = EvolutionWindowLeft;
+      Settings.EvolutionWindowRight = EvolutionWindowRight;
+
       std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
 
@@ -214,6 +237,7 @@ int main(int argc, char** argv)
       std::cout << "Timestep=" << 0
                 << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
                 << " WindowSize=" << tdvp.Psi.size()
+                << " EvWindowSize=" << tdvp.RightStop-tdvp.LeftStop+1
                 << " MaxStates=" << tdvp.MaxStates
                 << " E=" << std::real(tdvp.Energy());
       if (Settings.Epsilon)
@@ -231,6 +255,7 @@ int main(int argc, char** argv)
          std::cout << "Timestep=" << tstep
                    << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
                    << " WindowSize=" << tdvp.Psi.size()
+                   << " EvWindowSize=" << tdvp.RightStop-tdvp.LeftStop+1
                    << " MaxStates=" << tdvp.MaxStates
                    << " E=" << std::real(tdvp.Energy());
          if (TwoSite)
@@ -260,6 +285,9 @@ int main(int argc, char** argv)
             Wavefunction.Attributes()["Beta"] = BetaStr;
             Wavefunction.Attributes()["Prefix"] = OutputPrefix;
             Wavefunction.Attributes()["EvolutionHamiltonian"] = HamStr;
+            Wavefunction.Attributes()["EvolutionWindowLeft"] = tdvp.LeftStop;
+            Wavefunction.Attributes()["EvolutionWindowRight"] = tdvp.RightStop;
+
             std::string FName = OutputPrefix;
             if (std::real(InitialTime + double(tstep)*Timestep) != 0.0)
             {

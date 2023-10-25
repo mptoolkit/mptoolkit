@@ -289,18 +289,18 @@ int main(int argc, char** argv)
          ("help", "Show this help message")
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("momentum,k", prog_opt::value(&KStr), "Momentum range of the form start:end:step or start:end,num (in units of pi) [required]")
-         ("sma", prog_opt::value(&KSMA), "Use a single mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
-         ("ky", prog_opt::value(&KYStr), "y-momentum range (in units of pi)")
+         ("sma", prog_opt::value(&KSMA), "Use a single-mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
+         ("ky", prog_opt::value(&KYStr), "Localize the wavepacker on a cylinder using this y-momentum range (in units of pi)")
+         ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
-         ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width (in units of pi)")
          ("kcenter,c", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width (in units of pi)")
          ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
-          FormatDefault("Tolerance for the wavepacket weight outside the [-Lambda, Lambda] window", Tol).c_str())
+          FormatDefault("Tolerance for the wavepacket weight outside the window", Tol).c_str())
          ("min-states", prog_opt::value(&SInfo.MinStates),
           FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
          ("max-states", prog_opt::value<int>(&SInfo.MaxStates),
@@ -324,7 +324,7 @@ int main(int argc, char** argv)
           (vm.count("momentum") == 0) == (vm.count("sma") == 0)) // i.e. momentum XNOR sma
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " [options] -w <input-prefix> -o <psi-out>" << std::endl;
          std::cerr << desc << std::endl;
          return 1;
       }

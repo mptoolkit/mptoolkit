@@ -28,10 +28,10 @@ struct IBC_TDVPSettings : TDVPSettings
 {
    double GMRESTol = 1e-13;
    double FidTol = 1e-12;
-   double LambdaTol = 1e-12;
-   bool UCExpand = false;
    int NExpand = 0;
    int Comoving = 0;
+   int EvolutionWindowLeft;
+   int EvolutionWindowRight;
 };
 
 class IBC_TDVP : public TDVP
@@ -43,31 +43,22 @@ class IBC_TDVP : public TDVP
 
       IBCWavefunction Wavefunction() const;
 
-      // Expand the IBC window by adding one unit cell to the left/right.
-      // (Only works if WindowLeft/RightSites == 0.)
-      void ExpandWindowLeftUC();
-      void ExpandWindowRightUC();
-
       // Expand the IBC window by adding a site to the left/right.
-      void ExpandWindowLeftSite();
-      void ExpandWindowRightSite();
-
-      // Expand the IBC window left/right, adding either a site or a unit cell
-      // depending on UCExpand.
       void ExpandWindowLeft();
       void ExpandWindowRight();
+
+      // Expand the section of the window which is being evolved.
+      // NOTE: Only works if the current site is the leftmost or rightmost site
+      // of the evolution window respectively.
+      void ExpandEvolutionWindowLeft();
+      void ExpandEvolutionWindowRight();
 
       // Calculate the fidelity loss of the left/right edge of the window
       // compared to the semi-infinite boundaries.
       double CalculateFidelityLossLeft();
       double CalculateFidelityLossRight();
 
-      // Calculate the Frobenius norm of the difference of the left/right
-      // Lambda matrices of the window against the semi-infinite boundaries.
-      double CalculateLambdaDiffLeft();
-      double CalculateLambdaDiffRight();
-
-      // Sweep left/right, expanding the window if LambdaDiff exceeds FidTol.
+      // Sweep left/right, expanding the window if FidelityLoss exceeds FidTol.
       void SweepLeftEW(std::complex<double> Tau, bool Expand);
       void SweepRightEW(std::complex<double> Tau, bool Expand);
       void SweepRightFinalEW(std::complex<double> Tau, bool Expand);
@@ -80,8 +71,6 @@ class IBC_TDVP : public TDVP
 
       double GMRESTol;
       double FidTol;
-      double LambdaTol;
-      bool UCExpand;
       int NExpand;
       int Comoving;
 
@@ -104,6 +93,9 @@ class IBC_TDVP : public TDVP
       InfiniteWavefunctionLeft::const_mps_iterator CRight;
       std::deque<StateComponent>::const_iterator HamLeft;
       std::deque<StateComponent>::const_iterator HamRight;
+
+      StateComponent CRefLeft, CRefLeft2;
+      StateComponent CRefRight, CRefRight2;
 };
 
 #endif

@@ -25,13 +25,16 @@
 
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
    : TDVP(Ham_, Settings_),
-   GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), LambdaTol(Settings_.LambdaTol),
-   UCExpand(Settings_.UCExpand), NExpand(Settings_.NExpand), Comoving(Settings_.Comoving),
-   PsiLeft(Psi_.left()), PsiRight(Psi_.right())
+   GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), NExpand(Settings_.NExpand),
+   Comoving(Settings_.Comoving), PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
    // We do not (currently) support time dependent Hamiltonians.
    // (We would need to recalculate the left and right block Hamiltonians each timestep.)
    CHECK(Ham.is_time_dependent() == false);
+
+   //-----------------------------------
+   // Handle the boundary wavefunctions.
+   //-----------------------------------
 
    LeftQShift = Psi_.left_qshift();
    RightQShift = Psi_.right_qshift();
@@ -74,7 +77,8 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    Rho = delta_shift(Rho, adjoint(PsiLeft.qshift()));
 
    SolveHamiltonianMPO_Right(BlockHamLR, PsiLinear, PsiLeft.qshift(), HamiltonianLeft, Rho, GMRESTol, Verbose-1);
-   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_r(), prod(BlockHamL, PsiLeft.lambda_r())), BlockHamLR);
+   std::complex<double> BondEnergy = inner_prod(prod(PsiLeft.lambda_l(), prod(BlockHamL, PsiLeft.lambda_l())),
+                                                delta_shift(BlockHamLR, PsiLeft.qshift()));
 
    if (Verbose > 0)
       std::cout << "Bond energy = " << BondEnergy << std::endl;
@@ -120,14 +124,6 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    }
 
    // Initialize the boundaries for the window Hamiltonian environment.
-   Offset = Psi_.window_offset();
-   RightStop = Psi_.window_size() - 1 + Psi_.window_offset();
-   if (Comoving == 0)
-      LeftStop = Offset;
-   else
-      LeftStop = RightStop - Comoving + 1;
-   Site = Offset;
-
    HamLeft = HamLeftUC.cend();
    --HamLeft;
    for (int i = 0; i < WindowLeftSites; ++i)
@@ -151,6 +147,15 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
    ++HamRight;
 
+   //-------------------
+   // Handle the window.
+   //-------------------
+
+   Offset = Psi_.window_offset();
+   LeftStop = Settings_.EvolutionWindowLeft;
+   RightStop = Settings_.EvolutionWindowRight;
+   Site = Offset;
+
    // Check whether there are any sites in the window, and if not, add some.
    if (Psi_.window_size() == 0)
    {
@@ -160,34 +165,19 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
       HamiltonianWindow = BasicTriangularMPO();
 
-      if (UCExpand)
-      {
-         if (Verbose > 1)
-            std::cout << "Initial window size = 0, adding two unit cells to window..." << std::endl;
+      if (Verbose > 1)
+         std::cout << "Initial window size = 0, adding site to window..." << std::endl;
 
-         this->ExpandWindowLeft();
+      this->ExpandWindowRight();
+      if (LeftStop == RightStop + 1)
+         ++RightStop;
 
-         this->ExpandWindowRight();
+      // Incorporate the Lambda matrix into the wavefunction.
+      *C = prod(Lambda, *C);
 
-         // Incorporate the Lambda matrix into the wavefunction.
-         *C = prod(Lambda, *C);
-
-         HamR.pop_front();
-      }
-      else
-      {
-         if (Verbose > 1)
-            std::cout << "Initial window size = 0, adding site to window..." << std::endl;
-
-         this->ExpandWindowRight();
-
-         // Incorporate the Lambda matrix into the wavefunction.
-         *C = prod(Lambda, *C);
-
-         HamR.pop_front();
-      }
+      HamR.pop_front();
    }
-   else
+   else // Handle windows with > 0 sites.
    {
       MatrixOperator Lambda;
       std::tie(Psi, Lambda) = get_left_canonical(Psi_.window());
@@ -198,6 +188,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
       // left/right boundaries.
       int WindowSizeWholeUCs = Psi.size() - WindowRightSites - WindowLeftSites;
 
+      // Initialise the Hamiltonian for the whole unit cells inside the window.
       HamiltonianWindow = repeat(Ham(), WindowSizeWholeUCs / Ham().size());
 
       // Now add the "left over" terms to Hamiltonian from partially
@@ -234,27 +225,56 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
       --H, --C, --Site;
       *C = prod(*C, Lambda);
       HamL.pop_back();
-
-      if (UCExpand)
-      {
-         if (Verbose > 1 && (WindowLeftSites != 0 || WindowRightSites != 0))
-            std::cout << "Expanding window to ensure boundary unit cell is fully incorporated into window..." << std::endl;
-
-         while (WindowLeftSites != 0)
-            this->ExpandWindowLeftSite();
-         while (WindowRightSites != 0)
-            this->ExpandWindowRightSite();
-      }
    }
 
-   // For a comoving window, ensure that the initial window has the correct
-   // number of sites.
+   // Set the initial LeftStop for a comoving window.
    if (Comoving != 0)
-      while (LeftStop < Offset)
-         this->ExpandWindowLeft();
+      LeftStop = RightStop - Comoving + 1;
 
-   // Left-orthogonalize the window (should only be necessary if
-   // UCExpand == true and we added extra sites on the right).
+   // Ensure that the window contains LeftStop and RightStop.
+   while (LeftStop < Offset)
+      this->ExpandWindowLeft();
+
+   while (RightStop > Offset + Psi.size()-1)
+      this->ExpandWindowRight();
+
+   //----------------------------------------------------
+   // Initialize the evolution window expansion criteria.
+   //----------------------------------------------------
+
+   // Right-orthogonalize the window.
+   while (Site > LeftStop)
+   {
+      // Perform SVD to right-orthogonalize current site.
+      MatrixOperator U;
+      RealDiagonalOperator D;
+
+      std::tie(U, D) = OrthogonalizeBasis1(*C);
+
+      // Update the effective Hamiltonian.
+      HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
+
+      // Move to the next site.
+      --Site;
+      --H;
+      --C;
+
+      *C = prod(*C, U*D);
+
+      HamL.pop_back();
+   }
+
+   // Add an extra site to the left of the evolution window if there isn't one.
+   if (LeftStop == Offset)
+      this->ExpandWindowLeft();
+
+   // Save the left reference A-matrices.
+   CRefLeft = *C;
+   --C;
+   CRefLeft2 = *C;
+   ++C;
+
+   // Left-orthogonalize the window.
    while (Site < RightStop)
    {
       // Perform SVD to left-orthogonalize current site.
@@ -275,6 +295,16 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
       HamR.pop_front();
    }
+
+   // Add an extra site to the right of the evolution window if there isn't one.
+   if (RightStop == Offset + Psi.size()-1)
+      this->ExpandWindowRight();
+
+   // Save the right reference A-matrices.
+   CRefRight = *C;
+   ++C;
+   CRefRight2 = *C;
+   --C;
 }
 
 IBCWavefunction
@@ -287,85 +317,7 @@ IBC_TDVP::Wavefunction() const
 }
 
 void
-IBC_TDVP::ExpandWindowLeftUC()
-{
-   // Add the unit cell to the window.
-   auto CAdd = PsiLeft.end();
-   while (CAdd != PsiLeft.begin())
-   {
-      --CAdd;
-      Psi.push_front(delta_shift(*CAdd, LeftQShift));
-   }
-
-   // Change the leftmost index.
-   Offset -= PsiLeft.size();
-   if (Comoving == 0)
-      LeftStop -= PsiLeft.size();
-
-   // Add the unit cell to the Hamiltonian.
-   std::vector<OperatorComponent> HamiltonianNew;
-   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
-   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianLeft.data().begin(), HamiltonianLeft.data().end());
-   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
-
-   // Add the unit cell to the Hamiltonian environment.
-   HamL.pop_front();
-   HamL.insert(HamL.begin(), HamLeftUC.begin(), HamLeftUC.end());
-
-   // Reset iterators to previous location.
-   C = Psi.begin();
-   H = HamiltonianWindow.begin();
-   for (int i = Offset; i < Site; ++i)
-      ++C, ++H;
-
-   // Shift the quantum number of the boundary unit cell.
-   LeftQShift = delta_shift(LeftQShift, PsiLeft.qshift());
-
-   for (StateComponent& I : HamLeftUC)
-      I = delta_shift(I, PsiLeft.qshift());
-}
-
-void
-IBC_TDVP::ExpandWindowRightUC()
-{
-   // Add the unit cell to the window.
-   auto CAdd = PsiRight.begin();
-   while (CAdd != PsiRight.end())
-   {
-      Psi.push_back(delta_shift(*CAdd, RightQShift));
-      ++CAdd;
-   }
-
-   // Change the rightmost index.
-   RightStop += PsiRight.size();
-   if (Comoving != 0)
-      LeftStop += PsiRight.size();
-
-   // Add the unit cell to the Hamiltonian.
-   std::vector<OperatorComponent> HamiltonianNew;
-   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianRight.data().begin(), HamiltonianRight.data().end());
-   HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
-   HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
-
-   // Add the unit cell to the Hamiltonian environment.
-   HamR.pop_back();
-   HamR.insert(HamR.end(), HamRightUC.begin(), HamRightUC.end());
-
-   // Reset iterators to previous location.
-   C = Psi.end();
-   H = HamiltonianWindow.end();
-   for (int i = RightStop; i >= Site; --i)
-      --C, --H;
-
-   // Shift the quantum number of the boundary unit cell.
-   RightQShift = delta_shift(RightQShift, adjoint(PsiRight.qshift()));
-
-   for (StateComponent& I : HamRightUC)
-      I = delta_shift(I, adjoint(PsiRight.qshift()));
-}
-
-void
-IBC_TDVP::ExpandWindowLeftSite()
+IBC_TDVP::ExpandWindowLeft()
 {
    --HLeft, --CLeft, --HamLeft;
 
@@ -373,17 +325,15 @@ IBC_TDVP::ExpandWindowLeftSite()
    Psi.push_front(delta_shift(*CLeft, LeftQShift));
 
    --Offset;
-   if (Comoving == 0)
-      --LeftStop;
    ++WindowLeftSites;
 
-   // Add the site's operator to the Hamiltonian.
+   // Add the site's MPO to the window MPO.
    std::vector<OperatorComponent> HamiltonianNew;
    HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
    HamiltonianNew.insert(HamiltonianNew.begin(), *HLeft);
    HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
-   // Add the site to the Hamiltonian environment.
+   // Add the site's E matrix to the deque.
    HamL.push_front(*HamLeft);
 
    // Reset iterators to previous location.
@@ -410,29 +360,26 @@ IBC_TDVP::ExpandWindowLeftSite()
 }
 
 void
-IBC_TDVP::ExpandWindowRightSite()
+IBC_TDVP::ExpandWindowRight()
 {
    // Add the site to the window.
    Psi.push_back(delta_shift(*CRight, RightQShift));
 
-   ++RightStop;
-   if (Comoving != 0)
-      ++LeftStop;
    ++WindowRightSites;
 
-   // Add the site's operator to the Hamiltonian.
+   // Add the site's MPO to the window MPO.
    std::vector<OperatorComponent> HamiltonianNew;
    HamiltonianNew.insert(HamiltonianNew.begin(), *HRight);
    HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
    HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
-   // Add the site to the Hamiltonian environment.
+   // Add the site's F matrix to the deque.
    HamR.push_back(*HamRight);
 
    // Reset iterators to previous location.
    C = Psi.end();
    H = HamiltonianWindow.end();
-   for (int i = RightStop; i >= Site; --i)
+   for (int i = Offset + Psi.size()-1; i >= Site; --i)
       --C, --H;
 
    ++HRight, ++CRight, ++HamRight;
@@ -453,99 +400,98 @@ IBC_TDVP::ExpandWindowRightSite()
    }
 }
 
-
 void
-IBC_TDVP::ExpandWindowLeft()
+IBC_TDVP::ExpandEvolutionWindowLeft()
 {
-   if (UCExpand)
-      this->ExpandWindowLeftUC();
-   else
-      this->ExpandWindowLeftSite();
-}
-void
-IBC_TDVP::ExpandWindowRight()
-{
-   if (UCExpand)
-      this->ExpandWindowRightUC();
-   else
-      this->ExpandWindowRightSite();
-}
+   PRECONDITION(Site == LeftStop);
 
-double
-IBC_TDVP::CalculateFidelityLossLeft()
-{
-   StateComponent CL;
-   if (CLeft == PsiLeft.end())
-      CL = delta_shift(PsiLeft[0], adjoint(PsiLeft.qshift()));
-   else
-      CL = *CLeft;
-   CL = delta_shift(CL, LeftQShift);
+   // Expand the window if needed.
+   while (LeftStop <= Offset + 1)
+      this->ExpandWindowLeft();
 
-   return 1.0 - norm_frob_sq(scalar_prod(herm(CL), *C));
-}
+   --LeftStop;
 
-double
-IBC_TDVP::CalculateFidelityLossRight()
-{
-   StateComponent CR;
-   if (CRight == PsiRight.begin())
-      CR = delta_shift(PsiRight.get_back(), PsiRight.qshift());
-   else
-   {
-      --CRight;
-      CR = *CRight;
-      ++CRight;
-   }
-   CR = delta_shift(CR, RightQShift);
-
-   return 1.0 - norm_frob_sq(scalar_prod(*C, herm(CR)));
-}
-
-double
-IBC_TDVP::CalculateLambdaDiffLeft()
-{
-   // Right-orthogonalize current site to find LambdaL.
+   // Obtain the left reference matrices.
+   // We need to incorporate Lambda into CRefLeft, so we get that first.
    StateComponent CRightOrtho = *C;
    MatrixOperator U;
    RealDiagonalOperator D;
 
    std::tie(U, D) = OrthogonalizeBasis1(CRightOrtho);
 
-   // Ensure that the left and right bases of LambdaL are the same.
-   MatrixOperator LambdaL = (U*D)*herm(U);
-
-   MatrixOperator LambdaLeft = PsiLeft.lambda(PsiLeft.size() - WindowLeftSites);
-   LambdaLeft = delta_shift(LambdaLeft, LeftQShift);
-
-   return norm_frob_sq(LambdaL - LambdaLeft);
+   --C;
+   CRefLeft = (*C)* U*D;
+   --C;
+   CRefLeft2 = *C;
+   ++C;
+   ++C;
 }
 
-double
-IBC_TDVP::CalculateLambdaDiffRight()
+void
+IBC_TDVP::ExpandEvolutionWindowRight()
 {
-   // Left-orthogonalize current site to find LambdaR.
+   PRECONDITION(Site == RightStop);
+
+   // Expand the window if needed.
+   while (RightStop >= Offset + Psi.size()-1 - 1)
+      this->ExpandWindowRight();
+
+   ++RightStop;
+
+   // For a comoving window, update LeftStop as well.
+   // NOTE: This will break CRefLeft(2), but we won't need them anyway,
+   // so it should be fine(?)
+   if (Comoving != 0)
+      ++LeftStop;
+
+   // Obtain the right reference matrices.
+   // We need to incorporate Lambda into CRefRight, so we get that first.
    StateComponent CLeftOrtho = *C;
    MatrixOperator Vh;
    RealDiagonalOperator D;
 
    std::tie(D, Vh) = OrthogonalizeBasis2(CLeftOrtho);
 
-   // Ensure that the left and right bases of LambdaR are the same.
-   MatrixOperator LambdaR = herm(Vh)*(D*Vh);
-
-   MatrixOperator LambdaRight = PsiRight.lambda(WindowRightSites);
-   LambdaRight = delta_shift(LambdaRight, RightQShift);
-
-   return norm_frob_sq(LambdaR - LambdaRight);
+   ++C;
+   CRefRight = D*Vh * (*C);
+   ++C;
+   CRefRight2 = *C;
+   --C;
+   --C;
 }
 
-// TODO: At the moment, the handling of expanding the bond at the edge of the
-// window is inefficient: we first evolve the leftmost site and then check if
-// we want to expand the window, and if we do, we unevolve the site, expand the
-// bond, then evolve again.
-// It would be better to try to expand the bond before evolving the leftmost
-// site, and if we do need to expand the bond, we can just expand the window as
-// well.
+double
+IBC_TDVP::CalculateFidelityLossLeft()
+{
+   --C;
+   MatrixOperator Result = scalar_prod(herm(CRefLeft2), *C);
+   ++C;
+   Result = operator_prod(herm(CRefLeft), Result, *C);
+
+   // The fidelity is given by the sum of singular values, so we calculate the SVD.
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Result, U, D, Vh);
+
+   return 1.0 - trace(D);
+}
+
+double
+IBC_TDVP::CalculateFidelityLossRight()
+{
+   ++C;
+   MatrixOperator Result = scalar_prod(*C, herm(CRefRight2));
+   --C;
+   Result = operator_prod(*C, Result, herm(CRefRight));
+
+   // The fidelity is given by the sum of singular values, so we calculate the SVD.
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecomposition(Result, U, D, Vh);
+
+   return 1.0 - trace(D);
+}
+
 void
 IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
 {
@@ -557,26 +503,26 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
       this->IterateLeft(Tau);
    }
 
-   StateComponent Tmp = *C;
+   if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+   {
+      // Add an extra site to the window if there isn't one.
+      // (This shouldn't be able to happen anyway(?), so this is here just in case.)
+      if (LeftStop == Offset)
+         this->ExpandWindowLeft();
+      this->ExpandLeft();
+   }
    this->EvolveCurrentSite(Tau);
 
+   // Expand the evolution window until the fidelity loss is below tolerance.
    double FidLoss = this->CalculateFidelityLossLeft();
-   double LambdaDiff = this->CalculateLambdaDiffLeft();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
+   while (FidLoss > FidTol)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossLeft=" << FidLoss
-                   << " LambdaDiffLeft=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
-      this->ExpandWindowLeft();
+      this->ExpandEvolutionWindowLeft();
 
-      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
-      {
-         *C = Tmp;
-         this->ExpandLeft();
-         this->EvolveCurrentSite(Tau);
-      }
       this->IterateLeft(Tau);
 
       while (Site > LeftStop)
@@ -587,16 +533,19 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
          this->IterateLeft(Tau);
       }
 
-      Tmp = *C;
+      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+      {
+         if (LeftStop == Offset)
+            this->ExpandWindowLeft();
+         this->ExpandLeft();
+      }
       this->EvolveCurrentSite(Tau);
 
       FidLoss = this->CalculateFidelityLossLeft();
-      LambdaDiff = this->CalculateLambdaDiffLeft();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossLeft=" << FidLoss
-                << " LambdaDiffLeft=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossLeft=" << FidLoss << std::endl;
 }
 
 void
@@ -610,26 +559,26 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
       this->IterateRight(Tau);
    }
 
-   StateComponent Tmp = *C;
+   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+   {
+      // Add an extra site to the window if there isn't one.
+      // (This shouldn't be able to happen anyway(?), so this is here just in case.)
+      if (RightStop == Offset + Psi.size()-1)
+         this->ExpandWindowRight();
+      this->ExpandRight();
+   }
    this->EvolveCurrentSite(Tau);
 
+   // Expand the evolution window until the fidelity loss is below tolerance.
    double FidLoss = this->CalculateFidelityLossRight();
-   double LambdaDiff = this->CalculateLambdaDiffRight();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
+   while (FidLoss > FidTol)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossRight=" << FidLoss
-                   << " LambdaDiffRight=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
-      this->ExpandWindowRight();
+      this->ExpandEvolutionWindowRight();
 
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
-      {
-         *C = Tmp;
-         this->ExpandRight();
-         this->EvolveCurrentSite(Tau);
-      }
       this->IterateRight(Tau);
 
       while (Site < RightStop)
@@ -640,24 +589,30 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
          this->IterateRight(Tau);
       }
 
-      Tmp = *C;
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      {
+         if (RightStop == Offset + Psi.size()-1)
+            this->ExpandWindowRight();
+         this->ExpandRight();
+      }
       this->EvolveCurrentSite(Tau);
 
       FidLoss = this->CalculateFidelityLossRight();
-      LambdaDiff = this->CalculateLambdaDiffRight();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss
-                << " LambdaDiffRight=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss << std::endl;
 }
 
 void
 IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
 {
-   StateComponent Tmp = *C;
+   // Add an extra site to the window if there isn't one.
+   // (This shouldn't be able to happen anyway(?), so this is here just in case.)
+   if (RightStop == Offset + Psi.size()-1)
+      this->ExpandWindowRight();
 
-   if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
@@ -665,30 +620,21 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
    while (Site < RightStop)
    {
       this->IterateRight(Tau);
-      Tmp = *C;
-      if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
    }
 
    double FidLoss = this->CalculateFidelityLossRight();
-   double LambdaDiff = this->CalculateLambdaDiffRight();
-   while (FidLoss > FidTol || LambdaDiff > LambdaTol)
+   while (FidLoss > FidTol)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossRight=" << FidLoss
-                   << " LambdaDiffRight=" << LambdaDiff
                    << ", expanding window..." << std::endl;
 
-      this->ExpandWindowRight();
+      this->ExpandEvolutionWindowRight();
 
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
-      {
-         *C = Tmp;
-         this->ExpandRight();
-         this->EvolveCurrentSite(Tau);
-      }
       this->IterateRight(Tau);
 
       while (Site < RightStop)
@@ -700,17 +646,20 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
          this->IterateRight(Tau);
       }
 
-      Tmp = *C;
+      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      {
+         if (RightStop == Offset + Psi.size()-1)
+            this->ExpandWindowRight();
+         this->ExpandRight();
+      }
       this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
 
       FidLoss = this->CalculateFidelityLossRight();
-      LambdaDiff = this->CalculateLambdaDiffRight();
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss
-                << " LambdaDiffRight=" << LambdaDiff << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss << std::endl;
 }
 
 void
@@ -723,9 +672,9 @@ IBC_TDVP::Evolve(bool Expand)
    std::vector<double>::const_iterator Alpha = Comp.Alpha.cbegin();
    std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
-   if (NExpand != 0 && Comoving == 0)
+   if (NExpand != 0)
       if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
+         this->ExpandEvolutionWindowRight();
 
    if (Comoving == 0)
       this->SweepLeftEW((*Alpha)*Timestep, Expand);
@@ -733,9 +682,9 @@ IBC_TDVP::Evolve(bool Expand)
       this->SweepLeft((*Alpha)*Timestep, Expand);
    ++Alpha;
 
-   if (NExpand != 0)
+   if (NExpand != 0 && Comoving == 0)
       if (TStep % NExpand == 0)
-         this->ExpandWindowRight();
+         this->ExpandEvolutionWindowLeft();
 
    while (Alpha != Comp.Alpha.cend())
    {
@@ -765,15 +714,36 @@ IBC_TDVP::Evolve2()
    std::vector<double>::const_iterator Beta = Comp.Beta.cbegin();
 
    if (NExpand != 0)
+   {
       if (TStep % NExpand == 0)
-         this->ExpandWindowLeft();
+      {
+         // Expand the window if needed.
+         while (RightStop >= Offset + Psi.size()-1 - 1)
+            this->ExpandWindowRight();
+
+         ++RightStop;
+
+         // For a comoving window, update LeftStop as well.
+         if (Comoving != 0)
+            ++LeftStop;
+      }
+   }
+
 
    this->SweepLeft2((*Alpha)*Timestep);
    ++Alpha;
 
-   if (NExpand != 0)
+   if (NExpand != 0 && Comoving == 0)
+   {
       if (TStep % NExpand == 0)
-         this->ExpandWindowRight();
+      {
+         // Expand the window if needed.
+         while (LeftStop <= Offset + 1)
+            this->ExpandWindowLeft();
+
+         --LeftStop;
+      }
+   }
 
    this->SweepRight2((*Beta)*Timestep);
    ++Beta;
