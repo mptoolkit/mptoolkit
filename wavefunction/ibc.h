@@ -46,6 +46,7 @@
 #include "infinitewavefunctionright.h"
 #include "canonicalwavefunction.h"
 #include "lattice/unitcell_mpo.h"
+#include "mp-algorithms/triangular_mpo_solver.h"
 
 // Note that Basis1(), Basis2() refer to the basis of the edge lambda matrices, NOT the LeftU.Basis1()
 // and RightU.Basis2() !
@@ -230,16 +231,19 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 // left/right semi-infinite boundaries respectively.
 std::tuple<StateComponent, StateComponent>
 get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
-                                   IBCWavefunction const& Psi2, int Verbose = 0);
+                                   IBCWavefunction const& Psi2, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                                   int Verbose = 0);
 
 // A more general function to calculate the overlap, which attempts to handle
 // the case where the left/right boundaries of Psi1 and Psi2 may be different
 // (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOP, IBCWavefunction const& Psi2, int Verbose = 0);
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOP, IBCWavefunction const& Psi2,
+        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
+        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,

@@ -34,8 +34,10 @@ double const TraceTol = 1e-8;
 void
 Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
 {
+   // Rho will only be null if the leading transfer matrix eigenvalue is below tolerance.
    if (Rho.is_null())
-      throw std::runtime_error("EFMatrix::CalculateTEVs: fatal: leading transfer matrix eigenvalue is below tolerance for diagonal element");
+      throw std::runtime_error("EFMatrix::CalculateTEVs: fatal: leading transfer matrix eigenvalue is below tolerance for diagonal element"
+                               " (you may need to increase --unityepsilon)");
 
    // Normalize by setting the sum of singular values of Rho to be 1.
    MatrixOperator U, Vh;

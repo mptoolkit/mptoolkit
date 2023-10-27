@@ -22,6 +22,10 @@
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/transfer.h"
 
+// The tolerance of the trace of the left/right boundary eigenvectors for
+// fixing the phase when calculating the overlap of two general IBCs.
+double const TraceTol = 1e-8;
+
 //
 // WavefunctionSectionLeft
 //
@@ -32,13 +36,6 @@
 // Base class CanonicalWavefunctionBase
 // LeftU
 // RightU
-
-// The tolerance for the left/right boundary overlaps for the overlap of two general IBCs.
-double const OverlapTol = 1e-8;
-
-// The tolerance of the trace of the left/right boundary eigenvectors for
-// fixing the phase when calculating the overlap of two general IBCs.
-double const TraceTol = 1e-8;
 
 PStream::VersionTag
 WavefunctionSectionLeft::VersionT(1);
@@ -581,7 +578,7 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 
 std::tuple<StateComponent, StateComponent>
 get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
-                                   IBCWavefunction const& Psi2, int Verbose)
+                                   IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
 {
    CHECK_EQUAL(Psi1.left().size(), Psi2.left().size());
    CHECK_EQUAL(Psi1.right().size(), Psi2.right().size());
@@ -618,8 +615,11 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    std::tie(OverlapL, EL, ER) = get_transfer_eigenpair(get_left_canonical(Psi1Left).first, get_left_canonical(Psi2Left).first, Psi1Left.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
-   if (std::abs(std::abs(OverlapL) - 1.0) > OverlapTol)
+   if (std::abs(std::abs(OverlapL) - 1.0) > UnityEpsilon)
       WARNING("The overlap of the left boundaries is below threshold.")(OverlapL)(std::abs(OverlapL));
+
+   // Normalize OverlapL.
+   OverlapL = OverlapL / std::abs(OverlapL);
 
    // Normalize EL s.t. the sum of the singular values of ER = 1.
    MatrixOperator U, Vh;
@@ -650,8 +650,11 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    std::tie(OverlapR, FL, FR) = get_transfer_eigenpair(get_right_canonical(Psi1Right).second, get_right_canonical(Psi2Right).second, Psi1Right.qshift(), StringOp);
 
    // Check that the eigenvalue has magnitude 1.
-   if (std::abs(std::abs(OverlapR) - 1.0) > OverlapTol)
+   if (std::abs(std::abs(OverlapR) - 1.0) > UnityEpsilon)
       WARNING("The overlap of the right boundaries is below threshold.")(OverlapR)(std::abs(OverlapR));
+
+   // Normalize OverlapR.
+   OverlapR = OverlapR / std::abs(OverlapR);
 
    // Normalize FR s.t. the sum of the singular values of FL = 1.
    SingularValueDecomposition(FL, U, D, Vh);
@@ -689,21 +692,26 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    else
       WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
 
+   // Compensate for the boundary contributions to the phase for the boundaries
+   // which have been incorporated into the window.
+   E *= std::pow(OverlapL, IndexLeft / LeftSize);
+   F *= std::pow(OverlapR, IndexRight / RightSize);
+
    return std::make_tuple(E, F);
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, int Verbose)
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
 {
    StateComponent E, F;
-   std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi1, StringOp, Psi2, Verbose);
+   std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi1, StringOp, Psi2, UnityEpsilon, Verbose);
    return overlap(Psi1, StringOp, Psi2, E, F, Verbose);
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose)
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
 {
-   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, Verbose);
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, UnityEpsilon, Verbose);
 }
 
 std::complex<double>

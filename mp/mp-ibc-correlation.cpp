@@ -68,6 +68,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool Conj = false;
       //bool Simple = false;
+      double UnityEpsilon = 1e-12;
       std::string String;
       ProductMPO StringOp;
 
@@ -115,6 +116,8 @@ int main(int argc, char** argv)
 	 ("xmax,x", prog_opt::value(&XMax), FormatDefault("Maximum value of x", XMax).c_str())
 	 ("ymax,y", prog_opt::value(&YMax), FormatDefault("Maximum value of y (requires --string)", YMax).c_str())
 	 ("ucsize", prog_opt::value(&UCSize), "Unit cell size [default left boundary unit cell size]")
+         ("unityepsilon", prog_opt::value(&UnityEpsilon),
+          FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -239,7 +242,7 @@ int main(int argc, char** argv)
       for (int y = 0; y <= YMax; ++y)
       {
          StateComponent E, F;
-         std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi2, *Op, Psi1, Verbose);
+         std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi2, *Op, Psi1, UnityEpsilon, Verbose);
          EVec.push_back(E);
          FVec.push_back(F);
 
