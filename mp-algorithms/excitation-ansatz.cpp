@@ -28,14 +28,14 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
            BasicTriangularMPO const& HamMPO_, EASettings const& Settings_)
    : PsiLeft(PsiLeft_), PsiRight(PsiRight_), HamMPO(HamMPO_),
      StringOp(Settings_.StringOp), GMRESTol(Settings_.GMRESTol),
-     UnityEpsilon(Settings_.UnityEpsilon), Alpha(Settings_.Alpha),
-     Verbose(Settings_.Verbose)
+     UnityEpsilon(Settings_.UnityEpsilon), kyFix(Settings_.kyFix),
+     Alpha(Settings_.Alpha), Verbose(Settings_.Verbose)
 {
    CHECK_EQUAL(PsiLeft.size(), PsiRight.size());
    CHECK_EQUAL(PsiLeft.qshift(), PsiRight.qshift());
 
    //this->SetK(Settings_.k); // We cannot use this method as it modifies EF, which hasn't been intialized yet.
-   ExpIK = exp(std::complex<double>(0.0, math_const::pi) * Settings_.k);
+   ExpIK = std::exp(std::complex<double>(0.0, math_const::pi) * Settings_.k);
    this->SetKY(Settings_.ky);
 
    // Ensure HamMPO is the correct size.
@@ -48,6 +48,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
    Settings.UnityEpsilon = UnityEpsilon;
    Settings.EAOptimization = true;
    Settings.SubtractEnergy = true;
+   Settings.PhaseWarnings = Settings_.PhaseWarnings;
    Settings.Verbose = Verbose;
 
    EF = EFMatrix(HamMPO, Settings);
@@ -65,6 +66,7 @@ HEff::HEff(InfiniteWavefunctionLeft const& PsiLeft_, InfiniteWavefunctionRight c
       EFMatrixSettings SettingsTy;
       SettingsTy.Tol = GMRESTol;
       SettingsTy.UnityEpsilon = UnityEpsilon;
+      SettingsTy.PhaseWarnings = Settings_.PhaseWarnings;
       SettingsTy.Verbose = Verbose;
 
       EFTy = EFMatrix(StringOp, SettingsTy);
@@ -138,7 +140,8 @@ HEff::Ty(std::deque<MatrixOperator> const& XDeque)
    EFTy.SetWUpper(1, BDeque);
    EFTy.SetWLower(1, BDeque);
 
-   return inner_prod(EFTy.GetRho({Infinity}, {Infinity}), EFTy.GetElement({Infinity}, {Infinity}).front()[1.0].coefficient(1));
+   return std::exp(std::complex<double>(0.0, -math_const::pi) * kyFix)
+      * inner_prod(EFTy.GetRho({Infinity}, {Infinity}), EFTy.GetElement({Infinity}, {Infinity}).front()[1.0].coefficient(1));
 }
 
 std::deque<StateComponent>
@@ -222,7 +225,7 @@ HEff::SetK(double k)
 void
 HEff::SetKY(double ky)
 {
-   ExpIKY = exp(std::complex<double>(0.0, math_const::pi) * ky);
+   ExpIKY = std::exp(std::complex<double>(0.0, math_const::pi) * (ky + kyFix));
 }
 
 PackHEff::PackHEff(HEff* H_)

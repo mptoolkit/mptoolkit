@@ -578,7 +578,7 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 
 std::tuple<StateComponent, StateComponent>
 get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
-                                   IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
+                                   IBCWavefunction const& Psi2, double UnityEpsilon, bool PhaseWarnings, int Verbose)
 {
    CHECK_EQUAL(Psi1.left().size(), Psi2.left().size());
    CHECK_EQUAL(Psi1.right().size(), Psi2.right().size());
@@ -616,7 +616,8 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
 
    // Check that the eigenvalue has magnitude 1.
    if (std::abs(std::abs(OverlapL) - 1.0) > UnityEpsilon)
-      WARNING("The overlap of the left boundaries is below threshold.")(OverlapL)(std::abs(OverlapL));
+      std::cerr << "warning: the overlap of the left boundaries is below threshold:"
+                   " 1-|Overlap| = " << 1.0 - std::abs(OverlapL) << std::endl;
 
    // Normalize OverlapL.
    OverlapL = OverlapL / std::abs(OverlapL);
@@ -651,7 +652,8 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
 
    // Check that the eigenvalue has magnitude 1.
    if (std::abs(std::abs(OverlapR) - 1.0) > UnityEpsilon)
-      WARNING("The overlap of the right boundaries is below threshold.")(OverlapR)(std::abs(OverlapR));
+      std::cerr << "warning: the overlap of the right boundaries is below threshold:"
+                   " 1-|Overlap| = " << 1.0 - std::abs(OverlapR) << std::endl;
 
    // Normalize OverlapR.
    OverlapR = OverlapR / std::abs(OverlapR);
@@ -672,25 +674,27 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
    // matrices will have the same global phase: calculations using different
    // boundary transfer matrices may end up having a nontrivial global phase
    // shift.
-   // TODO: Figure out a better method to fix the phase.
    if (E.Basis1() == E.Basis2() && F.Basis1() == F.Basis2() && E.size() == 1 && F.size() == 1)
    {
       std::complex<double> ETrace = trace(E.front());
 
       if (std::abs(ETrace) > TraceTol)
          E *= std::conj(ETrace) / std::abs(ETrace);
-      else
-         WARNING("The trace of E is below threshold, so the overlap will have a spurious phase contribution.")(ETrace);
+      else if (PhaseWarnings)
+         std::cerr << "warning: the trace of the left transfer matrix eigenvector is below threshold,"
+                      " so the overlap will have a spurious phase contribution." << std::endl;
 
       std::complex<double> FTrace = trace(F.front());
 
       if (std::abs(FTrace) > TraceTol)
          F *= std::conj(FTrace) / std::abs(FTrace);
-      else
-         WARNING("The trace of F is below threshold, so the overlap will have a spurious phase contribution.")(FTrace);
+      else if (PhaseWarnings)
+         std::cerr << "warning: the trace of the right transfer matrix eigenvector is below threshold,"
+                      " so the overlap will have a spurious phase contribution." << std::endl;
    }
-   else
-      WARNING("Psi1 and Psi2 have different boundary bases, so the overlap will have a spurious phase contribution.");
+   else if (PhaseWarnings)
+      std::cerr << "warning: psi1 and psi2 have different unit cell boundary bases,"
+                   " so the overlap will have a spurious phase contribution." << std::endl;
 
    // Compensate for the boundary contributions to the phase for the boundaries
    // which have been incorporated into the window.
@@ -701,17 +705,17 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2, double UnityEpsilon, bool PhaseWarnings, int Verbose)
 {
    StateComponent E, F;
-   std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi1, StringOp, Psi2, UnityEpsilon, Verbose);
+   std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi1, StringOp, Psi2, UnityEpsilon, PhaseWarnings, Verbose);
    return overlap(Psi1, StringOp, Psi2, E, F, Verbose);
 }
 
 std::complex<double>
-overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, double UnityEpsilon, int Verbose)
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, double UnityEpsilon, bool PhaseWarnings, int Verbose)
 {
-   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, UnityEpsilon, Verbose);
+   return overlap(Psi1, ProductMPO::make_identity(ExtractLocalBasis(Psi2.left())), Psi2, UnityEpsilon, PhaseWarnings, Verbose);
 }
 
 std::complex<double>

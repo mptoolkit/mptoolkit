@@ -68,6 +68,8 @@ struct EFMatrixSettings
    bool NeedFinalMatrix = true;
    bool EAOptimization = false;
    bool SubtractEnergy = false;
+   // Print a warning if we cannot automatically fix the phase of the TEVs.
+   bool PhaseWarnings = true;
    int Verbose = 0;
 };
 
@@ -245,6 +247,7 @@ class EFMatrix
       bool NeedFinalMatrix;
       bool EAOptimization;
       bool SubtractEnergy;
+      bool PhaseWarnings;
       int Verbose;
 
       std::map<CornerIndex, LinearWavefunction> PsiUpper, PsiLower;

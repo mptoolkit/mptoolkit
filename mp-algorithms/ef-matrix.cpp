@@ -32,7 +32,7 @@ double const TraceTol = 1e-8;
 // expectation value has the correct magnitude and to remove any spurious phase
 // due to the eigensolver.
 void
-Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
+Normalize(MatrixOperator& Rho, MatrixOperator& Ident, bool PhaseWarnings = true)
 {
    // Rho will only be null if the leading transfer matrix eigenvalue is below tolerance.
    if (Rho.is_null())
@@ -54,7 +54,7 @@ Normalize(MatrixOperator& Rho, MatrixOperator& Ident)
       Ident *= ConjPhase;
       Rho *= ConjPhase;
    }
-   else
+   else if (PhaseWarnings)
       std::cerr << "EFMatrix: warning: the trace of Ident is below threshold,"
                    " so the results will have a spurious phase contribution." << std::endl;
 }
@@ -191,7 +191,7 @@ EFMatrix::EFMatrix(InfiniteMPO Op_, EFMatrixSettings Settings)
      Degree(Settings.Degree), Tol(Settings.Tol),
      UnityEpsilon(Settings.UnityEpsilon), NeedFinalMatrix(Settings.NeedFinalMatrix),
      EAOptimization(Settings.EAOptimization), SubtractEnergy(Settings.SubtractEnergy),
-     Verbose(Settings.Verbose)
+     PhaseWarnings(Settings.PhaseWarnings), Verbose(Settings.Verbose)
 {
    // Set default values of IMax and JMax.
    IMax[EAIndex(NUpper, 1)] = 1;
@@ -700,11 +700,11 @@ EFMatrix::CalculateTEVs(CornerIndex i, CornerIndex j)
 
    // Special normalization for the first transfer matrix.
    if (i == CornerIndex(NUpper, 0) && j == CornerIndex(NLower, 0))
-      Normalize(TRight[std::make_pair(i, j)], TLeft[std::make_pair(i, j)]);
+      Normalize(TRight[std::make_pair(i, j)], TLeft[std::make_pair(i, j)], PhaseWarnings);
 
    // Special normalization for the final transfer matrix.
    if (i == CornerIndex(NUpper, Infinity) && j == CornerIndex(NLower, Infinity))
-      Normalize(TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)]);
+      Normalize(TLeft[std::make_pair(i, j)], TRight[std::make_pair(i, j)], PhaseWarnings);
 
    TCalculated[std::make_pair(i, j)] = true;
 }

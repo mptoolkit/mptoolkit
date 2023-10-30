@@ -33,9 +33,11 @@ struct EASettings
    ProductMPO StringOp;
    double k = 0.0;
    double ky = 0.0;
+   double kyFix = 0.0;
    double GMRESTol = 1e-13;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
    double Alpha = 5.0;
+   bool PhaseWarnings = true;
    int Verbose = 0;
 };
 
@@ -93,6 +95,8 @@ class HEff
       int Verbose;
       std::complex<double> ExpIK;
       std::complex<double> ExpIKY = 0.0;
+      // Fix ky by subtracting this value.
+      std::complex<double> kyFix = 0.0;
       // Parameter to penalize states with the wrong y-momentum.
       double Alpha;
 

@@ -94,6 +94,7 @@ int main(int argc, char** argv)
       bool ShowAll = false;
       bool String = false;
       bool Overlap = false;
+      double PhaseFix = 0.0;
       std::string InputFilename;
       std::string InputFilename2;
       std::string OpStr;
@@ -142,6 +143,8 @@ int main(int argc, char** argv)
           FormatDefault("Linear solver convergence tolerance", Settings.Tol).c_str())
          ("unityepsilon", prog_opt::value(&Settings.UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
+         ("phasefix", prog_opt::value(&PhaseFix),
+          "Fix the output phase by subtracting this value")
          ("right", prog_opt::bool_switch(&Right), "Calculate the moments in the opposite direction")
          ("showall", prog_opt::bool_switch(&ShowAll), "Show all columns of the fixed-point solutions (mostly for debugging)")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
@@ -199,6 +202,14 @@ int main(int argc, char** argv)
       }
       if (ShowRadians)
          ShowArgument = true;
+
+      // Change the phase fix to radians if we are using degrees.
+      if (!ShowRadians)
+         PhaseFix *= math_const::pi / 180.0;
+
+      std::complex<double> PhaseShift = std::exp(std::complex<double>(0.0, -1.0) * PhaseFix);
+
+      Settings.PhaseWarnings = !vm.count("phasefix");
 
       // If neither of --cumulants or --moments are specified, then the default is to calculate moments
       if (!CalculateMoments && !CalculateCumulants)
@@ -414,7 +425,7 @@ int main(int argc, char** argv)
             if (!CalculateMoments)
             {
                std::cout << std::setw(9) << Cumulants.size() << " ";
-               PrintFormat(Cumulants.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
+               PrintFormat(PhaseShift * Cumulants.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
                            ShowArgument, ShowRadians);
             }
          }
@@ -455,7 +466,7 @@ int main(int argc, char** argv)
                                                   * std::pow(ScaleFactor, double(E.first-1));
                            if (Right)
                               x = std::conj(x);
-                           PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
+                           PrintFormat(PhaseShift * x, ShowRealPart, ShowImagPart, ShowMagnitude,
                                        ShowArgument, ShowRadians);
                         }
                      }
@@ -473,7 +484,7 @@ int main(int argc, char** argv)
                std::complex<double> x = I.second * std::pow(ScaleFactor, double(I.first-1));
                if (Right)
                   x = std::conj(x);
-               PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude,
+               PrintFormat(PhaseShift * x, ShowRealPart, ShowImagPart, ShowMagnitude,
                            ShowArgument, ShowRadians);
             }
          }
@@ -481,7 +492,7 @@ int main(int argc, char** argv)
          {
             // Print the moment.
             std::cout << std::setw(7) << Moments.size() << " ";
-            PrintFormat(Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
+            PrintFormat(PhaseShift * Moments.back(), ShowRealPart, ShowImagPart, ShowMagnitude,
                         ShowArgument, ShowRadians);
          }
       }
@@ -498,7 +509,7 @@ int main(int argc, char** argv)
          for (int i = 0; i < Cumulants.size(); ++i)
          {
             std::cout << std::setw(9) << i << " ";
-            PrintFormat(Cumulants[i], ShowRealPart, ShowImagPart, ShowMagnitude,
+            PrintFormat(PhaseShift * Cumulants[i], ShowRealPart, ShowImagPart, ShowMagnitude,
                         ShowArgument, ShowRadians);
          }
       }

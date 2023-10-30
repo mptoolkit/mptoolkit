@@ -69,6 +69,7 @@ int main(int argc, char** argv)
       bool Conj = false;
       //bool Simple = false;
       double UnityEpsilon = 1e-12;
+      double PhaseFix = 0.0;
       std::string String;
       ProductMPO StringOp;
 
@@ -118,6 +119,8 @@ int main(int argc, char** argv)
 	 ("ucsize", prog_opt::value(&UCSize), "Unit cell size [default left boundary unit cell size]")
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
+         ("phasefix", prog_opt::value(&PhaseFix),
+          "Fix the output phase by subtracting this value")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -169,6 +172,10 @@ int main(int argc, char** argv)
       }
       if (ShowRadians)
          ShowArgument = true;
+
+      // Change the phase fix to radians if we are using degrees.
+      if (!ShowRadians)
+         PhaseFix *= math_const::pi / 180.0;
 
       std::complex<double> Timestep = 0.0;
 
@@ -242,7 +249,7 @@ int main(int argc, char** argv)
       for (int y = 0; y <= YMax; ++y)
       {
          StateComponent E, F;
-         std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi2, *Op, Psi1, UnityEpsilon, Verbose);
+         std::tie(E, F) = get_boundary_transfer_eigenvectors(Psi2, *Op, Psi1, UnityEpsilon, !vm.count("phasefix"), Verbose);
          EVec.push_back(E);
          FVec.push_back(F);
 
@@ -250,7 +257,7 @@ int main(int argc, char** argv)
          // TODO: Here we assume that the phases for the x = t = 0 overlaps
          // should all be 0: this may not be the case, and we need to get the
          // correct phases from somewhere.
-         PhaseFactorVec.push_back(std::abs(Overlap) / Overlap);
+         PhaseFactorVec.push_back(std::exp(std::complex<double>(0.0, -1.0) * PhaseFix) * std::abs(Overlap) / Overlap);
 
          ++Op;
       }

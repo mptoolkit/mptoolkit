@@ -229,21 +229,23 @@ overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Ver
 
 // Find the left/right eigenvectors of the mixed transfer matrices of the
 // left/right semi-infinite boundaries respectively.
+// PhaseWarnings controls whether to print warnings if the tool cannot
+// automatically fix the phase of the eigenvectors.
 std::tuple<StateComponent, StateComponent>
 get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
                                    IBCWavefunction const& Psi2, double UnityEpsilon = DefaultEigenUnityEpsilon,
-                                   int Verbose = 0);
+                                   bool PhaseWarnings = true, int Verbose = 0);
 
 // A more general function to calculate the overlap, which attempts to handle
 // the case where the left/right boundaries of Psi1 and Psi2 may be different
 // (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOP, IBCWavefunction const& Psi2,
-        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+        double UnityEpsilon = DefaultEigenUnityEpsilon, bool PhaseWarnings = true, int Verbose = 0);
 
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
-        double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+        double UnityEpsilon = DefaultEigenUnityEpsilon, bool PhaseWarnings = true, int Verbose = 0);
 
 std::complex<double>
 overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,

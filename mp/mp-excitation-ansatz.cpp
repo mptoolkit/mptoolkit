@@ -66,6 +66,7 @@ int main(int argc, char** argv)
          ("momentum,k", prog_opt::value(&KStr), FormatDefault("The momentum, in units of pi: this can be a single number, or a range of the form start:end:step or start:end,num", KStr).c_str())
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Override the lattice unit cell size")
          ("ky", prog_opt::value(&Settings.ky), "Target this value of the y-momentum [2D cylinders]")
+         ("kyfix", prog_opt::value(&Settings.kyFix), "Fix ky by subtracting this value [2D cylinders]")
          ("alpha", prog_opt::value(&Settings.Alpha), FormatDefault("Energy parameter to penalize states with the wrong y-momentum [2D Cylinders]", Settings.Alpha).c_str())
          ("numeigen,n", prog_opt::value<int>(&NumEigen),
           FormatDefault("The number of lowest eigenvalues to calculate", NumEigen).c_str())
@@ -245,6 +246,9 @@ int main(int argc, char** argv)
       // Turn off momentum targeting if ky is unspecified.
       if (vm.count("ky") == 0)
          Settings.Alpha = 0.0;
+
+      // Hide warnings about spurious phases if we set the kyfix option.
+      Settings.PhaseWarnings = !vm.count("kyfix");
 
       // Initialize the effective Hamiltonian.
       HEff H(PsiLeft, PsiRight, HamMPO, Settings);

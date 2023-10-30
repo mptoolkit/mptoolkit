@@ -71,6 +71,7 @@ int main(int argc, char** argv)
       bool Conj = false;
       bool Simple = false;
       double UnityEpsilon = 1e-12;
+      double PhaseFix = 0.0;
       std::string String;
       ProductMPO StringOp;
 
@@ -103,6 +104,8 @@ int main(int argc, char** argv)
           "Calculate the overlap with this string MPO")
          ("unityepsilon", prog_opt::value(&UnityEpsilon),
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
+         ("phasefix", prog_opt::value(&PhaseFix),
+          "Fix the output phase by subtracting this value")
          ("quiet", prog_opt::bool_switch(&Quiet),
           "Don't show the column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
@@ -163,6 +166,10 @@ int main(int argc, char** argv)
       }
       if (ShowRadians)
          ShowArgument = true;
+
+      // Change the phase fix to radians if we are using degrees.
+      if (!ShowRadians)
+         PhaseFix *= math_const::pi / 180.0;
 
       if (Verbose)
          std::cout << "Loading LHS wavefunction..." << std::endl;
@@ -246,7 +253,9 @@ int main(int argc, char** argv)
       if (Simple)
          x = overlap_simple(Psi1, Psi2, Verbose);
       else
-         x = overlap(Psi1, StringOp, Psi2, UnityEpsilon, Verbose);
+         x = overlap(Psi1, StringOp, Psi2, UnityEpsilon, !vm.count("phasefix"), Verbose);
+
+      x *= std::exp(std::complex<double>(0.0, -1.0) * PhaseFix);
 
       PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
 
