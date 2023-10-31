@@ -59,6 +59,9 @@ int main(int argc, char** argv)
          ("H_J1x"  , "nearest neighbor spin exchange in the x direction")
          ("H_J1y"  , "nearest neighbor spin exchange in the y direction")
          ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
+         ("H_J2d"  , "next-nearest neighbor spin exchange in the diagonal (0,0) - (1,1) direction")
+         ("H_J2a"  , "next-nearest neighbor spin exchange in the antidiagonal (0,1) - (1,0) direction")
+         ("H_J2"   , "next-nearest neighbor spin exchange H_J1a + H_J2d")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -80,7 +83,7 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator S(Cell, "S");
 
-      UnitCellMPO J1x, J1y;
+      UnitCellMPO J1x, J1y, J2d, J2a;
       // the XY configuration is special
       if (x == 0)
       {
@@ -88,6 +91,8 @@ int main(int argc, char** argv)
          {
             J1x += inner(S(0)[i], S(1)[i]);
             J1y += inner(S(0)[i], S(0)[(i+1)%y]);
+            J2d += inner(S(0)[i], S(1)[(i+1)%y]);
+            J2a += inner(S(0)[(i+1)%y], S(1)[i]);
          }
       }
       else
@@ -95,17 +100,24 @@ int main(int argc, char** argv)
          for (int i = 0; i < x-1; ++i)
          {
             J1x += inner(S(0)[i], S(0)[i+1]);
+            J2d += inner(S(0)[i], S(1)[i+1]);
          }
          J1x += inner(S(0)[x-1], S(y+1)[0]);
+         J1x += inner(S(0)[x-1], S(y+1)[0]);
+         J2d += inner(S(0)[x-1], S(y+2)[0]);
          for (int i = 0; i < x; ++i)
          {
             J1y += inner(S(0)[i], S(1)[i]);
+            J2a += inner(S(0)[(i+1)%x], S(1)[i]);
          }
       }
 
       Lattice["H_J1x"] = sum_unit(J1x);
       Lattice["H_J1y"] = sum_unit(J1y);
       Lattice["H_J1"] = sum_unit(J1x+J1y);
+      Lattice["H_J2d"] = sum_unit(J2d);
+      Lattice["H_J2a"] = sum_unit(J2a);
+      Lattice["H_J2"] = sum_unit(J2d+J2a);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
