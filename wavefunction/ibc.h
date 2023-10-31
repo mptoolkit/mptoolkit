@@ -45,6 +45,8 @@
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"
 #include "canonicalwavefunction.h"
+#include "lattice/unitcell_mpo.h"
+#include "mp-algorithms/triangular_mpo_solver.h"
 
 // Note that Basis1(), Basis2() refer to the basis of the edge lambda matrices, NOT the LeftU.Basis1()
 // and RightU.Basis2() !
@@ -121,6 +123,15 @@ class IBCWavefunction
                       int WindowLeft = 0,
                       int WindowRight = 0);
 
+      IBCWavefunction(InfiniteWavefunctionLeft const& Left_,
+                      WavefunctionSectionLeft const& Window_,
+                      InfiniteWavefunctionRight const& Right_,
+                      QuantumNumber LeftQShift_,
+                      QuantumNumber RightQShift_,
+                      int Offset = 0,
+                      int WindowLeft = 0,
+                      int WindowRight = 0);
+
       SymmetryList GetSymmetryList() const { return Window.GetSymmetryList(); }
 
       int window_size() const { return Window.size(); }
@@ -138,6 +149,9 @@ class IBCWavefunction
       InfiniteWavefunctionLeft const& left() const { return Left; }
       WavefunctionSectionLeft const& window() const { return Window; }
       InfiniteWavefunctionRight const& right() const { return Right; }
+
+      QuantumNumber const left_qshift() const { return LeftQShift; }
+      QuantumNumber const right_qshift() const { return RightQShift; }
 
       void SetDefaultAttributes(AttributeList& A) const;
 
@@ -167,6 +181,11 @@ class IBCWavefunction
       InfiniteWavefunctionLeft Left;
       WavefunctionSectionLeft Window;
       InfiniteWavefunctionRight Right;
+
+      // If we need to shift the left and right boundaries, we save the qshift
+      // separately so we can keep the boundary wavefunctions read-only.
+      QuantumNumber LeftQShift;
+      QuantumNumber RightQShift;
 
       friend void inplace_reflect(IBCWavefunction& Psi);
       friend void inplace_conj(IBCWavefunction& Psi);
@@ -198,5 +217,42 @@ WavefunctionSectionLeft::debug_check_structure() const
    this->check_structure();
 #endif
 }
+
+// TODO: Add a function to handle mixed expectation values.
+std::complex<double>
+expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose = 0);
+
+// Calculates the overlap of two IBC wavefunctions assuming that they have the
+// same semi-infinite boundaries.
+std::complex<double>
+overlap_simple(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2, int Verbose = 0);
+
+// Find the left/right eigenvectors of the mixed transfer matrices of the
+// left/right semi-infinite boundaries respectively.
+// PhaseWarnings controls whether to print warnings if the tool cannot
+// automatically fix the phase of the eigenvectors.
+std::tuple<StateComponent, StateComponent>
+get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const& StringOp,
+                                   IBCWavefunction const& Psi2, double UnityEpsilon = DefaultEigenUnityEpsilon,
+                                   bool PhaseWarnings = true, int Verbose = 0);
+
+// A more general function to calculate the overlap, which attempts to handle
+// the case where the left/right boundaries of Psi1 and Psi2 may be different
+// (e.g. if Psi2's boundaries are the complex conjugate of Psi1's).
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOP, IBCWavefunction const& Psi2,
+        double UnityEpsilon = DefaultEigenUnityEpsilon, bool PhaseWarnings = true, int Verbose = 0);
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
+        double UnityEpsilon = DefaultEigenUnityEpsilon, bool PhaseWarnings = true, int Verbose = 0);
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, ProductMPO const& StringOp, IBCWavefunction const& Psi2,
+        StateComponent const& E, StateComponent const& F, int Verbose = 0);
+
+std::complex<double>
+overlap(IBCWavefunction const& Psi1, IBCWavefunction const& Psi2,
+        StateComponent const& E, StateComponent const& F, int Verbose = 0);
 
 #endif

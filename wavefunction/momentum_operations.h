@@ -138,6 +138,12 @@ contract_from_left(OperatorComponent const& M,
                    std::vector<KMatrixPolyType> const& E,
                    StateComponent const& B);
 
+std::vector<KMatrixPolyType>
+contract_from_right(HermitianProxy<OperatorComponent> const& M,
+                    StateComponent const& A,
+                    std::vector<KMatrixPolyType> const& F,
+                    HermitianProxy<StateComponent> const& B);
+
 template <typename EType>
 std::vector<EType>
 contract_from_left_mask(OperatorComponent const& M,
@@ -150,11 +156,11 @@ contract_from_left_mask(OperatorComponent const& M,
 template <typename EType>
 std::vector<EType>
 contract_from_right_mask(HermitianProxy<OperatorComponent> const& M,
-                        StateComponent const& A,
-                        std::vector<EType> const& F,
-                        HermitianProxy<StateComponent> const& B,
-                        std::vector<int> const& OutMask,
-                        std::vector<int> const& InMask);
+                         StateComponent const& A,
+                         std::vector<EType> const& F,
+                         HermitianProxy<StateComponent> const& B,
+                         std::vector<int> const& OutMask,
+                         std::vector<int> const& InMask);
 
 std::vector<KMatrixPolyType>
 inject_left(std::vector<KMatrixPolyType> const& In,
@@ -172,11 +178,11 @@ inject_left_mask(std::vector<MatrixPolyType> const& In,
 
 std::vector<MatrixPolyType>
 inject_right_mask(std::vector<MatrixPolyType> const& In,
-                 LinearWavefunction const& Psi1,
-                 QuantumNumber const& QShift,
-                 GenericMPO const& Op,
-                 LinearWavefunction const& Psi2,
-                 std::vector<std::vector<int>> const& Mask);
+                  LinearWavefunction const& Psi1,
+                  QuantumNumber const& QShift,
+                  GenericMPO const& Op,
+                  LinearWavefunction const& Psi2,
+                  std::vector<std::vector<int>> const& Mask);
 
 std::vector<KMatrixPolyType>
 inject_left_mask(std::vector<KMatrixPolyType> const& In,
@@ -188,11 +194,11 @@ inject_left_mask(std::vector<KMatrixPolyType> const& In,
 
 std::vector<KMatrixPolyType>
 inject_right_mask(std::vector<KMatrixPolyType> const& In,
-                 LinearWavefunction const& Psi1,
-                 QuantumNumber const& QShift,
-                 GenericMPO const& Op,
-                 LinearWavefunction const& Psi2,
-                 std::vector<std::vector<int>> const& Mask);
+                  LinearWavefunction const& Psi1,
+                  QuantumNumber const& QShift,
+                  GenericMPO const& Op,
+                  LinearWavefunction const& Psi2,
+                  std::vector<std::vector<int>> const& Mask);
 
 //
 // implementation

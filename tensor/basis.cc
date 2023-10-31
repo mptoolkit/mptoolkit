@@ -148,6 +148,16 @@ VectorBasis::VectorBasis(FwdIter first, FwdIter last)
      Dimension_(boost::make_transform_iterator(first, select2nd_from_iter<FwdIter>()),
                 boost::make_transform_iterator(last, select2nd_from_iter<FwdIter>()))
 {
+   DEBUG_CHECK(first != last)("The list must be non-empty");
+}
+
+template <typename FwdIter>
+VectorBasis::VectorBasis(QuantumNumbers::SymmetryList const& S, FwdIter first, FwdIter last)
+   : Basis_(S, boost::make_transform_iterator(first, select1st_from_iter<FwdIter>()),
+            boost::make_transform_iterator(last, select1st_from_iter<FwdIter>())),
+     Dimension_(boost::make_transform_iterator(first, select2nd_from_iter<FwdIter>()),
+                boost::make_transform_iterator(last, select2nd_from_iter<FwdIter>()))
+{
 }
 
 inline

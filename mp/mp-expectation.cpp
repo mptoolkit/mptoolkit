@@ -193,6 +193,18 @@ int main(int argc, char** argv)
 
          x = expectation(Psi, Op.MPO(), Psi2);
       }
+      else if (PsiPtr->is<IBCWavefunction>())
+      {
+         if (vm.count("psi2"))
+         {
+            std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value of IBC wavefunctions.\n";
+            return 1;
+         }
+
+         IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
+
+         x = expectation(Psi, Op, Verbose);
+      }
       else
       {
          std::cerr << "mp-expectation: fatal: unsupported wavefunction type.\n";

@@ -27,6 +27,7 @@
 #include "infinitewavefunctionleft.h"
 #include "infinitewavefunctionright.h"
 #include "ibc.h"
+#include "ea.h"
 #include "finitewavefunctionleft.h"
 #include <boost/variant.hpp>
 #include "pstream/pstream.h"
@@ -37,7 +38,8 @@
 typedef boost::variant<InfiniteWavefunctionLeft,
                        IBCWavefunction,
                        FiniteWavefunctionLeft,
-                       InfiniteWavefunctionRight> WavefunctionTypes;
+                       InfiniteWavefunctionRight,
+                       EAWavefunction> WavefunctionTypes;
 
 class InvalidWavefunction : public std::runtime_error
 {

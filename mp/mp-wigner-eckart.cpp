@@ -155,12 +155,39 @@ wigner_project(WavefunctionSectionLeft const& Psi, SymmetryList const& FinalSL)
 IBCWavefunction
 wigner_project(IBCWavefunction const& Psi, SymmetryList const& FinalSL)
 {
+   QuantumNumber LeftQShift = map_projection_to_quantum(enumerate_projections(Psi.left_qshift())[0], FinalSL);
+   QuantumNumber RightQShift = map_projection_to_quantum(enumerate_projections(Psi.right_qshift())[0], FinalSL);
+
    return IBCWavefunction(wigner_project(Psi.left(), FinalSL),
                           wigner_project(Psi.window(), FinalSL),
                           wigner_project(Psi.right(), FinalSL),
+                          LeftQShift,
+                          RightQShift,
                           Psi.window_offset(),
                           Psi.window_left_sites(),
                           Psi.window_right_sites());
+}
+
+EAWavefunction
+wigner_project(EAWavefunction const& Psi, SymmetryList const& FinalSL)
+{
+   QuantumNumber LeftQShift = map_projection_to_quantum(enumerate_projections(Psi.left_qshift())[0], FinalSL);
+   QuantumNumber RightQShift = map_projection_to_quantum(enumerate_projections(Psi.right_qshift())[0], FinalSL);
+
+   std::vector<WavefunctionSectionLeft> WindowVec = Psi.window_vec();
+
+   for (auto& Window : WindowVec)
+      Window = wigner_project(Window, FinalSL);
+
+   return EAWavefunction(wigner_project(Psi.left(), FinalSL),
+                         WindowVec,
+                         wigner_project(Psi.right(), FinalSL),
+                         LeftQShift,
+                         RightQShift,
+                         Psi.left_index(),
+                         Psi.right_index(),
+                         Psi.exp_ik(),
+                         Psi.gs_overlap());
 }
 
 FiniteWavefunctionLeft
