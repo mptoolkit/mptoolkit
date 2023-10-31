@@ -460,7 +460,6 @@ left_orthogonalize(LinearWavefunction& Psi, int Verbose)
 MatrixOperator
 right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
 {
-   LinearWavefunction Result(Psi.GetSymmetryList());
    LinearWavefunction::iterator Pi = Psi.end();
    int n = Psi.size();
    while (Pi != Psi.begin())

@@ -139,7 +139,6 @@ WavefunctionSectionLeft::ConstructFromLeftOrthogonal(LinearWavefunction&& Psi,
    if (Verbose > 0)
       std::cout << "Constructing left ortho matrices..." << std::endl;
 
-
    int n = 0;
    while (!Psi.empty())
    {
