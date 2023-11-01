@@ -170,6 +170,15 @@ VectorBasis::VectorBasis(SymmetryList const& sl, FwdIter first, FwdIter last)
 {
 }
 
+template <typename FwdIter>
+VectorBasis::VectorBasis(SymmetryList const& sl, FwdIter first, FwdIter last)
+   : Basis_(sl, boost::make_transform_iterator(first, select1st_from_iter<FwdIter>()),
+            boost::make_transform_iterator(last, select1st_from_iter<FwdIter>())),
+     Dimension_(boost::make_transform_iterator(first, select2nd_from_iter<FwdIter>()),
+                boost::make_transform_iterator(last, select2nd_from_iter<FwdIter>()))
+{
+}
+
 inline
 void VectorBasis::push_back(QuantumNumber const& q, int Dimension)
 {
