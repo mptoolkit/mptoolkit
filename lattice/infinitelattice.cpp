@@ -593,8 +593,6 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
       if (i != int(UnitCellSize)-1)
          JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
 
-      DEBUG_TRACE(Basis1)(Basis2)(SplitOp.size());
-
       // Construct the OperatorComponent
       OperatorComponent C(Op[i].LocalBasis1(), Op[i].LocalBasis2(), Basis1, Basis2);
 
@@ -623,8 +621,6 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
       // check that we're at the end
       CHECK_EQUAL(r+Ident[i%SiteList.size()].Basis1().size(), Basis1.size());
       CHECK_EQUAL(c+Ident[i%SiteList.size()].Basis2().size(), Basis2.size());
-
-      DEBUG_TRACE(C);
 
       C.debug_check_structure();
 

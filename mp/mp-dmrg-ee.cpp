@@ -50,7 +50,7 @@ namespace prog_opt = boost::program_options;
 bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
 std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
 
-void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum)
+void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -63,7 +63,8 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
          EnvStates = dmrg.ExpandRightEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
-      TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo);
+      int Delta = SInfo.MaxStates*DeltaFactor;
+      TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
@@ -81,7 +82,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum)
+void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -95,7 +96,8 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraSt
          EnvStates = dmrg.ExpandLeftEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
-      TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo);
+      int Delta = SInfo.MaxStates*DeltaFactor;
+      TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
@@ -142,6 +144,8 @@ int main(int argc, char** argv)
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       std::string States = "100";
       double EvolveDelta = 0.0;
+      int Delta = 0;
+      double DeltaFactor = 0.0;
 
       std::cout.precision(14);
 
@@ -166,6 +170,7 @@ int main(int argc, char** argv)
           ("env-states", prog_opt::value(&EnvStates), FormatDefault("Minimum number of additional environment states to keep, set to -1 to disable environment expansion completely", EnvStates).c_str())
          ("env-states-per-sector", prog_opt::value(&EnvStatesPerSector), FormatDefault("Minimum number of additional environment states in each quantum number sector", EnvStatesPerSector).c_str())
          ("env-states-factor", prog_opt::value(&EnvStatesFactor), FormatDefault("Expand the environment by this factor (must be >= 1)", EnvStatesFactor).c_str())
+         ("delta", prog_opt::value(&DeltaFactor), FormatDefault("Expand the system by this factor", DeltaFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -293,9 +298,9 @@ int main(int argc, char** argv)
       {
          SInfo.MaxStates = MyStates[Sweeps].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1);
+            SweepLeft(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1, DeltaFactor);
          else
-            SweepRight(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1);
+            SweepRight(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1, DeltaFactor);
 
 #if 0
          // the dmrg.Wavefunction() is not normalized anymore

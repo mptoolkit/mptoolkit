@@ -84,6 +84,13 @@ RegularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, Vec
 
 template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis1(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
+{
+   return RegularizeBasis1(Regularizer(M.Basis1()), M);
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 UnregularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
 {
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R.OriginalBasis(), M.Basis2(), M.TransformsAs());
@@ -120,6 +127,13 @@ RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
       }
    }
    return Result;
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
+{
+   return RegularizeBasis2(M, Regularizer(M.Basis2()));
 }
 
 template <typename T>

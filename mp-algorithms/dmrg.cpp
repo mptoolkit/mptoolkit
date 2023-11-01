@@ -45,6 +45,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    //TRACE(norm_frob_sq(C));
 
    StateComponent CExpand = C;
+   // C = Lambda * CExpand.  Lambda is m x dm, CExpand is dm x m
    MatrixOperator Lambda = ExpandBasis1(CExpand);
    MatrixOperator X;
 
@@ -143,7 +144,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 {
    //TRACE(norm_frob_sq(C));
    StateComponent CExpand = C;
-   // CExpand * Lambda = C.  Lambda is dm x m, CExpand is m x dm
+   // C = CExpand * Lambda.  Lambda is dm x m, CExpand is m x dm
    MatrixOperator Lambda = ExpandBasis2(CExpand);
    MatrixOperator X;
    if (MixFactor != 0.0)
@@ -239,6 +240,177 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    //TRACE(norm_frob_sq(UKeep))(norm_frob_sq(CExpand))(norm_frob_sq(C));
    Lambda = herm(UKeep)*Lambda;
    //TRACE(norm_frob(Lambda));
+   return Lambda;
+}
+
+// Expand the Basis1 of C.
+// On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
+MatrixOperator
+ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, StatesInfo const& States, int Delta, TruncationInfo& Info, StateComponent const& LeftHam)
+{
+   StateComponent CExpand = C;
+   // C = Lambda * CExpand.  Lambda is m x dm, CExpand is dm x d x m
+   MatrixOperator Lambda = ExpandBasis1(CExpand);
+   MatrixOperator X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
+
+   CMatSVD DM(X, CMatSVD::Left);
+
+   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+   MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+
+   StateComponent CDiscard = herm(UDiscard)*CExpand;
+
+   // Remove the Hamiltonian term, which is the first term
+   SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()), H.Basis1());
+   int Size = H.Basis1().size();
+   for (int i = 0; i < Size-1; ++i)
+   {
+      Projector(i,i+1) = 1.0;
+   }
+   // RH is dm * w * m. expanded basis, MPO, original basis
+   StateComponent RH = contract_from_right(herm(Projector*H), CDiscard, RightHam, herm(C));
+   // TRACE(RH.back()); // this is the identity part - a reshaping of Lambda
+   // Normalize the components
+   std::vector<double> LeftWeight(RH.size()-1, 0.0);
+   std::vector<double> RightWeight(RH.size()-1, 0.0);
+   double NormSqTotal = 0;
+   MatrixOperator L2 = ReshapeBasis2(C);  // original C, before truncating
+   double MinNonZeroWeight = 0.0;
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      LeftWeight[i] = norm_frob(LeftHam[i+1]*L2);
+      RightWeight[i] = norm_frob(RH[i+1]);
+      double w = LeftWeight[i]*RightWeight[i];
+      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
+         MinNonZeroWeight = w;
+      //TRACE(i)(w);
+   }
+   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
+   // it will be normalized later)
+   if (MinNonZeroWeight == 0.0)
+      MinNonZeroWeight = 1.0;
+   // if there are any zero weights, set them equal to the minimum non-zero contribution
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      if (LeftWeight[i] == 0.0 && RightWeight[i] > 0.0)
+         LeftWeight[i] = MinNonZeroWeight / RightWeight[i];
+      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
+   }
+   // Although the overall scale factor is arbitary, we need to scale them anyway so might as well fix the overall weight to 1
+   double ScaleFactor = std::sqrt(1.0 / NormSqTotal);
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      RH[i] *= LeftWeight[i] * ScaleFactor;
+   }
+
+   X = ReshapeBasis2(RH);
+   // X is now (discarded basis) x (mw) matrix
+
+   CMatSVD ExpandDM(X, CMatSVD::Left);
+
+   auto ExpandedStates = TruncateNumStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0);
+
+   MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+   // UExpand is (states_to_expand, discarded_states)
+
+   // map UExpand back into the original basis
+   UExpand = UDiscard * UExpand;
+   // UExpand is (dm-dimensional-expanded-basis, extra_states_to_keep)
+
+   // The final basis is the sum of UKeep and UExpand
+   MatrixOperator UFinal = RegularizeBasis2(tensor_row_sum(UKeep, UExpand));
+
+   C = herm(UFinal)*CExpand;
+   Lambda = Lambda*UFinal;
+   return Lambda;
+}
+
+// Apply subspace expansion / truncation on the right (C.Basis2()).
+// On exit, C' * Result' = C (up to truncation!), and C is left-orthogonal
+MatrixOperator
+ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam, StatesInfo const& States, int Delta, TruncationInfo& Info, StateComponent const& RightHam)
+{
+   //TRACE(norm_frob_sq(C));
+   StateComponent CExpand = C;
+   // C = CExpand * Lambda.  CExpand is m x dm, Lambda is dm x m
+   MatrixOperator Lambda = ExpandBasis2(CExpand);
+   MatrixOperator X = Lambda;
+
+   CMatSVD DM(X, CMatSVD::Left);
+
+   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+   MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+
+   StateComponent CDiscard = CExpand*UDiscard;
+
+   // Remove the Hamiltonian term, which is the last term.  The first term is the identity.
+   SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin(), H.Basis2().end()-1));
+   int Size = H.Basis1().size();
+   for (int i = 0; i < Size-1; ++i)
+   {
+      Projector(i,i) = 1.0;
+   }
+
+   // LH is dm * w * m expanded basis, MPO, original basis
+   StateComponent LH = contract_from_left(H*Projector, herm(CDiscard), LeftHam, C);
+
+   // Normalize the noise vectors.  Since LH[0] is Lambda itself,
+   // Weights[i] corresponds to the weight of LH[i+1]
+   std::vector<double> LeftWeight(LH.size()-1, 0.0);
+   std::vector<double> RightWeight(LH.size()-1, 0.0);
+   double NormSqTotal = 0;
+   MatrixOperator L2 = ReshapeBasis1(C);
+   // If there is a component with zero weight, then set it equal to the smallest non-zero weight.
+   // As a last resort, if all of the weights are zero then set them equal to each other.
+   double MinNonZeroWeight = 0.0;
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      LeftWeight[i] = norm_frob(LH[i+1]);
+      RightWeight[i] = norm_frob(L2*RightHam[i+1]);
+      double w = LeftWeight[i]*RightWeight[i];
+      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
+         MinNonZeroWeight = w;
+      //TRACE(i)(w);
+   }
+   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
+   // it will be normalized later)
+   if (MinNonZeroWeight == 0.0)
+      MinNonZeroWeight = 1.0;
+   // if there are any zero weights, set them equal to the minimum non-zero contribution
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      if (RightWeight[i] == 0.0 && LeftWeight[i] > 0.0)
+         RightWeight[i] = MinNonZeroWeight / LeftWeight[i];
+      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
+   }
+   // Although the overall scale factor is arbitary, we need to scale them anyway so might as well fix the overall weight to 1
+   double ScaleFactor = std::sqrt(1.0 / NormSqTotal);
+   for (int i = 0; i < RightWeight.size(); ++i)
+   {
+      LH[i+1] *= RightWeight[i] * ScaleFactor;
+      //TRACE(norm_frob_sq(LH[i+1]))(RightWeight[i])(ScaleFactor);
+   }
+   X = ReshapeBasis2(LH);
+   // X is now (discarded basis) x (mw) matrix
+
+   CMatSVD ExpandDM(X, CMatSVD::Left);
+
+   auto ExpandedStates = TruncateNumStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0);
+
+   MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+   // UExpand is (states_to_expand, discarded_states)
+
+   // map UExpand back into the original basis
+   UExpand = UDiscard * UExpand;
+   // UExpand is (states_to_expand, expanded_basis)
+
+   // The final basis is the sum of UKeep and UExpand
+   MatrixOperator UFinal = RegularizeBasis2(tensor_row_sum(UKeep, UExpand));
+
+   C = CExpand*UFinal;
+   Lambda = herm(UFinal)*Lambda;
    return Lambda;
 }
 
@@ -708,7 +880,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+   auto StatesToKeep = TruncateNumStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -774,7 +946,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   auto StatesToKeep = TruncateExpandedEnvironment(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+   auto StatesToKeep = TruncateNumStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -874,17 +1046,17 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    return C->Basis2().total_dimension();
 }
 
-TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
+TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int Delta)
 {
    MatrixOperator X;
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    --CNext;
-   X = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor,
-					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
-					      States, Info,
-					      HamMatrices.left(), DoUpdateKeepList);
-
+   // X = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor,
+	// 				      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
+	// 				      States, Info,
+	// 				      HamMatrices.left(), DoUpdateKeepList);
+   X = ExtendBasis1(*C, *H, HamMatrices.right(), States, Delta, Info, HamMatrices.left());
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -910,17 +1082,18 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    return Info;
 }
 
-TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
+TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int Delta)
 {
    // Truncate right
    MatrixOperator X;
    TruncationInfo Info;
    LinearWavefunction::const_iterator CNext = C;
    ++CNext;
-   X = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixFactor,
-					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
-					      States, Info,
-					      HamMatrices.right(), DoUpdateKeepList);
+   // X = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixFactor,
+	// 				      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
+	// 				      States, Info,
+	// 				      HamMatrices.right(), DoUpdateKeepList);
+   X = ExtendBasis2(*C, *H, HamMatrices.left(), States, Delta, Info, HamMatrices.right());
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';

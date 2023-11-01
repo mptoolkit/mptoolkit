@@ -370,7 +370,7 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
 // could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateExpandedEnvironment(FwdIter first, FwdIter last, int NumStates, int StatesPerSector)
+TruncateNumStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector)
 {
    // We need to copy the EigenInfo, because we need to do two passes over it, and
    // possibly remove some elements on the first pass.

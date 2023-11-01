@@ -56,10 +56,20 @@ template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 RegularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M);
 
+// Version where we construct the regularizer implicitly
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis1(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M);
+
 // Regularize Basis2 of a tensor, more efficiently than multiplying by the transformation tensor.
 template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M, Regularizer const& R);
+
+// Version where we construct the regularizer implicitly
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M);
 
 template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>

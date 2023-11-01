@@ -39,6 +39,17 @@ typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 // FullBasis is the actual basis (kept + discarded states), which is used to
 // get the quantum number from the subspace index of the kept and discarded states.
 // The updated KeepList is then set to the quantum numbers in the final basis.
+//
+// The idea behind the KeepList is that quantum number sectors are reachable.
+// For example, suppose we are doing a left-to-right sweep and updating
+// some site A^s.  The KeepList will be the set of quantum number sectors
+// in A.Basis1() that we want to keep (i.e. they are part of the kept part
+// of the wavefunction.  This excludes states that might be in the basis
+// for other reasons, eg subspace expansion).  Now when we truncate Basis2()
+// of A^s, we want to ensure that Basis2() * s covers every quantum number
+// sector in KeepList.  This guarantees that on the subsequent right-to-left
+// sweep, all of the kept sectors have a possibility to be included in the
+// wavefunction.
 void UpdateKeepList(KeepListType& KeepList,
                     std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
                     VectorBasis const& FullBasis,
@@ -235,7 +246,8 @@ class DensityMatrix<MatrixOperator> : public DensityMatrixBase
 
       LinearBasis<BasisType> const& Basis() const { return B; }
 
-      // constructs a truncation operator that projects onto the given eigenstates
+      // constructs a truncation operator that projects onto the given eigenstates.
+      // The resulting operator has Basis1()' = truncated basis, Basis2()' = original basis
       template <typename FwdIter>
       OperatorType ConstructTruncator(FwdIter First, FwdIter Last) const;
 
