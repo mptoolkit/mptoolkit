@@ -233,6 +233,10 @@ class VectorBasis
       template <typename FwdIter>
       VectorBasis(FwdIter first, FwdIter last);
 
+      // Version of the above which sets the symmetry list: this allows the container to be empty.
+      template <typename FwdIter>
+      VectorBasis(QuantumNumbers::SymmetryList const& S, FwdIter first, FwdIter last);
+
       void push_back(QuantumNumber const& q, int Dimension);
 
       void push_back(QuantumNumber const& q)

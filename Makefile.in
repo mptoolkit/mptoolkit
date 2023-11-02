@@ -124,7 +124,7 @@ mpoobj = operator_component.o generic_mpo.o basic_finite_mpo.o basic_triangular_
 mpsobj = state_component.o density.o
 
 wavefunctionobj = linearwavefunction.o canonicalwavefunction.o infinitewavefunctionleft.o \
-                  ibc.o finitewavefunctionleft.o \
+                  ibc.o ea.o finitewavefunctionleft.o \
                   mpwavefunction.o operator_actions.o \
                   attributes.o history.o infinitewavefunctionright.o transfer.o packunpack.o
 
@@ -224,9 +224,12 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-irotate mp-icorrelation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
-        mp-construct mp-change-lattice mp-evolve-mpo mp-ievolve-mpo
+        mp-construct mp-change-lattice mp-evolve-mpo mp-ievolve-mpo \
+        mp-ibc-create mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation \
+        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice \
+        mp-ea-moments mp-ea-create mp-ea-extend mp-ea-change-k mp-ea-dmrg
 
-experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-ibc-create mp-aux-project mp-ibc-dmrg mp-fluctuation
+experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-aux-project mp-ibc-dmrg mp-fluctuation
 
 
 benchmarks = benchtripleprod
@@ -508,6 +511,13 @@ mp-tdvp : tdvp.o ef-optim.o number-parser.o tdvp-compositions.o
 mp-tebd : tebd.o number-parser.o
 mp-itebd : tebd.o number-parser.o
 
+mp-ibc-create : random_wavefunc.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
+mp-ibc-correlation : number-parser.o
+mp-excitation-ansatz : rangelist.o excitation-ansatz.o ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o
+mp-ibc-wavepacket : rangelist.o
+mp-ea-moments: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o
+mp-ea-dmrg: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_ea.o ef-matrix.o ea-dmrg.o
+
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
@@ -535,6 +545,7 @@ mp-iexpectation-cross : infinitewavefunctionleft.o
 mp-idivide :
 
 mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
+mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-evolve-mpo : number-parser.o
 mp-ievolve-mpo : number-parser.o
 mp-matrix : write-matrix.o
@@ -568,6 +579,10 @@ mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 # LIBS_mp-aux-project = $(LIBARPACK)
 # LIBS_mp-iexpectation-cross = $(LIBARPACK)
 # LIBS_mp-imoments-cross = $(LIBARPACK)
+# LIBS_mp-ibc-overlap = $(LIBARPACK)
+# LIBS_mp-ibc-correlation = $(LIBARPACK)
+# LIBS_mp-excitation-ansatz = $(LIBARPACK)
+# LIBS_mp-ibc-splice = $(LIBARPACK)
 
 CXXFLAGS_mp-itebd.o = $(OPENMP_CXXFLAGS)
 CXXFLAGS_mp-itebd = $(OPENMP_CXXFLAGS)

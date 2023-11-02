@@ -269,6 +269,47 @@ contract_from_left(OperatorComponent const& M,
 }
 
 std::vector<KMatrixPolyType>
+contract_from_right(HermitianProxy<OperatorComponent> const& M,
+                    StateComponent const& A,
+                    std::vector<KMatrixPolyType> const& F,
+                    HermitianProxy<StateComponent> const& B)
+{
+   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis2(), A.LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.base().LocalBasis1(), B.base().LocalBasis());
+   DEBUG_PRECONDITION_EQUAL(M.base().Basis2().size(), F.size());
+
+   std::vector<KMatrixPolyType> Result(M.base().Basis1().size());
+
+   // Iterate over the components in M, first index
+   for (LinearAlgebra::const_iterator<OperatorComponent>::type I = iterate(M.base()); I; ++I)
+   {
+      // second index in M
+      for (LinearAlgebra::const_inner_iterator<OperatorComponent>::type J = iterate(I); J; ++J)
+      {
+         // Iterate over the irreducible components of M(I,J)
+         for (SimpleRedOperator::const_iterator k = J->begin(); k != J->end(); ++k)
+         {
+            // *k is an irreducible operator.  Iterate over the components of this operator
+            for (LinearAlgebra::const_iterator<SimpleOperator>::type R = iterate(*k); R; ++R)
+            {
+               for (LinearAlgebra::const_inner_iterator<SimpleOperator>::type
+                       S = iterate(R); S; ++S)
+               {
+                  add_triple_prod(Result[J.index1()], herm(*S),
+                                  A[S.index1()],
+                                  F[J.index2()],
+                                  herm(B.base()[S.index2()]),
+                                  k->TransformsAs(),
+                                  M.base().Basis1()[J.index1()]);
+               }
+            }
+         }
+      }
+   }
+   return Result;
+}
+
+std::vector<KMatrixPolyType>
 inject_left(std::vector<KMatrixPolyType> const& In,
             LinearWavefunction const& Psi1,
             GenericMPO const& Op,

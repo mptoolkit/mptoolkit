@@ -94,24 +94,14 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      if (y % 2 != 0)
-      {
-         std::cerr << "y must be even" << std::endl;
-         return 1;
-      }
-
-      int CellSize = x == 0 ? 6*y : 6*x;
+      int CellSize = x == 0 ? 3*y : 3*x;
 
       LatticeSite FSite = SpinlessFermionU1("N", "P", Bosonic);
-      LatticeSite AFSite = SpinlessAntifermionU1("N", "P", Bosonic);
       LatticeSite SSite = SpinSite(Spin);
-      UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite, SSite);
-      UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite, SSite);
-      UnitCell Cell1(repeat(join(FCell, AFCell), CellSize/12));
-      UnitCell Cell2(repeat(join(AFCell, FCell), CellSize/12));
-      UnitCell Cell = join(Cell1, Cell2);
+      UnitCell UCell(FSite.GetSymmetryList(), FSite, SSite, SSite);
+      UnitCell Cell(repeat(UCell, CellSize/3));
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), P(Cell, "P"), I(Cell, "I"),
                        X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
 
       UnitCellMPO tx, ty, m, J, x_field;
@@ -120,17 +110,11 @@ int main(int argc, char** argv)
       {
          for (int i = 0; i < 3*y; i += 3)
          {
-            tx += Z(0)[i+1]     * dot(CH(0)[i],     C(0)[i+3*y])           + Z(0)[i+1]     * dot(CH(0)[i+3*y], C(0)[i]);
-            tx += Z(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i])               + Z(0)[i+1+3*y] * dot(CH(1)[i], C(0)[i+3*y]);
-            ty += Z(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Z(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
-            ty += Z(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Z(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
-            J += X(0)[i+1] * X(0)[i+2+3*y] * X(0)[(i+4)%(3*y)] * X(0)[i+2];
-            J += X(0)[i+1+3*y] * X(1)[i+2] * X(0)[(i+4)%(3*y)+3*y] * X(0)[i+2+3*y];
-            x_field += X(0)[i+1] + X(0)[i+2] + X(0)[i+1+3*y] + X(0)[i+2+3*y];
-         }
-         for (int i = 0; i < 3*y; i += 6)
-         {
-            m += N(0)[i] - N(0)[i+3] - N(0)[i+3*y] + N(0)[i+3+3*y];
+            tx += Z(0)[i+1] * dot(CH(0)[i], C(1)[i])           + Z(0)[i+1] * dot(CH(1)[i],           C(0)[i]);
+            ty += Z(0)[i+2] * dot(CH(0)[i], C(0)[(i+3)%(3*y)]) + Z(0)[i+2] * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
+            J += X(0)[i+1] * X(1)[i+2] * X(0)[(i+4)%(3*y)] * X(0)[i+2];
+            x_field += X(1)[i+1] + X(0)[i+2];
+            m += N(0)[i];
          }
       }
       // TODO
@@ -161,14 +145,7 @@ int main(int argc, char** argv)
 
       for (int i = 0; i < y; ++i)
       {
-         G[i] = ((i % 2) == 0 ? 1.0 : -1.0) * Z(0)[3*i+1] * Z(-1)[3*(i+y)+1] * Z(0)[3*i+2] * Z(0)[(3*(i+y)-1)%(3*y)];
-         G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
-         Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
-      }
-
-      for (int i = y; i < 2*y; ++i)
-      {
-         G[i] = (((i-y) % 2) == 0 ? -1.0 : 1.0) * Z(0)[3*i+1] * Z(0)[3*(i-y)+1] * Z(0)[3*i+2] * Z(0)[(3*i-1)%(3*y)+3*y];
+         G[i] = P(0)[3*i] * X(0)[3*i+1] * X(-1)[3*i+1] * X(0)[3*i+2] * X(0)[(3*(i+y)-1)%(3*y)];
          G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }

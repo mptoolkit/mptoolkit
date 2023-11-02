@@ -497,8 +497,12 @@ TDVP::SweepRight(std::complex<double> Tau, bool Expand)
 void
 TDVP::CalculateEps1()
 {
+   // Perform SVD to right-orthogonalize current site for NullSpace1.
+   StateComponent CRightOrtho = *C;
+   OrthogonalizeBasis1(CRightOrtho);
+
    // Calculate error measure epsilon_1 and add to sum.
-   StateComponent Y = contract_from_right(herm(*H), NullSpace1(*C), HamR.front(), herm(*C));
+   StateComponent Y = contract_from_right(herm(*H), NullSpace1(CRightOrtho), HamR.front(), herm(*C));
    double Eps1Sq = norm_frob_sq(scalar_prod(HamL.back(), herm(Y)));
    Eps1SqSum += Eps1Sq;
 
@@ -551,9 +555,7 @@ TDVP::CalculateEps12()
 void
 TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 {
-   MaxStates = 0;
-
-   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
@@ -846,9 +848,10 @@ TDVP::CalculateEps()
    // without having to go back to the right.
    LinearWavefunction PsiLocal = Psi;
    LinearWavefunction::iterator CLocal = PsiLocal.end();
-   --CLocal;
-   BasicTriangularMPO::const_iterator HLocal = HamMPO.end();
-   --HLocal;
+   // Move CLocal to the current position of C (may not be the final site).
+   for (auto CCopy = C; CCopy != Psi.end(); ++CCopy)
+      --CLocal;
+   BasicTriangularMPO::const_iterator HLocal = H;
    std::deque<StateComponent> HamLLocal = HamL;
    std::deque<StateComponent> HamRLocal = HamR;
    int SiteLocal = RightStop;
