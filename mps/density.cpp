@@ -442,6 +442,66 @@ SingularDecompositionBase::~SingularDecompositionBase()
 {
 }
 
+std::ostream& SingularDecompositionBase::DensityMatrixReport(std::ostream& outstream)
+{
+   bool Quiet = false;
+   int MaxEigenvalues = -1;
+   bool Base2 = false;
+   bool ShowDegen = false;
+   std::ostringstream out;
+   out.precision(12);
+   out << std::scientific;
+   if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
+   if (!Quiet)
+   {
+      out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
+      if (MaxEigenvalues > 0)
+	 out << "#Number    #Eigenvalue         #Degen    #Weight               #Energy             #QuantumNumber\n";
+   }
+   int n = 0;
+   int TotalDegree = 0;
+   double EShift = 0;
+   double EScale = 1.0;
+#if 0
+   if (EigenInfoList.size() >= 2)
+   {
+      EShift = -log(EigenInfoList[0].Eigenvalue / this->EigenSum());
+      double E2 = -log(EigenInfoList[1].Eigenvalue / this->EigenSum());
+      EScale = E2 - EShift;
+   }
+#endif
+   for (const_iterator Iter = this->begin(); Iter != this->end() && n < MaxEigenvalues; ++Iter)
+   {
+      double EVal = Iter->Eigenvalue / this->EigenSum();
+      double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
+
+      int OuterDegen = ShowDegen ? Iter->Degree() : 1;
+      int DisplayDegen = ShowDegen ? 1 : Iter->Degree();
+
+      for (int i = 0; i < OuterDegen; ++i)
+      {
+         double Weight = EVal * Iter->Degree() / OuterDegen;
+         TotalDegree += Iter->Degree();
+         ++n;
+         out << std::right << std::setw(7) << n << "  "
+             << std::right << std::setw(20) << Iter->Eigenvalue
+             << "  " << std::setw(6) << DisplayDegen
+             << "  " << std::setw(20) << Weight
+             << "  " << std::setw(20) << Energy
+             << "  " << std::left
+             << this->Lookup(Iter->Subspace) << '\n';
+      }
+   }
+   if (!Quiet)
+   {
+      out << '#' << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
+      out << "Total degree = " << TotalDegree << '\n';
+   }
+   outstream << out.str();
+   return outstream;
+
+}
+
 void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which)
 {
    //TRACE(M.size());

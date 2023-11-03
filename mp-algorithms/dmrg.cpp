@@ -243,6 +243,71 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    return Lambda;
 }
 
+// Construct the mixing term according to the 3S algorithm with weight matrix.
+// On entry:
+//   CExpand is an A-matrix where the Basis1() dimension m' is the basis that we want to mix into, in right orthonormal form.
+//   C is the wavefunction, in the Center orthonormal basis.
+//   H is the on-site Hamiltonian
+//   LeftHam and RightHam are the environment Hamiltonian's, in the basis of C
+//   Normalization is the desired norm_frob of the result
+//   Result' is a m' x w x m matrix, where m' is the Basis1() of CExpand, w is the Basis1() of the MPO with the first and last
+//     elements removed, and m is Basis2() of CExpand (and C).
+//   PRECONDITION: CExpand.Basis2() == C.Basis2()
+// For conventional 3S, CExpand is C with ExpandBasis1().
+// For Environment Expansion, CExpand is the null space (i.e. discarded space) of C.
+ StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent const& C, OperatorComponent const& H, StateComponent const& LeftHam, StateComponent const& RightHam, double Normalization)
+{
+   CHECK_EQUAL(CExpand.Basis2(), C.Basis2());
+
+   // Remove the first and last terms of H, which are the block Hamiltonian and the identity
+   SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()-1), H.Basis1());
+   int Size = H.Basis1().size();
+   for (int i = 0; i < Size-2; ++i)
+   {
+      Projector(i,i+1) = 1.0;
+   }
+   // RH is m' * w * m. expanded basis, MPO, original basis
+   StateComponent RH = contract_from_right(herm(Projector*H), CExpand, RightHam, herm(C));
+
+   // Normalize the components
+   std::vector<double> LeftWeight(RH.size(), 0.0);
+   std::vector<double> RightWeight(RH.size(), 0.0);
+   double NormSqTotal = 0;
+   MatrixOperator L2 = ReshapeBasis2(C);  // original C, before truncating
+   double MinNonZeroWeight = 0.0;
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      LeftWeight[i] = norm_frob(LeftHam[i+1]*L2);  // i+1 here to align with RH[i], that projects out the first and last components
+      RightWeight[i] = norm_frob(RH[i]);
+      double w = LeftWeight[i]*RightWeight[i];
+      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
+         MinNonZeroWeight = w;
+   }
+   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
+   // it will be normalized later)
+   if (MinNonZeroWeight == 0.0)
+      MinNonZeroWeight = 1.0;
+   // if there are any zero weights, set them equal to the minimum non-zero contribution
+   for (int i = 0; i < LeftWeight.size(); ++i)
+   {
+      if (LeftWeight[i] == 0.0 && RightWeight[i] > 1E-14)
+         LeftWeight[i] = MinNonZeroWeight / RightWeight[i];
+      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
+   }
+   if (NormSqTotal > 0)
+   {
+      // Although the overall scale factor is arbitary, we need to scale them anyway so might as well fix the overall weight to 1
+      double ScaleFactor = std::sqrt(Normalization / NormSqTotal);
+      //TRACE(NormSqTotal);
+      for (int i = 0; i < LeftWeight.size(); ++i)
+      {
+         RH[i] *= LeftWeight[i] * ScaleFactor;
+         //TRACE(i)(LeftWeight[i])(ScaleFactor)(norm_frob(RH[i]));
+      }
+   }
+   return RH;
+}
+
 // Expand the Basis1 of C.
 // On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
 MatrixOperator
@@ -253,63 +318,27 @@ ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const
    MatrixOperator Lambda = ExpandBasis1(CExpand);
    MatrixOperator X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
 
+   // The usual truncation
    CMatSVD DM(X, CMatSVD::Left);
 
    auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
    MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
    MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
 
+   // CDiscard is the null space of the kept states
    StateComponent CDiscard = herm(UDiscard)*CExpand;
 
-   // Remove the Hamiltonian term, which is the first term
-   SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()), H.Basis1());
-   int Size = H.Basis1().size();
-   for (int i = 0; i < Size-1; ++i)
-   {
-      Projector(i,i+1) = 1.0;
-   }
-   // RH is dm * w * m. expanded basis, MPO, original basis
-   StateComponent RH = contract_from_right(herm(Projector*H), CDiscard, RightHam, herm(C));
-   // TRACE(RH.back()); // this is the identity part - a reshaping of Lambda
-   // Normalize the components
-   std::vector<double> LeftWeight(RH.size()-1, 0.0);
-   std::vector<double> RightWeight(RH.size()-1, 0.0);
-   double NormSqTotal = 0;
-   MatrixOperator L2 = ReshapeBasis2(C);  // original C, before truncating
-   double MinNonZeroWeight = 0.0;
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      LeftWeight[i] = norm_frob(LeftHam[i+1]*L2);
-      RightWeight[i] = norm_frob(RH[i+1]);
-      double w = LeftWeight[i]*RightWeight[i];
-      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
-         MinNonZeroWeight = w;
-      //TRACE(i)(w);
-   }
-   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
-   // it will be normalized later)
-   if (MinNonZeroWeight == 0.0)
-      MinNonZeroWeight = 1.0;
-   // if there are any zero weights, set them equal to the minimum non-zero contribution
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      if (LeftWeight[i] == 0.0 && RightWeight[i] > 0.0)
-         LeftWeight[i] = MinNonZeroWeight / RightWeight[i];
-      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
-   }
-   // Although the overall scale factor is arbitary, we need to scale them anyway so might as well fix the overall weight to 1
-   double ScaleFactor = std::sqrt(1.0 / NormSqTotal);
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      RH[i] *= LeftWeight[i] * ScaleFactor;
-   }
+   // It is possible that we didn't keep as many states as we wanted to in the truncation,
+   // in which case we attempt to add them to the extra states
+   //Delta += std::max(Info.TotalStates() - Info.KeptStates(), 0);
 
-   X = ReshapeBasis2(RH);
-   // X is now (discarded basis) x (mw) matrix
+   // Now expand the basis
+   X = ReshapeBasis2(DensityMixingBasis1(CDiscard, C, H, LeftHam, RightHam, 1.0));
 
    CMatSVD ExpandDM(X, CMatSVD::Left);
+   //ExpandDM.DensityMatrixReport(std::cout);
 
-   auto ExpandedStates = TruncateNumStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0);
+   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0, Info);
 
    MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
    // UExpand is (states_to_expand, discarded_states)
@@ -345,12 +374,16 @@ ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const
 
    StateComponent CDiscard = CExpand*UDiscard;
 
+   // It is possible that we didn't keep as many states as we wanted to in the truncation,
+   // in which case we attempt to add them to the extra states
+   //Delta += std::max(Info.TotalStates() - Info.KeptStates(), 0);
+
    // Remove the Hamiltonian term, which is the last term.  The first term is the identity.
-   SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin(), H.Basis2().end()-1));
+   SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin()+1, H.Basis2().end()-1));
    int Size = H.Basis1().size();
-   for (int i = 0; i < Size-1; ++i)
+   for (int i = 0; i < Size-2; ++i)
    {
-      Projector(i,i) = 1.0;
+      Projector(i+1,i) = 1.0;
    }
 
    // LH is dm * w * m expanded basis, MPO, original basis
@@ -367,8 +400,8 @@ ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const
    double MinNonZeroWeight = 0.0;
    for (int i = 0; i < LeftWeight.size(); ++i)
    {
-      LeftWeight[i] = norm_frob(LH[i+1]);
-      RightWeight[i] = norm_frob(L2*RightHam[i+1]);
+      LeftWeight[i] = norm_frob(LH[i]);
+      RightWeight[i] = norm_frob(L2*RightHam[i+1]);  // +1 here to align with LH, that projects out the first and last components
       double w = LeftWeight[i]*RightWeight[i];
       if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
          MinNonZeroWeight = w;
@@ -389,7 +422,7 @@ ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const
    double ScaleFactor = std::sqrt(1.0 / NormSqTotal);
    for (int i = 0; i < RightWeight.size(); ++i)
    {
-      LH[i+1] *= RightWeight[i] * ScaleFactor;
+      LH[i] *= RightWeight[i] * ScaleFactor;
       //TRACE(norm_frob_sq(LH[i+1]))(RightWeight[i])(ScaleFactor);
    }
    X = ReshapeBasis2(LH);
@@ -397,7 +430,7 @@ ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const
 
    CMatSVD ExpandDM(X, CMatSVD::Left);
 
-   auto ExpandedStates = TruncateNumStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0);
+   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0, Info);
 
    MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
    // UExpand is (states_to_expand, discarded_states)
@@ -834,24 +867,26 @@ bool DMRG::IsConverged() const
 
 // Expand the Basis1 of CRight
 // Returns the number of states that were added to the environment basis
+// The MPS is in the mixed canonical form cented around C.
+// CLeft must be left-orthonormal.
 int
-ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
+ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& C,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
                       int StatesWanted, int ExtraStatesPerSector)
 {
    CHECK_EQUAL(E.Basis1(), CLeft.Basis1());
-   CHECK_EQUAL(F.Basis1(), CRight.Basis2());
+   CHECK_EQUAL(F.Basis1(), C.Basis2());
 
-   int ExtraStates = StatesWanted - CRight.Basis1().total_dimension();
+   int ExtraStates = StatesWanted - C.Basis1().total_dimension();
    // Calculate left null space of left site.
    StateComponent NLeft = NullSpace2(CLeft);
 
    // Perform SVD to right-orthogonalize the right site and extract singular value matrix.
-   StateComponent CRightOrtho = CRight;
+   StateComponent COrtho = C;
    MatrixOperator URight;
    RealDiagonalOperator DRight;
-   std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
+   std::tie(URight, DRight) = OrthogonalizeBasis1(COrtho);
 
    // Now the 3S-inspired step: calculate X = new F matrix projected onto the null space.
    // Firstly project out the first and last columns of HLeft.
@@ -862,7 +897,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
       Projector(i+1, i) = 1.0;
 
    StateComponent X = contract_from_left(HLeft*Projector, herm(NLeft), E, CLeft*URight*DRight);
-   StateComponent FRight = contract_from_right(herm(herm(Projector)*HRight), CRightOrtho, F, herm(CRight));
+   StateComponent FRight = contract_from_right(herm(herm(Projector)*HRight), COrtho, F, herm(C));
 
    // Multiply each element of X by a prefactor depending on the corresponding element of F.
    for (int i = 0; i < X.size(); ++i)
@@ -880,7 +915,8 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   auto StatesToKeep = TruncateNumStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+   TruncationInfo Info;
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, Info);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -889,32 +925,34 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Regularize the new basis.
    Regularizer R(NewBasis);
 
-   // Add the new states to CLeft, and add zeros to CRight.
+   // Add the new states to CLeft, and add zeros to C.
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, U), NewBasis), R);
 
-   StateComponent Z = StateComponent(CRight.LocalBasis(), U.Basis2(), CRight.Basis2());
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
+   StateComponent Z = StateComponent(C.LocalBasis(), U.Basis2(), C.Basis2());
+   C = RegularizeBasis1(R, tensor_col_sum(C, Z, NewBasis));
 
    return StatesToKeep.size();
 }
 
-// Expand the Basis2 of CLeft
+// Expand the Basis2 of C.
+// The MPS is in the mixed canonical form cented around C.
+// CRight must be right-orthonormal.
 int
-ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
+ExpandRightEnvironment(StateComponent& C, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
                       int StatesWanted, int ExtraStatesPerSector)
 {
-   int ExtraStates = StatesWanted - CLeft.Basis2().total_dimension();
+   int ExtraStates = StatesWanted - C.Basis2().total_dimension();
 
    // Calculate right null space of right site.
    StateComponent NRight = NullSpace1(CRight);
 
    // Perform SVD to left-orthogonalize the left site and extract singular value matrix.
-   StateComponent CLeftOrtho = CLeft;
+   StateComponent COrtho = C;
    MatrixOperator VhLeft;
    RealDiagonalOperator DLeft;
-   std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
+   std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(COrtho);
 
    // Now the 3S-inspired step: calculate X = new F matrix projected onto the null space.
    // Firstly project out the first and last columns of HRight.
@@ -925,7 +963,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
       Projector(i, i+1) = 1.0;
 
    StateComponent X = contract_from_right(herm(Projector*HRight), NRight, F, herm(DLeft*VhLeft*CRight));
-   StateComponent ELeft = contract_from_left(HLeft*herm(Projector), herm(CLeftOrtho), E, CLeft);
+   StateComponent ELeft = contract_from_left(HLeft*herm(Projector), herm(COrtho), E, C);
 
    // Multiply each element of X by a prefactor depending on the corresponding element of E.
    for (int i = 0; i < X.size(); ++i)
@@ -940,13 +978,14 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Take the truncated SVD of X.  This appears asymmetric compared with ExpandLeftEnvironment, but it
    // is actually OK: the equivalent 'reflected' operation would be to ReshapeBasis1(herm(X)), but instead
    // we can just ReshapeBasis2(X), so the rest of the code is essentially identical to ExpandLeftEnvironment,
-   // except for swapping CLeft/CRight and Basis1/Basis2
+   // except for swapping C/CRight and Basis1/Basis2
    MatrixOperator XExpand = ReshapeBasis2(X);
    XExpand = MatrixOperator(XExpand.Basis1(), VectorBasis(XExpand.GetSymmetryList()));
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   auto StatesToKeep = TruncateNumStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector);
+   TruncationInfo Info;
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, Info);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -955,11 +994,11 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    // Regularize the new basis.
    Regularizer R(NewBasis);
 
-   // Add the new states to CRight, and add zeros to CLeft.
+   // Add the new states to CRight, and add zeros to C.
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(U), NRight), NewBasis));
 
-   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), U.Basis2());
-   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
+   StateComponent Z = StateComponent(C.LocalBasis(), C.Basis1(), U.Basis2());
+   C = RegularizeBasis2(tensor_row_sum(C, Z, NewBasis), R);
 
    return StatesToKeep.size();
 }

@@ -50,7 +50,7 @@ namespace prog_opt = boost::program_options;
 bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
 std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
 
-void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor)
+void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor, int NumStatesNext)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -59,17 +59,18 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
       int EnvStates = 0;
       if (ExtraStates >= 0 && dmrg.Site < dmrg.RightStop-1)
       {
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*ExtraStatesFactor+0.5));
+         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*(1.0+ExtraStatesFactor)+0.5));
          EnvStates = dmrg.ExpandRightEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
-      int Delta = SInfo.MaxStates*DeltaFactor;
+      int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor/*+(NumStatesNext-SInfo.MaxStates)*/)), 0);
       TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " Env=" << EnvStates
          << " States=" << States.KeptStates()
+         << " Extra=" << States.ExtraStates()
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -82,7 +83,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor)
+void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor, int NumStatesNext)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -92,17 +93,18 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraSt
       if (ExtraStates >= 0 && dmrg.Site > dmrg.LeftStop+1)
       {
          //int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis1().total_dimension()*ExtraStatesFactor+0.5));
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*ExtraStatesFactor+0.5));
+         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*(1.0+ExtraStatesFactor)+0.5));
          EnvStates = dmrg.ExpandLeftEnvironment(States, ExtraStatesPerSector);
       }
       dmrg.Solve();
-      int Delta = SInfo.MaxStates*DeltaFactor;
+      int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor/*+(NumStatesNext-SInfo.MaxStates)*/)), 0);
       TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " Env=" << EnvStates
          << " States=" << States.KeptStates()
+         << " Extra=" << States.ExtraStates()
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -294,13 +296,26 @@ int main(int argc, char** argv)
       std::cout << "Number of half-sweeps: " << NumSweeps << std::endl;
       std::cout << "Using solver: " << Solver << std::endl;
 
+      int NumStatesNext = MyStates[0].NumStates;
+      int ZeroEnvCount = 0;
       for (int Sweeps = 0; Sweeps < MyStates.size(); ++Sweeps)
       {
          SInfo.MaxStates = MyStates[Sweeps].NumStates;
+         double ModFactor = 1.0;
+         if (MyStates[Sweeps].ZeroEnv)
+         {
+            ++ZeroEnvCount;
+            int ZeroEnvRemain = 0;
+            for (int s = Sweeps+1; s < MyStates.size() && MyStates[s].ZeroEnv; ++s)
+               ++ZeroEnvRemain;
+            ModFactor = double(ZeroEnvRemain) / double(ZeroEnvRemain+ZeroEnvCount);
+         }
+         if (Sweeps < MyStates.size()-1)
+            NumStatesNext = MyStates[Sweeps+1].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1, DeltaFactor);
+            SweepLeft(dmrg, SInfo, EnvStates, int(EnvStatesPerSector*ModFactor+0.5), EnvStatesFactor*ModFactor, Sweeps+1, DeltaFactor*ModFactor, NumStatesNext);
          else
-            SweepRight(dmrg, SInfo, EnvStates, EnvStatesPerSector, EnvStatesFactor, Sweeps+1, DeltaFactor);
+            SweepRight(dmrg, SInfo, EnvStates, int(EnvStatesPerSector*ModFactor+0.5), EnvStatesFactor*ModFactor, Sweeps+1, DeltaFactor*ModFactor, NumStatesNext);
 
 #if 0
          // the dmrg.Wavefunction() is not normalized anymore

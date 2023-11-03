@@ -30,7 +30,8 @@ StateParams::StateParams()
      Wait(false),
      Test(false),
      Save(false),
-     Variance(false)
+     Variance(false),
+     ZeroEnv(false)
 {
 }
 
@@ -63,6 +64,8 @@ std::ostream& operator<<(std::ostream& out, StateParams const& Info)
       out << 's';
    if (Info.Variance)
       out << 'v';
+   if (Info.ZeroEnv)
+      out << 'z';
    return out;
 }
 
@@ -99,6 +102,8 @@ void StatesList::AppendToken(char const* s)
    // 10+5x2 -> 15,20
    // 10..20x2 -> 15,20
    // 10+5..30
+   // 10+5..30x10  // short-hand form for 10+5..30,30x9
+   // 10*2..100x10 // short-hand form for 10*2..100,100x9
    //
    // Multiplicative increase:
    // 10^2 -> 10,10  (just for completeness)
@@ -108,10 +113,16 @@ void StatesList::AppendToken(char const* s)
    // NOTE: since 2023-06-23, the initial number N is NOT included; the range is half-open
 
    // If there is only one sweep, we can append some flags, w,t,s,v although these arae currently unused
+   // Even if there are multiple sweeps, we can add some flags,
+   // z
+   //
+   // With the 10+5..30x10 and 10*2..100x10, adding a 'z' flag at the end only applies the 'z' to the final n sweeps 10, in the examples, so the number of sweeps with 100 states is actually 11).
 
    StateParams I;
    if (!Info.empty())
       I = StateParams::ContinueFrom(Info.back());
+
+   int InitialSweepCount = Info.size();  // keep track of the number of sweeps so far, in case we need to go back and add flags
 
    int InitialStates = 0;
    int NumSweeps = 0;
@@ -215,6 +226,26 @@ void StatesList::AppendToken(char const* s)
          }
          I.NumStates = FinalStates;
          Info.push_back(I);
+         // Extension notation: we allow xS at the end, to keep iterating with the same number of states.
+         if (s[0] == 'x')
+         {
+            // reset the sweep count, so flags only apply to subsequent sweeps
+            InitialSweepCount = Info.size();
+            ++s;
+            NumSweeps = std::strtol(s, &p, 10);
+            if (p == s)
+            {
+               PANIC("StatesList format error: N+I..Mx, expecting a number of sweeps")(s);
+            }
+            if (NumSweeps < 1)
+            {
+               PANIC("StatesList format error: number of sweeps must be >= 1");
+            }
+            for (int i = 0; i < NumSweeps; ++i)
+            {
+               Info.push_back(I);
+            }
+         }
       }
       else if (s[0] == 'x')
       {
@@ -299,6 +330,26 @@ void StatesList::AppendToken(char const* s)
          // (which we do anyway)
          I.NumStates = FinalStates;
          Info.push_back(I);
+         // Extension notation: we allow xS at the end, to keep iterating with the same number of states.
+         if (s[0] == 'x')
+         {
+            // reset the sweep count, so flags only apply to subsequent sweeps
+            InitialSweepCount = Info.size();
+            ++s;
+            NumSweeps = std::strtol(s, &p, 10);
+            if (p == s)
+            {
+               PANIC("StatesList format error: N*F..Mx, expecting a number of sweeps")(s);
+            }
+            if (NumSweeps < 1)
+            {
+               PANIC("StatesList format error: number of sweeps must be >= 1");
+            }
+            for (int i = 0; i < NumSweeps; ++i)
+            {
+               Info.push_back(I);
+            }
+         }
       }
       else if (s[0] == '^')
       {
@@ -350,6 +401,7 @@ void StatesList::AppendToken(char const* s)
          case 't' : I.Test = true;                break;
          case 'v' : I.Variance = true;            break;
          case 's' : I.Save = true;                break;
+         case 'z' : I.ZeroEnv = true;             break;
          default  : PANIC("Unknown flag in StatesList")(s);
          }
          ++s;
@@ -358,6 +410,16 @@ void StatesList::AppendToken(char const* s)
       Info.push_back(I);
    }
 
+   // Flags that can apply to multiple sweeps
+   if (s[0] == 'z')
+   {
+      ++s;
+      // zero the environment; this applies to all sweeps in this block
+      for (int i = InitialSweepCount; i < Info.size(); ++i)
+      {
+         Info[i].ZeroEnv = true;
+      }
+   }
    if (s[0] != '\0')
    {
       PANIC("StatesList format error: unexpected extra characters")(s);

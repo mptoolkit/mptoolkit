@@ -311,6 +311,8 @@ class SingularDecompositionBase
 
       enum WhichVectors { Left, Right, Both };
 
+      std::ostream& DensityMatrixReport(std::ostream& out);
+
    protected:
       typedef LinearAlgebra::Matrix<std::complex<double> > RawDMType;
 

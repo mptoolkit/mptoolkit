@@ -168,6 +168,7 @@ struct TruncationInfo
    double KeptWeight_;
    int TotalStates_;
    int KeptStates_;
+   int ExtraStates_;
    double TotalEntropy_;
    double KeptEntropy_;
    double SmallestKeptEigenvalue_;
@@ -184,6 +185,9 @@ struct TruncationInfo
 
    // return the number of states that were kept
    int KeptStates() const { return KeptStates_; }
+
+   // return the number of extra that were kept
+   int ExtraStates() const { return ExtraStates_; }
 
    // return the total entropy (natural units) of all of the states
    double TotalEntropy() const { return TotalEntropy_; }
@@ -291,6 +295,7 @@ TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last,
    Info.TotalStates_ = std::distance(first, last);
    Info.TotalEntropy_ = DensityEntropy(first, last, Info.TotalWeight_);
    Info.KeptStates_ = 0;
+   Info.ExtraStates_ = 0;
    Info.KeptWeight_ = 0;
    Info.KeptEntropy_ = 0;
    Info.SmallestKeptEigenvalue_ = 0;
@@ -324,6 +329,7 @@ TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last,
    Info.TotalStates_ = std::distance(first, last);
    Info.TotalEntropy_ = DensityEntropy(first, last, Info.TotalWeight_);
    Info.KeptStates_ = 0;
+   Info.ExtraStates_ = 0;
    Info.KeptWeight_ = 0;
    Info.KeptEntropy_ = 0;
    Info.SmallestKeptEigenvalue_ = 0;
@@ -370,11 +376,12 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
 // could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateNumStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector)
+TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, TruncationInfo& Info)
 {
    // We need to copy the EigenInfo, because we need to do two passes over it, and
    // possibly remove some elements on the first pass.
    std::list<EigenInfo> States(first, last);
+
 
    std::list<EigenInfo> Result;
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
@@ -388,6 +395,9 @@ TruncateNumStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSecto
       if (KeptStatesPerSector[f->Q] < StatesPerSector)
       {
          Result.push_back(*f);
+         ++Info.ExtraStates_;
+         Info.KeptWeight_ += f->Weight();
+         Info.KeptEntropy_ += f->Entropy(Info.TotalWeight_);
          if (f->Eigenvalue > 0.0)
             --NumStates;
          ++KeptStatesPerSector[f->Q];
@@ -402,6 +412,9 @@ TruncateNumStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSecto
    while (NumStates > 0 && f != States.cend()) // && f->Eigenvalue > 0.0)
    {
       Result.push_back(*f);
+      ++Info.ExtraStates_;
+      Info.KeptWeight_ += f->Weight();
+      Info.KeptEntropy_ += f->Entropy(Info.TotalWeight_);
       ++f;
       --NumStates;
    }
