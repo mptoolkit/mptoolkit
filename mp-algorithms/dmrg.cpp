@@ -311,7 +311,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 // Expand the Basis1 of C.
 // On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
 MatrixOperator
-ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, StatesInfo const& States, int Delta, TruncationInfo& Info, StateComponent const& LeftHam)
+ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, StateComponent const& LeftHam)
 {
    StateComponent CExpand = C;
    // C = Lambda * CExpand.  Lambda is m x dm, CExpand is dm x d x m
@@ -338,7 +338,7 @@ ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const
    CMatSVD ExpandDM(X, CMatSVD::Left);
    //ExpandDM.DensityMatrixReport(std::cout);
 
-   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0, Info);
+   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
 
    MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
    // UExpand is (states_to_expand, discarded_states)
@@ -358,7 +358,7 @@ ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const
 // Apply subspace expansion / truncation on the right (C.Basis2()).
 // On exit, C' * Result' = C (up to truncation!), and C is left-orthogonal
 MatrixOperator
-ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam, StatesInfo const& States, int Delta, TruncationInfo& Info, StateComponent const& RightHam)
+ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, StateComponent const& RightHam)
 {
    //TRACE(norm_frob_sq(C));
    StateComponent CExpand = C;
@@ -430,7 +430,7 @@ ExtendBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const
 
    CMatSVD ExpandDM(X, CMatSVD::Left);
 
-   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), Delta, 0, Info);
+   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
 
    MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
    // UExpand is (states_to_expand, discarded_states)
@@ -916,7 +916,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& C,
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
    TruncationInfo Info;
-   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, Info);
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true, Info);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -985,7 +985,7 @@ ExpandRightEnvironment(StateComponent& C, StateComponent& CRight,
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
    TruncationInfo Info;
-   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, Info);
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true, Info);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -1085,7 +1085,7 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    return C->Basis2().total_dimension();
 }
 
-TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int Delta)
+TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    MatrixOperator X;
    TruncationInfo Info;
@@ -1095,7 +1095,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int Delta)
 	// 				      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 	// 				      States, Info,
 	// 				      HamMatrices.left(), DoUpdateKeepList);
-   X = ExtendBasis1(*C, *H, HamMatrices.right(), States, Delta, Info, HamMatrices.left());
+   X = ExtendBasis1(*C, *H, HamMatrices.right(), States, ExtraStates, ExtraStatesPerSector, Info, HamMatrices.left());
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -1121,7 +1121,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int Delta)
    return Info;
 }
 
-TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int Delta)
+TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    // Truncate right
    MatrixOperator X;
@@ -1132,7 +1132,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int Delta)
 	// 				      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 	// 				      States, Info,
 	// 				      HamMatrices.right(), DoUpdateKeepList);
-   X = ExtendBasis2(*C, *H, HamMatrices.left(), States, Delta, Info, HamMatrices.right());
+   X = ExtendBasis2(*C, *H, HamMatrices.left(), States, ExtraStates, ExtraStatesPerSector, Info, HamMatrices.right());
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';

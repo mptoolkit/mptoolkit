@@ -76,8 +76,8 @@ class DMRG
       void PrepareConvergenceTest();
       bool IsConverged() const;
 
-      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int Delta);
-      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int Delta);
+      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
 
       // Expand the environment basis to that it contains at least StatesWanted states, if possible.
       // Returns the actual environment size.

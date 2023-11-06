@@ -376,7 +376,7 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
 // could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, TruncationInfo& Info)
+TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool StatesPerSectorAllowZeroWeight, TruncationInfo& Info)
 {
    // We need to copy the EigenInfo, because we need to do two passes over it, and
    // possibly remove some elements on the first pass.
@@ -392,7 +392,7 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    auto f = States.cbegin();
    while (f != States.cend())
    {
-      if (KeptStatesPerSector[f->Q] < StatesPerSector)
+      if (KeptStatesPerSector[f->Q] < StatesPerSector && (StatesPerSectorAllowZeroWeight || f->Weight() > 0.0))
       {
          Result.push_back(*f);
          ++Info.ExtraStates_;

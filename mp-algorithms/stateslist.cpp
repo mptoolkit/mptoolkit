@@ -341,6 +341,7 @@ void StatesList::AppendToken(char const* s)
             {
                PANIC("StatesList format error: N*F..Mx, expecting a number of sweeps")(s);
             }
+            s = p;
             if (NumSweeps < 1)
             {
                PANIC("StatesList format error: number of sweeps must be >= 1");
