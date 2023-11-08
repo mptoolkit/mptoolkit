@@ -42,6 +42,16 @@ opstreambuf<format>& operator<<(opstreambuf<format>& out, boost::variant<BOOST_V
 template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
 ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
 
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+ipstream& operator>>(ipstream& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
+
+// Helper function to load a variant with a given type, specified by the Which parameter.
+template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
+void load_variant(ipstreambuf<format>& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
+
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+void load_variant(ipstream& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
+
 //
 // implementation
 //
@@ -78,12 +88,29 @@ struct variant_load
       static void invoke(ipstreambuf<format>&, int, T&)
       {
       }
+      template <typename T>
+      static void invoke(ipstream&, int, T&)
+      {
+      }
    };
 
    struct load_next
    {
       template <int format, typename T>
       static void invoke(ipstreambuf<format>& in, int Which, T& x)
+      {
+         if (Which == 0)
+         {
+            typedef typename boost::mpl::front<S>::type head_type;
+            head_type Value;
+            in >> Value;
+            x = Value;
+         }
+         else
+            variant_load<typename boost::mpl::pop_front<S>::type>::load(in, Which-1, x);
+      }
+      template <typename T>
+      static void invoke(ipstream&in, int Which, T& x)
       {
          if (Which == 0)
          {
@@ -104,7 +131,23 @@ struct variant_load
          boost::mpl::identity<load_null>, boost::mpl::identity<load_next> >::type InvokerType;
       InvokerType::invoke(in, Which, x);
    }
+
+   template <typename T>
+   static void load(ipstream& in, int Which, T& x)
+   {
+      typedef typename boost::mpl::eval_if<boost::mpl::empty<S>,
+         boost::mpl::identity<load_null>, boost::mpl::identity<load_next> >::type InvokerType;
+      InvokerType::invoke(in, Which, x);
+   }
 };
+
+// In C++17, std::variant has std::variant_size and std::variant_size_v, which seem to have no boost equivalent
+template <typename T>
+struct variant_size {};
+
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+struct variant_size<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>> : public std::integral_constant<std::size_t, boost::mpl::size<typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types>::value>
+{};
 
 template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
 ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x)
@@ -118,6 +161,42 @@ ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::variant<BOOST_VA
    }
    variant_load<types>::load(in, Which, x);
    return in;
+}
+
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+ipstream& operator>>(ipstream& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x)
+{
+   typedef typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types types;
+   int Which;
+   in >> Which;
+   if (Which >= boost::mpl::size<types>::value)
+   {
+      PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<types>());
+   }
+   variant_load<types>::load(in, Which, x);
+   return in;
+}
+
+template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
+void load_variant(ipstreambuf<format>& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x)
+{
+   typedef typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types types;
+   if (Which >= boost::mpl::size<types>::value)
+   {
+      PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<types>());
+   }
+   variant_load<types>::load(in, Which, x);
+}
+
+template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
+void load_variant(ipstream& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x)
+{
+   typedef typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types types;
+   if (Which >= boost::mpl::size<types>::value)
+   {
+      PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<types>());
+   }
+   variant_load<types>::load(in, Which, x);
 }
 
 } // namespace PStream
