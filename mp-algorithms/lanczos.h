@@ -71,13 +71,14 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    w = MatVecMultiply(v[0]);
    Hv.push_back(w);
-   SubH(0,0) = real(inner_prod(v[0], w));
-   w -= SubH(0,0) * v[0];
+   auto x = inner_prod(v[0], w);
+   SubH(0,0) = real(x);
+   w -= x * v[0];
 
    // iterative refinement; shouldn't be necessary but it certainly is, for MPS vectors
-   double Refinement = real(inner_prod(v[0], w));
-   SubH(0,0) += Refinement;
-   w -= Refinement * v[0];
+   x = inner_prod(v[0], w);
+   SubH(0,0) += real(x);
+   w -= x * v[0];
 
 
    Beta = norm_frob(w);
@@ -107,10 +108,12 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w = MatVecMultiply(v[i]);
       Hv.push_back(w);
       w -= Beta*v[i-1];
-      w -= real(inner_prod(v[i-1], w)) * v[i-1]; // iterative refinement
-      SubH(i,i) = real(inner_prod(v[i], w));
-      w -= SubH(i,i) * v[i];
-      w -= real(inner_prod(v[i], w)) * v[i]; // iterative refinement
+      w -= inner_prod(v[i-1], w) * v[i-1]; // iterative refinement
+      x = inner_prod(v[i], w);
+      SubH(i,i) = real(x);
+      w -= x * v[i];
+      x = inner_prod(v[i], w); // iterative refinement
+      SubH(i,i) += real(x);
       Beta = norm_frob(w);
 
       if (Beta < LanczosBetaTol)
