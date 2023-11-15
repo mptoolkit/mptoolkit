@@ -70,6 +70,12 @@ class DMRG
       // wavefunction (set to psi by StartSweep())
       double FidelityLoss() const;
 
+      // returns the dimension of the Basis1() of the active site
+      int BasisTotalDimension1() const { return C->Basis1().total_dimension(); }
+
+      // returns the dimension of the Basis2() of the active site
+      int BasisTotalDimension2() const { return C->Basis2().total_dimension(); }
+
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 

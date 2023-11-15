@@ -50,28 +50,45 @@ namespace prog_opt = boost::program_options;
 bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
 std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
 
-void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor, int DeltaPerSector, int NumStatesNext)
+struct ExpansionInfo
+{
+   double IncrementFactor;        // If the number of states is increasing from m to m', then add IncrementFactor*(m'-m) states
+   double ExpandFactor;           // Add additional ExpandFactor * m' states
+   int ExpandPerSector;           // Add this many states per available quantum number sector
+
+   bool should_expand() const
+   {
+      return IncrementFactor > 0.0 || ExpandFactor > 0.0 || ExpandPerSector > 0;
+   }
+
+   ExpansionInfo()
+      : IncrementFactor(0.0), ExpandFactor(0.0), ExpandPerSector(0) {}
+};
+
+void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesNextSweep)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
    while (dmrg.Site < dmrg.RightStop)
    {
-      int EnvStates = 0;
-      if (ExtraStates >= 0 && dmrg.Site < dmrg.RightStop-1)
+      int CurrentStates = dmrg.BasisTotalDimension2();
+      int DesiredStates = SInfo.MaxStates;
+      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*(DesiredStates-CurrentStates) + PreExpand.ExpandFactor*DesiredStates));
+
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
       {
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*(1.0+ExtraStatesFactor)+0.5));
-         EnvStates = dmrg.ExpandRightEnvironment(States, ExtraStatesPerSector);
+         CurrentStates = dmrg.ExpandRightEnvironment(CurrentStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      //int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor/*+(NumStatesNext-SInfo.MaxStates)*/)), 0);
-      int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor+(NumStatesNext-SInfo.MaxStates))), 0);
-      TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta, DeltaPerSector);
+      int Delta = std::max(int(std::ceil((NumStatesNextSweep-CurrentStates)*PostExpand.IncrementFactor)), 0);
+      Delta += int(std::ceil(SInfo.MaxStates*PostExpand.ExpandFactor));
+      TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
-         << " Env=" << EnvStates
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
+         << " Env=" << CurrentStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -84,29 +101,30 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraS
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector, double ExtraStatesFactor, int SweepNum, double DeltaFactor, int DeltaPerSector, int NumStatesNext)
+void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesNextSweep)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
    while (dmrg.Site > dmrg.LeftStop)
    {
-      int EnvStates = 0;
-      if (ExtraStates >= 0 && dmrg.Site > dmrg.LeftStop+1)
+      int CurrentStates = dmrg.BasisTotalDimension1();
+      int DesiredStates = SInfo.MaxStates;
+      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*(DesiredStates-CurrentStates) + PreExpand.ExpandFactor*DesiredStates));
+
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
       {
-         //int States = std::max(SInfo.MaxStates+ExtraStates, int(dmrg.C->Basis1().total_dimension()*ExtraStatesFactor+0.5));
-         int States = std::max(SInfo.MaxStates+ExtraStates, int(SInfo.MaxStates*(1.0+ExtraStatesFactor)+0.5));
-         EnvStates = dmrg.ExpandLeftEnvironment(States, ExtraStatesPerSector);
+         CurrentStates = dmrg.ExpandLeftEnvironment(CurrentStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      //int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor/*+(NumStatesNext-SInfo.MaxStates)*/)), 0);
-      int Delta = std::max(int(std::ceil(SInfo.MaxStates*DeltaFactor+(NumStatesNext-SInfo.MaxStates))), 0);
-      TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta, DeltaPerSector);
+      int Delta = std::max(int(std::ceil((NumStatesNextSweep-CurrentStates)*PostExpand.IncrementFactor)), 0);
+      Delta += int(std::ceil(SInfo.MaxStates*PostExpand.ExpandFactor));
+      TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
-         << " Env=" << EnvStates
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
+         << " Env=" << CurrentStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -130,9 +148,6 @@ int main(int argc, char** argv)
       int MinIter = 4;
       int MaxStates = 100000;
       double MixFactor = 0.0;
-      int EnvStates = 0;   /// keep this many additional environment states
-      int EnvStatesPerSector = 0;
-      double EnvStatesFactor = 0.10; // number of environment states = max(EnvStates, CurrentStates*(1+EnvStatesFactor))
       bool TwoSite = false;
       int NumSweeps = 10;
       double TruncCutoff = 0;
@@ -148,9 +163,17 @@ int main(int argc, char** argv)
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       std::string States = "100";
       double EvolveDelta = 0.0;
-      int Delta = 0;
-      double DeltaFactor = 0.0;
-      int DeltaPerSector = 1;
+      ExpansionInfo PreExpand;
+      ExpansionInfo PostExpand;
+
+      // Defaults for expansion
+      PreExpand.IncrementFactor = 1.0;
+      PreExpand.ExpandFactor = 0.1;
+      PreExpand.ExpandPerSector = 0;
+
+      PostExpand.IncrementFactor = 1.0;
+      PostExpand.ExpandFactor = 0.0;
+      PostExpand.ExpandPerSector = 1;
 
       std::cout.precision(14);
 
@@ -172,11 +195,12 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-          ("env-states", prog_opt::value(&EnvStates), FormatDefault("Minimum number of additional environment states to keep, set to -1 to disable environment expansion completely", EnvStates).c_str())
-         ("env-states-per-sector", prog_opt::value(&EnvStatesPerSector), FormatDefault("Minimum number of additional environment states in each quantum number sector", EnvStatesPerSector).c_str())
-         ("env-states-factor", prog_opt::value(&EnvStatesFactor), FormatDefault("Expand the environment by this factor (must be >= 1)", EnvStatesFactor).c_str())
-         ("delta", prog_opt::value(&DeltaFactor), FormatDefault("Expand the system by this factor", DeltaFactor).c_str())
-         ("extra-states-per-sector", prog_opt::value(&DeltaPerSector), FormatDefault("Add this many states per sector to the system block", DeltaPerSector).c_str())
+          ("pre-expand-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Pre-expansion growth factor for basis size increase", PreExpand.IncrementFactor).c_str())
+         ("pre-expand-factor", prog_opt::value(&PreExpand.ExpandFactor), FormatDefault("Pre-expansion factor", PreExpand.ExpandFactor).c_str())
+         ("pre-expand-per-sector", prog_opt::value(&PreExpand.ExpandPerSector), FormatDefault("Pre-expansion number of additional environment states in each quantum number sector", PreExpand.ExpandPerSector).c_str())
+         ("post-expand-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
+        ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
+        ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -317,9 +341,9 @@ int main(int argc, char** argv)
          if (Sweeps < MyStates.size()-1)
             NumStatesNext = MyStates[Sweeps+1].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, SInfo, EnvStates, int(EnvStatesPerSector*ModFactor+0.5), EnvStatesFactor*ModFactor, Sweeps+1, DeltaFactor*ModFactor, DeltaPerSector, NumStatesNext);
+            SweepLeft(dmrg, Sweeps+1, SInfo, PreExpand, PostExpand, NumStatesNext);
          else
-            SweepRight(dmrg, SInfo, EnvStates, int(EnvStatesPerSector*ModFactor+0.5), EnvStatesFactor*ModFactor, Sweeps+1, DeltaFactor*ModFactor, DeltaPerSector, NumStatesNext);
+            SweepRight(dmrg, Sweeps+1, SInfo, PreExpand, PostExpand, NumStatesNext);
 
 #if 0
          // the dmrg.Wavefunction() is not normalized anymore
