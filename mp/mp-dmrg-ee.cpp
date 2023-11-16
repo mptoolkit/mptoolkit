@@ -71,24 +71,24 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
    dmrg.StartSweep();
    while (dmrg.Site < dmrg.RightStop)
    {
-      int CurrentStates = dmrg.BasisTotalDimension2();
+      int CurrentEnvStates = dmrg.BasisTotalDimension2();
       int DesiredStates = SInfo.MaxStates;
-      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*(DesiredStates-CurrentStates) + PreExpand.ExpandFactor*DesiredStates));
+      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
       if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
       {
-         CurrentStates = dmrg.ExpandRightEnvironment(CurrentStates+ExtraStates, PreExpand.ExpandPerSector);
+         CurrentEnvStates = dmrg.ExpandRightEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = std::max(int(std::ceil((NumStatesNextSweep-CurrentStates)*PostExpand.IncrementFactor)), 0);
-      Delta += int(std::ceil(SInfo.MaxStates*PostExpand.ExpandFactor));
+      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesNextSweep-CurrentEnvStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
+      //TRACE(Delta)(PostExpand.IncrementFactor)(PostExpand.ExpandFactor);
       TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
-         << " Env=" << CurrentStates
+         << " Env=" << CurrentEnvStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -107,24 +107,23 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
    dmrg.StartSweep();
    while (dmrg.Site > dmrg.LeftStop)
    {
-      int CurrentStates = dmrg.BasisTotalDimension1();
+      int CurrentEnvStates = dmrg.BasisTotalDimension1();
       int DesiredStates = SInfo.MaxStates;
-      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*(DesiredStates-CurrentStates) + PreExpand.ExpandFactor*DesiredStates));
+      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
       if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
       {
-         CurrentStates = dmrg.ExpandLeftEnvironment(CurrentStates+ExtraStates, PreExpand.ExpandPerSector);
+         CurrentEnvStates = dmrg.ExpandLeftEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = std::max(int(std::ceil((NumStatesNextSweep-CurrentStates)*PostExpand.IncrementFactor)), 0);
-      Delta += int(std::ceil(SInfo.MaxStates*PostExpand.ExpandFactor));
+      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesNextSweep-CurrentEnvStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
       TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
-         << " Env=" << CurrentStates
+         << " Env=" << CurrentEnvStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -198,7 +197,7 @@ int main(int argc, char** argv)
           ("pre-expand-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Pre-expansion growth factor for basis size increase", PreExpand.IncrementFactor).c_str())
          ("pre-expand-factor", prog_opt::value(&PreExpand.ExpandFactor), FormatDefault("Pre-expansion factor", PreExpand.ExpandFactor).c_str())
          ("pre-expand-per-sector", prog_opt::value(&PreExpand.ExpandPerSector), FormatDefault("Pre-expansion number of additional environment states in each quantum number sector", PreExpand.ExpandPerSector).c_str())
-         ("post-expand-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
+         ("post-expand-increment", prog_opt::value(&PostExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
         ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
         ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
