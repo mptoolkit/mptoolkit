@@ -569,7 +569,7 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    // even if there is no matching state in the right basis.  This results in elements in the linear basis
    // that are effectively m*0 or 0*n matrices.  This is signalled by the Basis.find_first(q) == -1.
    // If we request both left and right singular vectors, then we ignore these zero singular values.
-   if (Which == Left || Which == Both)
+   if (Which == Left)
    {
       for (unsigned i = 0; i < B1.size(); ++i)
       {
@@ -577,9 +577,9 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
          int j = B2.find_first(q);
 
          IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
          q_iLinear.push_back(i);
          q_jLinear.push_back(j);
-         UsedQuantumNumbers.push_back(q);
       }
    }
    else if (Which == Right)
@@ -588,11 +588,11 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
       {
          QuantumNumber q = B2[j];
          int i = B1.find_first(q);
-
-         IndexOfi[i] = UsedQuantumNumbers.size();
+         if (i >= 0)
+            IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
          q_iLinear.push_back(i);
          q_jLinear.push_back(j);
-         UsedQuantumNumbers.push_back(q);
       }
    }
    else if (Which == Both)
@@ -605,9 +605,9 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
             continue;
 
          IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
          q_iLinear.push_back(i);
          q_jLinear.push_back(j);
-         UsedQuantumNumbers.push_back(q);
       }
 
    }
@@ -714,6 +714,7 @@ DoConstructLeftVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::
       int i = B1.MappedBasis().find_first(Q);
       while (i != -1)
       {
+         DEBUG_CHECK(q < LeftVectors.size())("The left vector doesn't exist - did you construct the left vectors?");
          A(i,ss) = LeftVectors[q](B1.Lookup(i).second, lm);
          i = B1.MappedBasis().find_next(Q, i);
       }
@@ -748,6 +749,7 @@ DoConstructRightVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std:
       int j = B2.MappedBasis().find_first(Q);
       while (j != -1)
       {
+         DEBUG_CHECK(q < RightVectors.size())("The right vector doesn't exist - did you construct the right vectors?");
          B(ss,j) = RightVectors[q](lm, B2.Lookup(j).second);
          j = B2.MappedBasis().find_next(Q, j);
       }

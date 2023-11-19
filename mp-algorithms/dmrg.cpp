@@ -255,7 +255,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 //   PRECONDITION: CExpand.Basis2() == C.Basis2()
 // For conventional 3S, CExpand is C with ExpandBasis1().
 // For Environment Expansion, CExpand is the null space (i.e. discarded space) of C.
- StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent const& C, OperatorComponent const& H, StateComponent const& LeftHam, StateComponent const& RightHam, double Normalization)
+StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent const& C, OperatorComponent const& H, StateComponent const& LeftHam, StateComponent const& RightHam, double Normalization)
 {
    CHECK_EQUAL(CExpand.Basis2(), C.Basis2());
 
@@ -313,45 +313,46 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 MatrixOperator
 ExtendBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, StateComponent const& LeftHam)
 {
-   StateComponent CExpand = C;
-   // C = Lambda * CExpand.  Lambda is m x dm, CExpand is dm x d x m
-   MatrixOperator Lambda = ExpandBasis1(CExpand);
-   MatrixOperator X = scalar_prod(CExpand, herm(C));  // This is equivalent to herm(Lambda), but we don't have a direct constructor
+   // Reshape C to m x dm, and SVD -> U D V^s (but we only care about the kept/discarded states from V^s)
+   MatrixOperator X = ReshapeBasis2(C);
 
-   // The usual truncation
-   CMatSVD DM(X, CMatSVD::Left);
+   CMatSVD DM(X, CMatSVD::Right);
 
    auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-   MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
-   MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+   MatrixOperator UKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
 
-   // CDiscard is the null space of the kept states
-   StateComponent CDiscard = herm(UDiscard)*CExpand;
+   // Only calculate the environment expansion if it is actually needed
+   if (ExtraStates > 0 || ExtraStatesPerSector > 0)
+   {
+      MatrixOperator UDiscard = DM.ConstructRightVectors(DMPivot, DM.end());
+      // CDiscard is the null space of the kept states
+      StateComponent CDiscard = ReshapeFromBasis2(UDiscard, C.LocalBasis(), C.Basis2());
 
-   // It is possible that we didn't keep as many states as we wanted to in the truncation,
-   // in which case we attempt to add them to the extra states
-   //Delta += std::max(Info.TotalStates() - Info.KeptStates(), 0);
+      // Now expand the basis
+      X = ReshapeBasis2(DensityMixingBasis1(CDiscard, C, H, LeftHam, RightHam, 1.0));
 
-   // Now expand the basis
-   X = ReshapeBasis2(DensityMixingBasis1(CDiscard, C, H, LeftHam, RightHam, 1.0));
+      CMatSVD ExpandDM(X, CMatSVD::Left);
+      //ExpandDM.DensityMatrixReport(std::cout);
 
-   CMatSVD ExpandDM(X, CMatSVD::Left);
-   //ExpandDM.DensityMatrixReport(std::cout);
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
 
-   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
+      MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+      // UExpand is (states_to_expand, discarded_states)
 
-   MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
-   // UExpand is (states_to_expand, discarded_states)
+      // map UExpand back into the original basis
+      UExpand = herm(UExpand) * UDiscard;
+      // UExpand is (dm-dimensional-expanded-basis, extra_states_to_keep)
 
-   // map UExpand back into the original basis
-   UExpand = UDiscard * UExpand;
-   // UExpand is (dm-dimensional-expanded-basis, extra_states_to_keep)
+      // The final basis is the sum of UKeep and UExpand
+      UKeep = RegularizeBasis1(tensor_col_sum(UKeep, UExpand));
+   }
 
-   // The final basis is the sum of UKeep and UExpand
-   MatrixOperator UFinal = RegularizeBasis2(tensor_row_sum(UKeep, UExpand));
+   // Reshape the kept states into a right-ortho A-matrix
+   StateComponent CNew = ReshapeFromBasis2(UKeep, C.LocalBasis(), C.Basis2());
 
-   C = herm(UFinal)*CExpand;
-   Lambda = Lambda*UFinal;
+   // Construct the new Lambda matrix, making use of CNew, being the right-ortho new basis
+   MatrixOperator Lambda = scalar_prod(C, herm(CNew));
+   C = CNew;
    return Lambda;
 }
 

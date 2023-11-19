@@ -174,6 +174,8 @@ struct TruncationInfo
    double SmallestKeptEigenvalue_;
    double LargestDiscardedEigenvalue_;
 
+   TruncationInfo();
+
    // return the total weight of all states considered
    double TotalWeight() const { return TotalWeight_; }
 
@@ -205,6 +207,12 @@ struct TruncationInfo
    // return the largest eigenvalue of the discarded states
    double LargestDiscardedEigenvalue() const { return LargestDiscardedEigenvalue_; }
 };
+
+inline
+TruncationInfo::TruncationInfo()
+   : TotalWeight_(0), KeptWeight_(0), TotalStates_(0), KeptStates_(0), ExtraStates_(0), TotalEntropy_(0), KeptEntropy_(0), SmallestKeptEigenvalue_(0), LargestDiscardedEigenvalue_(0)
+{
+}
 
 // functor to get the cumulative sum of eigenvalues
 template <class FwdIter>

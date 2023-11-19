@@ -71,6 +71,7 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
    dmrg.StartSweep();
    while (dmrg.Site < dmrg.RightStop)
    {
+      dmrg.StartIteration();
       int CurrentEnvStates = dmrg.BasisTotalDimension2();
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
@@ -95,6 +96,7 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
       SweepTruncation += States.TruncationError();
+      //dmrg.EndIteration();
       if (Bench)
          BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << '\n';
    }
@@ -107,6 +109,7 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
    dmrg.StartSweep();
    while (dmrg.Site > dmrg.LeftStop)
    {
+      dmrg.StartIteration();
       int CurrentEnvStates = dmrg.BasisTotalDimension1();
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
@@ -130,6 +133,7 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
       SweepTruncation += States.TruncationError();
+      //dmrg.EndIteration();
       if (Bench)
          BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << '\n';
    }
@@ -164,6 +168,7 @@ int main(int argc, char** argv)
       double EvolveDelta = 0.0;
       ExpansionInfo PreExpand;
       ExpansionInfo PostExpand;
+      double InitialFidelity = 1e-7;
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 1.0;
@@ -299,6 +304,7 @@ int main(int argc, char** argv)
       dmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
       dmrg.Solver().SetSubspaceSize(SubspaceSize);
       dmrg.Solver().SetPreconditioning(UsePreconditioning);
+      dmrg.Solver().SetInitialFidelity(1, InitialFidelity);
 
       dmrg.MixFactor = MixFactor;
 
