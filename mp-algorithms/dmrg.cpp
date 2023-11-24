@@ -123,12 +123,21 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       StateComponent CDiscard = ReshapeFromBasis2(UDiscard, C.LocalBasis(), C.Basis2());
 
       // Now expand the basis
-      X = ReshapeBasis2(DensityMixingBasis1(CDiscard, C, LeftHam, H, RightHam, 1.0));
+      StateComponent D = DensityMixingBasis1(CDiscard, C, LeftHam, H, RightHam, 1.0);
+
+      // first do an SVD on (m'w) x m matrix, to pre-compress
+      #if 0
+      double n = ExtraStates+ExtraStatesPerSector; //D.Basis2().total_dimension();
+      auto M = TruncateBasis2(D, StatesInfo(std::ceil(n / D.LocalBasis().size())));
+      D = D*M.first;
+      #endif
+      X = ReshapeBasis2(D);
 
       CMatSVD ExpandDM(X, CMatSVD::Left);
       //ExpandDM.DensityMatrixReport(std::cout);
 
-      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+      Info.ExtraStates_ = ExpandedStates.size();
 
       MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
       // UExpand is (discarded_states, states_to_expand)
@@ -146,6 +155,7 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
    // Construct the new Lambda matrix, making use of CNew, being the right-ortho new basis
    MatrixOperator Lambda = scalar_prod(C, herm(CNew));
+   Info.KeptWeight_ = norm_frob_sq(Lambda);
    C = CNew;
    return Lambda;
 }
@@ -236,12 +246,22 @@ TruncateExtendBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // CDiscard is the null space of the kept states
       StateComponent CDiscard = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
 
-      X = ReshapeBasis2(DensityMixingBasis2(CDiscard, C, LeftHam, H, RightHam, 1.0));
+      // Now expand the basis
+      StateComponent D = DensityMixingBasis2(CDiscard, C, LeftHam, H, RightHam, 1.0);
+
+      // Precompression step
+      #if 0
+      double n = ExtraStates+ExtraStatesPerSector; //D.Basis2().total_dimension();
+      auto M = TruncateBasis2(D, StatesInfo(std::ceil(n / D.LocalBasis().size())));
+      D = D*M.first;
+      #endif
+      X = ReshapeBasis2(D);
       // X is now (discarded basis) x (wm) matrix
 
       CMatSVD ExpandDM(X, CMatSVD::Left);
 
-      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false, Info);
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+      Info.ExtraStates_ = ExpandedStates.size();
 
       MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
       // UExpand is (discarded_states, states_to_expand)
@@ -259,6 +279,7 @@ TruncateExtendBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
    // Construct the new Lambda matrix, making use of CNew, being the left-ortho new basis
    MatrixOperator Lambda = scalar_prod(herm(CNew), C);
+   Info.KeptWeight_ = norm_frob_sq(Lambda);
    C = CNew;
    return Lambda;
 }
@@ -731,8 +752,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& C,
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   TruncationInfo Info;
-   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true, Info);
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 
@@ -800,8 +820,7 @@ ExpandRightEnvironment(StateComponent& C, StateComponent& CRight,
 
    CMatSVD SVD(XExpand, CMatSVD::Left);
 
-   TruncationInfo Info;
-   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true, Info);
+   auto StatesToKeep = TruncateExtraStates(SVD.begin(), SVD.end(), ExtraStates, ExtraStatesPerSector, true);
 
    MatrixOperator U = SVD.ConstructLeftVectors(StatesToKeep.begin(), StatesToKeep.end());
 

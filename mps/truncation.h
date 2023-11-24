@@ -120,7 +120,7 @@ bool EigenCompare(EigenInfo const& x, EigenInfo const& y)
 // this is the information that we set to determine the truncation of the basis
 struct StatesInfo
 {
-   static int const DefaultMaxStates = 100000;  // we need a large default for the max states to keep
+   static int const DefaultMaxStates = 1000000;  // we need a large default for the max states to keep
 
    int MinStates;
    int MaxStates;
@@ -136,6 +136,10 @@ struct StatesInfo
         TruncationCutoff(0),
         EigenvalueCutoff(0),
         TruncateRelative(false){}
+
+   explicit StatesInfo(int MaxStates_)
+      : MinStates(1), MaxStates(MaxStates_), TruncationCutoff(0), EigenvalueCutoff(0), TruncateRelative(false)
+   {}
 };
 
 inline
@@ -380,16 +384,13 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
 // some of the states that we added in StatesPerSector had zero weight.
 // We keep at least NumStates states, even if some have zero weight; the implementation
 // of the SVD ensures that these are unbiased random states.
-// We don't return a TruncationInfo object, since there isn't much meaningful information that it
-// could contain.  Some useful statistics might be the number of states with zero vs non-zero weight.
 template <typename FwdIter>
 std::list<EigenInfo>
-TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool StatesPerSectorAllowZeroWeight, TruncationInfo& Info)
+TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool StatesPerSectorAllowZeroWeight)
 {
    // We need to copy the EigenInfo, because we need to do two passes over it, and
    // possibly remove some elements on the first pass.
    std::list<EigenInfo> States(first, last);
-
 
    std::list<EigenInfo> Result;
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
@@ -403,9 +404,6 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
       if (KeptStatesPerSector[f->Q] < StatesPerSector && (StatesPerSectorAllowZeroWeight || f->Weight() > 0.0))
       {
          Result.push_back(*f);
-         ++Info.ExtraStates_;
-         Info.KeptWeight_ += f->Weight();
-         Info.KeptEntropy_ += f->Entropy(Info.TotalWeight_);
          if (f->Eigenvalue > 0.0)
             --NumStates;
          ++KeptStatesPerSector[f->Q];
@@ -420,9 +418,6 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    while (NumStates > 0 && f != States.cend()) // && f->Eigenvalue > 0.0)
    {
       Result.push_back(*f);
-      ++Info.ExtraStates_;
-      Info.KeptWeight_ += f->Weight();
-      Info.KeptEntropy_ += f->Entropy(Info.TotalWeight_);
       ++f;
       --NumStates;
    }
