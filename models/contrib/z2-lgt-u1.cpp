@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       // Gauss's law operators.
       UnitCellOperator G(Cell, "G");
 
-      G = N(0)[0] * X(0)[1] * X(0)[1];
+      G = N(0)[0] * X(0)[1] * X(-1)[1];
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
