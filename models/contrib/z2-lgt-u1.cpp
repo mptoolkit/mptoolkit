@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
       t += Z(0)[1] * dot(CH(0)[0], C(1)[0]) + Z(0)[1] * dot(CH(1)[0], C(0)[0]);
       m += N(0)[0];
-      x_field += Z(0)[1];
+      x_field += X(0)[1];
 
       Lattice["H_t"] = sum_unit(t);
       Lattice["H_m"] = sum_unit(m);
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
       // Gauss's law operators.
       UnitCellOperator G(Cell, "G");
 
-      G = N(0)[0] * X(0)[1] * X(-1)[1];
+      G = P(0)[0] * X(0)[1] * X(-1)[1];
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
