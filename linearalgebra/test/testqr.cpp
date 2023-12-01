@@ -35,7 +35,7 @@ void Test(int m, int n)
       Matrix<std::complex<double>> H = random_matrix<std::complex<double>>(m, n);
       Matrix<std::complex<double>> R(H);
       //TRACE(H);
-      Matrix<std::complex<double>> Q = QR_Factorize(R);
+      Matrix<std::complex<double>> Q = QR_FactorizeFull(R);
       CHECK_CLOSE(H,Matrix<complex>(Q*R))(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
    }
 
@@ -43,7 +43,7 @@ void Test(int m, int n)
       Matrix<double> H = random_matrix<double>(m, n);
       Matrix<double> R(H);
       //TRACE(H);
-      Matrix<double> Q = QR_Factorize(R);
+      Matrix<double> Q = QR_FactorizeFull(R);
       CHECK_CLOSE(H,Matrix<double>(Q*R))(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
    }
 }

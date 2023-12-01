@@ -448,27 +448,37 @@ SingularFactorize(M const& m)
 }
 
 //
-// QR_Factorize
+// QR_FactorizeFull
 //
-// Performs the QR factorization of a complex matrix.
+// Performs the QR factorization of an MxN complex matrix with M >= N.
 // The matrix is replaced by the upper triangular matrix R, and
 // the unitary matrix Q is returned.  QR=X, where X is the original
 // matrix, and R=X'.
 // In the case where X is MxN and M > N, there is a choice for how to represent
 // Q and R; we could choose full rank, Q is MxM, R is MxN, and is augmented by rows of zeros.
 // Or we can choose minimal rank, Q is MxN, R is NxN.
-// For the QR_Factorize() function, we choose the first option, so that R is MxN and so doesn't need resizing.
+// For the QR_FactorizeFull() function, we choose the first option, so that R is MxN and so doesn't need resizing.
 
 template <typename M, typename Mi = typename interface<M>::type>
-struct ImplementQRFactorize {};
+struct ImplementQRFactorizeFull {};
 
 template <typename M>
 inline
-typename ImplementQRFactorize<M&>::result_type
-QR_Factorize(M& m)
+typename ImplementQRFactorizeFull<M&>::result_type
+QR_FactorizeFull(M& m)
 {
-   return ImplementQRFactorize<M&>()(m);
+   return ImplementQRFactorizeFull<M&>()(m);
 }
+
+// For the 'thin' QR factorization, we return a pair of matrices, and pass the original matrix by value, so that
+// we can use move sematics to avoid creating a new matrix, where possible.  So we also abandon the generic interface
+// and just write the functions directly.
+
+std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+QR_Factorize(Matrix<std::complex<double>> M);
+
+std::tuple<Matrix<double>, Matrix<double>>
+QR_Factorize(Matrix<double> M);
 
 //
 // TridiagonalizeHermitian

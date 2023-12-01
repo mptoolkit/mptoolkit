@@ -1132,11 +1132,11 @@ struct ImplementSingularFactorize<M, Concepts::MatrixExpression<double, Mi>>
 };
 
 //
-// QR_Factorize
+// QR_FactorizeFull
 //
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
+struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
 {
    typedef Matrix<double> result_type;
    result_type operator()(M& m) const
@@ -1170,7 +1170,7 @@ struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>
 };
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
+struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
 {
    typedef Matrix<std::complex<double>> result_type;
    result_type operator()(M& m) const

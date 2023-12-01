@@ -138,7 +138,7 @@ random_unitary(size_type Size1, size_type Size2)
 {
    int sz = std::max(Size1, Size2);
    Matrix<Scalar> X = nrandom_matrix<Scalar>(sz, sz);
-   auto M = QR_Factorize(X);
+   auto M = QR_FactorizeFull(X);
    Matrix<Scalar> Result(Size1, Size2);
    Result = M(LinearAlgebra::range(0,Size1), LinearAlgebra::range(0,Size2));
    return Result;

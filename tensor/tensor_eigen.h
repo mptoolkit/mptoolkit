@@ -145,8 +145,20 @@ SingularValueDecomposition(IrredTensor<std::complex<double>, BasisList, BasisLis
                            IrredTensor<std::complex<double>, BasisList, BasisList>& D,
                            IrredTensor<std::complex<double>, BasisList, BasisList>& Vh);
 
+// QR factorization of a scalar operator, result is a pair of Q, R, where Q is rectangular, and R is upper-triangular.
+// We require that the number of rows of m >= number of columns, in each sector.
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+QR_FactorizeFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m);
+
+// QR factorization of a scalar operator, result is a pair of Q, R, where Q is rectangular, and R is square upper-triangular.
+// We require that the number of rows of m >= number of columns, in each sector.
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+QR_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m);
+
 // inverts a diagonal operator, with a given cutoff of singular values
-IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>
+IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>
 InvertDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<double> >,
                VectorBasis, VectorBasis> const& Op, double Cutoff);
 

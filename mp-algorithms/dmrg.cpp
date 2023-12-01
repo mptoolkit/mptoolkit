@@ -102,6 +102,72 @@ StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent
    return RH;
 }
 
+// Calculate how to determine ExtraStates among the available states, with relative weights given by the Weights array.
+// To do this, we start from the total weight of the available sectors, and stretch that interval w[j] to be length ExtraStates.
+// (we can cap ExtraStates at the total number of available states in sectors with non-zero weight, so ExtraStates is actually
+// achievable. We can also remove sectors that have zero weight from the Avail array.)
+// Then the number of states we keep of the j'th sector, k[j] is k[j] = round(sum(k<=j) w[k] - k[j-1]) (with k[-1] = 0).
+// If any of the k[j] > Avail[j], then pin k[j] = Avail[j], remove sector j from the Avail array, and repeat the distribution.
+
+std::map<QuantumNumbers::QuantumNumber, int>
+DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<QuantumNumbers::QuantumNumber, int> const& Avail, int ExtraStates, int ExtraStatesPerSector)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+
+   // Determine the total count of available states in sectors that have non-zero weight, and their total weight
+   int TotalWeight = 0;
+   int TotalAvail = 0;
+   for (auto const& a : Avail)
+   {
+      if (Weights[a.first] > 0)
+      {
+         TotalWeight += Weights[a.first];
+         TotalAvail += a.second;
+      }
+   }
+   ExtraStates = std::min(ExtraStates, TotalAvail); // cap ExtraStates, if it is more than the states available
+
+   // Fill the Result array with the interval length of the Weights, stretched to length ExtraStates
+   bool Valid = false;
+   while (!Valid)
+   {
+      Valid = true;
+      int StatesKeptSoFar = 0;
+      int WeightSum = 0;
+      int TotalWeightThisRound = TotalWeight;
+      int StatesWantedThisRound = ExtraStates;
+      for (auto const& a : Avail)
+      {
+         if (Weights[a.first] > 0)
+         {
+            WeightSum += Weights[a.first];
+            Result[a.first] = int(std::round((double(WeightSum) / TotalWeightThisRound) * StatesWantedThisRound)) - StatesKeptSoFar;
+            StatesKeptSoFar += Result[a.first];
+
+            // if we've exceed the possible allocation, then peg the number of states at the maximum and
+            // remove this sector from consideration in the next pass
+            if (Result[a.first] > a.second)
+            {
+               Result[a.first] = a.second;
+               ExtraStates -= a.second;
+               TotalWeight -= Weights[a.first];
+               Weights[a.first] = 0;
+               Valid = false;
+            }
+         }
+      }
+      DEBUG_CHECK_EQUAL(StatesKeptSoFar, StatesWantedThisRound);
+   }
+
+   // Final pass: add ExtraStatesPerSector to states that don't already have them
+   for (auto a : Avail)
+   {
+      if (Result[a.first] < ExtraStatesPerSector && Result[a.first] < a.second)
+         Result[a.first] += std::min(a.second, ExtraStatesPerSector);
+   }
+   return Result;
+}
+
 // Expand the Basis1 of C.
 // On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
 MatrixOperator
@@ -133,6 +199,46 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       #endif
       X = ReshapeBasis2(D);
 
+      #if 1
+      // Randomized SVD.  Firstly determine the number of states to keep in each sector
+
+      // Get the number of available states per sector.  We don't keep structurally zero states, so
+      // this is the minimum of the Basis1() and Basis2() dimensions in each sector.
+      std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector;
+      std::map<QuantumNumbers::QuantumNumber, int> Weights;
+      for (int i = 0; i < X.Basis1().size(); ++i)
+      {
+         QuantumNumber q = X.Basis1()[i];
+         int Dim1 = X.Basis1().dim(i);
+
+         int Where2 = X.Basis2().find_first(q);
+         int Dim2 = Where2 >= 0 ? X.Basis2().dim(Where2) : 0;
+
+         int NumAvail = std::min(Dim1, Dim2);
+         if (NumAvail > 0)
+         {
+            NumAvailablePerSector[q] = NumAvail;
+
+            // Set the relative weight to the number of kept states in this sector.
+            // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
+            // with respect to the density matrix mixing.
+            int WhereK = UKeep.Basis1().find_first(q);
+            Weights[q] = WhereK >= 0 ? UKeep.Basis1().dim(WhereK) : 1;
+         }
+      }
+
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+
+      VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+
+      MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
+      X = X*M;
+      auto R = QR_Factorize(X);
+      MatrixOperator UExpand = R.first;
+
+      Info.ExtraStates_ = ExtraBasis.total_dimension();
+
+      #else
       CMatSVD ExpandDM(X, CMatSVD::Left);
       //ExpandDM.DensityMatrixReport(std::cout);
 
@@ -141,6 +247,7 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
       MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
       // UExpand is (discarded_states, states_to_expand)
+      #endif
 
       // map UExpand back into the original basis
       UExpand = herm(UExpand) * UDiscard;

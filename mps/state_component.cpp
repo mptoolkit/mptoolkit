@@ -1328,7 +1328,7 @@ MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
       {
          if (is_transform_target(B2[j], q, B1[i]))
          {
-            Result(i,j) = LinearAlgebra::random_matrix<std::complex<double> >(B1.dim(i), B2.dim(j));
+            Result(i,j) = LinearAlgebra::nrandom_matrix<std::complex<double> >(B1.dim(i), B2.dim(j));
          }
       }
    }

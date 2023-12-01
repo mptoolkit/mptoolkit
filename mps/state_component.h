@@ -842,6 +842,7 @@ StateComponent tensor_accumulate(FwdIter first, FwdIter last,
 
 // utility functions to generate random matrices.
 // Typically used to initialize iterative eigensolvers etc
+// This makes a Gaussian random matrix
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1, VectorBasis const& B2,
                                         QuantumNumber q);
 

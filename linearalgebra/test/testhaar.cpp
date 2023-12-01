@@ -28,7 +28,8 @@ Matrix<std::complex<double> > random_unitary(size_type Size)
 {
    Matrix<std::complex<double> > M = nrandom_matrix<std::complex<double> >(Size, Size);
    Matrix<std::complex<double> > R = M;
-   Matrix<std::complex<double> > Q = QR_Factorize(R);
+   Matrix<std::complex<double> > Q = QR_FactorizeFull(R);
+   return Q;
    Matrix<std::complex<double> > Lambda(Size, Size, 0.0);
    for (int i = 0; i < Size; ++i)
    {
