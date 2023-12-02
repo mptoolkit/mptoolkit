@@ -29,6 +29,40 @@
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
+class ExpansionAlgorithm
+{
+   public:
+      enum Algorithm { BEGIN, MixingFullSVD = BEGIN, Mixing, DEFAULT = Mixing, Random, CBE, END };
+
+      ExpansionAlgorithm() : algorithm(DEFAULT) {}
+
+      ExpansionAlgorithm(Algorithm a) : algorithm(a) {}
+
+      explicit ExpansionAlgorithm(std::string Name);
+
+      // Enable iteration (including range-based for loop) over the available algorithms
+      ExpansionAlgorithm begin() const { return BEGIN; }
+      ExpansionAlgorithm end() const { return END; }
+
+      bool operator==(ExpansionAlgorithm const& Other) const { return algorithm == Other.algorithm; }
+      bool operator!=(ExpansionAlgorithm const& Other) const { return algorithm != Other.algorithm; }
+      bool operator==(Algorithm a) const { return algorithm == a; }
+      bool operator!=(Algorithm a) const { return algorithm != a; }
+      ExpansionAlgorithm& operator++() { algorithm = static_cast<Algorithm>(algorithm+1); return *this; }
+      const ExpansionAlgorithm& operator*() const { return *this; }
+
+      static const std::vector<std::string> AlgorithmNames;
+
+      static std::string ListAvailable();
+
+      std::string Name() const { return AlgorithmNames[algorithm]; }
+
+      Algorithm Algo() const { return algorithm; }
+
+   private:
+      Algorithm algorithm;
+};
+
 class DMRG
 {
    public:
@@ -127,6 +161,8 @@ class DMRG
       double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
       double SweepEnergyError;       // standard error of the energy at each iteration
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
+
+      ExpansionAlgorithm PreExpansionAlgo, PostExpansionAlgo;
 
       // some statistics, for current iteration
       int IterationNumMultiplies;

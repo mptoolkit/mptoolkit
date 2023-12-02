@@ -508,9 +508,8 @@ void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, Whi
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
-      //TRACE(i);
-      //TRACE(M[i].size1())(M[i].size2());
-      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
+      //TRACE(i)(M[i].size1())(M[i].size2());
+      LinearAlgebra::Matrix<std::complex<double>> U, Vh;
       LinearAlgebra::Vector<double> D;
       if (Which == Both)
       {

@@ -855,6 +855,8 @@ struct ImplementSingularValueDecompositionLeftFull<A, U, D,
          //else we have a 0 x 0 matrix
          return;
       }
+      if (m == 0)
+         return;    // matrices are 0x0
 
       Matrix<std::complex<double>> Acopy(a);
       Matrix<std::complex<double>> Ures(m, m);
@@ -907,6 +909,10 @@ struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
          }
          return;
       }
+
+      // if n is zero, then the matrices are 0x0 so we can quit now
+      if (n == 0)
+         return;
 
       Matrix<std::complex<double> > Acopy(a);
       Vector<double> Dres(n);

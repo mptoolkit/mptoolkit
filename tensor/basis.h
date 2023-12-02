@@ -197,6 +197,17 @@ QuantumNumbersInBasis(BasisList const& b)
    return std::set<QuantumNumbers::QuantumNumber>(b.begin(), b.end());
 }
 
+// Get a map of the dimension of the basis per quantum number sector
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+DimensionPerSector(BasisList const& b)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < b.size(); ++i)
+      ++Result[b[i]];
+   return Result;
+}
+
 // construct a mapping from the components with a particular quantum number,
 // onto successive integers
 std::map<int, int>
@@ -344,6 +355,16 @@ std::set<QuantumNumbers::QuantumNumber>
 QuantumNumbersInBasis(VectorBasis const& b)
 {
    return std::set<QuantumNumbers::QuantumNumber>(b.Basis().begin(), b.Basis().end());
+}
+
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+DimensionPerSector(VectorBasis const& b)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < b.size(); ++i)
+      Result[b[i]] += b.dim(i);
+   return Result;
 }
 
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
