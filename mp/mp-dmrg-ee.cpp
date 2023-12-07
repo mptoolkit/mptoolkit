@@ -65,6 +65,13 @@ struct ExpansionInfo
       : IncrementFactor(0.0), ExpandFactor(0.0), ExpandPerSector(0) {}
 };
 
+ExpansionInfo operator*(ExpansionInfo e, double factor)
+{
+   e.ExpandFactor *= factor;
+   e.ExpandPerSector = int(std::round(e.ExpandPerSector * factor));
+   return e;
+}
+
 void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesNextSweep)
 {
    double SweepTruncation = 0;
@@ -153,8 +160,8 @@ int main(int argc, char** argv)
       double MixFactor = 0.0;
       bool TwoSite = false;
       int NumSweeps = 10;
-      double TruncCutoff = 0;
-      double EigenCutoff = -1;
+      double TruncCutoff = -1;
+      double EigenCutoff = 1e-30;
       int SubspaceSize = 30;
       bool UsePreconditioning = false;
       bool UseDGKS = false;
@@ -173,12 +180,12 @@ int main(int argc, char** argv)
       std::string PostExpandAlgo = ExpansionAlgorithm().Name();
 
       // Defaults for expansion
-      PreExpand.IncrementFactor = 1.0;
-      PreExpand.ExpandFactor = 0.1;
+      PreExpand.IncrementFactor = 0.0;
+      PreExpand.ExpandFactor = 0.0;
       PreExpand.ExpandPerSector = 0;
 
       PostExpand.IncrementFactor = 1.0;
-      PostExpand.ExpandFactor = 0.0;
+      PostExpand.ExpandFactor = 0.1;
       PostExpand.ExpandPerSector = 1;
 
       std::cout.precision(14);
@@ -342,10 +349,10 @@ int main(int argc, char** argv)
 
       int NumStatesNext = MyStates[0].NumStates;
       int ZeroEnvCount = 0;
+      double ModFactor = 1.0;
       for (int Sweeps = 0; Sweeps < MyStates.size(); ++Sweeps)
       {
          SInfo.MaxStates = MyStates[Sweeps].NumStates;
-         double ModFactor = 1.0;
          if (MyStates[Sweeps].ZeroEnv)
          {
             ++ZeroEnvCount;
@@ -357,31 +364,9 @@ int main(int argc, char** argv)
          if (Sweeps < MyStates.size()-1)
             NumStatesNext = MyStates[Sweeps+1].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, Sweeps+1, SInfo, PreExpand, PostExpand, NumStatesNext);
+            SweepLeft(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesNext);
          else
-            SweepRight(dmrg, Sweeps+1, SInfo, PreExpand, PostExpand, NumStatesNext);
-
-#if 0
-         // the dmrg.Wavefunction() is not normalized anymore
-         double Norm2 = norm_2_sq(dmrg.Wavefunction());
-
-         // We need to re-calculate the energy, since it will have changed slightly after the truncation
-         double E = dmrg.Energy()/Norm2;
-         std::cout << "E = " << E << '\n';
-
-         if (CalculateH2)
-         {
-            double h2 = std::abs(expectation(dmrg.Wavefunction(), Ham2, dmrg.Wavefunction()))/Norm2;
-            double nh2 = h2 - E*E;
-            std::cout << "(H-E)^2 = " << nh2 << '\n';
-         }
-
-         Psi = dmrg.Wavefunction();
-         double Overlap = dmrg.FidelityLoss();
-
-         std::cout << "Wavefunction difference from last half-sweep = " << Overlap << '\n';
-         OldPsi = Psi;
-#endif
+            SweepRight(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesNext);
       }
 
       // finished the iterations.
