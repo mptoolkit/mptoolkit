@@ -223,3 +223,12 @@ ConstructRightVectors(FwdIter first, FwdIter last)
    auto Mapping = this->ConstructMapping(first, last);
    return this->DoConstructRightVectors(Mapping);
 }
+
+template <typename FwdIter>
+RealDiagonalOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructSingularValues(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructSingularValues(Mapping);
+}

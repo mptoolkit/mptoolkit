@@ -140,6 +140,10 @@ struct StatesInfo
    explicit StatesInfo(int MaxStates_)
       : MinStates(1), MaxStates(MaxStates_), TruncationCutoff(0), EigenvalueCutoff(0), TruncateRelative(false)
    {}
+
+   // helper function that returns true if the configuration of the StatesInfo is such that
+   // we want to keep eigenvalues that are exactly zero
+   bool KeepZeroEigenvalues() const { return TruncationCutoff < 0 && EigenvalueCutoff < 0; }
 };
 
 inline

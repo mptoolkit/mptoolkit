@@ -32,7 +32,7 @@
 class ExpansionAlgorithm
 {
    public:
-      enum Algorithm { BEGIN, MixingFullSVD = BEGIN, Mixing, DEFAULT = Mixing, Random, CBE, END };
+      enum Algorithm { BEGIN, MixingFullSVD = BEGIN, Mixing, DEFAULT = Mixing, Random, END };
 
       ExpansionAlgorithm() : algorithm(DEFAULT) {}
 
@@ -82,9 +82,6 @@ class DMRG
 
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
-
-      void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
-      void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
 
       //   int LeftSize() const { return Psi.LeftSize(); }
       //   int RightSize() const { return Psi.RightSize(); }

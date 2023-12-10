@@ -38,7 +38,7 @@ double const PrefactorEpsilon = 1e-16;
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
-const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "mixing-full", "mixing", "random", "cbe" };
+const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "mixing-full", "mixing", "random" };
 
 std::string ExpansionAlgorithm::ListAvailable()
 {
@@ -335,10 +335,6 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
          VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
          MatrixOperator M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
-         M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
-         M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
-         M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
-         M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
 
          // Project the discarded basis onto the random vectors via the QR decomposition
          auto QR = QR_Factorize(M);
@@ -366,23 +362,29 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
 // Construct the mixing term according to the 3S algorithm with weight matrix.
 // On entry:
-//   CExpand is an A-matrix where the Basis2() dimension m' is the basis that we want to mix into, in left orthonormal form.
-//   C is the wavefunction, in the Center orthonormal basis.
+//   LExpand is an A-matrix where the Basis2() dimension m' is the basis that we want to mix into, in left orthonormal form.
+//   L is the kept states of the wavefunction, with wavefunction Lambda.
 //   H is the on-site Hamiltonian
-//   LeftHam and RightHam are the environment Hamiltonian's, in the basis of C
+//   LeftHam and RightHam are the environment Hamiltonians, in the basis of L.Basis1() and L.Basis2()
 //   Normalization is the desired norm_frob of the result
-//   Result' is a m' x w x m matrix, where m' is the Basis1() of CExpand, w is the Basis1() of the MPO with the first and last
-//     elements removed, and m is Basis1() of CExpand (and C).
-//   The asymmetry with DensityMatrixMixingBasis1() is because contract_from_left takes the hermitian conjugate of CExpand
-//   PRECONDITION: CExpand.Basis2() == C.Basis2()
-// For conventional 3S, CExpand is C with ExpandBasis2().
-// For Environment Expansion, CExpand is the null space (i.e. discarded space) of C.
+//   Result' is a m' x w x m matrix, where m' is the Basis2() of LExpand, w is the Basis2() of the MPO with the first and last
+//     elements removed, and m is Basis2() of Lambda.
+//   The asymmetry with DensityMatrixMixingBasis1() is because contract_from_left takes the hermitian conjugate of LExpand
+//   PRECONDITION: LExpand.Basis1() == C.Basis1()
+// For conventional 3S, LExpand is L with ExpandBasis2().
+// For Environment Expansion, LExpand is the null space (i.e. discarded space) of L.
 // The complication with this code is handling the weight matrix when there are components of the environment that have zero
 // norm.  The approach we take is that if there is a component with zero norm, then we set the weight equal to the smallest
 // non-zero weight.  If all of the weights are zero, then we set the weights to be equal.
-StateComponent DensityMixingBasis2(StateComponent const& CExpand, StateComponent const& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
+StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent const& L, MatrixOperator const& Lambda, RealDiagonalOperator const& LambdaD, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
 {
-   CHECK_EQUAL(CExpand.Basis1(), C.Basis1());
+   DEBUG_CHECK_EQUAL(LExpand.Basis1(), L.Basis1());
+   DEBUG_CHECK_EQUAL(L.Basis2(), Lambda.Basis1());
+   DEBUG_CHECK_EQUAL(L.Basis2(), LambdaD.Basis1());
+   DEBUG_CHECK_EQUAL(L.Basis1(), LeftHam.Basis1());
+   DEBUG_CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
+   DEBUG_CHECK_EQUAL(L.LocalBasis(), LExpand.LocalBasis());
+   DEBUG_CHECK_EQUAL(L.LocalBasis(), H.LocalBasis2());
 
    // Remove the Hamiltonian term, which is the last term.  The first term is the identity.
    SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin()+1, H.Basis2().end()-1));
@@ -393,19 +395,18 @@ StateComponent DensityMixingBasis2(StateComponent const& CExpand, StateComponent
    }
 
    // LH is dm * w * m expanded basis, MPO, original basis
-   StateComponent LH = contract_from_left(H*Projector, herm(CExpand), LeftHam, C);
+   StateComponent LH = contract_from_left(H*Projector, herm(LExpand), LeftHam, L) * LambdaD;
 
    // Normalize the noise vectors.  Since LH[0] is Lambda itself,
    // Weights[i] corresponds to the weight of LH[i+1]
    std::vector<double> LeftWeight(LH.size(), 0.0);
    std::vector<double> RightWeight(LH.size(), 0.0);
    double NormSqTotal = 0;
-   MatrixOperator L2 = ReshapeBasis1(C);
    double MinNonZeroWeight = 0.0;
    for (int i = 0; i < LeftWeight.size(); ++i)
    {
       LeftWeight[i] = norm_frob(LH[i]);
-      RightWeight[i] = norm_frob(L2*RightHam[i+1]);  // +1 here to align with LH[i], that projects out the first and last components
+      RightWeight[i] = norm_frob(Lambda*RightHam[i+1]);  // +1 here to align with LH[i], that projects out the first and last components
       double w = LeftWeight[i]*RightWeight[i];
       if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
          MinNonZeroWeight = w;
@@ -429,124 +430,147 @@ StateComponent DensityMixingBasis2(StateComponent const& CExpand, StateComponent
          LH[i] *= RightWeight[i] * ScaleFactor;
       }
    }
+
+   DEBUG_CHECK_EQUAL(LH.Basis1(), LExpand.Basis2());
+   DEBUG_CHECK_EQUAL(LH.Basis2(), L.Basis2());
    return LH;
+}
+
+// Expand the Basis2 of L, by incorporating some states from LNull.
+// On input, LNull and L are left orthogonal, and share the same Basis1().
+// Lamda is the center matrix corresponding to L.
+// LeftHam, RightHam, are the environment Hamiltonian in the basis of C.Basis1() and
+// Lambda.Basis2(), and H is the MPO at the site L.
+// On exit, L' and Lambda' have added columns (respectively rows), so that
+// The physical wavefunction is then the row sum of [L, Extra], and the Lambda matrix is the column sum
+// [ Lambda ]
+// [ Z      ]
+// and the basis is regular.
+// LNull is passed by value, since we typically want to destroy it so we can move it into this function.
+int
+ExpandBasis2(StateComponent LNull, StateComponent& L, MatrixOperator& Lambda, RealDiagonalOperator const& LambdaD, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector)
+{
+   DEBUG_CHECK_EQUAL(LNull.Basis1(), L.Basis1());
+   DEBUG_CHECK_EQUAL(LNull.LocalBasis(), L.LocalBasis());
+   DEBUG_CHECK_EQUAL(L.Basis1(), LeftHam.Basis1());
+   DEBUG_CHECK_EQUAL(L.Basis2(), Lambda.Basis1());
+   DEBUG_CHECK_EQUAL(L.Basis2(), LambdaD.Basis1());
+   DEBUG_CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
+   DEBUG_CHECK_EQUAL(L.LocalBasis(), H.LocalBasis2());
+
+   if (ExtraStates == 0 && ExtraStatesPerSector == 0)
+      return 0;
+
+   if (Algo == ExpansionAlgorithm::Mixing)
+   {
+      StateComponent D = DensityMixingBasis2(LNull, L, Lambda, LambdaD, LeftHam, H, RightHam, 1.0);
+      MatrixOperator X = ReshapeBasis2(D);
+
+      // Randomized SVD.
+      // Get the number of available states per sector.  We don't keep structurally zero states, so
+      // this is the minimum of the Basis1() and Basis2() dimensions in each sector.
+      std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(X);
+      std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(L.Basis2());
+      std::map<QuantumNumbers::QuantumNumber, int> Weights;
+      for (auto n : NumAvailablePerSector)
+      {
+         // Set the relative weight to the number of kept states in this sector.
+         // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
+         // with respect to the density matrix mixing.
+         if (n.second > 0)
+            Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
+      }
+
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+
+      VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+
+      MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
+      X = X*M;
+      auto QR = QR_Factorize(X);
+
+      LNull = LNull * QR.first;
+   }
+   else if (Algo == ExpansionAlgorithm::MixingFullSVD)
+   {
+      // Now expand the basis
+      StateComponent D = DensityMixingBasis2(LNull, L, Lambda, LambdaD, LeftHam, H, RightHam, 1.0);
+      MatrixOperator X = ReshapeBasis2(D);
+      // X is now (discarded basis) x (wm) matrix
+
+      CMatSVD ExpandDM(X, CMatSVD::Left);
+
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+
+      MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+      // UExpand is (discarded_states, states_to_expand)
+
+      LNull = LNull * UExpand;
+   }
+   else if (Algo == ExpansionAlgorithm::Random)
+   {
+      // This algorithm is unstable with respect to ExtraStatesPerSector
+      // Distribute the number of states in each sector according to the weights of the kept states.
+      auto NumAvailablePerSector = DimensionPerSector(LNull.Basis2());
+      auto Weights = DimensionPerSector(L.Basis2());
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+
+      // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
+      VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+      MatrixOperator M = MakeRandomMatrixOperator(LNull.Basis2(), ExtraBasis);
+
+      // Project the discarded basis onto the random vectors via the QR decomposition
+      auto QR = QR_Factorize(M);
+
+      LNull = LNull * QR.first;
+   }
+   else
+   {
+      PANIC("Unsupported expansion algorithm");
+   }
+
+   SumBasis<VectorBasis> S(L.Basis2(), LNull.Basis2());
+   Regularizer R(S.Basis());
+   L = RegularizeBasis2(tensor_row_sum(L, LNull, S), R);
+   Lambda = RegularizeBasis1(R, tensor_col_sum(Lambda, MatrixOperator(LNull.Basis2(), Lambda.Basis2()), S));
+
+   return LNull.Basis2().total_dimension();
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
 // On exit, C' * Result' = C (up to truncation!), and C is left-orthogonal
 MatrixOperator
-TruncateExtendBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info)
+TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info)
 {
    MatrixOperator X = ReshapeBasis1(C);
 
-   CMatSVD DM(X, CMatSVD::Left);
+   // Only construct the full left SVD if we are going to expand the basis or if we want to keep states with zero weight
+   if (ExtraStates > 0 || ExtraStatesPerSector > 0 || (States.KeepZeroEigenvalues() && States.MaxStates > C.Basis2().total_dimension()))
+   {
+      CMatSVD DM(X, CMatSVD::Left);
 
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+      RealDiagonalOperator LambdaD = DM.ConstructSingularValues(DM.begin(), DMPivot);
+
+      StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      StateComponent LExpand = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(L), C);
+      C = std::move(L);
+
+      Info.ExtraStates_ += ExpandBasis2(std::move(LExpand), C, Lambda, LambdaD, LeftHam, H, RightHam, Algo, ExtraStates, ExtraStatesPerSector);
+
+      return Lambda;
+   }
+   // else no expansion, we can do a minimal truncation
+   CMatSVD DM(X);
    auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
    MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
 
-   // Only calculate the envirnment expansion if it is actually needed
-   if (ExtraStates > 0 || ExtraStatesPerSector > 0)
-   {
-      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
-      // CDiscard is the null space of the kept states
-      StateComponent CDiscard = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
-
-      MatrixOperator UExpand;
-
-      if (Algo == ExpansionAlgorithm::Mixing)
-      {
-         StateComponent D = DensityMixingBasis2(CDiscard, C, LeftHam, H, RightHam, 1.0);
-         X = ReshapeBasis2(D);
-
-         // Randomized SVD.
-         // Get the number of available states per sector.  We don't keep structurally zero states, so
-         // this is the minimum of the Basis1() and Basis2() dimensions in each sector.
-         std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(X);
-         std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(UKeep.Basis1());
-         std::map<QuantumNumbers::QuantumNumber, int> Weights;
-         for (auto n : NumAvailablePerSector)
-         {
-            // Set the relative weight to the number of kept states in this sector.
-            // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
-            // with respect to the density matrix mixing.
-            if (n.second > 0)
-               Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
-         }
-
-         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
-
-         VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
-
-         MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
-         X = X*M;
-         auto QR = QR_Factorize(X);
-         MatrixOperator UExpand = QR.first;
-         Info.ExtraStates_ = ExtraBasis.total_dimension();
-
-         // map UExpand back into the original basis
-         UExpand = UDiscard * UExpand;
-
-         // The final basis is the sum of UKeep and UExpand
-         UKeep = RegularizeBasis2(tensor_row_sum(UKeep, UExpand));
-
-      }
-      else if (Algo == ExpansionAlgorithm::MixingFullSVD)
-      {
-         // Now expand the basis
-         StateComponent D = DensityMixingBasis2(CDiscard, C, LeftHam, H, RightHam, 1.0);
-         X = ReshapeBasis2(D);
-         // X is now (discarded basis) x (wm) matrix
-
-         CMatSVD ExpandDM(X, CMatSVD::Left);
-
-         auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
-         Info.ExtraStates_ = ExpandedStates.size();
-
-         MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
-         // UExpand is (discarded_states, states_to_expand)
-
-         // map UExpand back into the original basis
-         UExpand = UDiscard * UExpand;
-         // UExpand is (dm-dimensional-expanded-basis, extra_states_to_expand)
-
-         // The final basis is the sum of UKeep and UExpand
-         UKeep = RegularizeBasis2(tensor_row_sum(UKeep, UExpand));
-
-      }
-      else if (Algo == ExpansionAlgorithm::Random)
-      {
-         // This algorithm is unstable with respect to ExtraStatesPerSector
-         // Distribute the number of states in each sector according to the weights of the kept states.
-         // Cap the number of states to keep per sector at 50% additional of the number of used sectors.
-         auto NumAvailablePerSector = DimensionPerSector(UDiscard.Basis2());
-         auto Weights = DimensionPerSector(UKeep.Basis2());
-         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(UKeep.Basis1().size() * 1.5));
-
-         // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
-         VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
-         MatrixOperator M = MakeRandomMatrixOperator(UDiscard.Basis2(), ExtraBasis);
-
-         // Project the discarded basis onto the random vectors via the QR decomposition
-         auto QR = QR_Factorize(M);
-
-         MatrixOperator UExpand = QR.first;
-         Info.ExtraStates_ = ExtraBasis.total_dimension();
-         UExpand = UDiscard * UExpand;
-         UKeep = RegularizeBasis1(tensor_row_sum(UKeep, UExpand));
-      }
-      else
-      {
-         PANIC("Unsupported expansion algorithm");
-      }
-   }
-
-   // Reshape the kept states into a left-ortho A-matrix
-   StateComponent CNew = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
-
-   // Construct the new Lambda matrix, making use of CNew, being the left-ortho new basis
-   MatrixOperator Lambda = scalar_prod(herm(CNew), C);
-   //Info.KeptWeight_ = norm_frob_sq(Lambda);
-   C = CNew;
+   StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+   MatrixOperator Lambda = scalar_prod(herm(L), C);
+   C = std::move(L);
    return Lambda;
 }
 
@@ -689,128 +713,6 @@ FiniteWavefunctionLeft
 DMRG::Wavefunction() const
 {
    return FiniteWavefunctionLeft::Construct(Psi);
-}
-
-void DMRG::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
-{
-   bool const ClearLogs = Conf.Get("ClearLogs", true);
-   std::ios_base::openmode Mode = ClearLogs ? (std::ios_base::out | std::ios_base::trunc)
-      : (std::ios_base::out | std::ios_base::app);
-
-   std::string const EnergyLogFile = BasePath + ".e";
-   int const EnergyLogLevel = Conf.Get("EnergyLogLevel", 0);
-   Logger("EnergyLog").SetThreshold(EnergyLogLevel);
-   if (EnergyLogLevel == 0 && ClearLogs)
-      remove(EnergyLogFile.c_str());
-   else if (EnergyLogLevel > 0)
-   {
-      EnergyLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(EnergyLogFile.c_str(), Mode));
-      EnergyLog->precision(getenv_or_default("MP_PRECISION", 14));
-      (*EnergyLog) << "#TotalSweepNumber #SweepNumber #Site "
-                   << "#NumStates #NumMulti #Trunc #Trunc50 #Entropy #Energy\n";
-      Logger("EnergyLog").SetStream(*EnergyLog);
-   }
-
-   std::string const SweepLogFile = BasePath + ".sweep";
-   int const SweepLogLevel = Conf.Get("SweepLogLevel", 0);
-   Logger("SweepLog").SetThreshold(SweepLogLevel);
-   if (SweepLogLevel == 0 && ClearLogs)
-      remove(SweepLogFile.c_str());
-   else if (SweepLogLevel > 0)
-   {
-      SweepLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(SweepLogFile.c_str(), Mode));
-      SweepLog->precision(getenv_or_default("MP_PRECISION", 14));
-      (*SweepLog) << "#TotalSweepNum #SweepNum #NIterations #States "
-         "#NMult #WTime #Trunc #E_trunc #E_sigma #Entropy #(H-E)^2 #Overlap #ODiff #Energy #MixFactor #Converged\n";
-      Logger("SweepLog").SetStream(*SweepLog);
-   }
-
-   std::string const DensityLogFile = BasePath + ".density";
-   int const DensityLogLevel = Conf.Get("DensityLogLevel", 0);
-   Logger("DensityLog").SetThreshold(DensityLogLevel);
-   if (DensityLogLevel == 0 && ClearLogs)
-      remove(DensityLogFile.c_str());
-   else if (DensityLogLevel > 0)
-   {
-      DensityLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(DensityLogFile.c_str(), Mode));
-      DensityLog->precision(getenv_or_default("MP_PRECISION", 14));
-      Logger("DensityLog").SetStream(*DensityLog);
-   }
-
-   // CpuLog
-   // DiagLog
-
-   ConvergenceOverlapTruncationScale = Conf.Get("Convergence::OverlapTruncationRatio", 1.0);
-   ConvergenceOverlapDifferenceOverlapScale = Conf.Get("Convergence::OverlapDerivativeRatio", 1.0);
-   ConvergenceSweepTruncMin = Conf.Get("Convergence::TruncationCutoff", 1E-13);
-   ConvergenceOverlapMin = Conf.Get("Convergence::OverlapCutoff", 1E-13);
-   MixUseEnvironment = Conf.Get("MixUseEnvironment", false);
-   NormalizeWavefunction = Conf.Get("Normalize", true);
-   Solver_.SetSolver(Conf.Get("Solver", "Lanczos"));
-   UseDGKS = Conf.Get("UseDGKS", false);
-}
-
-void DMRG::RestoreLogFiles(std::string const& BasePath, ConfList const& Conf)
-{
-   std::string const EnergyLogFile = BasePath + ".e";
-   int const EnergyLogLevel = Conf.Get("EnergyLogLevel", 0);
-   Logger("EnergyLog").SetThreshold(EnergyLogLevel);
-   if (EnergyLogLevel > 0)
-   {
-      EnergyLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(EnergyLogFile.c_str(), std::ios_base::out | std::ios_base::app));
-      EnergyLog->precision(getenv_or_default("MP_PRECISION", 14));
-      Logger("EnergyLog").SetStream(*EnergyLog);
-   }
-
-   std::string const SweepLogFile = BasePath + ".sweep";
-   int const SweepLogLevel = Conf.Get("SweepLogLevel", 0);
-   Logger("SweepLog").SetThreshold(SweepLogLevel);
-   if (SweepLogLevel > 0)
-   {
-      SweepLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(SweepLogFile.c_str(), std::ios_base::out | std::ios_base::app));
-      SweepLog->precision(getenv_or_default("MP_PRECISION", 14));
-      Logger("SweepLog").SetStream(*SweepLog);
-   }
-
-   std::string const DensityLogFile = BasePath + ".density";
-   int const DensityLogLevel = Conf.Get("DensityLogLevel", 0);
-   Logger("DensityLog").SetThreshold(DensityLogLevel);
-   if (DensityLogLevel > 0)
-   {
-      DensityLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(DensityLogFile.c_str(), std::ios_base::out | std::ios_base::app));
-      DensityLog->precision(getenv_or_default("MP_PRECISION", 14));
-      Logger("DensityLog").SetStream(*DensityLog);
-   }
-
-   // CpuLog
-   // DiagLog
-
-   ConvergenceOverlapTruncationScale = Conf.Get("Convergence::OverlapTruncationRatio", 1.0);
-   ConvergenceOverlapDifferenceOverlapScale = Conf.Get("Convergence::OverlapDerivativeRatio", 1.0);
-   ConvergenceSweepTruncMin = Conf.Get("Convergence::TruncationCutoff", 1E-13);
-   ConvergenceOverlapMin = Conf.Get("Convergence::OverlapCutoff", 1E-13);
-   MixUseEnvironment = Conf.Get("MixUseEnvironment", false);
-   NormalizeWavefunction = Conf.Get("Normalize", true);
-   Solver_.SetSolver(Conf.Get("Solver", "Lanczos"));
-   UseDGKS = Conf.Get("UseDGKS", false);
-
-   // debugging; set the precision for cerr
-   std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
-
-   std::cout << "Convergence::OverlapTruncationRatio = " << ConvergenceOverlapTruncationScale << '\n';
-   std::cout << "Convergence::OverlapDerivativeRatio = " << ConvergenceOverlapDifferenceOverlapScale << '\n';
-   std::cout << "Convergence::TruncationCutoff = " << ConvergenceSweepTruncMin << '\n';
-   std::cout << "Convergence::OverlapCutoff = " << ConvergenceOverlapMin << '\n';
-   std::cout << "MixUseEnvironment = " << MixUseEnvironment << '\n';
-   std::cout << "Normalize = " << NormalizeWavefunction << '\n';
-   std::cout << "Solver = " << Solver_.GetSolverStr() << '\n';
-   std::cout << "UseDGKS = " << UseDGKS << '\n';
 }
 
 void DMRG::StartIteration()
@@ -1207,7 +1109,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraSt
    // Truncate right
    StateComponent CC = *C;
    TruncationInfo Info;
-   MatrixOperator X = TruncateExtendBasis2(CC, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info);
+   MatrixOperator X = TruncateExpandBasis2(CC, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info);
    *C = CC;
    if (Verbose > 1)
    {

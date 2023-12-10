@@ -372,6 +372,12 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
       MatrixOperator
       ConstructRightVectors(FwdIter first, FwdIter last);
 
+      // Construct the diagonal matrix of singular values
+      template <typename FwdIter>
+      RealDiagonalOperator
+      ConstructSingularValues(FwdIter first, FwdIter last);
+
+
       LinearBasis<VectorBasis> Basis1() const { return B1; }
       LinearBasis<VectorBasis> Basis2() const { return B2; }
 
