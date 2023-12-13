@@ -92,7 +92,9 @@ OptimalFirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> T
                                                  + aux_tensor_prod(B, C) + aux_tensor_prod(C, B));
 
       // Construct the evolution MPO.
-      OperatorComponent W = tensor_row_sum(tensor_col_sum(WTopLeft, WBotLeft), tensor_col_sum(WTopRight, WBotRight));
+      SumBasis<BasisList> Basis1(WTopLeft.Basis1(), WBotLeft.Basis1());
+      SumBasis<BasisList> Basis2(WTopLeft.Basis2(), WTopRight.Basis2());
+      OperatorComponent W = tensor_row_sum(tensor_col_sum(WTopLeft, WBotLeft, Basis1), tensor_col_sum(WTopRight, WBotRight, Basis1), Basis2);
 
       Result.push_back(W);
    }
