@@ -82,6 +82,10 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
+         ("expand-factor", prog_opt::value(&Settings.ExpandFactor),
+          FormatDefault("Pre-expansion factor of added states", Settings.ExpandFactor).c_str())
+         ("expand-min-states", prog_opt::value(&Settings.ExpandMinStates),
+          FormatDefault("Pre-expansion minimum number of added states", Settings.ExpandMinStates).c_str())
          ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
           FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", Settings.LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),
@@ -220,6 +224,13 @@ int main(int argc, char** argv)
       // Turn on bond expansion if trunc or eigen-cutoff have been specified.
       if (vm.count("trunc") || vm.count("eigen-cutoff"))
          Expand = true;
+
+      // We cannot handle bond expansion for single-site unit cells at the moment.
+      if (Psi.size() == 1 && Expand)
+      {
+         std::cerr << "fatal: Cannot use a wavefunction with a single-site unit cell with bond expansion." << std::endl;
+         return 1;
+      }
 
       if (Expand)
          std::cout << Settings.SInfo << std::endl;

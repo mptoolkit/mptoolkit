@@ -64,6 +64,8 @@ struct TDVPSettings
    int MaxIter = 10;
    double ErrTol = 1e-16;
    StatesInfo SInfo;
+   double ExpandFactor = 0.1;
+   int ExpandMinStates = 2;
    bool Epsilon = false;
    bool Normalize = true;
    int Verbose = 0;
@@ -154,6 +156,8 @@ class TDVP
       int MaxIter;
       double ErrTol;
       StatesInfo SInfo;
+      double ExpandFactor;
+      int ExpandMinStates;
       bool Epsilon;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
@@ -176,20 +180,20 @@ class TDVP
       double LogAmplitude = 0.0;
 };
 
-// Expand the left environment of CRight by adding extra states to CLeft.
+// Truncate then expand the left environment of CRight by adding extra states to CLeft.
 // Assumes CRight is the current orthogonality center.
-std::pair<TruncationInfo, VectorBasis>
+void
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose);
 
-// Expand the right environment of CLeft by adding extra states to CRight.
+// Truncate then expand the right environment of CLeft by adding extra states to CRight.
 // Assumes CLeft is the current orthogonality center.
-std::pair<TruncationInfo, VectorBasis>
+void
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose);
 
 #endif

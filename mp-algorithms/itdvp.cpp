@@ -593,16 +593,6 @@ iTDVP::CalculateEpsN(std::deque<StateComponent> X, std::deque<StateComponent> Y)
    Site = RightStop;
 }
 
-// The aim here is to expand all of the bonds in the unit cell from right to
-// left without modifying the actual wavefunction. But, for the expansion
-// algorithm, we need the orthogonality center to be on right site of the bond
-// being expanded. To solve this, we store the current orthogonality center in
-// a class variable CCenter, while we keep the actual unit cell in left
-// orthogonal form.
-//
-// Another issue arises from the unit cell boundary, since we want an
-// unmodified version of the rightmost A-matrix when evolving the bond across
-// the boundary. We save a copy of the rightmost A-matrix to deal with this.
 void
 iTDVP::ExpandBondsLeft()
 {
@@ -615,7 +605,6 @@ iTDVP::ExpandBondsLeft()
 
    HamROld = HamR;
 
-   CBoundary = delta_shift(*C, QShift);
    CCenter = prod(*C, LambdaR);
 
    while (Site > LeftStop)
@@ -652,75 +641,60 @@ iTDVP::ExpandLeft()
       HNext = HamMPO.end();
    --HNext;
 
-   // We need to handle the last bond in the unit cell separately: see below.
-   StateComponent CExpand = Site == LeftStop ? CBoundary : *CNext;
+   StateComponent CExpand = *CNext;
+   if (Site == LeftStop)
+      CExpand = delta_shift(CExpand, QShift);
 
-   VectorBasis AddBasis(C->Basis1().GetSymmetryList());
-   int NewStates = 0;
-   if (CExpand.Basis2().total_dimension() < SInfo.MaxStates)
-   {
-      TruncationInfo Info;
-      std::tie(Info, AddBasis) = ExpandLeftEnvironment(CExpand, CCenter, HamLOld.back(), HamROld.front(), *HNext, *H, SInfo);
-      NewStates = Info.KeptStates();
-   }
+   if (Verbose > 1)
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site << " ";
 
-   // We need to save this for dealing with the last bond.
-   if (Site == RightStop)
-      AddBasisBoundary = AddBasis;
-
-   // Add the zeros to the left-orthogonal A matrix in the unit cell.
-   SumBasis<VectorBasis> NewBasis(C->Basis1(), AddBasis);
-   Regularizer R(NewBasis);
-   StateComponent ZR(C->LocalBasis(), AddBasis, C->Basis2());
-   *C = RegularizeBasis1(R, tensor_col_sum(*C, ZR, NewBasis));
+   ExpandLeftEnvironment(CExpand, CCenter, HamLOld.back(), HamROld.front(), *HNext, *H,
+                         SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
 
    int TotalStates = CExpand.Basis2().total_dimension();
    MaxStates = std::max(MaxStates, TotalStates);
 
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " NewStates=" << NewStates
-                << " TotalStates=" << TotalStates
-                << std::endl;
-   }
+   // Save copy of center site and left-orthogonalize.
+   *C = CCenter;
+   MatrixOperator Vh;
+   std::tie(std::ignore, Vh) = OrthogonalizeBasis2(*C);
+   *C = *C * Vh;
+
+   // Right-orthogonalize current site.
+   MatrixOperator U;
+   RealDiagonalOperator D;
+   std::tie(U, D) = OrthogonalizeBasis1(CCenter);
+   CCenter = U * CCenter;
+
+   // Calculate F matrix using new right-orthogonal A matrix.
+   HamROld.push_front(contract_from_right(herm(*H), CCenter, HamROld.front(), herm(CCenter)));
 
    // Calculate updated E matrix with added states.
    HamL.push_front(contract_from_left(*HNext, herm(CExpand), HamLOld.back(), CExpand));
+
+   if (Site == RightStop)
+      HamLOld.front() = delta_shift(HamL.front(), QShift);
+
    HamLOld.pop_back();
 
    if (Site == LeftStop)
    {
-      // We have to add the zeros to CExpand after doing the expansion for the
-      // last bond, since adding the zeros in beforehand will result in a
-      // larger null space tensor.
-      CExpand = delta_shift(CExpand, adjoint(QShift));
-      SumBasis<VectorBasis> NewBasisBoundary(CExpand.Basis1(), AddBasisBoundary);
-      Regularizer RBoundary(NewBasisBoundary);
-      StateComponent ZRBoundary(CExpand.LocalBasis(), AddBasisBoundary, CExpand.Basis2());
-      *CNext = RegularizeBasis1(RBoundary, tensor_col_sum(CExpand, ZRBoundary, NewBasisBoundary));
+      *CNext = delta_shift(CExpand, adjoint(QShift));
 
-      // Add zeros the lambda matrix so we can multiply it back onto the unit cell.
-      LambdaR = delta_shift(LambdaR, QShift);
-      MatrixOperator ZLambda = MatrixOperator(AddBasis, LambdaR.Basis2());
-      LambdaR = RegularizeBasis1(R, tensor_col_sum(LambdaR, ZLambda, NewBasis));
-      LambdaR = delta_shift(LambdaR, adjoint(QShift));
+      // Save the block Hamiltonian.
+      BlockHamR = HamROld.front();
+      BlockHamR.front() -= E * BlockHamR.back();
+      HamR.back() = delta_shift(BlockHamR, adjoint(QShift));
+
+      LambdaR = delta_shift(U*D*herm(U), adjoint(QShift));
    }
    else
    {
       *CNext = CExpand;
 
-      // Right orthogonalize current site.
-      MatrixOperator U;
-      RealDiagonalOperator D;
-      std::tie(U, D) = OrthogonalizeBasis1(CCenter);
-
-      // Calculate F matrix using new right-orthogonal A matrix.
-      HamROld.push_front(contract_from_right(herm(*H), CCenter, HamROld.front(), herm(CCenter)));
-
       // Move the orthgonality center.
-      CCenter = prod(CExpand, U*D);
+      CCenter = prod(CExpand, U*D*herm(U));
    }
 }
 
@@ -736,7 +710,6 @@ iTDVP::ExpandBondsRight()
 
    HamLOld = HamL;
 
-   CBoundary = delta_shift(*C, adjoint(QShift));
    CCenter = prod(LambdaR, *C);
 
    while (Site < RightStop)
@@ -771,75 +744,60 @@ iTDVP::ExpandRight()
    if (HNext == HamMPO.end())
       HNext = HamMPO.begin();
 
-   // We need to handle the last bond in the unit cell separately: see below.
-   StateComponent CExpand = Site == RightStop ? CBoundary : *CNext;
+   StateComponent CExpand = *CNext;
+   if (Site == RightStop)
+      CExpand = delta_shift(CExpand, adjoint(QShift));
 
-   VectorBasis AddBasis(C->Basis2().GetSymmetryList());
-   int NewStates = 0;
-   if (CExpand.Basis1().total_dimension() < SInfo.MaxStates)
-   {
-      TruncationInfo Info;
-      std::tie(Info, AddBasis) = ExpandRightEnvironment(CCenter, CExpand, HamLOld.back(), HamROld.front(), *H, *HNext, SInfo);
-      NewStates = Info.KeptStates();
-   }
+   if (Verbose > 1)
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site << " ";
 
-   // We need to save this for dealing with the last bond.
-   if (Site == LeftStop)
-      AddBasisBoundary = AddBasis;
-
-   // Add the zeros to the right-orthogonal A matrix in the unit cell.
-   SumBasis<VectorBasis> NewBasis(C->Basis2(), AddBasis);
-   Regularizer R(NewBasis);
-   StateComponent ZL(C->LocalBasis(), C->Basis1(), AddBasis);
-   *C = RegularizeBasis2(tensor_row_sum(*C, ZL, NewBasis), R);
+   ExpandRightEnvironment(CCenter, CExpand, HamLOld.back(), HamROld.front(), *H, *HNext,
+                          SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
 
    int TotalStates = CExpand.Basis1().total_dimension();
    MaxStates = std::max(MaxStates, TotalStates);
 
-   if (Verbose > 1)
-   {
-      std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " NewStates=" << NewStates
-                << " TotalStates=" << TotalStates
-                << std::endl;
-   }
+   // Save copy of current site and right-orthogonalize.
+   *C = CCenter;
+   MatrixOperator U;
+   std::tie(U, std::ignore) = OrthogonalizeBasis1(*C);
+   *C = U * (*C);
+
+   // Left-orthogonalize current site.
+   MatrixOperator Vh;
+   RealDiagonalOperator D;
+   std::tie(D, Vh) = OrthogonalizeBasis2(CCenter);
+   CCenter = CCenter * Vh;
+
+   // Calculate E matrix using new left-orthogonal A matrix.
+   HamLOld.push_back(contract_from_left(*H, herm(CCenter), HamLOld.back(), CCenter));
 
    // Calculate updated F matrix with added states.
    HamR.push_back(contract_from_right(herm(*HNext), CExpand, HamROld.front(), herm(CExpand)));
+
+   if (Site == LeftStop)
+      HamROld.back() = delta_shift(HamR.back(), adjoint(QShift));
+
    HamROld.pop_front();
 
    if (Site == RightStop)
    {
-      // We have to add the zeros to CExpand after doing the expansion for the
-      // last bond, since adding the zeros in beforehand will result in a
-      // larger null space tensor.
-      CExpand = delta_shift(CExpand, QShift);
-      SumBasis<VectorBasis> NewBasisBoundary(CExpand.Basis2(), AddBasisBoundary);
-      Regularizer RBoundary(NewBasisBoundary);
-      StateComponent ZLBoundary(CExpand.LocalBasis(), CExpand.Basis1(), AddBasisBoundary);
-      *CNext = RegularizeBasis2(tensor_row_sum(CExpand, ZLBoundary, NewBasisBoundary), RBoundary);
+      *CNext = delta_shift(CExpand, QShift);
 
-      // Add zeros the lambda matrix so we can multiply it back onto the unit cell.
-      LambdaR = delta_shift(LambdaR, adjoint(QShift));
-      MatrixOperator ZLambda = MatrixOperator(LambdaR.Basis1(), AddBasis);
-      LambdaR = RegularizeBasis2(tensor_row_sum(LambdaR, ZLambda, NewBasis), R);
-      LambdaR = delta_shift(LambdaR, QShift);
+      // Save the block Hamiltonian.
+      BlockHamL = HamLOld.back();
+      BlockHamL.back() -= E * BlockHamL.front();
+      HamL.front() = delta_shift(BlockHamL, QShift);
+
+      LambdaR = delta_shift(herm(Vh)*(D*Vh), QShift);
    }
    else
    {
       *CNext = CExpand;
 
-      // Left orthogonalize current site.
-      MatrixOperator Vh;
-      RealDiagonalOperator D;
-      std::tie(D, Vh) = OrthogonalizeBasis2(CCenter);
-
-      // Calculate E matrix using new left-orthogonal A matrix.
-      HamLOld.push_back(contract_from_left(*H, herm(CCenter), HamLOld.back(), CCenter));
-
       // Move the orthgonality center.
-      CCenter = prod(D*Vh, CExpand);
+      CCenter = prod(herm(Vh)*(D*Vh), CExpand);
    }
 }
 

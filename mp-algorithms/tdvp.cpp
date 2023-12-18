@@ -137,8 +137,9 @@ Hamiltonian::set_size(int Size_)
 TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
    : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
      Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
-     SInfo(Settings_.SInfo), Epsilon(Settings_.Epsilon), Normalize(Settings_.Normalize),
-     Verbose(Settings_.Verbose)
+     SInfo(Settings_.SInfo), ExpandFactor(Settings_.ExpandFactor),
+     ExpandMinStates(Settings_.ExpandMinStates), Epsilon(Settings_.Epsilon),
+     Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
 {
 }
 
@@ -284,12 +285,28 @@ TDVP::IterateRight(std::complex<double> Tau)
    HamR.pop_front();
 }
 
-std::pair<TruncationInfo, VectorBasis>
+void
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo)
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose)
 {
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis1(CRight));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+
+   if (Verbose > 0)
+      std::cerr << "StatesOld=" << CLeft.Basis2().total_dimension()
+                << " StatesTrunc=" << Info.KeptStates();
+
+   CRight = prod(D*Vh, CRight);
+   CLeft = prod(CLeft, U);
+
    // Calculate left null space of left site.
    StateComponent NLeft = NullSpace2(CLeft);
 
@@ -318,39 +335,54 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    }
 
    // Take the truncated SVD of X.
-   MatrixOperator XExpand = ExpandBasis1(X);
-   CMatSVD SVD(XExpand);
-   TruncationInfo Info;
-   // Subtract the current bond dimension from the number of additional states to be added.
-   SInfo.MinStates = std::max(0, SInfo.MinStates - CLeft.Basis2().total_dimension());
-   SInfo.MaxStates = std::max(0, SInfo.MaxStates - CLeft.Basis2().total_dimension());
+   CMatSVD SVDEx(ExpandBasis1(X));
+   StatesInfo SInfoEx;
+   SInfoEx.MinStates = ExpandMinStates;
+   SInfoEx.MaxStates = std::ceil(ExpandFactor * CLeft.Basis2().total_dimension());
+   TruncationInfo InfoEx;
+   auto CutoffEx = TruncateFixTruncationErrorAbsolute(SVDEx.begin(), SVDEx.end(), SInfoEx, InfoEx);
 
-   auto Cutoff = TruncateFixTruncationErrorAbsolute(SVD.begin(), SVD.end(), SInfo, Info);
+   MatrixOperator UEx, VhEx;
+   RealDiagonalOperator DEx;
+   SVDEx.ConstructMatrices(SVDEx.begin(), CutoffEx, UEx, DEx, VhEx);
+
+   // Construct new basis.
+   SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), UEx.Basis2());
+   // Regularize the new basis.
+   Regularizer R(NewBasis);
+
+   // Add the new states to CLeft, and add zeros to CRight.
+   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, UEx), NewBasis), R);
+
+   StateComponent Z = StateComponent(CRight.LocalBasis(), VhEx.Basis1(), CRight.Basis2());
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
+
+   if (Verbose > 0)
+      std::cerr << " StatesNew=" << CLeft.Basis2().total_dimension() << std::endl;
+}
+
+void
+ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
+                       StateComponent const& E, StateComponent const& F,
+                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                       StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose)
+{
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis2(CLeft));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
 
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
 
-   // Construct new basis.
-   SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), U.Basis2());
-   // Regularize the new basis.
-   Regularizer R(NewBasis);
+   if (Verbose > 0)
+      std::cerr << "StatesOld=" << CRight.Basis1().total_dimension()
+                << " StatesTrunc=" << Info.KeptStates();
 
-   // Add the new states to CLeft, and add zeros to CRight.
-   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, U), NewBasis), R);
+   CRight = prod(Vh, CRight);
+   CLeft = prod(CLeft, U*D);
 
-   StateComponent Z = StateComponent(CRight.LocalBasis(), Vh.Basis1(), CRight.Basis2());
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
-
-   return std::make_pair(Info, U.Basis2());
-}
-
-std::pair<TruncationInfo, VectorBasis>
-ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
-                      StateComponent const& E, StateComponent const& F,
-                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo)
-{
    // Calculate right null space of right site.
    StateComponent NRight = NullSpace1(CRight);
 
@@ -379,31 +411,30 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    }
 
    // Take the truncated SVD of X.
-   MatrixOperator XExpand = ExpandBasis1(X);
-   CMatSVD SVD(XExpand);
-   TruncationInfo Info;
-   // Subtract the current bond dimension from the number of additional states to be added.
-   SInfo.MinStates = std::max(0, SInfo.MinStates - CRight.Basis1().total_dimension());
-   SInfo.MaxStates = std::max(0, SInfo.MaxStates - CRight.Basis1().total_dimension());
+   CMatSVD SVDEx(ExpandBasis1(X));
+   StatesInfo SInfoEx;
+   SInfoEx.MinStates = ExpandMinStates;
+   SInfoEx.MaxStates = std::ceil(ExpandFactor * CRight.Basis1().total_dimension());
+   TruncationInfo InfoEx;
+   auto CutoffEx = TruncateFixTruncationErrorAbsolute(SVDEx.begin(), SVDEx.end(), SInfoEx, InfoEx);
 
-   auto Cutoff = TruncateFixTruncationErrorAbsolute(SVD.begin(), SVD.end(), SInfo, Info);
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+   MatrixOperator UEx, VhEx;
+   RealDiagonalOperator DEx;
+   SVDEx.ConstructMatrices(SVDEx.begin(), CutoffEx, UEx, DEx, VhEx);
 
    // Construct new basis.
-   SumBasis<VectorBasis> NewBasis(CRight.Basis1(), U.Basis2());
+   SumBasis<VectorBasis> NewBasis(CRight.Basis1(), UEx.Basis2());
    // Regularize the new basis.
    Regularizer R(NewBasis);
 
    // Add the new states to CRight, and add zeros to CLeft.
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(U), NRight), NewBasis));
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(UEx), NRight), NewBasis));
 
-   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), Vh.Basis1());
+   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), VhEx.Basis1());
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
 
-   return std::make_pair(Info, U.Basis2());
+   if (Verbose > 0)
+      std::cerr << " StatesNew=" << CRight.Basis1().total_dimension() << std::endl;
 }
 
 void
@@ -416,21 +447,14 @@ TDVP::ExpandLeft()
 
    HamL.pop_back();
 
-   TruncationInfo Info;
-   std::tie(Info, std::ignore) = ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H, SInfo);
-
-   int TotalStates = C->Basis1().total_dimension();
-
-   MaxStates = std::max(MaxStates, TotalStates);
-
    if (Verbose > 1)
-   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " NewStates=" << Info.KeptStates()
-                << " TotalStates=" << TotalStates
-                << std::endl;
-   }
+                << " Site=" << Site << " ";
+
+   ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H,
+                         SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+
+   MaxStates = std::max(MaxStates, C->Basis1().total_dimension());
 
    // Update the effective Hamiltonian.
    HamL.push_back(contract_from_left(*HNext, herm(*CNext), HamL.back(), *CNext));
@@ -446,21 +470,14 @@ TDVP::ExpandRight()
 
    HamR.pop_front();
 
-   TruncationInfo Info;
-   std::tie(Info, std::ignore) = ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext, SInfo);
-
-   int TotalStates = C->Basis2().total_dimension();
-
-   MaxStates = std::max(MaxStates, TotalStates);
-
    if (Verbose > 1)
-   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site
-                << " NewStates=" << Info.KeptStates()
-                << " TotalStates=" << TotalStates
-                << std::endl;
-   }
+                << " Site=" << Site << " ";
+
+   ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext,
+                          SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+
+   MaxStates = std::max(MaxStates, C->Basis2().total_dimension());
 
    // Update the effective Hamiltonian.
    HamR.push_front(contract_from_right(herm(*HNext), *CNext, HamR.front(), herm(*CNext)));
@@ -471,7 +488,7 @@ TDVP::SweepLeft(std::complex<double> Tau, bool Expand)
 {
    while (Site > LeftStop)
    {
-      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+      if (Expand)
          this->ExpandLeft();
       this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
@@ -485,7 +502,7 @@ TDVP::SweepRight(std::complex<double> Tau, bool Expand)
 {
    while (Site < RightStop)
    {
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->IterateRight(Tau);
@@ -555,7 +572,7 @@ TDVP::CalculateEps12()
 void
 TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 {
-   if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand && Site < RightStop)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
@@ -563,7 +580,7 @@ TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
    while (Site < RightStop)
    {
       this->IterateRight(Tau);
-      if (Expand && Site < RightStop && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand && Site < RightStop)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
@@ -573,6 +590,10 @@ TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 void
 TDVP::Evolve(bool Expand)
 {
+   // Reset MaxStates if we are expanding.
+   if (Expand)
+      MaxStates = 0;
+
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
 

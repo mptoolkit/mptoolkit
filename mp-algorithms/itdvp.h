@@ -65,13 +65,13 @@ class iTDVP : public TDVP
       // Calculate the error measures epsilon_3 to epsilon_NEps.
       void CalculateEpsN(std::deque<StateComponent> X, std::deque<StateComponent> Y);
 
-      // Expand the dimension of the left/right environment of the current site.
+      // Truncate then expand the left/right environment of the current site.
       void ExpandLeft();
       void ExpandRight();
 
-      // Sweep the unit cell from right to left, expanding the left environments of each site.
+      // Sweep the unit cell from right to left, truncating and expanding the left environments of each site.
       void ExpandBondsLeft();
-      // Sweep the unit cell from left to right, expanding the right environments of each site.
+      // Sweep the unit cell from left to right, truncating expanding the right environments of each site.
       void ExpandBondsRight();
 
       // Update the Hamiltonian if time-dependent, recalculating the left/right
@@ -86,9 +86,7 @@ class iTDVP : public TDVP
       MatrixOperator LambdaR;
       MatrixOperator LambdaROld;
       std::deque<StateComponent> HamLOld, HamROld;
-      StateComponent CBoundary;
       StateComponent CCenter;
-      VectorBasis AddBasisBoundary;
 
       double GMRESTol;
       double LambdaTol;
