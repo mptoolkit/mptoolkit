@@ -206,7 +206,7 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
          for (auto a : Avail)
          {
             if (Result[a.first] < ExtraStatesPerSector && Result[a.first] < a.second)
-               Result[a.first] += std::min(a.second, ExtraStatesPerSector);
+               Result[a.first] = std::min(a.second, ExtraStatesPerSector);
          }
       }
       else
@@ -284,18 +284,25 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
                Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
          }
 
-         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExtraStatesPerSector*2);
 
          VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
 
          MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
-         X = X*M;
-         auto QR = QR_Factorize(X);
-         MatrixOperator UExpand = QR.first;
+         MatrixOperator A = X*M;
+         auto QR = QR_Factorize(A);
+         X = herm(QR.first) * X;
+
+         CMatSVD ExpandDM(X, CMatSVD::Left);
+
+         auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+
+         MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+
          Info.ExtraStates_ = ExtraBasis.total_dimension();
 
          // map UExpand back into the original basis
-         UExpand = herm(UExpand) * UDiscard;
+         UExpand = herm(QR.first * UExpand) * UDiscard;
          // UExpand is (extra_states_to_keep, dm-dimensional-expanded-basis)
 
          // The final basis is the sum of UKeep and UExpand
@@ -582,7 +589,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
    }
    else if (Algo == ExpansionAlgorithm::RangeFinding)
    {
-      CMatSVD DM(CMat);
+      CMatSVD DM(CMat, CMatSVD::Left);
 
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
       MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
@@ -609,17 +616,30 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
             Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
       }
 
-      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExtraStatesPerSector*2);
 
       VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
 
       MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
-      X = X*M;
-      auto QR = QR_Factorize(X);
-      MatrixOperator UExpand = QR.first;
+      MatrixOperator A = X*M;
+      auto QR = QR_Factorize(A);
+      X = herm(QR.first) * X;
+
+      CMatSVD ExpandDM(X, CMatSVD::Left);
+
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+
+      MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+      // UExpand is (discarded_states, states_to_expand)
+
+      LNull = LNull * QR.first * UExpand;
+
       Info.ExtraStates_ = ExtraBasis.total_dimension();
 
+      #if 0
+      MatrixOperator UExpand = QR.first;
       LNull = LNull * UExpand;
+      #endif
    }
    else if (Algo == ExpansionAlgorithm::SVD)
    {
