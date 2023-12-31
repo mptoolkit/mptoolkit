@@ -505,6 +505,11 @@ StateComponent tensor_row_sum(StateComponent const& A,
    return Result;
 }
 
+StateComponent tensor_row_sum(StateComponent const& A, StateComponent const& B)
+{
+   return tensor_row_sum(A, B, SumBasis<VectorBasis>(A.Basis2(), B.Basis2()));
+}
+
 StateComponent tensor_col_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B1)
@@ -518,6 +523,11 @@ StateComponent tensor_col_sum(StateComponent const& A,
       Result[s] = tensor_col_sum(A[s], B[s], B1);
    }
    return Result;
+}
+
+StateComponent tensor_col_sum(StateComponent const& A, StateComponent const& B)
+{
+   return tensor_col_sum(A, B, SumBasis<VectorBasis>(A.Basis1(), B.Basis1()));
 }
 
 // prod
@@ -1035,6 +1045,16 @@ Regularize(MatrixOperator const& M)
    Regularizer R1(M.Basis1());
    Regularizer R2(M.Basis2());
    return RegularizeBasis12(R1, M, R2);
+}
+
+StateComponent RegularizeBasis1(StateComponent const& M)
+{
+   return RegularizeBasis1(Regularizer(M.Basis1()), M);
+}
+
+StateComponent RegularizeBasis2(StateComponent const& M)
+{
+   return RegularizeBasis2(M, Regularizer(M.Basis2()));
 }
 
 StateComponent

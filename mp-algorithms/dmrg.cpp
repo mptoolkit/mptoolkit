@@ -38,7 +38,7 @@ double const PrefactorEpsilon = 1e-16;
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
-const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "mixing-full", "mixing", "random" };
+const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "svd", "rangefinding", "fastrangefinding", "random" };
 
 std::string ExpansionAlgorithm::ListAvailable()
 {
@@ -72,22 +72,22 @@ ExpansionAlgorithm::ExpansionAlgorithm(std::string Name)
 
 // Construct the mixing term according to the 3S algorithm with weight matrix.
 // On entry:
-//   CExpand is an A-matrix where the Basis1() dimension m' is the basis that we want to mix into, in right orthonormal form.
+//   LExpand is an A-matrix where the Basis1() dimension m' is the basis that we want to mix into, in right orthonormal form.
 //   C is the wavefunction, in the Center orthonormal basis.
 //   H is the on-site Hamiltonian
 //   LeftHam and RightHam are the environment Hamiltonian's, in the basis of C
 //   Normalization is the desired norm_frob of the result
-//   Result' is a m' x w x m matrix, where m' is the Basis1() of CExpand, w is the Basis1() of the MPO with the first and last
-//     elements removed, and m is Basis2() of CExpand (and C).
-//   PRECONDITION: CExpand.Basis2() == C.Basis2()
-// For conventional 3S, CExpand is C with ExpandBasis1().
-// For Environment Expansion, CExpand is the null space (i.e. discarded space) of C.
+//   Result' is a m' x w x m matrix, where m' is the Basis1() of LExpand, w is the Basis1() of the MPO with the first and last
+//     elements removed, and m is Basis2() of LExpand (and C).
+//   PRECONDITION: LExpand.Basis2() == C.Basis2()
+// For conventional 3S, LExpand is C with ExpandBasis1().
+// For Environment Expansion, LExpand is the null space (i.e. discarded space) of C.
 // The complication with this code is handling the weight matrix when there are components of the environment that have zero
 // norm.  The approach we take is that if there is a component with zero norm, then we set the weight equal to the smallest
 // non-zero weight.  If all of the weights are zero, then we set the weights to be equal.
-StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent const& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
+StateComponent DensityMixingBasis1(StateComponent const& LExpand, StateComponent const& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
 {
-   CHECK_EQUAL(CExpand.Basis2(), C.Basis2());
+   CHECK_EQUAL(LExpand.Basis2(), C.Basis2());
 
    // Remove the first and last terms of H, which are the block Hamiltonian and the identity
    SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()-1), H.Basis1());
@@ -97,7 +97,7 @@ StateComponent DensityMixingBasis1(StateComponent const& CExpand, StateComponent
       Projector(i,i+1) = 1.0;
    }
    // RH is m' * w * m. expanded basis, MPO, original basis
-   StateComponent RH = contract_from_right(herm(Projector*H), CExpand, RightHam, herm(C));
+   StateComponent RH = contract_from_right(herm(Projector*H), LExpand, RightHam, herm(C));
 
    // Normalize the components
    std::vector<double> LeftWeight(RH.size(), 0.0);
@@ -263,7 +263,7 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // Now expand the basis
       MatrixOperator UExpand;
 
-      if (Algo == ExpansionAlgorithm::Mixing)
+      if (Algo == ExpansionAlgorithm::RangeFinding || Algo == ExpansionAlgorithm::FastRangeFinding)
       {
          StateComponent D = DensityMixingBasis1(CDiscard, C, LeftHam, H, RightHam, 1.0);
          X = ReshapeBasis2(D);
@@ -301,7 +301,7 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // The final basis is the sum of UKeep and UExpand
          UKeep = RegularizeBasis1(tensor_col_sum(UKeep, UExpand));
       }
-      else if (Algo == ExpansionAlgorithm::MixingFullSVD)
+      else if (Algo == ExpansionAlgorithm::SVD)
       {
          StateComponent D = DensityMixingBasis1(CDiscard, C, LeftHam, H, RightHam, 1.0);
          MatrixOperator X = ReshapeBasis2(D);
@@ -360,12 +360,56 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
    return Lambda;
 }
 
+// Helper function to construct a projector that removes the first and last components from a BasisList
+SimpleOperator ProjectRemoveFirstLast(BasisList const& B)
+{
+   SimpleOperator Result(BasisList(B.GetSymmetryList(), B.begin()+1, B.end()-1), B);
+   for (int i = 0; i < Result.Basis1().size(); ++i)
+   {
+      Result(i,i+1) = 1.0;
+   }
+   return Result;
+}
+
+// Helper function to construct a diagonal weight matrix from the frobenius norm of an E/F matrix
+SimpleOperator ConstructWeights(StateComponent const& s)
+{
+   std::vector<double> w;
+   w.reserve(s.LocalBasis().size());
+   for (auto const& x : s)
+      w.push_back(norm_frob(x));
+
+   // If any weights are zero, then manually adjust it to be equal to the smallest non-zero weight.
+   // If all of the weights are zero, then set them all to be equal.
+   double Min = 0.0;
+   for (auto m : w)
+   {
+      if (m > 0.0 && (m < Min || Min == 0.0))
+         Min = m;
+   }
+   // If all of the weights are identically zero, then set them to be the same
+   if (Min == 0.0)
+      Min = 1.0;
+   for (auto& m : w)
+   {
+      m = std::max(m, Min);
+   }
+   SimpleOperator Result(s.LocalBasis());
+   for (int i = 0; i < w.size(); ++i)
+   {
+      Result(i,i) = w[i];
+   }
+   return Result;
+}
+
 // Construct the mixing term according to the 3S algorithm with weight matrix.
 // On entry:
 //   LExpand is an A-matrix where the Basis2() dimension m' is the basis that we want to mix into, in left orthonormal form.
-//   L is the kept states of the wavefunction, with wavefunction Lambda.
+//   C is the wavefunction (with Lambda matrix incorporated)
+//   LambdaR is a Lambda matrix that is used for the environment weighting; the Basis1() of LambdaR is irrelevant
+//   but it must have Basis2() equal to the basis of RightHam.
 //   H is the on-site Hamiltonian
-//   LeftHam and RightHam are the environment Hamiltonians, in the basis of L.Basis1() and L.Basis2()
+//   LeftHam and RightHam are the environment Hamiltonians, in the basis of C.Basis1() and LambdaR.Basis2()
 //   Normalization is the desired norm_frob of the result
 //   Result' is a m' x w x m matrix, where m' is the Basis2() of LExpand, w is the Basis2() of the MPO with the first and last
 //     elements removed, and m is Basis2() of Lambda.
@@ -376,15 +420,13 @@ TruncateExtendBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 // The complication with this code is handling the weight matrix when there are components of the environment that have zero
 // norm.  The approach we take is that if there is a component with zero norm, then we set the weight equal to the smallest
 // non-zero weight.  If all of the weights are zero, then we set the weights to be equal.
-StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent const& L, MatrixOperator const& Lambda, RealDiagonalOperator const& LambdaD, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
+StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent const& C, MatrixOperator const& LambdaR, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
 {
-   DEBUG_CHECK_EQUAL(LExpand.Basis1(), L.Basis1());
-   DEBUG_CHECK_EQUAL(L.Basis2(), Lambda.Basis1());
-   DEBUG_CHECK_EQUAL(L.Basis2(), LambdaD.Basis1());
-   DEBUG_CHECK_EQUAL(L.Basis1(), LeftHam.Basis1());
-   DEBUG_CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
-   DEBUG_CHECK_EQUAL(L.LocalBasis(), LExpand.LocalBasis());
-   DEBUG_CHECK_EQUAL(L.LocalBasis(), H.LocalBasis2());
+   DEBUG_CHECK_EQUAL(LExpand.Basis1(), C.Basis1());
+   DEBUG_CHECK_EQUAL(C.Basis1(), LeftHam.Basis1());
+   DEBUG_CHECK_EQUAL(LambdaR.Basis2(), RightHam.Basis1());
+   DEBUG_CHECK_EQUAL(C.LocalBasis(), LExpand.LocalBasis());
+   DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
 
    // Remove the Hamiltonian term, which is the last term.  The first term is the identity.
    SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin()+1, H.Basis2().end()-1));
@@ -395,7 +437,7 @@ StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent
    }
 
    // LH is dm * w * m expanded basis, MPO, original basis
-   StateComponent LH = contract_from_left(H*Projector, herm(LExpand), LeftHam, L) * LambdaD;
+   StateComponent LH = contract_from_left(H*Projector, herm(LExpand), LeftHam, C);
 
    // Normalize the noise vectors.  Since LH[0] is Lambda itself,
    // Weights[i] corresponds to the weight of LH[i+1]
@@ -406,7 +448,7 @@ StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent
    for (int i = 0; i < LeftWeight.size(); ++i)
    {
       LeftWeight[i] = norm_frob(LH[i]);
-      RightWeight[i] = norm_frob(Lambda*RightHam[i+1]);  // +1 here to align with LH[i], that projects out the first and last components
+      RightWeight[i] = norm_frob(LambdaR*RightHam[i+1]);  // +1 here to align with LH[i], that projects out the first and last components
       double w = LeftWeight[i]*RightWeight[i];
       if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
          MinNonZeroWeight = w;
@@ -432,45 +474,131 @@ StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent
    }
 
    DEBUG_CHECK_EQUAL(LH.Basis1(), LExpand.Basis2());
-   DEBUG_CHECK_EQUAL(LH.Basis2(), L.Basis2());
+   DEBUG_CHECK_EQUAL(LH.Basis2(), C.Basis2());
    return LH;
 }
 
-// Expand the Basis2 of L, by incorporating some states from LNull.
-// On input, LNull and L are left orthogonal, and share the same Basis1().
-// Lamda is the center matrix corresponding to L.
-// LeftHam, RightHam, are the environment Hamiltonian in the basis of C.Basis1() and
-// Lambda.Basis2(), and H is the MPO at the site L.
-// On exit, L' and Lambda' have added columns (respectively rows), so that
-// The physical wavefunction is then the row sum of [L, Extra], and the Lambda matrix is the column sum
-// [ Lambda ]
-// [ Z      ]
-// and the basis is regular.
-// LNull is passed by value, since we typically want to destroy it so we can move it into this function.
-int
-ExpandBasis2(StateComponent LNull, StateComponent& L, MatrixOperator& Lambda, RealDiagonalOperator const& LambdaD, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector)
+// Apply subspace expansion / truncation on the right (C.Basis2()).
+// On exit, C' * Result' = C (up to truncation!), and C' is left-orthogonal
+MatrixOperator
+TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info)
 {
-   DEBUG_CHECK_EQUAL(LNull.Basis1(), L.Basis1());
-   DEBUG_CHECK_EQUAL(LNull.LocalBasis(), L.LocalBasis());
-   DEBUG_CHECK_EQUAL(L.Basis1(), LeftHam.Basis1());
-   DEBUG_CHECK_EQUAL(L.Basis2(), Lambda.Basis1());
-   DEBUG_CHECK_EQUAL(L.Basis2(), LambdaD.Basis1());
-   DEBUG_CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
-   DEBUG_CHECK_EQUAL(L.LocalBasis(), H.LocalBasis2());
+   MatrixOperator CMat = ReshapeBasis1(C);
 
-   if (ExtraStates == 0 && ExtraStatesPerSector == 0)
-      return 0;
-
-   if (Algo == ExpansionAlgorithm::Mixing)
+   // If we have no basis expansion then we can do a 'fast path' that avoids constructing the null space.
+   // We can do that if there is no basis expansion, and the number of states to keep is not larger than the
+   // current number of states, OR the StatesInfo specifies that we don't keep zero eigenvalues.
+   if (ExtraStates <= 0 && ExtraStatesPerSector <= 0 && !(States.KeepZeroEigenvalues() && States.MaxStates > C.Basis2().total_dimension()))
    {
-      StateComponent D = DensityMixingBasis2(LNull, L, Lambda, LambdaD, LeftHam, H, RightHam, 1.0);
-      MatrixOperator X = ReshapeBasis2(D);
+      // else no expansion, we can do a minimal truncation
+      CMatSVD DM(CMat);
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+
+      StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(L), C);
+      C = std::move(L);
+      return Lambda;
+   }
+
+   // slow path - basis expansion.
+
+   StateComponent L, LNull;
+
+   // Expand the Basis2 of L, by incorporating some states from LNull.
+   // On input, LNull and L are left orthogonal, and share the same Basis1().
+   // Lamda is the center matrix corresponding to L.
+   // LeftHam, RightHam, are the environment Hamiltonian in the basis of C.Basis1() and
+   // Lambda.Basis2(), and H is the MPO at the site L.
+   // On exit, L' and Lambda' have added columns (respectively rows), so that
+   // The physical wavefunction is then the row sum of [L, Extra], and the Lambda matrix is the column sum
+   // [ Lambda ]
+   // [ Z      ]
+   // and the basis is regular.
+   // LNull is passed by value, since we typically want to destroy it so we can move it into this function.
+
+   if (Algo == ExpansionAlgorithm::FastRangeFinding)
+   {
+      CMatSVD DM(CMat);
+
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+
+      RealDiagonalOperator LambdaD = DM.ConstructSingularValues(DM.begin(), DMPivot);
+
+      // Construct the weights from the F matrices. This only needs to be approximate, so just use a truncated Lambda matrix,
+      // we can re-use ExtraStates to tell us how many to use
+      auto Trim = TruncateExtraStates(DM.begin(), DM.end(), ExtraStates, ExtraStatesPerSector, false);
+      MatrixOperator VTrim = DM.ConstructRightVectors(Trim.begin(), Trim.end());
+      RealDiagonalOperator LambdaTrim = DM.ConstructSingularValues(Trim.begin(), Trim.end());
+      SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
+      SimpleOperator W = ConstructWeights((LambdaTrim * VTrim) * local_prod(P, RightHam));
+
+      StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(UKeep), CMat);  // equivalent to scalar_prod(herm(L), C), but maybe faster?
+
+      // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
+      VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis2(), C.Basis2()).Basis()).Basis();
 
       // Randomized SVD.
       // Get the number of available states per sector.  We don't keep structurally zero states, so
       // this is the minimum of the Basis1() and Basis2() dimensions in each sector.
+      std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(UKeep.Basis1(), RBasis);
+      std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(UKeep.Basis2());
+      std::map<QuantumNumbers::QuantumNumber, int> Weights;
+      for (auto n : NumAvailablePerSector)
+      {
+         // Set the relative weight to the number of kept states in this sector.
+         // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
+         // with respect to the density matrix mixing.
+         if (n.second > 0)
+            Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
+      }
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+
+      VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+
+      MatrixOperator M = MakeRandomMatrixOperator(ExtraBasis, RBasis);
+      StateComponent Ms = ReshapeFromBasis2(M, W.Basis2(), C.Basis2());
+
+      StateComponent R = operator_prod_inner(H*herm(P)*W, LeftHam, C, herm(Ms));
+
+      MatrixOperator Rx = ReshapeBasis1(R); // Rx is (dm) x k
+
+      // orthogonalize the columns of Rx against UKeep
+      //OrthogonalizeAgainstColumns(UKeep, Rx);
+      LNull = ReshapeFromBasis1(Rx, L.LocalBasis(), L.Basis1());
+      L = RegularizeBasis2(tensor_row_sum(L, LNull));
+      OrthogonalizeBasis2(L);
+      Lambda = scalar_prod(herm(L), C);
+      Info.ExtraStates_ = LNull.Basis2().total_dimension();
+
+      C = std::move(L);
+
+      CHECK_EQUAL(C.Basis1(), LeftHam.Basis1());
+      CHECK_EQUAL(C.Basis2(), Lambda.Basis1());
+      CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
+      return Lambda;
+   }
+   else if (Algo == ExpansionAlgorithm::RangeFinding)
+   {
+      CMatSVD DM(CMat);
+
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+      L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      LNull = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(UKeep), CMat);  // equivalent to scalar_prod(herm(L), C), but maybe faster?
+      StateComponent D = DensityMixingBasis2(LNull, C, Lambda, LeftHam, H, RightHam, 1.0);
+      MatrixOperator X = ReshapeBasis2(D);
+
+      // Randomized SVD.  Firstly determine the number of states to keep in each sector
+
+      // Get the number of available states per sector.  We don't keep structurally zero states, so
+      // this is the minimum of the Basis1() and Basis2() dimensions in each sector.
       std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(X);
-      std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(L.Basis2());
+      std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(UKeep.Basis1());
       std::map<QuantumNumbers::QuantumNumber, int> Weights;
       for (auto n : NumAvailablePerSector)
       {
@@ -483,18 +611,31 @@ ExpandBasis2(StateComponent LNull, StateComponent& L, MatrixOperator& Lambda, Re
 
       auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
 
-      VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+      VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
 
       MatrixOperator M = MakeRandomMatrixOperator(X.Basis2(), ExtraBasis);
       X = X*M;
       auto QR = QR_Factorize(X);
+      MatrixOperator UExpand = QR.first;
+      Info.ExtraStates_ = ExtraBasis.total_dimension();
 
-      LNull = LNull * QR.first;
+      LNull = LNull * UExpand;
    }
-   else if (Algo == ExpansionAlgorithm::MixingFullSVD)
+   else if (Algo == ExpansionAlgorithm::SVD)
    {
+      CMatSVD DM(CMat, CMatSVD::Left);
+
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+      RealDiagonalOperator LambdaD = DM.ConstructSingularValues(DM.begin(), DMPivot);
+
+      L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      LNull = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(UKeep), CMat);  // equivalent to scalar_prod(herm(L), C), but maybe faster?
+
       // Now expand the basis
-      StateComponent D = DensityMixingBasis2(LNull, L, Lambda, LambdaD, LeftHam, H, RightHam, 1.0);
+      StateComponent D = DensityMixingBasis2(LNull, C, Lambda, LeftHam, H, RightHam, 1.0);
       MatrixOperator X = ReshapeBasis2(D);
       // X is now (discarded basis) x (wm) matrix
 
@@ -509,6 +650,17 @@ ExpandBasis2(StateComponent LNull, StateComponent& L, MatrixOperator& Lambda, Re
    }
    else if (Algo == ExpansionAlgorithm::Random)
    {
+      CMatSVD DM(CMat, CMatSVD::Left);
+
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
+      RealDiagonalOperator LambdaD = DM.ConstructSingularValues(DM.begin(), DMPivot);
+
+      L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      LNull = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
+      MatrixOperator Lambda = scalar_prod(herm(UKeep), CMat);  // equivalent to scalar_prod(herm(L), C), but maybe faster?
+
       // This algorithm is unstable with respect to ExtraStatesPerSector
       // Distribute the number of states in each sector according to the weights of the kept states.
       auto NumAvailablePerSector = DimensionPerSector(LNull.Basis2());
@@ -529,48 +681,13 @@ ExpandBasis2(StateComponent LNull, StateComponent& L, MatrixOperator& Lambda, Re
       PANIC("Unsupported expansion algorithm");
    }
 
-   SumBasis<VectorBasis> S(L.Basis2(), LNull.Basis2());
-   Regularizer R(S.Basis());
-   L = RegularizeBasis2(tensor_row_sum(L, LNull, S), R);
-   Lambda = RegularizeBasis1(R, tensor_col_sum(Lambda, MatrixOperator(LNull.Basis2(), Lambda.Basis2()), S));
-
-   return LNull.Basis2().total_dimension();
-}
-
-// Apply subspace expansion / truncation on the right (C.Basis2()).
-// On exit, C' * Result' = C (up to truncation!), and C is left-orthogonal
-MatrixOperator
-TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, ExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info)
-{
-   MatrixOperator X = ReshapeBasis1(C);
-
-   // Only construct the full left SVD if we are going to expand the basis or if we want to keep states with zero weight
-   if (ExtraStates > 0 || ExtraStatesPerSector > 0 || (States.KeepZeroEigenvalues() && States.MaxStates > C.Basis2().total_dimension()))
-   {
-      CMatSVD DM(X, CMatSVD::Left);
-
-      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
-      MatrixOperator UDiscard = DM.ConstructLeftVectors(DMPivot, DM.end());
-      RealDiagonalOperator LambdaD = DM.ConstructSingularValues(DM.begin(), DMPivot);
-
-      StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
-      StateComponent LExpand = ReshapeFromBasis1(UDiscard, C.LocalBasis(), C.Basis1());
-      MatrixOperator Lambda = scalar_prod(herm(L), C);
-      C = std::move(L);
-
-      Info.ExtraStates_ += ExpandBasis2(std::move(LExpand), C, Lambda, LambdaD, LeftHam, H, RightHam, Algo, ExtraStates, ExtraStatesPerSector);
-
-      return Lambda;
-   }
-   // else no expansion, we can do a minimal truncation
-   CMatSVD DM(X);
-   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-   MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
-
-   StateComponent L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+   L = RegularizeBasis2(tensor_row_sum(L, LNull));
    MatrixOperator Lambda = scalar_prod(herm(L), C);
    C = std::move(L);
+   Info.ExtraStates_ = LNull.Basis2().total_dimension();
+   CHECK_EQUAL(C.Basis1(), LeftHam.Basis1());
+   CHECK_EQUAL(C.Basis2(), Lambda.Basis1());
+   CHECK_EQUAL(Lambda.Basis2(), RightHam.Basis1());
    return Lambda;
 }
 
@@ -857,38 +974,61 @@ bool DMRG::IsConverged() const
    return IsConvergedValid && IsPsiConverged;
 }
 
-// Expand the Basis1 of CRight
-// Returns the number of states that were added to the environment basis
-// The MPS is in the mixed canonical form cented around C.
-// CLeft must be left-orthonormal.
+SimpleOperator ProjectMiddle(BasisList const& B)
+{
+   SimpleOperator Result(B, BasisList(B.GetSymmetryList(), B.begin()+1, B.end()-1));
+   int Size = Result.Basis2().size();
+   for (int i = 0; i < Size; ++i)
+   {
+      Result(i+1,i) = 1.0;
+   }
+      return Result;
+}
+
+// Given a two-site section of MPS, given by (L, C) in left and center ortho respectively, expand the basis between them.
+// E and F are the Hamiltonian matrices for L.Basis1() and C.Basis2() respectively.
+// Returns the number of states that were added to the environment basis.
 int
-ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& C,
+ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
                       StateComponent const& E, StateComponent const& F,
-                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
+                      OperatorComponent const& HL, OperatorComponent const& HR,
                       int StatesWanted, int ExtraStatesPerSector)
 {
-   CHECK_EQUAL(E.Basis1(), CLeft.Basis1());
-   CHECK_EQUAL(F.Basis1(), C.Basis2());
+   DEBUG_CHECK_EQUAL(L.Basis2(), C.Basis1());
+   DEBUG_CHECK_EQUAL(E.Basis1(), L.Basis1());
+   DEBUG_CHECK_EQUAL(F.Basis1(), C.Basis2());
+   DEBUG_CHECK_EQUAL(L.LocalBasis(), HL.LocalBasis2());
+   DEBUG_CHECK_EQUAL(C.LocalBasis(), HR.LocalBasis2());
 
+#if 0
    int ExtraStates = StatesWanted - C.Basis1().total_dimension();
    // Calculate left null space of left site.
-   StateComponent NLeft = NullSpace2(CLeft);
+   StateComponent LNull = NullSpace2(L);
 
    // Perform SVD to right-orthogonalize the right site and extract singular value matrix.
-   StateComponent COrtho = C;
-   MatrixOperator URight;
-   RealDiagonalOperator DRight;
-   std::tie(URight, DRight) = OrthogonalizeBasis1(COrtho);
+   StateComponent R = C;
+   MatrixOperator U;
+   RealDiagonalOperator LambdaD;
+   std::tie(U, LambdaD) = OrthogonalizeBasis1(R); // MPS is L,U,Lambda,R
+   MatrixOperator Lambda = U*LambdaD;
+
+   auto CLeft = L*U*LambdaD;
+
+   StateComponent RightHam = contract_from_right(herm(HR), R, F, herm(R));
+
+   StateComponent = DensityMatrixMixingBasis2(LNull, CLeft, LambdaD, E, HL, RightHam);
 
    // Now the 3S-inspired step: calculate X = new F matrix projected onto the null space.
    // Firstly project out the first and last columns of HLeft.
    // NOTE: if the Hamiltonian is 2-dimensional MPO (i.e. there are no interactions here), then
    // the projector maps onto an empty set, so we need the 3-parameter constructor of the BasisList
-   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.GetSymmetryList(), HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
+   SimpleOperator Projector(HL.Basis2(), BasisList(HLeft.GetSymmetryList(), HL.Basis2().begin()+1, HLeft.Basis2().end()-1));
    for (int i = 0; i < Projector.Basis2().size(); ++i)
       Projector(i+1, i) = 1.0;
 
-   StateComponent X = contract_from_left(HLeft*Projector, herm(NLeft), E, CLeft*URight*DRight);
+
+
+   StateComponent X = contract_from_left(HL*Projector, herm(LNull), E, CL*URight*DRight);
    StateComponent FRight = contract_from_right(herm(herm(Projector)*HRight), COrtho, F, herm(C));
 
    // Multiply each element of X by a prefactor depending on the corresponding element of F.
@@ -923,6 +1063,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& C,
    C = RegularizeBasis1(R, tensor_col_sum(C, Z, NewBasis));
 
    return StatesToKeep.size();
+   #endif
 }
 
 // Expand the Basis2 of C.

@@ -650,6 +650,8 @@ StateComponent tensor_row_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B2);
 
+StateComponent tensor_row_sum(StateComponent const& A, StateComponent const& B);
+
 // Constructs a StateComponent that represents the sum of A and B,
 // at the right boundary of the matrix product state.
 // Precondition: A.Basis2() == B.Basis2()
@@ -658,6 +660,8 @@ StateComponent tensor_row_sum(StateComponent const& A,
 StateComponent tensor_col_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B1);
+
+StateComponent tensor_col_sum(StateComponent const& A, StateComponent const& B);
 
 // Returns the diagonal components of the operator F given by
 // F(x) = operator_prod(A, x, herm(B))
@@ -731,6 +735,8 @@ StateComponent RegularizeBasis12(Regularizer const& R1, StateComponent const& M,
 
 // Shortcut function, when we just want to regularize an operator and we don't care what the Regularizer is
 MatrixOperator Regularize(MatrixOperator const& M);
+StateComponent RegularizeBasis1(StateComponent const& M);
+StateComponent RegularizeBasis2(StateComponent const& M);
 
 // We could also unregularize a StateComponent, but so far we don't need it
 
