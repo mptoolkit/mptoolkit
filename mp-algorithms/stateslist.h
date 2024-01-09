@@ -60,6 +60,7 @@ struct StateParams
    bool Test;
    bool Save;
    bool Variance;
+   bool ZeroEnv;
 
    // Named constructor to continue a sequence of StateParams.
    // Currently this just copies the NumStates and sets everything else false

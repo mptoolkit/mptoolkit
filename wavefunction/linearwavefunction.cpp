@@ -444,7 +444,7 @@ left_orthogonalize(MatrixOperator M, LinearWavefunction& Psi, int Verbose)
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(M, *Pi);
-      M = TruncateBasis2(x);
+      M = Multiply(TruncateBasis2(x));
       *Pi = x;
       ++Pi; ++n;
    }
@@ -468,7 +468,7 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(*Pi, M);
-      M = TruncateBasis1(x);
+      M = Multiply(TruncateBasis1(x));
       *Pi = x;
    }
    return M;

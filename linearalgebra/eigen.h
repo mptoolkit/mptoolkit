@@ -120,6 +120,22 @@ LeastSquaresRegularized(Matrix<std::complex<double>> const& A, Vector<std::compl
 //
 // SingularValueDecomposition
 //
+// Singular values.  Returns the singular values in a LinearAlgebra::Vector<double>
+//
+
+template <typename A, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValues {};
+
+template <typename A, typename D>
+inline
+typename ImplementSingularValues<A,D>::result_type
+SingularValues(A const& a, D& d)
+{
+   return ImplementSingularValues<A,D>()(a,d);
+}
+
 // Singular value decomposition of a real matrix.  For input matrix A,
 // D is a vector containing the singular values, and
 // A = U * D * VT with U and VT near-orthogonal.
@@ -138,6 +154,40 @@ SingularValueDecomposition(A const& a, U& u, D& d, Vt& vt)
 {
    return ImplementSingularValueDecomposition<A,U,D,Vt>()(a,u,d,vt);
 }
+
+// Version that constructs only the left singular vectors
+
+template <typename A, typename U, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValueDecompositionLeft {};
+
+template <typename A, typename U, typename D>
+inline
+typename ImplementSingularValueDecompositionLeft<A,U,D>::result_type
+SingularValueDecompositionLeft(A const& a, U& u, D& d)
+{
+   return ImplementSingularValueDecompositionLeft<A,U,D>()(a,u,d);
+}
+
+// Version that constructs only the right singular vectors
+
+template <typename A, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionRight {};
+
+template <typename A, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionRight<A,D,Vt>::result_type
+SingularValueDecompositionRight(A const& a, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionRight<A,D,Vt>()(a,d,vt);
+}
+
+// Version that constructs the matrices to have dimension N x max(N,M) x M
 
 template <typename A, typename U, typename D, typename Vt,
           typename Ai = typename interface<A>::type,
@@ -173,7 +223,6 @@ SingularValueDecompositionFullLeft(A const& a, U& u, D& d, Vt& vt)
    return ImplementSingularValueDecompositionFullLeft<A,U,D,Vt>()(a,u,d,vt);
 }
 
-
 // Given MxN matrix,
 // U is MxN
 // D is NxN
@@ -191,6 +240,38 @@ typename ImplementSingularValueDecompositionFullRight<A,U,D,Vt>::result_type
 SingularValueDecompositionFullRight(A const& a, U& u, D& d, Vt& vt)
 {
    return ImplementSingularValueDecompositionFullRight<A,U,D,Vt>()(a,u,d,vt);
+}
+
+// 'Full' singular value decomposition but only calculate the left vectors
+
+template <typename A, typename U, typename D,
+          typename Ai = typename interface<A>::type,
+          typename Ui = typename interface<U>::type,
+          typename Di = typename interface<D>::type>
+struct ImplementSingularValueDecompositionLeftFull {};
+
+template <typename A, typename U, typename D>
+inline
+typename ImplementSingularValueDecompositionLeftFull<A,U,D>::result_type
+SingularValueDecompositionLeftFull(A const& a, U& u, D& d)
+{
+   return ImplementSingularValueDecompositionLeftFull<A,U,D>()(a,u,d);
+}
+
+// 'Full' singular value decomposition but only calculate the right vectors
+
+template <typename A, typename D, typename Vt,
+          typename Ai = typename interface<A>::type,
+          typename Di = typename interface<D>::type,
+          typename Vti = typename interface<Vt>::type>
+struct ImplementSingularValueDecompositionRightFull {};
+
+template <typename A, typename D, typename Vt>
+inline
+typename ImplementSingularValueDecompositionRightFull<A,D,Vt>::result_type
+SingularValueDecompositionRightFull(A const& a, D& d, Vt& vt)
+{
+   return ImplementSingularValueDecompositionRightFull<A,D,Vt>()(a,d,vt);
 }
 
 //
@@ -367,24 +448,37 @@ SingularFactorize(M const& m)
 }
 
 //
-// QR_Factorize
+// QR_FactorizeFull
 //
-// Performs the QR factorization of a complex matrix.
+// Performs the QR factorization of an MxN complex matrix with M >= N.
 // The matrix is replaced by the upper triangular matrix R, and
 // the unitary matrix Q is returned.  QR=X, where X is the original
-// matrix, and R=X'
-//
+// matrix, and R=X'.
+// In the case where X is MxN and M > N, there is a choice for how to represent
+// Q and R; we could choose full rank, Q is MxM, R is MxN, and is augmented by rows of zeros.
+// Or we can choose minimal rank, Q is MxN, R is NxN.
+// For the QR_FactorizeFull() function, we choose the first option, so that R is MxN and so doesn't need resizing.
 
 template <typename M, typename Mi = typename interface<M>::type>
-struct ImplementQRFactorize {};
+struct ImplementQRFactorizeFull {};
 
 template <typename M>
 inline
-typename ImplementQRFactorize<M&>::result_type
-QR_Factorize(M& m)
+typename ImplementQRFactorizeFull<M&>::result_type
+QR_FactorizeFull(M& m)
 {
-   return ImplementQRFactorize<M&>()(m);
+   return ImplementQRFactorizeFull<M&>()(m);
 }
+
+// For the 'thin' QR factorization, we return a pair of matrices, and pass the original matrix by value, so that
+// we can use move sematics to avoid creating a new matrix, where possible.  So we also abandon the generic interface
+// and just write the functions directly.
+
+std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+QR_Factorize(Matrix<std::complex<double>> M);
+
+std::tuple<Matrix<double>, Matrix<double>>
+QR_Factorize(Matrix<double> M);
 
 //
 // TridiagonalizeHermitian

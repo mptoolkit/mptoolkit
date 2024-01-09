@@ -29,10 +29,38 @@
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
-struct MixInfo
+class ExpansionAlgorithm
 {
-   double MixFactor;
-   double RandomMixFactor;
+   public:
+      enum Algorithm { BEGIN, SVD = BEGIN, RangeFinding, FastRangeFinding, DEFAULT = FastRangeFinding, Random, END };
+
+      ExpansionAlgorithm() : algorithm(DEFAULT) {}
+
+      ExpansionAlgorithm(Algorithm a) : algorithm(a) {}
+
+      explicit ExpansionAlgorithm(std::string Name);
+
+      // Enable iteration (including range-based for loop) over the available algorithms
+      ExpansionAlgorithm begin() const { return BEGIN; }
+      ExpansionAlgorithm end() const { return END; }
+
+      bool operator==(ExpansionAlgorithm const& Other) const { return algorithm == Other.algorithm; }
+      bool operator!=(ExpansionAlgorithm const& Other) const { return algorithm != Other.algorithm; }
+      bool operator==(Algorithm a) const { return algorithm == a; }
+      bool operator!=(Algorithm a) const { return algorithm != a; }
+      ExpansionAlgorithm& operator++() { algorithm = static_cast<Algorithm>(algorithm+1); return *this; }
+      const ExpansionAlgorithm& operator*() const { return *this; }
+
+      static const std::vector<std::string> AlgorithmNames;
+
+      static std::string ListAvailable();
+
+      std::string Name() const { return AlgorithmNames[algorithm]; }
+
+      Algorithm Algo() const { return algorithm; }
+
+   private:
+      Algorithm algorithm;
 };
 
 class DMRG
@@ -55,9 +83,6 @@ class DMRG
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
 
-      void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
-      void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
-
       //   int LeftSize() const { return Psi.LeftSize(); }
       //   int RightSize() const { return Psi.RightSize(); }
 
@@ -76,14 +101,25 @@ class DMRG
       // wavefunction (set to psi by StartSweep())
       double FidelityLoss() const;
 
+      // returns the dimension of the Basis1() of the active site
+      int BasisTotalDimension1() const { return C->Basis1().total_dimension(); }
+
+      // returns the dimension of the Basis2() of the active site
+      int BasisTotalDimension2() const { return C->Basis2().total_dimension(); }
+
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 
       void PrepareConvergenceTest();
       bool IsConverged() const;
 
-      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo);
-      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo);
+      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+
+      // Expand the environment basis to that it contains at least StatesWanted states, if possible.
+      // Returns the actual environment size.
+      int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
+      int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
 
       void debug_check_structure() const;
 
@@ -123,6 +159,8 @@ class DMRG
       double SweepEnergyError;       // standard error of the energy at each iteration
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
 
+      ExpansionAlgorithm PreExpansionAlgo, PostExpansionAlgo;
+
       // some statistics, for current iteration
       int IterationNumMultiplies;
       int IterationNumStates;
@@ -152,7 +190,7 @@ class DMRG
       LocalEigensolver Solver_;
       int Verbose;
 
-      MixInfo    MixingInfo;
+      double    MixFactor;
       StateComponent PsiPrevC;
 };
 

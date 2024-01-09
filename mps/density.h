@@ -39,6 +39,17 @@ typedef std::set<QuantumNumbers::QuantumNumber> KeepListType;
 // FullBasis is the actual basis (kept + discarded states), which is used to
 // get the quantum number from the subspace index of the kept and discarded states.
 // The updated KeepList is then set to the quantum numbers in the final basis.
+//
+// The idea behind the KeepList is that quantum number sectors are reachable.
+// For example, suppose we are doing a left-to-right sweep and updating
+// some site A^s.  The KeepList will be the set of quantum number sectors
+// in A.Basis1() that we want to keep (i.e. they are part of the kept part
+// of the wavefunction.  This excludes states that might be in the basis
+// for other reasons, eg subspace expansion).  Now when we truncate Basis2()
+// of A^s, we want to ensure that Basis2() * s covers every quantum number
+// sector in KeepList.  This guarantees that on the subsequent right-to-left
+// sweep, all of the kept sectors have a possibility to be included in the
+// wavefunction.
 void UpdateKeepList(KeepListType& KeepList,
                     std::set<QuantumNumbers::QuantumNumber> const& SiteQN,
                     VectorBasis const& FullBasis,
@@ -235,7 +246,8 @@ class DensityMatrix<MatrixOperator> : public DensityMatrixBase
 
       LinearBasis<BasisType> const& Basis() const { return B; }
 
-      // constructs a truncation operator that projects onto the given eigenstates
+      // constructs a truncation operator that projects onto the given eigenstates.
+      // The resulting operator has Basis1()' = truncated basis, Basis2()' = original basis
       template <typename FwdIter>
       OperatorType ConstructTruncator(FwdIter First, FwdIter Last) const;
 
@@ -297,12 +309,16 @@ class SingularDecompositionBase
 
       double EigenSum() const { return ESum; }
 
+      enum WhichVectors { Left, Right, Both };
+
+      std::ostream& DensityMatrixReport(std::ostream& out);
+
    protected:
       typedef LinearAlgebra::Matrix<std::complex<double> > RawDMType;
 
       SingularDecompositionBase();
 
-      void Diagonalize(std::vector<RawDMType> const& M);
+      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both);
 
    public:
       virtual QuantumNumber Lookup(int Subspace) const = 0;
@@ -312,7 +328,7 @@ class SingularDecompositionBase
 
       std::vector<RawDMType> LeftVectors, RightVectors;
       std::vector<EigenInfo> EigenInfoList;
-      std::vector<LinearAlgebra::Vector<double> > SingularValues;  // to avoid taking sqrt of density eigenvalues
+      std::vector<LinearAlgebra::Vector<double>> SingularValues;  // to avoid taking sqrt of density eigenvalues
       int MaxLinearDimension;
       double ESum;
 };
@@ -338,15 +354,47 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
       typedef MatrixOperator right_type;
       typedef RealDiagonalOperator diagonal_type;
 
-      SingularDecomposition(MatrixOperator const& M);
+      explicit SingularDecomposition(MatrixOperator const& M);
+
+      // Optionally, choose which singular vectors to calculate
+      SingularDecomposition(MatrixOperator const& M, WhichVectors Which);
 
       template <typename FwdIter>
-      void ConstructMatrices(FwdIter first, FwdIter last,
-                             MatrixOperator& A,
-                             RealDiagonalOperator& C,
-                             MatrixOperator& B);
+      void ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);
+
+      // Construct only the left singular vectors
+      template <typename FwdIter>
+      MatrixOperator
+      ConstructLeftVectors(FwdIter first, FwdIter last);
+
+      // Construct only the right singular vectors
+      template <typename FwdIter>
+      MatrixOperator
+      ConstructRightVectors(FwdIter first, FwdIter last);
+
+      // Construct the diagonal matrix of singular values
+      template <typename FwdIter>
+      RealDiagonalOperator
+      ConstructSingularValues(FwdIter first, FwdIter last);
+
+
+      LinearBasis<VectorBasis> Basis1() const { return B1; }
+      LinearBasis<VectorBasis> Basis2() const { return B2; }
 
    private:
+      template <typename FwdIter>
+      std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>>
+      ConstructMapping(FwdIter first, FwdIter last);
+
+      MatrixOperator
+      DoConstructLeftVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
+      MatrixOperator
+      DoConstructRightVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
+      RealDiagonalOperator
+      DoConstructSingularValues(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping);
+
       QuantumNumber Lookup(int Subspace) const;
 
       LinearBasis<VectorBasis> B1, B2;

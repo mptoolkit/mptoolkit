@@ -26,6 +26,7 @@
 #include <tuple>
 #include "linearalgebra/matrix_utility.h"
 #include "tensor/tensor_eigen.h"
+#include "common/proccontrol.h"
 
 double const EigenvalueEpsilon = std::numeric_limits<double>::epsilon() * 4;
 
@@ -504,6 +505,11 @@ StateComponent tensor_row_sum(StateComponent const& A,
    return Result;
 }
 
+StateComponent tensor_row_sum(StateComponent const& A, StateComponent const& B)
+{
+   return tensor_row_sum(A, B, SumBasis<VectorBasis>(A.Basis2(), B.Basis2()));
+}
+
 StateComponent tensor_col_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B1)
@@ -517,6 +523,11 @@ StateComponent tensor_col_sum(StateComponent const& A,
       Result[s] = tensor_col_sum(A[s], B[s], B1);
    }
    return Result;
+}
+
+StateComponent tensor_col_sum(StateComponent const& A, StateComponent const& B)
+{
+   return tensor_col_sum(A, B, SumBasis<VectorBasis>(A.Basis1(), B.Basis1()));
 }
 
 // prod
@@ -840,6 +851,17 @@ ExpandBasis1_(StateComponent const& A)
    return std::make_pair(Res, Result);
 }
 
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis2(A);
+   SingularValueDecomposition(M, U, D, Vh);
+   A = ReshapeFromBasis2(Vh, A.LocalBasis(), A.Basis2());
+   return std::make_pair(U, D);
+}
+
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A)
 {
@@ -852,14 +874,29 @@ OrthogonalizeBasis2(StateComponent& A)
 }
 
 std::pair<MatrixOperator, RealDiagonalOperator>
-OrthogonalizeBasis1(StateComponent& A)
+TruncateBasis1(StateComponent& A, StatesInfo const& States)
 {
+   MatrixOperator M = ReshapeBasis2(A);
+   CMatSVD SVD(M);
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
-   MatrixOperator M = ReshapeBasis2(A);
-   SingularValueDecomposition(M, U, D, Vh);
+   TruncationInfo Info;
+   SVD.ConstructMatrices(SVD.begin(), TruncateFixTruncationError(SVD.begin(), SVD.end(), States, Info), U, D, Vh);
    A = ReshapeFromBasis2(Vh, A.LocalBasis(), A.Basis2());
    return std::make_pair(U, D);
+}
+
+std::pair<RealDiagonalOperator, MatrixOperator>
+TruncateBasis2(StateComponent& A, StatesInfo const& States)
+{
+   MatrixOperator M = ReshapeBasis1(A);   // M is md x m
+   CMatSVD SVD(M);
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   TruncationInfo Info;
+   SVD.ConstructMatrices(SVD.begin(), TruncateFixTruncationError(SVD.begin(), SVD.end(), States, Info), U, D, Vh);
+   A = ReshapeFromBasis1(U, A.LocalBasis(), A.Basis1());
+   return std::make_pair(D, Vh);
 }
 
 MatrixOperator ReshapeBasis1(StateComponent const& A)
@@ -1008,6 +1045,16 @@ Regularize(MatrixOperator const& M)
    Regularizer R1(M.Basis1());
    Regularizer R2(M.Basis2());
    return RegularizeBasis12(R1, M, R2);
+}
+
+StateComponent RegularizeBasis1(StateComponent const& M)
+{
+   return RegularizeBasis1(Regularizer(M.Basis1()), M);
+}
+
+StateComponent RegularizeBasis2(StateComponent const& M)
+{
+   return RegularizeBasis2(M, Regularizer(M.Basis2()));
 }
 
 StateComponent
@@ -1301,7 +1348,7 @@ MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1,
       {
          if (is_transform_target(B2[j], q, B1[i]))
          {
-            Result(i,j) = LinearAlgebra::random_matrix<std::complex<double> >(B1.dim(i), B2.dim(j));
+            Result(i,j) = LinearAlgebra::nrandom_matrix<std::complex<double> >(B1.dim(i), B2.dim(j));
          }
       }
    }

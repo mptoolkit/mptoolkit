@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-idmrg-s3e.cpp
+// mp/mp-idmrg-ee.cpp
 //
-// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2023 Ian McCulloch <ianmcc@physics.uq.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,7 +64,6 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/proccontrol.h"
-#include "common/formatting.h"
 #include "common/prog_options.h"
 #include <iostream>
 #include "common/environment.h"
@@ -333,140 +332,6 @@ struct MixInfo
    double RandomMixFactor;
 };
 
-//#define SSC
-
-// Apply subspace expansion / truncation on the left (C.Basis1()).
-// Returns a matrix Lambda (diagonal) and a unitary
-// Postcondition: U' Lambda' C' = C (up to truncation!)
-std::pair<MatrixOperator, RealDiagonalOperator>
-SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& LeftHam)
-{
-   // truncate - FIXME: this is the s3e step
-#if defined(SSC)
-   MatrixOperator Lambda;
-   SimpleStateComponent CX;
-   std::tie(Lambda, CX) = ExpandBasis1_(C);
-#else
-   MatrixOperator Lambda = ExpandBasis1(C);
-#endif
-
-   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
-   if (Mix.MixFactor > 0)
-   {
-#if defined(SSC)
-      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
-#else
-      StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
-#endif
-      MatrixOperator RhoMix;
-      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
-
-      // Skip the identity and the Hamiltonian
-      for (unsigned i = 1; i < RH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
-      }
-      // check for a zero mixing term - can happen if there are no interactions that span
-      // the current bond
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-
-   //TRACE(Rho);
-
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-   Lambda = Lambda * herm(U);
-
-   //TRACE(Lambda);
-
-#if defined(SSC)
-   C = U*CX; //prod(U, CX);
-#else
-   C = prod(U, C);
-#endif
-
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
-
-   //TRACE(U)(D)(Vh);
-
-   C = prod(Vh, C);
-   return std::make_pair(U, D);
-}
-
-// Apply subspace expansion / truncation on the right (C.Basis2()).
-// Returns Lambda matrix (diagonal) and a unitary matrix
-// Postcondition: C' Lambda' U' = C (up to truncation!)
-std::pair<RealDiagonalOperator, MatrixOperator>
-SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& RightHam)
-{
-   // truncate - FIXME: this is the s3e step
-   MatrixOperator Lambda = ExpandBasis2(C);
-
-   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
-   if (Mix.MixFactor > 0)
-   {
-      StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
-      MatrixOperator RhoMix;
-
-      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
-
-      for (unsigned i = 1; i < LH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
-      }
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-
-   Lambda = U * Lambda;
-   C = prod(C, herm(U));
-
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
-
-   C = prod(C, U);
-
-   return std::make_pair(D, Vh);
-}
-
 class iDMRG
 {
    public:
@@ -638,13 +503,62 @@ iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
    this->CheckConsistency();
 }
 
+void
+iDMRG::ExpandEnvironmentLeft(int ExtraStates)
+{
+   // Expand the environment for Basis2 of *C
+
+   // Merge E and A matrices
+   StateComponent A = *C;
+   StateComponent EA = local_tensor_prod(LeftHamiltonian.back(), A);
+   // EA is m x (w*d) x m
+
+   ProductBasis<BasisList, BasisList> PBasis(A.LocalBasis(), EA.LocalBasis());
+
+   SimpleOperator Ham = reshape_to_matrix(*H);
+
+   // Apply the MPO
+   EA = local_prod(herm(Ham), EA);
+   // EA is now m x (d*w) x m
+
+   // project onto null space
+   EA -= local_tensor_prod(A, contract_local_tensor_prod_left(herm(A), EA, PBasis));
+
+   // Pre-SVD to make the final SVD faster
+   TruncateBasis2(EA);
+
+   // SVD again to get the expanded basis
+   AMatSVD SL(EA, PBasis);
+
+   // How to choose which states to keep?
+   // If we do any expansion at all then we ought to keep at least one state in each possible quantum number sector, if possible.
+   TruncationInfo Info;
+   RealDiagonalOperator L;
+   StateComponent X;
+   AMatSVD::const_iterator Cutoff = TruncateFixTruncationError(SL.begin(), SL.end(), SInfo, Info);
+   SL.ConstructMatrices(SL.begin(), Cutoff, A, L, X);  // L and X are not used here
+
+   // A is now the expanded set of states.  Merge it into *C
+   A = tensor_row_sum(*C, A, SumBasis<VectorBasis>(C->Basis2(), A.Basis2()));
+
+   // The added rows are not going to be exactly orthogonal to the existing states, especially if we forced a few states that
+   // have zero singular values. We ought to do another SVD, or a QR decomposition to orthogonalize the basis.
+
+   // Reconstruct the Hamiltonian
+   // In principle we could just construct the new rows using A, but easier to just reconstruct the full matrices.
+
+   // We also need Lambda in the new basis
+
+
+}
+
 //
 // we need to store SaveLamda1 as a combination of a RealDiagonalOperator and
 // a unitary MatrixOperator.
 //
 
 void
-iDMRG::UpdateLeftBlock(double HMix)
+iDMRG::UpdateLeftBlock()
 {
    if (Verbose > 2)
    {
@@ -654,8 +568,11 @@ iDMRG::UpdateLeftBlock(double HMix)
                 << SaveLeftHamiltonian.Basis1().total_dimension() << "\n";
    }
 
-   StateComponent E = LeftHamiltonian.back();
    LeftHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveLeftHamiltonian, QShift));
+
+   // This left Hamiltonian is actually one site smaller than what we want, so that we can expand the environment.
+   // Regenerate that matrix.
+   LeftHamiltonian.push_back(contract_from_left(SaveLeftHamiltonianMPO, herm(SaveLeftA), SaveLeftHamiltonian, SaveLeftA);
 
    MatrixOperator T = Solve_D_U_DInv(delta_shift(SaveLambda2, QShift), delta_shift(SaveU2, QShift), SaveLambda1);
 
@@ -665,15 +582,6 @@ iDMRG::UpdateLeftBlock(double HMix)
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
-
-   //HMix = 0;
-   if (HMix != 0)
-   {
-      // Adjust basis of E
-      MatrixOperator V = delta_shift(SaveU2, QShift) * herm(SaveU1);
-      E = triple_prod(V, E, herm(V));
-      LeftHamiltonian.back() = HMix * E + (1.0 - HMix) * LeftHamiltonian.back();
-   }
 
    // Subtract off the energy
    LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
@@ -724,7 +632,7 @@ iDMRG::UpdateRightBlock(double HMix)
    }
 
    // Subtract off the energy
-   RightHamiltonian.front().front() -= std::conj(Solver_.LastEnergy()) * RightHamiltonian.front().back();
+   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
 
    this->CheckConsistency();
 }
@@ -732,20 +640,24 @@ iDMRG::UpdateRightBlock(double HMix)
 void
 iDMRG::SaveLeftBlock(StatesInfo const& States)
 {
-   //TRACE(LeftHamiltonian.back());
-   // When we save the block, we need to end up with
-   // C.Basis2() == SaveLeftHamiltonian.Basis()
+   // This is called at the end of a right-moving sweep, where we want to save the left block hamiltonian for
+   // later.  At the end of the next left-moving sweep, we update the environment to use this left block.
+   // Since we want to do environment expansion on this saved left block, we don't save the Hamiltonian matrix itself,
+   // but instead we save the Hamiltonian for the site to the left.  This means that we reconstruct the environment
+   // Hamiltonian with
+   // LeftHamiltonian = contract_from_left(SaveLeftHamiltonianMPO, herm(L), SaveLeftHamiltonian, L);
+   // where L is SaveLeftA with whatever environment expansion we want.
    CHECK(C == LastSite);
-   StateComponent L = *C;
-   std::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
-                                                          MixingInfo, States, Info, RightHamiltonian.front());
+   SaveLeftA = *C;
+   std::tie(SaveLambda2, SaveU2) = TruncateBasis2(SaveLeftA, MixingInfo, States, Info);
 
    if (Verbose > 1)
    {
       std::cerr << "Saving left block for idmrg, states=" << Info.KeptStates()
                 << " L.Basis2() is " << L.Basis2().total_dimension() << '\n';
    }
-   SaveLeftHamiltonian = contract_from_left(*H, herm(L), LeftHamiltonian.back(), L);
+   SaveLeftHamiltonian = LeftHamiltonian.back();
+   SaveLeftHamiltonianMPO = *H;
    this->CheckConsistency();
 
    //TRACE(SaveLeftHamiltonian);
@@ -756,8 +668,8 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
 {
    CHECK(C == FirstSite);
    StateComponent R = *C;
-   std::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
-                                                          MixingInfo, States, Info, LeftHamiltonian.back());
+   std::tie(SaveU1, SaveLambda1) = TruncateBasis1(R, *H, RightHamiltonian.front(),
+                                                  MixingInfo, States, Info, LeftHamiltonian.back());
 
    //   TRACE(SaveU1);
 
@@ -776,7 +688,7 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
    // Truncate right
    MatrixOperator U;
    RealDiagonalOperator Lambda;
-   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
+   std::tie(U, Lambda) = TruncateBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
                                                 LeftHamiltonian.back());
 
    if (Verbose > 1)
@@ -815,7 +727,7 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    // Truncate right
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
+   std::tie(Lambda, U) = TruncateBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
                                                 RightHamiltonian.front());
    if (Verbose > 1)
    {
@@ -838,9 +750,16 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
 }
 
 void
+iDMRG::ExpandEnvironmentRight(int ExtraStates)
+{
+
+}
+
+void
 iDMRG::SweepRight(StatesInfo const& States, double HMix)
 {
    this->UpdateLeftBlock(HMix);
+   this->ExpandEnvironmentRight();
    this->Solve();
    this->SaveRightBlock(States);
    this->ShowInfo('P');
@@ -848,6 +767,7 @@ iDMRG::SweepRight(StatesInfo const& States, double HMix)
    while (C != LastSite)
    {
       this->TruncateAndShiftRight(States);
+      this->ExpandEnvironmentRight();
       this->Solve();
       this->ShowInfo('R');
    }
@@ -860,6 +780,7 @@ iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
 {
    if (!NoUpdate)
       this->UpdateRightBlock(HMix);
+   this->ExpandEnvironmentLeft();
    this->Solve();
    this->SaveLeftBlock(States);
    this->ShowInfo('Q');
@@ -867,6 +788,7 @@ iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
    while (C != FirstSite)
    {
       this->TruncateAndShiftLeft(States);
+      this->ExpandEnvironmentLeft();
       this->Solve();
       this->ShowInfo('L');
    }
@@ -909,8 +831,12 @@ iDMRG::ShowInfo(char c)
 {
    std::cout << c
              << " Sweep=" << SweepNumber
-             << " Energy=" << formatting::format_complex(Solver_.LastEnergy())
-             << " States=" << Info.KeptStates()
+             << " Energy=";
+   if (Solver_.is_complex())
+      std::cout << Solver_.LastEnergy();
+   else
+      std::cout << Solver_.LastEnergyReal();
+   std::cout << " States=" << Info.KeptStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy()
              << " FidelityLoss=" << Solver_.LastFidelityLoss()
@@ -928,7 +854,8 @@ int main(int argc, char** argv)
       int NumIter = 20;
       int MinIter = 4;
       int MinStates = 1;
-      std::string States = "";
+      std::string States = "100";
+      int NumSteps = 10;
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
       std::string FName;
@@ -1005,6 +932,8 @@ int main(int argc, char** argv)
           "(useful for integer spin chains, can be used multiple times)")
          ("create,b", prog_opt::bool_switch(&NoFixedPoint),
           "Construct a new wavefunction from a random state or single-cell diagonalization")
+         ("steps,s", prog_opt::value<int>(&NumSteps),
+          FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
          ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
           "Don't orthogonalize the wavefunction before saving")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -1189,7 +1118,7 @@ int main(int argc, char** argv)
          // adjust for periodic basis
          StateComponent x = prod(Psi.get_back(), UR);
          std::tie(R, UR);
-         MatrixOperator X = Multiply(TruncateBasis2(x)); // the Basis2 is already 1-dim.  This just orthogonalizes x
+         MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
          MatrixOperator U;
          SingularValueDecomposition(X, U, R, UR);
          x = prod(x, U);
@@ -1259,6 +1188,10 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       StatesList MyStates(States);
+      if (vm.count("steps") && MyStates.size() == 1)
+      {
+         MyStates.Repeat(NumSteps);
+      }
       std::cout << MyStates << '\n';
 
       std::complex<double> InitialEnergy = 0.0;
