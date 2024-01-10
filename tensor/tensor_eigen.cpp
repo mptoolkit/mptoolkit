@@ -881,8 +881,8 @@ QR_FactorizeFullRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>,
       if (!I)
       {
          // the component is zero.  We could set the Q matrix to the identity, but probably better to use a random unitary
-         Q(i,j) = LinearAlgebra::random_unitary<std::complex<double>>(m.Basis1().dim(i), m.Basis1().dim(j));
-         R(j,j) = LinearAlgebra::Matrix<std::complex<double>>(m.Basis1().dim(i), m.Basis2().dim(j), 0.0);
+         Q(i,i) = LinearAlgebra::random_unitary<std::complex<double>>(m.Basis1().dim(i), m.Basis1().dim(i));
+         R(i,j) = LinearAlgebra::Matrix<std::complex<double>>(m.Basis1().dim(i), m.Basis2().dim(j), 0.0);
       }
       else
       {
@@ -890,7 +890,7 @@ QR_FactorizeFullRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>,
          Q(i,i) = QR_FactorizeFull(R(i,j));
       }
    }
-   return std::make_pair(Q,R);
+   return std::make_pair(std::move(Q), std::move(R));
 }
 
 std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
@@ -920,8 +920,12 @@ QR_FactorizeRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, Vec
    DEBUG_CHECK(is_regular_basis(m.Basis1()));
    DEBUG_CHECK(is_regular_basis(m.Basis2()));
 
-   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> Q(m.Basis1(), m.Basis2());
-   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> R(m.Basis2(), m.Basis2());
+   // Make a basis for L.Basis2() and Q.Basis1().
+   std::vector<int> B1Index, B2Index;
+   VectorBasis B3;
+   std::tie(B3, B1Index, B2Index) = MakeMinimalBasis(m.Basis1(), m.Basis2());
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> Q(m.Basis1(), B3);
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> R(B3, m.Basis2());
 
    for (int i = 0; i < m.Basis1().size(); ++i)
    {
@@ -930,20 +934,22 @@ QR_FactorizeRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, Vec
       if (j < 0)
          continue;
 
-      //CHECK(m.Basis1().dim(i) >= m.Basis2().dim(j))("QR decomposition is not defined for m*n matrix with n > m!");
+      int k = B1Index[i];
+      DEBUG_CHECK_EQUAL(k, B2Index[j]);
+
       auto I = iterate_at(m.data(), i,j);
       if (!I)
       {
          // the component is zero.  We set the corresponding Q matrix to a random unitary
-         Q(i,j) = LinearAlgebra::random_unitary<std::complex<double>>(m.Basis1().dim(i), m.Basis2().dim(j));
-         R(j,j) = LinearAlgebra::Matrix<std::complex<double>>(m.Basis2().dim(j), m.Basis2().dim(j), 0.0);
+         Q(i,k) = LinearAlgebra::random_unitary<std::complex<double>>(m.Basis1().dim(i), B3.dim(k));
+         R(k,j) = LinearAlgebra::Matrix<std::complex<double>>(B3.dim(k), m.Basis2().dim(j), 0.0);
       }
       else
       {
-         std::tie(Q(i,j), R(j,j)) = QR_Factorize(std::move(*I));
+         std::tie(Q(i,k), R(k,j)) = QR_FactorizeThin(std::move(*I));
       }
    }
-   return std::make_pair(Q,R);
+   return std::make_pair(std::move(Q), std::move(R));
 }
 
 std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
@@ -963,6 +969,123 @@ QR_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasi
    QR.first = UnregularizeBasis1(R1, QR.first);
    QR.second = UnregularizeBasis2(QR.second, R2);
    return QR;
+}
+
+//
+// LQ Factorization
+//
+
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_FactorizeFullRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m)
+{
+   CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()));
+   DEBUG_CHECK(is_regular_basis(m.Basis2()));
+
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> L(m.Basis1(), m.Basis2());
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> Q(m.Basis2(), m.Basis2());
+
+   for (int i = 0; i < m.Basis1().size(); ++i)
+   {
+      int j = m.Basis2().find_first(m.Basis1()[i]);
+      // If the quantum number doesn't exist in Basis2(), then the corresponding matrix is n by zero
+      if (j < 0)
+         continue;
+
+      //CHECK(m.Basis1().dim(i) >= m.Basis2().dim(j))("QR decomposition is not defined for m*n matrix with n > m!");
+      auto I = iterate_at(m.data(), i,j);
+      if (!I)
+      {
+         // the component is zero.  We could set the Q matrix to the identity, but probably better to use a random unitary
+         L(i,j) = LinearAlgebra::Matrix<std::complex<double>>(m.Basis1().dim(i), m.Basis2().dim(j), 0.0);
+         Q(j,j) = LinearAlgebra::random_unitary<std::complex<double>>(m.Basis2().dim(i), m.Basis1().dim(j));
+      }
+      else
+      {
+         L(i,j) = std::move(*I);
+         Q(j,j) = LQ_FactorizeFull(L(i,j));
+      }
+   }
+   return std::make_pair(std::move(L), std::move(Q));
+}
+
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_FactorizeFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m)
+{
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      return LQ_FactorizeFullRegular(std::move(m));
+   }
+   // else
+
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
+
+   auto LQ = LQ_FactorizeFullRegular(RegularizeBasis12(R1, std::move(m), R2));
+   LQ.first = UnregularizeBasis1(R1, LQ.first);
+   LQ.second = UnregularizeBasis2(LQ.second, R2);
+   return LQ;
+}
+
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_FactorizeRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m)
+{
+   CHECK(is_scalar(m.TransformsAs()));
+   DEBUG_CHECK(is_regular_basis(m.Basis1()));
+   DEBUG_CHECK(is_regular_basis(m.Basis2()));
+
+   // Make a basis for L.Basis2() and Q.Basis1().
+   std::vector<int> B1Index, B2Index;
+   VectorBasis B3;
+   std::tie(B3, B1Index, B2Index) = MakeMinimalBasis(m.Basis1(), m.Basis2());
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> L(m.Basis1(), B3);
+   IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> Q(B3, m.Basis2());
+
+   for (int i = 0; i < m.Basis1().size(); ++i)
+   {
+      int j = m.Basis2().find_first(m.Basis1()[i]);
+      // If the quantum number doesn't exist in Basis2(), then the corresponding matrix is n by zero
+      if (j < 0)
+         continue;
+
+      int k = B1Index[i];
+      DEBUG_CHECK_EQUAL(k, B2Index[j]);
+
+      auto I = iterate_at(m.data(), i,j);
+      if (!I)
+      {
+         // the component is zero.  We set the corresponding Q matrix to a random unitary
+         L(i,k) = LinearAlgebra::Matrix<std::complex<double>>(m.Basis1().dim(i), B3.dim(k), 0.0);
+         Q(k,j) = LinearAlgebra::random_unitary<std::complex<double>>(B3.dim(k), m.Basis2().dim(j));
+      }
+      else
+      {
+         std::tie(L(i,k), Q(k,j)) = LQ_FactorizeThin(std::move(*I));
+      }
+   }
+   return std::make_pair(std::move(L), std::move(Q));
+}
+
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m)
+{
+   if (is_regular_basis(m.Basis1()) && is_regular_basis(m.Basis2()))
+   {
+      return LQ_FactorizeRegular(std::move(m));
+   }
+   // else
+
+   Regularizer R1(m.Basis1());
+   Regularizer R2(m.Basis2());
+
+   auto LQ = LQ_FactorizeRegular(RegularizeBasis12(R1, std::move(m), R2));
+   LQ.first = UnregularizeBasis1(R1, LQ.first);
+   LQ.second = UnregularizeBasis2(LQ.second, R2);
+   return LQ;
 }
 
 IrredTensor<LinearAlgebra::Matrix<std::complex<double> >, VectorBasis, VectorBasis>

@@ -146,16 +146,34 @@ SingularValueDecomposition(IrredTensor<std::complex<double>, BasisList, BasisLis
                            IrredTensor<std::complex<double>, BasisList, BasisList>& Vh);
 
 // QR factorization of a scalar operator, result is a pair of Q, R, where Q is rectangular, and R is upper-triangular.
-// We require that the number of rows of m >= number of columns, in each sector.
+// We require that the number of rows of A >= number of columns, in each sector. (FIXME: I think this isn't actually required)
+// The Full version returns Q as m x m matrix, and R as m x n.
 std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
          IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
-QR_FactorizeFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m);
+QR_FactorizeFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> A);
 
 // QR factorization of a scalar operator, result is a pair of Q, R, where Q is rectangular, and R is square upper-triangular.
-// We require that the number of rows of m >= number of columns, in each sector.
+// We require that the number of rows of A >= number of columns, in each sector.
+// The default ('thin') version returns Q as an m x n matrix, and R as n x n.
+// TODO: this ought to return Q as m x min(m,n)
 std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
          IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
-QR_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> m);
+QR_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> A);
+
+// LQ factorization of a scalar operator, result is a pair of L, Q, where Q is rectangular, and L is lower-triangular.
+// We require that the number of columns of A >= number of rows, in each sector.
+// The Full version returns L as an m x n matrix, and Q as n x n.
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_FactorizeFull(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> A);
+
+// LQ factorization of a scalar operator, result is a pair of L, Q, where Q is rectangular, and L is lower-triangular.
+// We require that the number of columns of A >= number of rows, in each sector.
+// The default ('thin') version returns L as an m x m matrix, and Q as m x n.
+// TODO: this ought to return Q as min(m,n) x n
+std::pair<IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>,
+         IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>>
+LQ_Factorize(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis> A);
 
 // inverts a diagonal operator, with a given cutoff of singular values
 IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, VectorBasis, VectorBasis>

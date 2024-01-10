@@ -96,6 +96,9 @@ void dgeqrf(integer m, integer n, double* restrict a, integer lda, double* restr
 void dgelqf(integer m, integer n, double* restrict a, integer lda, double* restrict tau,
             double* restrict work, integer lwork, integer& restrict info);
 
+void dorgqr(integer m, integer n, integer k, double* restrict a, integer lda, double* restrict tau,
+            double* restrict work, integer lwork, integer& restrict info);
+
 void dorglq(integer m, integer n, integer k, double* restrict a, integer lda, double* restrict tau,
             double* restrict work, integer lwork, integer& restrict info);
 
@@ -176,9 +179,11 @@ void zhseqr(char job, char compz, integer n, integer ilo, integer ihi, std::comp
 void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
             std::complex<double>* restrict work, integer lwork, integer& restrict info);
 
-void zunglq(integer m, integer n, integer k, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
+void zungqr(integer m, integer n, integer k, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
             std::complex<double>* restrict work, integer lwork, integer& restrict info);
 
+void zunglq(integer m, integer n, integer k, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
+            std::complex<double>* restrict work, integer lwork, integer& restrict info);
 
 namespace raw
 {
@@ -247,6 +252,8 @@ void F77NAME(dgeqrf)(integer const* m, integer const* n, double* restrict a, int
 
 void F77NAME(dgelqf)(integer const* m, integer const* n, double* restrict a, integer const* lda, double* restrict tau,
                      double* restrict work, integer const* lwork, integer* restrict info);
+
+void F77NAME(dorgqr)(integer const* m, integer const* n, integer const* k, double* restrict a, integer const* lda, double* restrict tau, double* restrict work, integer const* lwork, integer* restrict info);
 
 void F77NAME(dorglq)(integer const* m, integer const* n, integer const* k, double* restrict a, integer const* lda, double* restrict tau, double* restrict work, integer const* lwork, integer* restrict info);
 
@@ -328,6 +335,8 @@ void F77NAME(zgeqrf)(integer const* m, integer const* n, complex* restrict a, in
                      complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
 void F77NAME(zgelqf)(integer const* m, integer const* n, complex* restrict a, integer const* lda, complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
+
+void F77NAME(zungqr)(integer const* m, integer const* n, integer const* k, complex* restrict a, integer const* lda, complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
 void F77NAME(zunglq)(integer const* m, integer const* n, integer const* k, complex* restrict a, integer const* lda, complex* restrict tau, complex* restrict work, integer const* lwork, integer* restrict info);
 
@@ -440,6 +449,14 @@ void dgelqf(integer m, integer n, double* restrict a, integer lda, double* restr
 {
    TRACE_LAPACK("dgelqf")(m)(n)(a)(lda)(tau)(work)(lwork)(info);
    raw::F77NAME(dgelqf)(&m, &n, a, &lda, tau, work, &lwork, &info);
+}
+
+inline
+void dorgqr(integer m, integer n, integer k, double* restrict a, integer lda, double* restrict tau,
+            double* restrict work, integer lwork, integer& restrict info)
+{
+   TRACE_LAPACK("dorgqr")(m)(n)(k)(a)(lda)(tau)(work)(lwork)(info);
+   raw::F77NAME(dorgqr)(&m, &n, &k, a, &lda, tau, work, &lwork, &info);
 }
 
 inline
@@ -628,6 +645,14 @@ void zgelqf(integer m, integer n, std::complex<double>* restrict a, integer lda,
 {
    TRACE_LAPACK("zgelqf")(m)(n)(a)(lda)(tau)(work)(lwork)(info);
    raw::F77NAME(zgelqf)(&m, &n, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau),
+                        reinterpret_cast<complex*>(work), &lwork, &info);
+}
+
+void zungqr(integer m, integer n, integer k, std::complex<double>* restrict a, integer lda, std::complex<double>* restrict tau,
+            std::complex<double>* restrict work, integer lwork, integer& restrict info)
+{
+   TRACE_LAPACK("zungqr")(m)(n)(k)(a)(lda)(tau)(work)(lwork)(info);
+   raw::F77NAME(zungqr)(&m, &n, &k, reinterpret_cast<complex*>(a), &lda, reinterpret_cast<complex*>(tau),
                         reinterpret_cast<complex*>(work), &lwork, &info);
 }
 

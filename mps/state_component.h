@@ -750,6 +750,14 @@ OrthogonalizeBasis1(StateComponent& A);
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A);
 
+// right-orthogonalizes an MPS, A -> L * A', using an LQ decomposition.
+MatrixOperator
+OrthogonalizeBasis1_LQ(StateComponent& A);
+
+// left-orthogonalizes an MPS, A -> A' * R, using a QR decomposition
+MatrixOperator
+OrthogonalizeBasis2_QR(StateComponent& A);
+
 // Similar to OrthogonalizeBasis1, but truncates the singular value matrix D according to the given StatesInfo.
 // The default-constructed StatesInfo removes zero singular values.
 std::pair<MatrixOperator, RealDiagonalOperator>

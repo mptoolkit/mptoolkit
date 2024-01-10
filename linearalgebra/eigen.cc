@@ -105,6 +105,12 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
 void LQ_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
 void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
 
+void QR_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau);
+void QR_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void QR_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
+void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
 } // namespace Private
 
 // LinearSolveSPD
@@ -1201,6 +1207,68 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
       {
          int msz = std::min(i,s2);
          for (int j = 0; j < msz; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+//
+// LQ_FactorizeFull
+//
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
+{
+   typedef Matrix<double> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<double> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<double> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
+{
+   typedef Matrix<std::complex<double>> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<std::complex<double>> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<std::complex<double>> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
          {
             m(i,j) = 0.0;
          }

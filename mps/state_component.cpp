@@ -873,6 +873,28 @@ OrthogonalizeBasis2(StateComponent& A)
    return std::make_pair(D, Vh);
 }
 
+MatrixOperator
+OrthogonalizeBasis1_LQ(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis2(A);
+   auto LQ = LQ_Factorize(M);
+   A = ReshapeFromBasis2(LQ.second, A.LocalBasis(), A.Basis2());
+   return LQ.first;
+}
+
+MatrixOperator
+OrthogonalizeBasis2_QR(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis1(A);   // M is md x m
+   auto QR = QR_Factorize(M);
+   A = ReshapeFromBasis1(QR.first, A.LocalBasis(), A.Basis1());
+   return QR.second;
+}
+
 std::pair<MatrixOperator, RealDiagonalOperator>
 TruncateBasis1(StateComponent& A, StatesInfo const& States)
 {

@@ -367,6 +367,15 @@ DimensionPerSector(VectorBasis const& b)
    return Result;
 }
 
+// Given two vector bases B1 and B2, construct a third basis that for each quantum number q that is in
+// B1 and B2, has dimension equal to min(d1,d2), where d1,d2 are the dimensions of the q sector in B1 and B2
+// respectively.  The second and third components of the tuple are arrays of size B1.size() and B2.size() respectively,
+// which contain the index into the new basis of the corresponding sector of B1 and B2, or -1 if the new basis
+// doesn't contain this sector.
+// B1 abd B2 must be regular.
+std::tuple<VectorBasis, std::vector<int>, std::vector<int>>
+MakeMinimalBasis(VectorBasis const& B1, VectorBasis const& B2);
+
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
 
 // Apply a shift operator to the basis.  This will fail if any of the shifts

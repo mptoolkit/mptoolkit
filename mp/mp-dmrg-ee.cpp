@@ -178,6 +178,7 @@ int main(int argc, char** argv)
       double InitialFidelity = 1e-7;
       std::string PreExpandAlgo = ExpansionAlgorithm().Name();
       std::string PostExpandAlgo = ExpansionAlgorithm().Name();
+      double RangeFindingOverhead = 2.0;
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 0.0;
@@ -232,6 +233,7 @@ int main(int argc, char** argv)
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
+         ("rangefindingoverhead", prog_opt::value(&RangeFindingOverhead), FormatDefault("For the partial SVD, how much excess tokeep", RangeFindingOverhead).c_str())
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
 	  "For the shift-invert and shift-invert-direct solver, the target energy")
 	 ("subspacesize", prog_opt::value(&SubspaceSize),
@@ -306,6 +308,7 @@ int main(int argc, char** argv)
       dmrg.PostExpansionAlgo = ExpansionAlgorithm(PostExpandAlgo);
 
       dmrg.UseDGKS = UseDGKS;
+      dmrg.RangeFindingOverhead = RangeFindingOverhead;
       dmrg.Solver().SetSolver(Solver);
 
       dmrg.Solver().MaxTol = MaxTol;

@@ -697,7 +697,6 @@ void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA,
    CHECK(info == 0)("LAPACK::zunglq")(info);
 
    delete[] Work;
-
 }
 
 void QR_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau)
@@ -732,13 +731,51 @@ void QR_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
    delete[] Work;
 }
 
+void QR_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau)
+{
+   DEBUG_CHECK(Size1 >= Size2 && Size2 >= 0)(Size1)(Size2);
+   Fortran::integer info = 0;
+   double worksize;
+   double* Work = &worksize;
+   int lWork = -1;
+   LAPACK::dorgqr(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0]);
+   Work = new double[lWork];
+   LAPACK::dorglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::dorgqr")(info);
+
+   delete[] Work;
+}
+
+void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau)
+{
+   DEBUG_CHECK(Size1 >= Size2 && Size2 >= 0)(Size1)(Size2);
+   Fortran::integer info = 0;
+   std::complex<double> worksize;
+   std::complex<double>* Work = &worksize;
+   int lWork = -1;
+   LAPACK::zungqr(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+
+   lWork = int(Work[0].real());
+   Work = new std::complex<double>[lWork];
+   LAPACK::zunglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   CHECK(info == 0)("LAPACK::zungqr")(info);
+
+   delete[] Work;
+}
+
+
 } // namespace Private
+
+// QR
 
 std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 QR_Factorize(Matrix<std::complex<double>> M)
 {
    int s1 = size1(M);
    int s2 = size2(M);
+   CHECK(s1 >= s2)("For QR it is required that rows >= columns!")(s1)(s2);
    int sz = std::min(s1, s2);  // For the QR, we require that s1 >= s2, so we are guaranteed that sz==s2 here
    if (sz == 0)
    {
@@ -762,7 +799,7 @@ QR_Factorize(Matrix<std::complex<double>> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(Q, std::move(M));
+   return std::make_tuple(std::move(Q), std::move(M));
 }
 
 std::tuple<Matrix<double>, Matrix<double>>
@@ -770,7 +807,8 @@ QR_Factorize(Matrix<double> M)
 {
    int s1 = size1(M);
    int s2 = size2(M);
-   int sz = std::min(s1, s2);  // For the QR, we requie that s1 >= s2, so we are guaranteed that sz==s2 here
+   CHECK(s1 >= s2)("For QR it is required that rows >= columns!")(s1)(s2);
+   int sz = std::min(s1, s2);
    if (sz == 0)
    {
       return std::make_tuple(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
@@ -793,8 +831,186 @@ QR_Factorize(Matrix<double> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(Q, std::move(M));
+   return std::make_tuple(std::move(Q), std::move(M));
 }
+std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+QR_FactorizeThin(Matrix<std::complex<double>> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+   }
+   Vector<std::complex<double>> Tau(sz);
+   Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*sz matrix
+   Matrix<std::complex<double>> Q = M(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+
+   Private::LQ_Construct(sz, s1, sz, data(Q), stride1(Q), data(Tau));
+
+   // Copy the upper-triangular parts of M into R (new matrix, since it is a different size)
+   Matrix<std::complex<double>> R(sz, s2, 0.0);
+   for (int i = 0; i < sz; ++i)
+   {
+      for (int j = i; j < s2; ++j)
+      {
+         R(i,j) = M(i,j);
+      }
+   }
+   return std::make_tuple(std::move(Q), std::move(R));
+}
+
+std::tuple<Matrix<double>, Matrix<double>>
+QR_FactorizeThin(Matrix<double> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
+   }
+   Vector<double> Tau(sz);
+   Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*sz matrix
+   Matrix<double> Q = M(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+   Private::LQ_Construct(sz, s1, sz, data(Q), stride1(Q), data(Tau));
+
+   // Copy the upper-triangular parts of M into R (new matrix, since it is a different size)
+   Matrix<double> R(sz, s2, 0.0);
+   for (int i = 0; i < sz; ++i)
+   {
+      for (int j = i; j < s2; ++j)
+      {
+         R(i,j) = M(i,j);
+      }
+   }
+   return std::make_tuple(std::move(Q), std::move(R));
+}
+
+// LQ
+
+std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+LQ_Factorize(Matrix<std::complex<double>> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);  // For the LQ, we require that s2 >= s1, so we are guaranteed that sz==s1 here
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+   }
+   Vector<std::complex<double>> Tau(sz);
+   Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*s2 matrix
+   Matrix<std::complex<double>> Q(s1, s2, 0.0);
+   Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = M(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+   Private::QR_Construct(s2, s1, sz, data(Q), stride1(Q), data(Tau));
+
+   // Zero the unused parts of m, which now becomes lower-triangular
+   for (int i = 0; i < sz; ++i)
+   {
+      for (int j = i+1; j < s2; ++j)
+      {
+         M(i,j) = 0.0;
+      }
+   }
+   return std::make_tuple(std::move(Q), std::move(M));
+}
+
+std::tuple<Matrix<double>, Matrix<double>>
+LQ_Factorize(Matrix<double> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
+   }
+   Vector<double> Tau(sz);
+   Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*s2 matrix
+   Matrix<double> Q(s1, s2, 0.0);
+   Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = M(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+   Private::QR_Construct(s2, s1, sz, data(Q), stride1(Q), data(Tau));
+
+   // Zero the unused parts of m, which now becomes lower-triangular
+   for (int i = 0; i < sz; ++i)
+   {
+      for (int j = i+1; j < s2; ++j)
+      {
+         M(i,j) = 0.0;
+      }
+   }
+   return std::make_tuple(std::move(M), std::move(Q));
+}
+std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+LQ_FactorizeThin(Matrix<std::complex<double>> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+   }
+   Vector<std::complex<double>> Tau(sz);
+   Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*sz matrix
+   Matrix<std::complex<double>> Q = M(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+   Private::QR_Construct(s2, sz, sz, data(Q), stride1(Q), data(Tau));
+
+   // Copy the lower-triangular parts of M into L (new matrix, since it is a different size)
+   Matrix<std::complex<double>> L(s1, sz, 0.0);
+   for (int i = 0; i < s1; ++i)
+   {
+      int msz = std::min(i+1,sz);
+      for (int j = 0; j < msz; ++j)
+      {
+         L(i,j) = M(i,j);
+      }
+   }
+   return std::make_tuple(std::move(L), std::move(Q));
+}
+
+std::tuple<Matrix<double>, Matrix<double>>
+LQ_FactorizeThin(Matrix<double> M)
+{
+   int s1 = size1(M);
+   int s2 = size2(M);
+   int sz = std::min(s1, s2);
+   if (sz == 0)
+   {
+      return std::make_tuple(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
+   }
+   Vector<double> Tau(sz);
+   Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
+
+   // Convert the product of elementary reflectors into the Q matrix, as an s1*sz matrix
+   Matrix<double> Q = M(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+   Private::QR_Construct(s2, sz, sz, data(Q), stride1(Q), data(Tau));
+
+   // Copy the lower-triangular parts of M into L (new matrix, since it is a different size)
+   Matrix<double> L(s1, sz, 0.0);
+   for (int i = 0; i < s1; ++i)
+   {
+      int msz = std::min(i+1,sz);
+      for (int j = 0; j < msz; ++j)
+      {
+         L(i,j) = M(i,j);
+      }
+   }
+   return std::make_tuple(std::move(L), std::move(Q));
+}
+
 
 Vector<std::complex<double>>
 operator*(Matrix<std::complex<double>> const& M, Vector<std::complex<double>> const& v)

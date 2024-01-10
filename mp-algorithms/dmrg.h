@@ -191,6 +191,7 @@ class DMRG
       int Verbose;
 
       double    MixFactor;
+      double    RangeFindingOverhead;
       StateComponent PsiPrevC;
 };
 
