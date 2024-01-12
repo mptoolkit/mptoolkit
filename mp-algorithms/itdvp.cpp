@@ -650,7 +650,7 @@ iTDVP::ExpandLeft()
                 << " Site=" << Site << " ";
 
    ExpandLeftEnvironment(CExpand, CCenter, HamLOld.back(), HamROld.front(), *HNext, *H,
-                         SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+                         SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
 
    int TotalStates = CExpand.Basis2().total_dimension();
    MaxStates = std::max(MaxStates, TotalStates);
@@ -753,7 +753,7 @@ iTDVP::ExpandRight()
                 << " Site=" << Site << " ";
 
    ExpandRightEnvironment(CCenter, CExpand, HamLOld.back(), HamROld.front(), *H, *HNext,
-                          SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+                          SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
 
    int TotalStates = CExpand.Basis1().total_dimension();
    MaxStates = std::max(MaxStates, TotalStates);

@@ -83,9 +83,11 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
          ("expand-factor", prog_opt::value(&Settings.ExpandFactor),
-          FormatDefault("Pre-expansion factor of added states", Settings.ExpandFactor).c_str())
+          FormatDefault("Environment expansion factor of added states", Settings.ExpandFactor).c_str())
          ("expand-min-states", prog_opt::value(&Settings.ExpandMinStates),
-          FormatDefault("Pre-expansion minimum number of added states", Settings.ExpandMinStates).c_str())
+          FormatDefault("Environment expansion minimum number of added states", Settings.ExpandMinStates).c_str())
+         ("expand-min-per-sector", prog_opt::value(&Settings.ExpandMinStates),
+          FormatDefault("Environment expansion minimum number of added states per quantum number sector", Settings.ExpandMinPerSector).c_str())
          ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
           FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", Settings.LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),

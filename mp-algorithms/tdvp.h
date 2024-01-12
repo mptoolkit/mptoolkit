@@ -66,6 +66,7 @@ struct TDVPSettings
    StatesInfo SInfo;
    double ExpandFactor = 0.1;
    int ExpandMinStates = 2;
+   int ExpandMinPerSector = 1;
    bool Epsilon = false;
    bool Normalize = true;
    int Verbose = 0;
@@ -158,6 +159,7 @@ class TDVP
       StatesInfo SInfo;
       double ExpandFactor;
       int ExpandMinStates;
+      int ExpandMinPerSector;
       bool Epsilon;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
@@ -186,7 +188,8 @@ void
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                      int ExpandMinPerSector, int Verbose);
 
 // Truncate then expand the right environment of CLeft by adding extra states to CRight.
 // Assumes CLeft is the current orthogonality center.
@@ -194,6 +197,7 @@ void
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                      int ExpandMinPerSector, int Verbose);
 
 #endif

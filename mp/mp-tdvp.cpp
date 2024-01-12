@@ -80,9 +80,11 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
          ("expand-factor", prog_opt::value(&Settings.ExpandFactor),
-          FormatDefault("Pre-expansion factor of added states", Settings.ExpandFactor).c_str())
+          FormatDefault("Environment expansion factor of added states", Settings.ExpandFactor).c_str())
          ("expand-min-states", prog_opt::value(&Settings.ExpandMinStates),
-          FormatDefault("Pre-expansion minimum number of added states", Settings.ExpandMinStates).c_str())
+          FormatDefault("Environment expansion minimum number of added states", Settings.ExpandMinStates).c_str())
+         ("expand-min-per-sector", prog_opt::value(&Settings.ExpandMinStates),
+          FormatDefault("Environment expansion minimum number of added states per quantum number sector", Settings.ExpandMinPerSector).c_str())
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())

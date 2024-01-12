@@ -62,7 +62,8 @@ EA_DMRG::EA_DMRG(EAWavefunction const& Psi_, BasicTriangularMPO const& HamMPO, E
 
       // Make sure the first site each of window is of the form NX.
       if (norm_frob(scalar_prod(herm(*C), WFront)) > OrthoTol)
-         throw std::runtime_error("EA_DMRG: fatal: window does not obey the left-gauge fixing condition.");
+         //throw std::runtime_error("EA_DMRG: fatal: window does not obey the left-gauge fixing condition.");
+         WARNING("EA_DMRG: fatal: window does not obey the left-gauge fixing condition.")(norm_frob(scalar_prod(herm(*C), WFront)));
 
       // Absorb X into the second site.
       MatrixOperator X = scalar_prod(herm(N), WFront);
@@ -155,7 +156,7 @@ EA_DMRG::SolveCurrentSite()
    // Solve for the minimum of HEff using ARPACK.
    std::vector<std::complex<double>> Solution;
    LinearAlgebra::Vector<std::complex<double>> EValues
-      = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), 1, LinearAlgebra::WhichEigenvalues::SmallestReal,
+      = LinearAlgebra::DiagonalizeARPACK(PackH, PackH.size(), 2, LinearAlgebra::WhichEigenvalues::SmallestReal,
                                          Init.data(), Tol, &Solution, 0, true, Verbose);
 
    if (!Quiet)
@@ -163,6 +164,8 @@ EA_DMRG::SolveCurrentSite()
                 << " Site=" << Site
                 << " E=" << std::real(EValues[0])
                 << std::endl;
+
+   std::cout << std::real(EValues[0]) << " " << std::real(EValues[1]) << std::endl;
 
    // Unpack the solution.
    WDeque = PackH.unpack(Solution.data());

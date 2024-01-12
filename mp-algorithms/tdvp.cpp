@@ -138,8 +138,8 @@ TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
    : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
      Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
      SInfo(Settings_.SInfo), ExpandFactor(Settings_.ExpandFactor),
-     ExpandMinStates(Settings_.ExpandMinStates), Epsilon(Settings_.Epsilon),
-     Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
+     ExpandMinStates(Settings_.ExpandMinStates), ExpandMinPerSector(Settings_.ExpandMinPerSector),
+     Epsilon(Settings_.Epsilon), Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
 {
 }
 
@@ -285,11 +285,121 @@ TDVP::IterateRight(std::complex<double> Tau)
    HamR.pop_front();
 }
 
+// ***
+// Borrowed from mp-algorithms.dmrg
+// ***
+
+// Calculate how to determine ExtraStates among the available states, with relative weights given by the Weights array.
+// To do this, we start from the total weight of the available sectors, and stretch that interval w[j] to be length ExtraStates.
+// (we can cap ExtraStates at the total number of available states in sectors with non-zero weight, so ExtraStates is actually
+// achievable. We can also remove sectors that have zero weight from the Avail array.)
+// Then the number of states we keep of the j'th sector, k[j] is k[j] = round(sum(k<=j) w[k] - k[j-1]) (with k[-1] = 0).
+// If any of the k[j] > Avail[j], then pin k[j] = Avail[j], remove sector j from the Avail array, and repeat the distribution.
+// We avoid creating subspaces that have zero dimension. In principle this is harmless, although inefficient, but
+// MKL doesn't behave properly when multiplying 0-size matrices.
+std::map<QuantumNumbers::QuantumNumber, int>
+DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<QuantumNumbers::QuantumNumber, int> const& Avail, int ExtraStates, int ExtraStatesPerSector, int CapExtraStatesPerSector = 0)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+
+   // Determine the total count of available states in sectors that have non-zero weight, and their total weight
+   int TotalWeight = 0;
+   int TotalAvail = 0;
+   for (auto const& a : Avail)
+   {
+      if (Weights[a.first] > 0)
+      {
+         TotalWeight += Weights[a.first];
+         TotalAvail += a.second;
+      }
+   }
+   ExtraStates = std::min(ExtraStates, TotalAvail); // cap ExtraStates, if it is more than the states available
+
+   // Fill the Result array with the interval length of the Weights, stretched to length ExtraStates
+   bool Valid = false;
+   while (!Valid)
+   {
+      Valid = true;
+      int StatesKeptSoFar = 0;
+      int WeightSum = 0;
+      int TotalWeightThisRound = TotalWeight;
+      int StatesWantedThisRound = ExtraStates;
+      for (auto const& a : Avail)
+      {
+         if (Weights[a.first] > 0)
+         {
+            WeightSum += Weights[a.first];
+            int NumToAdd = int(std::round((double(WeightSum) / TotalWeightThisRound) * StatesWantedThisRound)) - StatesKeptSoFar;
+            if (NumToAdd > 0)
+            {
+               Result[a.first] = NumToAdd;
+               StatesKeptSoFar += Result[a.first];
+
+               // if we've exceed the possible allocation, then peg the number of states at the maximum and
+               // remove this sector from consideration in the next pass
+               if (NumToAdd > a.second)
+               {
+                  Result[a.first] = a.second;
+                  ExtraStates -= a.second;
+                  TotalWeight -= Weights[a.first];
+                  Weights[a.first] = 0;
+                  Valid = false;
+               }
+            }
+         }
+      }
+      DEBUG_CHECK_EQUAL(StatesKeptSoFar, StatesWantedThisRound);
+   }
+
+   if (ExtraStatesPerSector > 0)
+   {
+      // If we don't have a cap on the number of states per sector to add, then just go through the list and add them
+      if (CapExtraStatesPerSector == 0)
+      {
+         // Final pass: add ExtraStatesPerSector to states that don't already have them
+         for (auto a : Avail)
+         {
+            if (Result[a.first] < ExtraStatesPerSector && Result[a.first] < a.second)
+               Result[a.first] = std::min(a.second, ExtraStatesPerSector);
+         }
+      }
+      else
+      {
+         // If we have a cap on the number, we need to select states to keep at random.
+         // Firstly assemble a list of all available sectors, including multiple times if ExtraStatesPerSector > 1
+         std::vector<QuantumNumbers::QuantumNumber> ToAdd;
+         for (auto a : Avail)
+         {
+            int AddedThisSector = Result.count(a.first) == 0 ? 0 : Result[a.first];
+            if (AddedThisSector < ExtraStatesPerSector && AddedThisSector < a.second)
+            {
+               for (int i = 0; i < std::min(a.second, ExtraStatesPerSector) - AddedThisSector; ++i)
+               {
+                  ToAdd.push_back(a.first);
+               }
+            }
+         }
+         // randomize the order of the sectors
+         randutil::random_stream stream;
+         stream.seed();
+         std::shuffle(ToAdd.begin(), ToAdd.end(), stream.u_rand);
+         // Now add states up to the cap
+         for (auto a = ToAdd.begin(); a != ToAdd.end() && CapExtraStatesPerSector > 0; ++a)
+         {
+            ++Result[*a];
+            --CapExtraStatesPerSector;
+         }
+      }
+   }
+   return Result;
+}
+
 void
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose)
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                      int ExpandMinPerSector, int Verbose)
 {
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis1(CRight));
@@ -334,17 +444,40 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
       X[i] *= Prefactor;
    }
 
+   MatrixOperator XExpand = ExpandBasis1(X);
+
+   // Randomized SVD.
+   std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(XExpand);
+   std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(CLeft.Basis2());
+   std::map<QuantumNumbers::QuantumNumber, int> Weights;
+   for (auto n : NumAvailablePerSector)
+   {
+      // Set the relative weight to the number of kept states in this sector.
+      // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
+      // with respect to the density matrix mixing.
+      if (n.second > 0)
+         Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
+   }
+
+   // Target number of extra states.
+   int ExtraStates = std::max((int) std::ceil(ExpandFactor * CLeft.Basis2().total_dimension()), ExpandMinStates);
+
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExpandMinPerSector*2);
+
+   VectorBasis ExtraBasis(CLeft.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+
+   MatrixOperator M = MakeRandomMatrixOperator(XExpand.Basis2(), ExtraBasis);
+   MatrixOperator A = XExpand*M;
+   auto QR = QR_Factorize(A);
+   XExpand = herm(QR.first) * XExpand;
+
    // Take the truncated SVD of X.
-   CMatSVD SVDEx(ExpandBasis1(X));
-   StatesInfo SInfoEx;
-   SInfoEx.MinStates = ExpandMinStates;
-   SInfoEx.MaxStates = std::ceil(ExpandFactor * CLeft.Basis2().total_dimension());
-   TruncationInfo InfoEx;
-   auto CutoffEx = TruncateFixTruncationErrorAbsolute(SVDEx.begin(), SVDEx.end(), SInfoEx, InfoEx);
+   CMatSVD SVDEx(XExpand);
+   auto ExpandedStates = TruncateExtraStates(SVDEx.begin(), SVDEx.end(), ExtraStates, ExpandMinPerSector, false);
 
    MatrixOperator UEx, VhEx;
    RealDiagonalOperator DEx;
-   SVDEx.ConstructMatrices(SVDEx.begin(), CutoffEx, UEx, DEx, VhEx);
+   SVDEx.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), UEx, DEx, VhEx);
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), UEx.Basis2());
@@ -352,7 +485,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    Regularizer R(NewBasis);
 
    // Add the new states to CLeft, and add zeros to CRight.
-   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, UEx), NewBasis), R);
+   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, QR.first * UEx), NewBasis), R);
 
    StateComponent Z = StateComponent(CRight.LocalBasis(), VhEx.Basis1(), CRight.Basis2());
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
@@ -365,7 +498,8 @@ void
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                        StateComponent const& E, StateComponent const& F,
                        OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                       StatesInfo SInfo, double ExpandFactor, int ExpandMinStates, int Verbose)
+                       StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                       int ExpandMinPerSector, int Verbose)
 {
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis2(CLeft));
@@ -410,17 +544,40 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
       X[i] *= Prefactor;
    }
 
+   MatrixOperator XExpand = ExpandBasis1(X);
+
+   // Randomized SVD.
+   std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(XExpand);
+   std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(CLeft.Basis2());
+   std::map<QuantumNumbers::QuantumNumber, int> Weights;
+   for (auto n : NumAvailablePerSector)
+   {
+      // Set the relative weight to the number of kept states in this sector.
+      // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
+      // with respect to the density matrix mixing.
+      if (n.second > 0)
+         Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
+   }
+
+   // Target number of extra states.
+   int ExtraStates = std::max((int) std::ceil(ExpandFactor * CLeft.Basis2().total_dimension()), ExpandMinStates);
+
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExpandMinPerSector*2);
+
+   VectorBasis ExtraBasis(CLeft.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+
+   MatrixOperator M = MakeRandomMatrixOperator(XExpand.Basis2(), ExtraBasis);
+   MatrixOperator A = XExpand*M;
+   auto QR = QR_Factorize(A);
+   XExpand = herm(QR.first) * XExpand;
+
    // Take the truncated SVD of X.
-   CMatSVD SVDEx(ExpandBasis1(X));
-   StatesInfo SInfoEx;
-   SInfoEx.MinStates = ExpandMinStates;
-   SInfoEx.MaxStates = std::ceil(ExpandFactor * CRight.Basis1().total_dimension());
-   TruncationInfo InfoEx;
-   auto CutoffEx = TruncateFixTruncationErrorAbsolute(SVDEx.begin(), SVDEx.end(), SInfoEx, InfoEx);
+   CMatSVD SVDEx(XExpand);
+   auto ExpandedStates = TruncateExtraStates(SVDEx.begin(), SVDEx.end(), ExtraStates, ExpandMinPerSector, false);
 
    MatrixOperator UEx, VhEx;
    RealDiagonalOperator DEx;
-   SVDEx.ConstructMatrices(SVDEx.begin(), CutoffEx, UEx, DEx, VhEx);
+   SVDEx.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), UEx, DEx, VhEx);
 
    // Construct new basis.
    SumBasis<VectorBasis> NewBasis(CRight.Basis1(), UEx.Basis2());
@@ -428,7 +585,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    Regularizer R(NewBasis);
 
    // Add the new states to CRight, and add zeros to CLeft.
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(UEx), NRight), NewBasis));
+   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(QR.first * UEx), NRight), NewBasis));
 
    StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), VhEx.Basis1());
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
@@ -452,7 +609,7 @@ TDVP::ExpandLeft()
                 << " Site=" << Site << " ";
 
    ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H,
-                         SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+                         SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
 
    MaxStates = std::max(MaxStates, C->Basis1().total_dimension());
 
@@ -475,7 +632,7 @@ TDVP::ExpandRight()
                 << " Site=" << Site << " ";
 
    ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext,
-                          SInfo, ExpandFactor, ExpandMinStates, Verbose-1);
+                          SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
 
    MaxStates = std::max(MaxStates, C->Basis2().total_dimension());
 
