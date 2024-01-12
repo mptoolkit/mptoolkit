@@ -318,7 +318,8 @@ class SingularDecompositionBase
 
       SingularDecompositionBase();
 
-      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both);
+      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both, WhichVectors WhichCalculate = Both);
+
 
    public:
       virtual QuantumNumber Lookup(int Subspace) const = 0;
@@ -356,8 +357,11 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
 
       explicit SingularDecomposition(MatrixOperator const& M);
 
-      // Optionally, choose which singular vectors to calculate
+      // Optionally, if we want to construct the full basis for the left or right, we can do that
       SingularDecomposition(MatrixOperator const& M, WhichVectors Which);
+
+      // Optionally, also choose which singular vectors to calculate
+      SingularDecomposition(MatrixOperator const& M, WhichVectors Which, WhichVectors WhichCalculate);
 
       template <typename FwdIter>
       void ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);

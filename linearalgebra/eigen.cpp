@@ -476,7 +476,7 @@ void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
 // N -> m
 // A'  = A^T is m x n
 // U'  = VH^T is m x m
-// D'  = D is min(m,n)
+// D'  = D is max * max //min(m,n)
 // VH' = U^T is n x n
 
 void SingularValueDecompositionFull(int Size1, int Size2,
@@ -742,7 +742,7 @@ void QR_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau)
 
    lWork = int(Work[0]);
    Work = new double[lWork];
-   LAPACK::dorglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   LAPACK::dorgqr(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
    CHECK(info == 0)("LAPACK::dorgqr")(info);
 
    delete[] Work;
@@ -759,7 +759,7 @@ void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA,
 
    lWork = int(Work[0].real());
    Work = new std::complex<double>[lWork];
-   LAPACK::zunglq(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
+   LAPACK::zungqr(Size1, Size2, k, A, ldA, Tau, Work, lWork, info);
    CHECK(info == 0)("LAPACK::zungqr")(info);
 
    delete[] Work;

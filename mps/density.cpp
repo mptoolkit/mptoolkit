@@ -502,7 +502,7 @@ std::ostream& SingularDecompositionBase::DensityMatrixReport(std::ostream& outst
 
 }
 
-void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which)
+void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which, WhichVectors WhichCalculate)
 {
    //TRACE(M.size());
    ESum = 0;  // Running sum of squares of the singular values
@@ -513,23 +513,62 @@ void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, Whi
       LinearAlgebra::Vector<double> D;
       if (Which == Both)
       {
-         SingularValueDecomposition(M[i], U, D, Vh);
-         LeftVectors.push_back(U);
-         RightVectors.push_back(Vh);
-         SingularValues.push_back(D);
+         if (WhichCalculate == Left)
+         {
+            SingularValueDecompositionLeft(M[i], U, D);
+            LeftVectors.push_back(U);
+            SingularValues.push_back(D);
+         }
+         else if (WhichCalculate == Right)
+         {
+            SingularValueDecompositionRight(M[i], D, Vh);
+            SingularValues.push_back(D);
+            RightVectors.push_back(Vh);
+         }
+         else
+         {
+            SingularValueDecomposition(M[i], U, D, Vh);
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
       }
       if (Which == Left)
       {
-         SingularValueDecompositionLeftFull(M[i], U, D);
-         LeftVectors.push_back(U);
-         SingularValues.push_back(D);
+         if (WhichCalculate == Left)
+         {
+            SingularValueDecompositionLeftFull(M[i], U, D);
+            LeftVectors.push_back(U);
+            SingularValues.push_back(D);
+         }
+         else
+         {
+            LinearAlgebra::DiagonalMatrix<double> DD;
+            SingularValueDecompositionFullLeft(M[i], U, DD, Vh);
+            D = DD.diagonal();
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
          //TRACE(D)(U)(M[i]);
       }
       else if (Which == Right)
       {
-         SingularValueDecompositionRightFull(M[i], D, Vh);
-         RightVectors.push_back(Vh);
-         SingularValues.push_back(D);
+         if (WhichCalculate == Right)
+         {
+            SingularValueDecompositionRightFull(M[i], D, Vh);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
+         else
+         {
+            LinearAlgebra::DiagonalMatrix<double> DD;
+            SingularValueDecompositionFullRight(M[i], U, DD, Vh);
+            D = DD.diagonal();
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
       }
 
       int CurrentDegree = degree(this->Lookup(i));
@@ -550,12 +589,18 @@ void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, Whi
 
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
+
 SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M)
    : SingularDecomposition(M, Both)
 {
 }
 
 SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M, WhichVectors Which)
+   : SingularDecomposition(M, Which, Which)
+{
+}
+
+SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M, WhichVectors Which, WhichVectors WhichCalculate)
    : B1(M.Basis1()), B2(M.Basis2()), IndexOfi(B1.size(), -1)
 {
    // Assemble the raw matrices
@@ -678,7 +723,7 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    // }
 
    // do the SVD
-   this->Diagonalize(Matrices, Which);
+   this->Diagonalize(Matrices, Which, WhichCalculate);
 }
 
 QuantumNumber

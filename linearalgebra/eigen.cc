@@ -772,7 +772,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
 
       Matrix<Real> Acopy(a);
       Matrix<Real> Ures(m, m);
-      Vector<double> Dres(min_mn);
+      Vector<double> Dres(max_mn);
       Matrix<Real> Vtres(n, n);
 
       Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
@@ -790,7 +790,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       zero_all(d);
       zero_all(vt);
       assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
-      assign(d.diagonal()[LinearAlgebra::range(0, min_mn)], Dres);
+      assign(d.diagonal(), Dres);
       assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
    }
 };
