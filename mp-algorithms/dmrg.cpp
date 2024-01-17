@@ -38,7 +38,7 @@ double const PrefactorEpsilon = 1e-16;
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
-const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "svd", "rangefinding", "fastrangefinding", "random" };
+const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "svd", "rangefinding", "fastrangefinding", "random", "noexpansion" };
 
 std::string ExpansionAlgorithm::ListAvailable()
 {
@@ -112,72 +112,7 @@ SimpleOperator ConstructWeights(StateComponent const& s)
    return Result;
 }
 
-// Construct the mixing term according to the 3S algorithm with weight matrix.
-// On entry:
-//   LExpand is an A-matrix where the Basis1() dimension m' is the basis that we want to mix into, in right orthonormal form.
-//   C is the wavefunction, in the Center orthonormal basis.
-//   H is the on-site Hamiltonian
-//   LeftHam and RightHam are the environment Hamiltonian's, in the basis of C
-//   Normalization is the desired norm_frob of the result
-//   Result' is a m' x w x m matrix, where m' is the Basis1() of LExpand, w is the Basis1() of the MPO with the first and last
-//     elements removed, and m is Basis2() of LExpand (and C).
-//   PRECONDITION: LExpand.Basis2() == C.Basis2()
-// For conventional 3S, LExpand is C with ExpandBasis1().
-// For Environment Expansion, LExpand is the null space (i.e. discarded space) of C.
-// The complication with this code is handling the weight matrix when there are components of the environment that have zero
-// norm.  The approach we take is that if there is a component with zero norm, then we set the weight equal to the smallest
-// non-zero weight.  If all of the weights are zero, then we set the weights to be equal.
-StateComponent DensityMixingBasis1(StateComponent const& LExpand, StateComponent const& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
-{
-   CHECK_EQUAL(LExpand.Basis2(), C.Basis2());
-
-   // Remove the first and last terms of H, which are the block Hamiltonian and the identity
-   SimpleOperator Projector(BasisList(H.GetSymmetryList(), H.Basis1().begin()+1, H.Basis1().end()-1), H.Basis1());
-   int Size = H.Basis1().size();
-   for (int i = 0; i < Size-2; ++i)
-   {
-      Projector(i,i+1) = 1.0;
-   }
-   // RH is m' * w * m. expanded basis, MPO, original basis
-   StateComponent RH = contract_from_right(herm(Projector*H), LExpand, RightHam, herm(C));
-
-   // Normalize the components
-   std::vector<double> LeftWeight(RH.size(), 0.0);
-   std::vector<double> RightWeight(RH.size(), 0.0);
-   double NormSqTotal = 0;
-   MatrixOperator L2 = ReshapeBasis2(C);  // original C, before truncating
-   double MinNonZeroWeight = 0.0;
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      LeftWeight[i] = norm_frob(LeftHam[i+1]*L2);  // i+1 here to align with RH[i], that projects out the first and last components
-      RightWeight[i] = norm_frob(RH[i]);
-      double w = LeftWeight[i]*RightWeight[i];
-      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
-         MinNonZeroWeight = w;
-   }
-   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
-   // it will be normalized later)
-   if (MinNonZeroWeight == 0.0)
-      MinNonZeroWeight = 1.0;
-   // if there are any zero weights, set them equal to the minimum non-zero contribution
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      if (LeftWeight[i] == 0.0 && RightWeight[i] > 1E-14)
-         LeftWeight[i] = MinNonZeroWeight / RightWeight[i];
-      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
-   }
-   if (NormSqTotal > 0)
-   {
-      double ScaleFactor = std::sqrt(Normalization / NormSqTotal);
-      for (int i = 0; i < LeftWeight.size(); ++i)
-      {
-         RH[i] *= LeftWeight[i] * ScaleFactor;
-      }
-   }
-   return RH;
-}
-
-// Calculate how to determine ExtraStates among the available states, with relative weights given by the Weights array.
+// Helper function to distribute ExtraStates among the available states, with relative weights given by the Weights array.
 // To do this, we start from the total weight of the available sectors, and stretch that interval w[j] to be length ExtraStates.
 // (we can cap ExtraStates at the total number of available states in sectors with non-zero weight, so ExtraStates is actually
 // achievable. We can also remove sectors that have zero weight from the Avail array.)
@@ -185,6 +120,9 @@ StateComponent DensityMixingBasis1(StateComponent const& LExpand, StateComponent
 // If any of the k[j] > Avail[j], then pin k[j] = Avail[j], remove sector j from the Avail array, and repeat the distribution.
 // We avoid creating subspaces that have zero dimension. In principle this is harmless, although inefficient, but
 // MKL doesn't behave properly when multiplying 0-size matrices.
+// CapExtraStatesPerSector is a cutoff in case there is a large number of different quantum number sectors available.
+// Set it to zero for no limit, but if it is a positive number then it limits the total number of states added by
+// ExtraStatesPerSector (in which case they are chosen at random).
 std::map<QuantumNumbers::QuantumNumber, int>
 DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<QuantumNumbers::QuantumNumber, int> const& Avail, int ExtraStates, int ExtraStatesPerSector, int CapExtraStatesPerSector = 0)
 {
@@ -267,10 +205,13 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
                }
             }
          }
-         // randomize the order of the sectors
-         randutil::random_stream stream;
-         stream.seed();
-         std::shuffle(ToAdd.begin(), ToAdd.end(), stream.u_rand);
+         // randomize the order of the sectors, but don't bother if we're going to add all of the states anyway
+         if (ToAdd.size() > CapExtraStatesPerSector)
+         {
+            randutil::random_stream stream;
+            stream.seed();
+            std::shuffle(ToAdd.begin(), ToAdd.end(), stream.u_rand);
+         }
          // Now add states up to the cap
          for (auto a = ToAdd.begin(); a != ToAdd.end() && CapExtraStatesPerSector > 0; ++a)
          {
@@ -282,14 +223,14 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
    return Result;
 }
 
-// use a randomized SVD to select ExtraStates number of left singular vectors from the matrix X.
+// Get a basis for use in the randomized SVD, selecting ExtraStates*RangeFindingOverhead states out of the available states.
 // The quantum number sectors for the singular vectors are chosen according to the relative number of states in
 // KeptStateDimension, with at least ExtraStatesPerSector states in each available quantum number sector.
 // RangeFindingOverhead is a number >= 1 which indicates how large the embedding space should be for the randomized SVD.
 // Typically RangeFindingOverhead = 2.
-// On entry: X is a p x q matrix (typically = p m*d, q = w*m)
-// On exit: Result' is a p x e matrix, where e = ExtraStates + additional states per sector
 // Typically KeptStateDimension will be initialized as DimensionPerSector() of some basis of kept states.
+// On entry: X is a p x q matrix (typically = p m*d, q = w*m)
+// On exit: Result' is a VectorBasis of size ExtraStates + additional states per sector
 VectorBasis
 GetExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
 {
@@ -312,7 +253,9 @@ GetExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumber
    return VectorBasis(SL, NumExtraPerSector.begin(), NumExtraPerSector.end());
 }
 
-MatrixOperator ChooseStatesFromBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+// Helper function to use the random range-finding algorithm to get the important left-singular vectors of X.
+// The candidate basis is obtained using the relative sizes contained in KeptStateDimension.
+MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
 {
    VectorBasis RangeBasis = GetExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
    MatrixOperator A = X * MakeRandomMatrixOperator(X.Basis2(), RangeBasis);
@@ -334,164 +277,141 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
    // Reshape C to m x dm, and SVD -> U D V^s (but we only care about the kept/discarded states from V^s)
    MatrixOperator CMat = ReshapeBasis2(C);
 
+   // R is the right-orthogonal A-matrix of states to keep.  The algorithms below obtain R in different ways.
+   StateComponent R;
+
    // If we don't need to increase the basis size then we can do a 'fast path' that avoids constructing the null space.
-   // We can do that if there is no basis expansion and the number of states to keep is not larger than the
-   // current number of states, OR the StatesInfo specifies that we don't keep zero eigenvalues.
+   // We can do that if there is no basis expansion and (either the number of states to keep is not larger than the
+   // current number of states, OR the StatesInfo specifies that we don't keep zero eigenvalues).
    if (ExtraStates <= 0 && ExtraStatesPerSector <= 0 && !(States.KeepZeroEigenvalues() && States.MaxStates > C.Basis2().total_dimension()))
    {
-      CMatSVD DM(CMat);
-
-      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-      MatrixOperator UKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
-
-      StateComponent R = ReshapeFromBasis2(UKeep, C.LocalBasis(), C.Basis2());
-      MatrixOperator Lambda = scalar_prod(C, herm(R));
-      C = std::move(R);
-      return Lambda;
+      Algo = ExpansionAlgorithm::NoExpansion;
    }
 
-   // slow path - basis expansion
-
-   MatrixOperator UKeep;
-
-   if (Algo == ExpansionAlgorithm::RangeFinding)
+   if (Algo == ExpansionAlgorithm::NoExpansion || Algo == ExpansionAlgorithm::FastRangeFinding)
    {
-      // Randomized SVD using the full null space
+      // We can do a thin SVD here.  In the no expansion case we just do the basic truncation and we are done.
+      // In the fastrangefinding algorithm we implicitly use the full space of m*d states, but project out
+      // the kept states.  The arrangement of contractions means that this is faster than constructing the
+      // null space explicitly.
+      CMatSVD DM(CMat);
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
+      R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
+
+      if (Algo == ExpansionAlgorithm::NoExpansion)
+      {
+         Info.ExtraStates_ = 0;
+      }
+      else if (Algo == ExpansionAlgorithm::FastRangeFinding)
+      {
+         SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
+         SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
+
+         // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
+         VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
+
+         // Get the basis of candidate states based on the ranks of the kept states
+         VectorBasis EBasis = GetExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+
+         // Construct the gaussian random embedding matrix
+         MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
+         StateComponent Ms = ReshapeFromBasis2(M, W.Basis1(), C.Basis1());
+
+         // The embedding matrix replaces the F matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
+         // multiply of the wavefunction.
+         StateComponent RNull = operator_prod_inner(W*P*H, Ms, C, herm(RightHam));
+
+         // project out the kept states
+         RNull = RNull - scalar_prod(RNull, herm(R)) * R;
+
+         // Range-finding algorithm via LQ decomposition.  We can throw away 'L' here
+         OrthogonalizeBasis1_LQ(RNull);
+
+         // From here it is the same as the SVD algorithm: construct the mixing term in the projected RNull space
+         // and find the expansion vectors from the SVD. The only difference is that RNull will contain some numerical
+         // noise from projecting out the kept states, so we need to do an additional explicit orthogonalization.
+         // We can only do that after we've constructed the singular vectors.
+         StateComponent D = contract_from_right(herm(W*P*H), RNull, RightHam, herm(C));
+         MatrixOperator X = ReshapeBasis2(D);
+
+         CMatSVD ExpandDM(X, CMatSVD::Left);
+         auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+         MatrixOperator QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+
+         RNull = herm(QExpand) * RNull;
+         Info.ExtraStates_ = RNull.Basis1().total_dimension();
+
+         R = RegularizeBasis1(tensor_col_sum(R, RNull));
+         OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
+      }
+   }
+   else if (Algo == ExpansionAlgorithm::SVD || Algo == ExpansionAlgorithm::RangeFinding || Algo == ExpansionAlgorithm::Random)
+   {
+      // The SVD, rangefinding, and randokm algorithms differ only by rangefinding using a randomized SVD.
+      // We need to calculate the null space, so we want all of the right singular vectors
       CMatSVD DM(CMat, CMatSVD::Right);
+
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
       MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
       MatrixOperator VDiscard = DM.ConstructRightVectors(DMPivot, DM.end());
-      StateComponent R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
-      StateComponent RNull = ReshapeFromBasis2(VDiscard, C.LocalBasis(), C.Basis2());
+      R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());         // kept states in right ortho form
+      StateComponent RNull = ReshapeFromBasis2(VDiscard, C.LocalBasis(), C.Basis2());  // discarded states in right ortho form
 
-      SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
-      SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
-      StateComponent D = contract_from_right(herm(W*P*H), RNull, RightHam, herm(C));
-      MatrixOperator X = ReshapeBasis2(D);
+      // Get QExpand, which is the projection from (discarded_states, states_to_expand)
+      MatrixOperator QExpand;
+      if (Algo == ExpansionAlgorithm::Random)
+      {
+         // construct QExpand as Haar random vectors.  Construct the quantum number sectors based on the
+         // distribution of kept states. One complication here is how to handle ExtraStatesPerSector. Since we have
+         // no idea whether quantum number sectors will be important or not, we limit the number of possible additional
+         // sectors to be no more than 1.5 times the size of the kept states. This is probably too much, but will at least
+         // stop unbound growth.
+         auto NumAvailablePerSector = DimensionPerSector(VDiscard.Basis1());
+         auto Weights = DimensionPerSector(VKeep.Basis1());
+         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(VKeep.Basis1().size() * 1.5));
 
-      MatrixOperator QExpand = ChooseStatesFromBasis1(X, DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+         // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
+         VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
+         MatrixOperator M = MakeRandomMatrixOperator(VDiscard.Basis1(), ExtraBasis);
 
-      RNull = herm(QExpand) * RNull;
-      Info.ExtraStates_ = RNull.Basis2().total_dimension();
+         // Project the discarded basis onto the random vectors via the QR decomposition
+         auto QR = QR_Factorize(M);
+         QExpand = std::move(QR.first);
+      }
+      else
+      {
+         // For SVD and rangefinding, we construct the mixing term from the 3S algorithm
+         SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
+         SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
+         MatrixOperator X = ReshapeBasis2(contract_from_right(herm(W*P*H), RNull, RightHam, herm(C)));
 
-      R = RegularizeBasis1(tensor_col_sum(R, RNull));
-      MatrixOperator Lambda = scalar_prod(C, herm(R));
-      C = std::move(R);
-      return Lambda;
-   }
-   else if (Algo == ExpansionAlgorithm::FastRangeFinding)
-   {
-      // Randomized SVD, projecting out the kept states
-      CMatSVD DM(CMat);
-      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-      MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
-      StateComponent R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
-
-      SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
-      SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
-
-      // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
-      VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
-
-      VectorBasis EBasis = GetExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
-
-      MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
-      StateComponent Ms = ReshapeFromBasis2(M, W.Basis1(), C.Basis1());
-
-      StateComponent RNull = operator_prod_inner(W*P*H, Ms, C, herm(RightHam));
-
-      // project out the kept states
-      RNull = RNull - scalar_prod(RNull, herm(R)) * R;
-
-      // Random range-finding algorithm via LQ decomposition
-      OrthogonalizeBasis1_LQ(RNull);
-
-      StateComponent D = contract_from_right(herm(W*P*H), RNull, RightHam, herm(C));
-      MatrixOperator X = ReshapeBasis2(D);
-
-      MatrixOperator QExpand = ChooseStatesFromBasis1(X, DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+         if (Algo == ExpansionAlgorithm::SVD)
+         {
+            CMatSVD ExpandDM(X, CMatSVD::Left);
+            auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+            Info.ExtraStates_ = ExpandedStates.size();
+            QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+         }
+         else if (Algo == ExpansionAlgorithm::RangeFinding)
+         {
+            QExpand = RangeFindingBasis1(X, DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+         }
+      }
 
       RNull = herm(QExpand) * RNull;
-      Info.ExtraStates_ = RNull.Basis2().total_dimension();
+      Info.ExtraStates_ = RNull.Basis1().total_dimension();
 
       R = RegularizeBasis1(tensor_col_sum(R, RNull));
-      OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
-      MatrixOperator Lambda = scalar_prod(C, herm(R));
-      C = std::move(R);
-      return Lambda;
-   }
-   else if (Algo == ExpansionAlgorithm::SVD)
-   {
-      CMatSVD DM(CMat, CMatSVD::Right);
-
-      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-      UKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
-      MatrixOperator UDiscard = DM.ConstructRightVectors(DMPivot, DM.end());
-      // CDiscard is the null space of the kept states
-      StateComponent CDiscard = ReshapeFromBasis2(UDiscard, C.LocalBasis(), C.Basis2());
-
-      StateComponent D = DensityMixingBasis1(CDiscard, C, LeftHam, H, RightHam, 1.0);
-      MatrixOperator X = ReshapeBasis2(D);
-
-      CMatSVD ExpandDM(X, CMatSVD::Left);
-      //ExpandDM.DensityMatrixReport(std::cout);
-
-      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
-      Info.ExtraStates_ = ExpandedStates.size();
-
-      MatrixOperator UExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
-      // UExpand is (discarded_states, states_to_expand)
-
-      // map UExpand back into the original basis
-      UExpand = herm(UExpand) * UDiscard;
-      // UExpand is (extra_states_to_keep, dm-dimensional-expanded-basis)
-
-      // The final basis is the sum of UKeep and UExpand
-      UKeep = RegularizeBasis1(tensor_col_sum(UKeep, UExpand));
-
-   }
-   else if (Algo == ExpansionAlgorithm::Random)
-   {
-      CMatSVD DM(CMat, CMatSVD::Right);
-
-      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
-      UKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
-      MatrixOperator UDiscard = DM.ConstructRightVectors(DMPivot, DM.end());
-      // CDiscard is the null space of the kept states
-      StateComponent CDiscard = ReshapeFromBasis2(UDiscard, C.LocalBasis(), C.Basis2());
-
-
-      // This algorithm is unstable with respect to ExtraStatesPerSector
-      // Distribute the number of states in each sector according to the weights of the kept states.
-      // Cap the number of states to keep per sector at 50% additional of the number of used sectors.
-      auto NumAvailablePerSector = DimensionPerSector(UDiscard.Basis1());
-      auto Weights = DimensionPerSector(UKeep.Basis1());
-      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(UKeep.Basis1().size() * 1.5));
-
-      // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
-      VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
-      MatrixOperator M = MakeRandomMatrixOperator(UDiscard.Basis1(), ExtraBasis);
-
-      // Project the discarded basis onto the random vectors via the QR decomposition
-      auto QR = QR_Factorize(M);
-
-      MatrixOperator UExpand = QR.first;
-      Info.ExtraStates_ = ExtraBasis.total_dimension();
-      UExpand = herm(UExpand) * UDiscard;
-      UKeep = RegularizeBasis1(tensor_col_sum(UKeep, UExpand));
    }
    else
    {
       PANIC("Unsupported expansion algorithm");
    }
 
-   // Reshape the kept states into a right-ortho A-matrix
-   StateComponent CNew = ReshapeFromBasis2(UKeep, C.LocalBasis(), C.Basis2());
-
-   // Construct the new Lambda matrix, making use of CNew, being the right-ortho new basis
-   MatrixOperator Lambda = scalar_prod(C, herm(CNew));
-   //Info.KeptWeight_ = norm_frob_sq(Lambda);
-   C = CNew;
+   // Construct the new Lambda matrix
+   MatrixOperator Lambda = scalar_prod(C, herm(R));
+   C = std::move(R);
    return Lambda;
 }
 
@@ -718,6 +638,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
       SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
       SimpleOperator W = ConstructWeights(local_prod(P, RightHam));
+
       StateComponent D = contract_from_left(H*herm(P)*W, herm(LNull), LeftHam, C);
       MatrixOperator X = ReshapeBasis2(D);
 
@@ -812,7 +733,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // Distribute the number of states in each sector according to the weights of the kept states.
       auto NumAvailablePerSector = DimensionPerSector(LNull.Basis2());
       auto Weights = DimensionPerSector(L.Basis2());
-      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+      auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(UKeep.Basis2().size() * 1.5));
 
       // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
       VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
@@ -820,7 +741,6 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
       // Project the discarded basis onto the random vectors via the QR decomposition
       auto QR = QR_Factorize(M);
-
       LNull = LNull * QR.first;
    }
    else

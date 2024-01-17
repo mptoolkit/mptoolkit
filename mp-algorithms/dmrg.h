@@ -32,7 +32,7 @@
 class ExpansionAlgorithm
 {
    public:
-      enum Algorithm { BEGIN, SVD = BEGIN, RangeFinding, FastRangeFinding, DEFAULT = FastRangeFinding, Random, END };
+      enum Algorithm { BEGIN, SVD = BEGIN, RangeFinding, FastRangeFinding, DEFAULT = FastRangeFinding, Random, NoExpansion, END };
 
       ExpansionAlgorithm() : algorithm(DEFAULT) {}
 
