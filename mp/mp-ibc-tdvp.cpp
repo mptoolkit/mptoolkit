@@ -57,7 +57,7 @@ int main(int argc, char** argv)
       int EvolutionWindowRight = 0;
 
       IBC_TDVPSettings Settings;
-      Settings.SInfo.MinStates = 2;
+      Settings.SInfo.MinStates = 1;
       Settings.SInfo.TruncationCutoff = 0;
       Settings.SInfo.EigenvalueCutoff = 1e-16;
 
@@ -67,10 +67,10 @@ int main(int argc, char** argv)
          ("Hamiltonian,H", prog_opt::value(&HamStr),
           "Operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
          ("wavefunction,w", prog_opt::value(&InputFile), "Input wavefunction (required)")
-	 ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
-	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
-	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
-	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
+         ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
+         ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
+         ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
+         ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
          ("maxiter", prog_opt::value(&Settings.MaxIter),
           FormatDefault("Maximum number of Lanczos iterations per step", Settings.MaxIter).c_str())
          ("errtol", prog_opt::value(&Settings.ErrTol),

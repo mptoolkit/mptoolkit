@@ -411,7 +411,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
 
    if (Verbose > 0)
-      std::cerr << "StatesOld=" << CLeft.Basis2().total_dimension()
+      std::cout << "StatesOld=" << CLeft.Basis2().total_dimension()
                 << " StatesTrunc=" << Info.KeptStates();
 
    CRight = prod(D*Vh, CRight);
@@ -491,7 +491,7 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
    CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
 
    if (Verbose > 0)
-      std::cerr << " StatesNew=" << CLeft.Basis2().total_dimension() << std::endl;
+      std::cout << " StatesNew=" << CLeft.Basis2().total_dimension() << std::endl;
 }
 
 void
@@ -511,7 +511,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
 
    if (Verbose > 0)
-      std::cerr << "StatesOld=" << CRight.Basis1().total_dimension()
+      std::cout << "StatesOld=" << CRight.Basis1().total_dimension()
                 << " StatesTrunc=" << Info.KeptStates();
 
    CRight = prod(Vh, CRight);
@@ -591,7 +591,7 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
    CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
 
    if (Verbose > 0)
-      std::cerr << " StatesNew=" << CRight.Basis1().total_dimension() << std::endl;
+      std::cout << " StatesNew=" << CRight.Basis1().total_dimension() << std::endl;
 }
 
 void
