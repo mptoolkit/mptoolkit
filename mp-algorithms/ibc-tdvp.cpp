@@ -497,13 +497,13 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
 {
    while (Site > LeftStop)
    {
-      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+      if (Expand)
          this->ExpandLeft();
       this->EvolveCurrentSite(Tau);
       this->IterateLeft(Tau);
    }
 
-   if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+   if (Expand)
    {
       // Add an extra site to the window if there isn't one.
       // (This shouldn't be able to happen anyway(?), so this is here just in case.)
@@ -527,13 +527,13 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
 
       while (Site > LeftStop)
       {
-         if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+         if (Expand)
             this->ExpandLeft();
          this->EvolveCurrentSite(Tau);
          this->IterateLeft(Tau);
       }
 
-      if (Expand && C->Basis1().total_dimension() < SInfo.MaxStates)
+      if (Expand)
       {
          if (LeftStop == Offset)
             this->ExpandWindowLeft();
@@ -553,13 +553,13 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
 {
    while (Site < RightStop)
    {
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->IterateRight(Tau);
    }
 
-   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand)
    {
       // Add an extra site to the window if there isn't one.
       // (This shouldn't be able to happen anyway(?), so this is here just in case.)
@@ -583,13 +583,13 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
 
       while (Site < RightStop)
       {
-         if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+         if (Expand)
             this->ExpandRight();
          this->EvolveCurrentSite(Tau);
          this->IterateRight(Tau);
       }
 
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand)
       {
          if (RightStop == Offset + Psi.size()-1)
             this->ExpandWindowRight();
@@ -612,7 +612,7 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
    if (RightStop == Offset + Psi.size()-1)
       this->ExpandWindowRight();
 
-   if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+   if (Expand)
       this->ExpandRight();
    this->EvolveCurrentSite(Tau);
    this->CalculateEps1();
@@ -620,7 +620,7 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
    while (Site < RightStop)
    {
       this->IterateRight(Tau);
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand)
          this->ExpandRight();
       this->EvolveCurrentSite(Tau);
       this->CalculateEps12();
@@ -639,14 +639,14 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
 
       while (Site < RightStop)
       {
-         if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+         if (Expand)
             this->ExpandRight();
          this->EvolveCurrentSite(Tau);
          this->CalculateEps12();
          this->IterateRight(Tau);
       }
 
-      if (Expand && C->Basis2().total_dimension() < SInfo.MaxStates)
+      if (Expand)
       {
          if (RightStop == Offset + Psi.size()-1)
             this->ExpandWindowRight();

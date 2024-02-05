@@ -46,7 +46,6 @@ int main(int argc, char** argv)
       std::string TimestepStr;
       int N = 1;
       int SaveEvery = 1;
-      int MaxIter = 20;
       bool Expand = false;
       bool TwoSite = false;
       int Verbose = 0;
