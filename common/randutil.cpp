@@ -23,13 +23,6 @@
 namespace randutil
 {
 
-std::vector<unsigned> Seed{1,2,3,4,5,6};
-
-// some awkwardness: the mt19937 requires an l-value reference, we can't initialize it from a temporary
-std::seed_seq TempInitializer(Seed.begin(), Seed.end());
-
-std::mt19937 u_rand(TempInitializer);
-
 std::mutex rd_mutex;
 std::random_device rd;
 
@@ -45,10 +38,26 @@ unsigned crypto_rand()
    return rd();
 }
 
+std::vector<unsigned> crypto_rand_vector(int n)
+{
+   std::lock_guard<std::mutex> guard(rd_mutex);
+   std::vector<unsigned> Result;
+   Result.reserve(n);
+   for (int i = 0; i < n; ++i)
+      Result.push_back(rd());
+   return Result;
+}
+
+std::vector<unsigned> Seed = crypto_rand_vector(8);
+
+// some awkwardness: the mt19937 requires an l-value reference, we can't initialize it from a temporary
+std::seed_seq TempInitializer(Seed.begin(), Seed.end());
+
+std::mt19937 u_rand(TempInitializer);
+
 void seed()
 {
-   seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(), 
-	 crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand()});
+   seed(crypto_rand_vector(8));
 }
 
 // seed from a single integer
@@ -73,7 +82,8 @@ std::vector<unsigned> get_seed()
 // random_stream
 
 random_stream::random_stream()
-   : Seed{1,2,3,4,5,6},
+//   : Seed{1,2,3,4,5,6},//crypto_rand_vector(8)},
+   : Seed{crypto_rand_vector(8)},
      UniformDist(1,0),
      NormalDist()
 {
@@ -84,7 +94,7 @@ random_stream::random_stream()
 void
 random_stream::seed()
 {
-   this->seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(), 
+   this->seed({crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand(),
 	    crypto_rand(), crypto_rand(), crypto_rand(), crypto_rand()});
 }
 
