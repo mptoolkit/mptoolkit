@@ -152,9 +152,9 @@ UnitCellMPO::ExtendToCoverUnitCell(int OtherSize)
 }
 
 BasicFiniteMPO
-UnitCellMPO::GetJWStringUnit()
+UnitCellMPO::GetJWStringUnit() const
 {
-   return string_mpo(*SiteList, Com.SignOperator(), Op.qn1());
+   return coarse_grain(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()), CoarseGrain);
 }
 
 // Many of these implementations are not the most efficient possible.
@@ -214,7 +214,8 @@ UnitCellMPO operator+(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()+yCopy.MPO(), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()+yCopy.MPO(), xCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -229,34 +230,35 @@ UnitCellMPO operator-(UnitCellMPO const& x, UnitCellMPO const& y)
    xCopy.ExtendToCover(y.size(), y.offset());
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
-   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()-yCopy.MPO(), xCopy.Commute(), xCopy.offset());
+   return UnitCellMPO(xCopy.GetSiteList(), xCopy.MPO()-yCopy.MPO(), xCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO operator-(UnitCellMPO const& x)
 {
    if (x.is_null())
       return x;
-   return UnitCellMPO(x.GetSiteList(), -x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), -x.MPO(), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO operator*(double a, UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, double a)
 {
-   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO operator*(std::complex<double> a, UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), a*x.MPO(), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, std::complex<double> a)
 {
-   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), x.MPO()*a, x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::QuantumNumber const& q)
@@ -266,7 +268,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y, QuantumNumbers::Qua
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO(), q),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -276,7 +279,8 @@ UnitCellMPO prod(UnitCellMPO const& x, UnitCellMPO const& y)
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -287,7 +291,8 @@ UnitCellMPO operator*(UnitCellMPO const& x, UnitCellMPO const& y)
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), prod(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO commutator(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -302,7 +307,8 @@ UnitCellMPO dot(UnitCellMPO const& x, UnitCellMPO const& y)
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), dot(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO inner(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -317,7 +323,8 @@ UnitCellMPO cross(UnitCellMPO const& x, UnitCellMPO const& y)
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), cross(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
@@ -327,55 +334,56 @@ UnitCellMPO outer(UnitCellMPO const& x, UnitCellMPO const& y)
    UnitCellMPO yCopy(y);
    yCopy.ExtendToCover(x.size(), x.offset());
    return UnitCellMPO(xCopy.GetSiteList(), outer(xCopy.MPO(), yCopy.MPO()),
-                      xCopy.Commute()*yCopy.Commute(), xCopy.offset());
+                      xCopy.Commute()*yCopy.Commute(), xCopy.offset(),
+                      "", xCopy.coarse_grain_factor());
 }
 
 // project a (reducible) operator onto an irreducible component
 UnitCellMPO project(UnitCellMPO const& x, QuantumNumbers::QuantumNumber const& q)
 {
-   return UnitCellMPO(x.GetSiteList(), project(x.MPO(), q), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), project(x.MPO(), q), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO pow(UnitCellMPO const& x, int n)
 {
-   return UnitCellMPO(x.GetSiteList(), pow(x.MPO(), n), x.Commute()*n, x.offset());
+   return UnitCellMPO(x.GetSiteList(), pow(x.MPO(), n), x.Commute()*n, x.offset(), "", x.coarse_grain_factor());
 }
 
 // Exponential operator.
 UnitCellMPO exp(UnitCellMPO const& x)
 {
    CHECK_EQUAL(x.Commute(), LatticeCommute::Bosonic)("Operator must be bosonic to calculate the exponential");
-   return UnitCellMPO(x.GetSiteList(), exp(x.MPO()), LatticeCommute::Bosonic, x.offset());
+   return UnitCellMPO(x.GetSiteList(), exp(x.MPO()), LatticeCommute::Bosonic, x.offset(), "", x.coarse_grain_factor());
 }
 
 // Absolute value
 UnitCellMPO abs(UnitCellMPO const& x)
 {
    CHECK_EQUAL(x.Commute(), LatticeCommute::Bosonic)("Operator must be bosonic to calculate the absolute value");
-   return UnitCellMPO(x.GetSiteList(), abs(x.MPO()), LatticeCommute::Bosonic, x.offset());
+   return UnitCellMPO(x.GetSiteList(), abs(x.MPO()), LatticeCommute::Bosonic, x.offset(), "", x.coarse_grain_factor());
 }
 
 // Conjugate
 UnitCellMPO conj(UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), conj(x.MPO()), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), conj(x.MPO()), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 // Adjoint
 UnitCellMPO adjoint(UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), adjoint(x.MPO()), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), adjoint(x.MPO()), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 // Inverse Adjoint
 UnitCellMPO inv_adjoint(UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), inv_adjoint(x.MPO()), x.Commute(), x.offset());
+   return UnitCellMPO(x.GetSiteList(), inv_adjoint(x.MPO()), x.Commute(), x.offset(), "", x.coarse_grain_factor());
 }
 
 UnitCellMPO MakeIdentityFrom(UnitCellMPO const& x)
 {
-   return UnitCellMPO(x.GetSiteList(), identity_mpo(*x.GetSiteList()), LatticeCommute::Bosonic, x.offset());
+   return UnitCellMPO(x.GetSiteList(), identity_mpo(*x.GetSiteList()), LatticeCommute::Bosonic, x.offset(), "", x.coarse_grain_factor());
 }
 
 void optimize(UnitCellMPO& Op)
