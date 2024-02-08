@@ -225,6 +225,13 @@ ProductMPO translate_right(std::vector<BasisList> const& LocalBasis);
 // optimize the representation - no idea how to do this!
 //void optimize(ProductMPO& Op);
 
+// Does a N-1 coarse graining of an operator.  The length must be a multiple of N
+inline
+ProductMPO coarse_grain(ProductMPO const& Op, int N)
+{
+   return ProductMPO(coarse_grain(Op.data(), N), Op.qshift());
+}
+
 // output to a stream
 std::ostream& operator<<(std::ostream& out, ProductMPO const& x);
 
