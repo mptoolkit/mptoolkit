@@ -358,11 +358,14 @@ bool PHeapObject::SubLock()
 {
    TRACE_PHEAP_X("PHeapObject::SubLock()")(*this);
    bool Result = false;
-   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to
-   // enter DoLockCountZero()
+   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to enter DoLockCountZero()
    if (--LockCount == 0)
-      Result = DoLockCountZero();
+   {
+      Result = this->DoLockCountZero();
+   }
    ObjectMutex.unlock();
+   if (Result)
+      delete this;
    return Result;
 }
 
