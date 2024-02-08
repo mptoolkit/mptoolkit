@@ -101,6 +101,8 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
 {
    std::set<WhichEigenvalues> ValidEigenvaluesComplex = { WhichEigenvalues::LargestMagnitude, WhichEigenvalues::SmallestMagnitude, WhichEigenvalues::LargestReal, WhichEigenvalues::SmallestReal, WhichEigenvalues::LargestImag, WhichEigenvalues::SmallestImag };
 
+   CHECK(n > 0);
+
    CHECK(ValidEigenvaluesComplex.count(which))("Invalid eigenvalue selection for DiagonalizeARPACK<complex>()");
    if (Verbose >= 1)
    {

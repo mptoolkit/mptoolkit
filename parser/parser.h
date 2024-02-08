@@ -475,19 +475,19 @@ complex ctan(complex x)
 inline
 complex casin(complex x)
 {
-   return boost::math::asin(x);
+   return std::asin(x);
 }
 
 inline
 complex cacos(complex x)
 {
-   return boost::math::acos(x);
+   return std::acos(x);
 }
 
 inline
 complex catan(complex x)
 {
-   return boost::math::atan(x);
+   return std::atan(x);
 }
 
 inline

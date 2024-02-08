@@ -802,6 +802,34 @@ struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
    QuantumNumbers::QuantumNumber q;
 };
 
+template <>
+struct coarse_grain_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+{
+   coarse_grain_element(int N_) : N(N_) {}
+
+   InfiniteMPOElement operator()(complex c) const
+   {
+      return c;
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&) const
+   {
+      return ZeroMPO();
+   }
+
+   InfiniteMPOElement operator()(ProductMPO const& x) const
+   {
+      return coarse_grain(x, N);
+   }
+
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x) const
+   {
+      return coarse_grain(x, N);
+   }
+
+   int N;
+};
+
 } // namespace Parser
 
 #endif

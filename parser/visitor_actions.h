@@ -734,6 +734,25 @@ struct ternary_product_q : boost::static_visitor<element_type>
    QuantumNumbers::QuantumNumber q;
 };
 
+template <typename element_type>
+struct coarse_grain_element : boost::static_visitor<element_type>
+{
+   coarse_grain_element(int N_) : N(N_) {}
+
+   element_type operator()(complex c) const
+   {
+      return c;
+   }
+
+   template <typename T>
+   element_type operator()(T const& x) const
+   {
+      return coarse_grain(x, N);
+   }
+
+   int N;
+};
+
 } // namespace Parser
 
 #endif
