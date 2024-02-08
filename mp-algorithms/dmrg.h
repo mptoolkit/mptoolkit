@@ -160,6 +160,7 @@ class DMRG
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
 
       ExpansionAlgorithm PreExpansionAlgo, PostExpansionAlgo;
+      double RangeFindingOverhead;
 
       // some statistics, for current iteration
       int IterationNumMultiplies;
@@ -190,8 +191,7 @@ class DMRG
       LocalEigensolver Solver_;
       int Verbose;
 
-      double    MixFactor;
-      double    RangeFindingOverhead;
+      double MixFactor;
       StateComponent PsiPrevC;
 };
 

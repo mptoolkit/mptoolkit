@@ -399,21 +399,17 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    std::list<EigenInfo> Result;
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
 
-   // first pass: keep at least StatesPerSector states in each quantum number sector.
-   // If the kept state has non-zero weight, then it subtracts from the total number of states
-   // that we keep, otherwise it is a 'bonus' extra state.
-   auto f = States.cbegin();
-
-
-   // second pass: keep the next NumStatesWithWeight in order from heighest weight,
+   // first pass: keep the next NumStatesWithWeight in order from heighest weight,
    // as long as they have non-zero weight.
-   while (NumStates > 0 && f != States.cend()) // && f->Eigenvalue > 0.0)
+   auto f = States.cbegin();
+   while (NumStates > 0 && f != States.cend() && f->Eigenvalue > 0.0)
    {
       Result.push_back(*f);
       ++f;
       --NumStates;
    }
 
+   // second pass: keep at least StatesPerSector states in each quantum number sector.
    f = States.cbegin();
    while (f != States.cend())
    {

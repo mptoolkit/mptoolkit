@@ -72,7 +72,7 @@ ExpansionInfo operator*(ExpansionInfo e, double factor)
    return e;
 }
 
-void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesNextSweep)
+void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -83,12 +83,12 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
-      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandRightEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesNextSweep-CurrentEnvStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
+      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
       //TRACE(Delta)(PostExpand.IncrementFactor)(PostExpand.ExpandFactor);
       TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
@@ -110,7 +110,7 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesNextSweep)
+void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -121,12 +121,12 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
-      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop-1)
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandLeftEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesNextSweep-CurrentEnvStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
+      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*SInfo.MaxStates));
       TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
@@ -179,6 +179,7 @@ int main(int argc, char** argv)
       std::string PreExpandAlgo = ExpansionAlgorithm().Name();
       std::string PostExpandAlgo = ExpansionAlgorithm().Name();
       double RangeFindingOverhead = 2.0;
+      bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the folllowing sweep
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 0.0;
@@ -215,8 +216,9 @@ int main(int argc, char** argv)
          ("pre-expand-per-sector", prog_opt::value(&PreExpand.ExpandPerSector), FormatDefault("Pre-expansion number of additional environment states in each quantum number sector", PreExpand.ExpandPerSector).c_str())
          ("post-expand-algorithm", prog_opt::value(&PostExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + ExpansionAlgorithm::ListAvailable(), PostExpandAlgo).c_str())
          ("post-expand-increment", prog_opt::value(&PostExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
-        ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
-        ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
+         ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
+         ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
+         ("nogreedy", prog_opt::bool_switch(&NoGreedy), FormatDefault("Don't expand the basis one sweep ahead", NoGreedy).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -234,11 +236,9 @@ int main(int argc, char** argv)
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
          ("rangefindingoverhead", prog_opt::value(&RangeFindingOverhead), FormatDefault("For the partial SVD, how much excess tokeep", RangeFindingOverhead).c_str())
-	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
-	  "For the shift-invert and shift-invert-direct solver, the target energy")
-	 ("subspacesize", prog_opt::value(&SubspaceSize),
-	  FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
-	 ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
+         ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy), "For the shift-invert and shift-invert-direct solver, the target energy")
+         ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
+         ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
@@ -350,7 +350,7 @@ int main(int argc, char** argv)
       if (PostExpand.should_expand())
          std::cout << "Using pre-expansion algorithm: " << dmrg.PostExpansionAlgo.Name() << std::endl;
 
-      int NumStatesNext = MyStates[0].NumStates;
+      int NumStatesKeepNext = MyStates[0].NumStates;
       int ZeroEnvCount = 0;
       double ModFactor = 1.0;
       for (int Sweeps = 0; Sweeps < MyStates.size(); ++Sweeps)
@@ -364,12 +364,11 @@ int main(int argc, char** argv)
                ++ZeroEnvRemain;
             ModFactor = double(ZeroEnvRemain) / double(ZeroEnvRemain+ZeroEnvCount);
          }
-         if (Sweeps < MyStates.size()-1)
-            NumStatesNext = MyStates[Sweeps+1].NumStates;
+         NumStatesKeepNext = (!NoGreedy && Sweeps < MyStates.size()-1) ? MyStates[Sweeps+1].NumStates : MyStates[Sweeps].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesNext);
+            SweepLeft(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
          else
-            SweepRight(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesNext);
+            SweepRight(dmrg, Sweeps+1, SInfo, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
       }
 
       // finished the iterations.

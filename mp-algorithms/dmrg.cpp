@@ -38,7 +38,7 @@ double const PrefactorEpsilon = 1e-16;
 using MessageLogger::Logger;
 using MessageLogger::msg_log;
 
-const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "svd", "rangefinding", "fastrangefinding", "random", "noexpansion" };
+const std::vector<std::string> ExpansionAlgorithm::AlgorithmNames = { "svd", "rangefinding", "fastrangefinding", "random", "no-expansion" };
 
 std::string ExpansionAlgorithm::ListAvailable()
 {
@@ -232,7 +232,7 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
 // On entry: X is a p x q matrix (typically = p m*d, q = w*m)
 // On exit: Result' is a VectorBasis of size ExtraStates + additional states per sector
 VectorBasis
-GetExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
 {
    std::map<QuantumNumbers::QuantumNumber, int> Weights;
    for (auto n : NumAvailablePerSector)
@@ -248,7 +248,7 @@ GetExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumber
             Weights[n.first] = 1;
       }
    }
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*RangeFindingOverhead, int((ExtraStatesPerSector+1)*RangeFindingOverhead));
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, int(ExtraStates*RangeFindingOverhead+0.5), int(ExtraStatesPerSector*RangeFindingOverhead+0.5));
 
    return VectorBasis(SL, NumExtraPerSector.begin(), NumExtraPerSector.end());
 }
@@ -257,7 +257,7 @@ GetExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumber
 // The candidate basis is obtained using the relative sizes contained in KeptStateDimension.
 MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
 {
-   VectorBasis RangeBasis = GetExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+   VectorBasis RangeBasis = MakeExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
    MatrixOperator A = X * MakeRandomMatrixOperator(X.Basis2(), RangeBasis);
    auto QR = QR_Factorize(A);
    X = herm(QR.first) * X;
@@ -312,7 +312,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
 
          // Get the basis of candidate states based on the ranks of the kept states
-         VectorBasis EBasis = GetExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+         VectorBasis EBasis = MakeExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
 
          // Construct the gaussian random embedding matrix
          MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
@@ -371,7 +371,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // sectors to be no more than x times the size of the kept sectors.
          auto NumAvailablePerSector = DimensionPerSector(VDiscard.Basis1());
          auto Weights = DimensionPerSector(VKeep.Basis1());
-         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(VKeep.Basis1().size() * 5));
+         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(VKeep.Basis1().size() * 1));
 
          // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
          VectorBasis ExtraBasis(C.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
@@ -420,92 +420,6 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
    return Lambda;
 }
 
-// Construct the mixing term according to the 3S algorithm with weight matrix.
-// On entry:
-//   LExpand is an A-matrix where the Basis2() dimension m' is the basis that we want to mix into, in left orthonormal form.
-//   C is the wavefunction (with Lambda matrix incorporated)
-//   LambdaR is a Lambda matrix that is used for the environment weighting; the Basis1() of LambdaR is irrelevant
-//   but it must have Basis2() equal to the basis of RightHam.
-//   H is the on-site Hamiltonian
-//   LeftHam and RightHam are the environment Hamiltonians, in the basis of C.Basis1() and LambdaR.Basis2()
-//   Normalization is the desired norm_frob of the result
-//   Result' is a m' x w x m matrix, where m' is the Basis2() of LExpand, w is the Basis2() of the MPO with the first and last
-//     elements removed, and m is Basis2() of Lambda.
-//   The asymmetry with DensityMatrixMixingBasis1() is because contract_from_left takes the hermitian conjugate of LExpand
-//   PRECONDITION: LExpand.Basis1() == C.Basis1()
-// For conventional 3S, LExpand is L with ExpandBasis2().
-// For Environment Expansion, LExpand is the null space (i.e. discarded space) of L.
-// The complication with this code is handling the weight matrix when there are components of the environment that have zero
-// norm.  The approach we take is that if there is a component with zero norm, then we set the weight equal to the smallest
-// non-zero weight.  If all of the weights are zero, then we set the weights to be equal.
-StateComponent DensityMixingBasis2(StateComponent const& LExpand, StateComponent const& C, MatrixOperator const& LambdaR, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, double Normalization)
-{
-   DEBUG_CHECK_EQUAL(LExpand.Basis1(), C.Basis1());
-   DEBUG_CHECK_EQUAL(C.Basis1(), LeftHam.Basis1());
-   DEBUG_CHECK_EQUAL(LambdaR.Basis2(), RightHam.Basis1());
-   DEBUG_CHECK_EQUAL(C.LocalBasis(), LExpand.LocalBasis());
-   DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
-
-#if 1
-   // Remove the Hamiltonian term, which is the last term.  The first term is the identity.
-   SimpleOperator Projector(H.Basis2(), BasisList(H.GetSymmetryList(), H.Basis2().begin()+1, H.Basis2().end()-1));
-   int Size = H.Basis2().size();
-   for (int i = 0; i < Size-2; ++i)
-   {
-      Projector(i+1,i) = 1.0;
-   }
-
-   // LH is dm * w * m expanded basis, MPO, original basis
-   StateComponent LH = contract_from_left(H*Projector, herm(LExpand), LeftHam, C);
-
-   // Normalize the noise vectors.  Since LH[0] is Lambda itself,
-   // Weights[i] corresponds to the weight of LH[i+1]
-   std::vector<double> LeftWeight(LH.size(), 0.0);
-   std::vector<double> RightWeight(LH.size(), 0.0);
-   double NormSqTotal = 0;
-   double MinNonZeroWeight = 0.0;
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      LeftWeight[i] = norm_frob(LH[i]);
-      RightWeight[i] = norm_frob(LambdaR*RightHam[i+1]);  // +1 here to align with LH[i], that projects out the first and last components
-      double w = LeftWeight[i]*RightWeight[i];
-      if (w > 0 && (w < MinNonZeroWeight || MinNonZeroWeight == 0))
-         MinNonZeroWeight = w;
-   }
-   // last resort: if all of the weights are zero, then just set them to be all equal (the actual value is arbitrary since
-   // it will be normalized later)
-   if (MinNonZeroWeight == 0.0)
-      MinNonZeroWeight = 1.0;
-   // if there are any zero weights, set them equal to the minimum non-zero contribution
-   for (int i = 0; i < LeftWeight.size(); ++i)
-   {
-      if (RightWeight[i] == 0.0 && LeftWeight[i] > 1E-14)  // FIXME: need to ensure we don't divide by zero
-         RightWeight[i] = MinNonZeroWeight / LeftWeight[i];
-      NormSqTotal += std::pow(LeftWeight[i]*RightWeight[i],2);
-   }
-   if (NormSqTotal > 0)
-   {
-      double ScaleFactor = std::sqrt(Normalization / NormSqTotal);
-      for (int i = 0; i < RightWeight.size(); ++i)
-      {
-         LH[i] *= RightWeight[i] * ScaleFactor;
-      }
-   }
-#else
-   SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
-   //SimpleOperator W = ConstructWeights(local_prod(P, RightHam));
-   SimpleOperator W = ConstructWeights(LambdaR * local_prod(P, RightHam));
-
-   StateComponent LH = contract_from_left(H*herm(P)*W, herm(LExpand), LeftHam, C);
-
-   LH *= Normalization / norm_frob(LH);
-#endif
-
-   DEBUG_CHECK_EQUAL(LH.Basis1(), LExpand.Basis2());
-   DEBUG_CHECK_EQUAL(LH.Basis2(), C.Basis2());
-   return LH;
-}
-
 // Apply subspace expansion / truncation on the right (C.Basis2()).
 // On exit, C' * Result' = C (up to truncation!), and C' is left-orthogonal
 MatrixOperator
@@ -545,7 +459,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
          VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis2(), C.Basis2()).Basis()).Basis();
 
          // Get the basis of candidate states based on the ranks of the kept states
-         VectorBasis EBasis = GetExpansionBasis(UKeep.GetSymmetryList(), RankPerSector(UKeep.Basis1(), RBasis), DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+         VectorBasis EBasis = MakeExpansionBasis(UKeep.GetSymmetryList(), RankPerSector(UKeep.Basis1(), RBasis), DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
 
          // Construct the gaussian random embedding matrix
          MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
@@ -607,7 +521,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // sectors to be no more than x times the size of the kept sectors.
          auto NumAvailablePerSector = DimensionPerSector(UDiscard.Basis2());
          auto Weights = DimensionPerSector(UKeep.Basis2());
-         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(UKeep.Basis2().size() * 5));
+         auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector, int(UKeep.Basis2().size() * 1));
 
          // Make a basis from the distribution of states and get a random matrix between that basis and the discarded states
          VectorBasis ExtraBasis(L.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
@@ -754,7 +668,6 @@ DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, i
      MixUseEnvironment(false), UseDGKS(false), Solver_(LocalEigensolver::Solver::Lanczos),
      Verbose(Verbose_),
      RangeFindingOverhead(2.0)
-
 {
    // construct the HamMatrix elements
    if (Verbose > 0)
@@ -1032,6 +945,96 @@ ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
    #endif
 }
 
+// helper to subtract one std::Map<T,int> from another
+template <typename T>
+std::map<T, int>
+subtract(std::map<T, int> x, std::map<T, int> const& y)
+{
+   for (auto const& yi : y)
+   {
+      if ((x[yi.first] -= yi.second) == 0)
+         x.erase(yi.first);
+   }
+   return x;
+}
+
+// Pre-expand Basis 2 of C, by adding vectors to the right-ortho Basis1() of R.
+void
+PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, ExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+{
+   // quick return if we don't need to do anything
+   if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == ExpansionAlgorithm::NoExpansion)
+      return;
+
+   if (Algo == ExpansionAlgorithm::Random)
+   {
+      MatrixOperator RMat = ReshapeBasis2(R);
+
+      // Get the d*m dimensional full basis for the right hand side.  This is the candidate space for the states to add
+      VectorBasis RFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(R.LocalBasis(), R.Basis2()).Basis()).Basis();
+      VectorBasis LFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(adjoint(C.LocalBasis()), C.Basis1()).Basis()).Basis();
+
+      // Get the dimensions of the 2-site null space
+      auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
+      VectorBasis ExtraBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, 1.0);
+
+      //TRACE(ExtraBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
+
+      // Construct Haar random states to use as expansion vectors.
+      MatrixOperator M = MakeRandomMatrixOperator(ExtraBasis, RMat.Basis2());
+      MatrixOperator RMatNew = LQ_Factorize(tensor_col_sum(RMat, M)).second;
+
+      // now we need to extend C to match
+      MatrixOperator U = RMat * herm(RMatNew);
+      C = C * U;
+
+      R = ReshapeFromBasis2(RMatNew, R.LocalBasis(), R.Basis2());
+   }
+   else
+   {
+      PANIC("Unsupported pre-expansion algorithm.");
+   }
+}
+
+// Pre-expand Basis 1 of C, by adding vectors to the left-ortho Basis2() of L.
+void
+PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, ExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+{
+   // quick return if we don't need to do anything
+   if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == ExpansionAlgorithm::NoExpansion)
+      return;
+
+   if (Algo == ExpansionAlgorithm::Random)
+   {
+      MatrixOperator LMat = ReshapeBasis1(L);
+
+      // Get the d*m dimensional full basis for the right hand side.  This is the candidate space for the states to add
+      VectorBasis LFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(adjoint(L.LocalBasis()), L.Basis1()).Basis()).Basis();
+      VectorBasis RFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(C.LocalBasis(), C.Basis2()).Basis()).Basis();
+
+      // Get the dimensions of the 2-site null space
+      auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      VectorBasis ExtraBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, 1.0);
+
+      //TRACE(ExtraBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
+
+      // Construct Haar random states to use as expansion vectors.
+      MatrixOperator M = MakeRandomMatrixOperator(LMat.Basis1(), ExtraBasis);
+      MatrixOperator LMatNew = QR_Factorize(tensor_row_sum(LMat, M)).first;
+
+      // now we need to extend C to match
+      MatrixOperator U = herm(LMatNew) * LMat;
+      C = U * C;
+
+      L = ReshapeFromBasis1(LMatNew, L.LocalBasis(), L.Basis1());
+   }
+   else
+   {
+      PANIC("Unsupported pre-expansion algorithm.");
+   }
+}
+
+
 // Expand the Basis2 of C.
 // The MPS is in the mixed canonical form cented around C.
 // CRight must be right-orthonormal.
@@ -1041,6 +1044,7 @@ ExpandRightEnvironment(StateComponent& C, StateComponent& CRight,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
                       int StatesWanted, int ExtraStatesPerSector)
 {
+   #if 0
    int ExtraStates = StatesWanted - C.Basis2().total_dimension();
 
    // Calculate right null space of right site.
@@ -1098,6 +1102,8 @@ ExpandRightEnvironment(StateComponent& C, StateComponent& CRight,
    C = RegularizeBasis2(tensor_row_sum(C, Z, NewBasis), R);
 
    return StatesToKeep.size();
+   #endif
+   return 0;
 }
 
 #if 0
@@ -1158,7 +1164,9 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
    auto HLeft = H;
    --HLeft;
 
-   auto EnvStates = ::ExpandLeftEnvironment(*CLeft, *C, HamMatrices.left(), HamMatrices.right(), *HLeft, *H, StatesWanted, ExtraStatesPerSector);
+   //::ExpandLeftEnvironment(*CLeft, *C, HamMatrices.left(), HamMatrices.right(), *HLeft, *H, StatesWanted, ExtraStatesPerSector);
+
+   PreExpandBasis1(*CLeft, *C, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, 1.0);
 
    // reconstruct the E matrix with the expanded environment
    HamMatrices.push_left(contract_from_left(*HLeft, herm(*CLeft), HamMatrices.left(), *CLeft));
@@ -1174,7 +1182,9 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    auto HRight = H;
    ++HRight;
 
-   auto EnvStates = ::ExpandRightEnvironment(*C, *CRight, HamMatrices.left(), HamMatrices.right(), *H, *HRight, StatesWanted, ExtraStatesPerSector);
+   PreExpandBasis2(*C, *CRight, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, 1.0);
+
+   // auto EnvStates = ::ExpandRightEnvironment(*C, *CRight, HamMatrices.left(), HamMatrices.right(), *H, *HRight, StatesWanted, ExtraStatesPerSector);
 
    // reconstsruct the F matrix with the expanded environment
    HamMatrices.push_right(contract_from_right(herm(*HRight), *CRight, HamMatrices.right(), herm(*CRight)));
