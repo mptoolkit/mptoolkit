@@ -34,19 +34,16 @@ class Hamiltonian
 
       // If Size == 0, do not rescale Hamiltonian size.
       Hamiltonian(std::string HamStr, int Size = 0,
-                  std::string Magnus = "2", std::string TimeVar = "t");
+                  std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
 
-      // Get then Hamiltonian MPO to evolve from t to t + dt.
+      // Get the Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
 
       void set_size(int Size_);
 
-      bool is_time_dependent() const
-      {
-         return TimeDependent;
-      }
+      bool is_time_dependent() const { return TimeDependent; }
 
-   private:
+   protected:
       InfiniteLattice Lattice;
       std::string HamOperator;
       int Size;
@@ -54,6 +51,7 @@ class Hamiltonian
       std::string TimeVar;
       bool TimeDependent;
       BasicTriangularMPO HamMPO;
+      int Verbose;
 };
 
 struct TDVPSettings
@@ -88,12 +86,12 @@ class TDVP
       std::complex<double> Energy() const;
 
       // Evolve the current site.
-      void EvolveCurrentSite(std::complex<double> Tau);
+      virtual void EvolveCurrentSite(std::complex<double> Tau);
 
       // Move the orthogonality center left/right, evolving the lambda matrix
       // backwards in time.
-      void IterateLeft(std::complex<double> Tau);
-      void IterateRight(std::complex<double> Tau);
+      virtual void IterateLeft(std::complex<double> Tau);
+      virtual void IterateRight(std::complex<double> Tau);
 
       // Expand the dimension of the left/right environment of the current site using
       // the projection of H|Psi> onto the subspace of orthogonal two-site

@@ -202,7 +202,7 @@ int main(int argc, char** argv)
          }
       }
 
-      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar);
+      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar, Verbose);
 
       std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
       std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;

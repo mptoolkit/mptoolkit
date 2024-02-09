@@ -65,12 +65,12 @@ struct HEff2
 };
 
 Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
-                         std::string Magnus_, std::string TimeVar_)
-   : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_)
+                         std::string Magnus_, std::string TimeVar_, int Verbose_)
+   : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_), Verbose(Verbose_)
 {
    std::tie(HamOperator, Lattice) = ParseOperatorStringAndLattice(HamStr);
 
-   // Attempt to convert the operator into an MPO.  If it works, then the
+   // Attempt to convert the operator into an MPO. If it works, then the
    // Hamiltonian is time-independent. If it fails, assume it failed because
    // the time variable isn't defined yet.  If there is some other error in the
    // operator, we'll catch it later.
@@ -83,8 +83,8 @@ Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
    }
    catch (Parser::ParserError& e)
    {
-      //if (Verbose > 1)
-      //   std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent." << std::endl;
+      if (Verbose > 1)
+         std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent." << std::endl;
       TimeDependent = true;
    }
    catch (...)

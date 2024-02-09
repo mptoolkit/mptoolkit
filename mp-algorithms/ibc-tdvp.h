@@ -24,6 +24,33 @@
 #include "tdvp.h"
 #include "wavefunction/ibc.h"
 
+class WindowHamiltonian : public Hamiltonian
+{
+   public:
+      WindowHamiltonian() {}
+
+      // If Size == 0, do not rescale Hamiltonian size.
+      WindowHamiltonian(std::string HamStrBackground, std::string HamStrWindow,
+                        int Size = 0, std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
+
+      // Get the Hamiltonian MPO to evolve from t to t + dt.
+      BasicTriangularMPO operator()(int Left, int Right, std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
+
+      bool is_window_empty() const { return WindowEmpty; }
+      bool is_window_time_dependent() const { return WindowTimeDependent; }
+
+      bool window_size() const { return WindowMPO.size(); }
+      bool window_offset() const { return WindowMPO.offset(); }
+
+   protected:
+      std::string WindowOperator;
+      UnitCellMPO WindowMPO;
+      bool WindowEmpty;
+      bool WindowTimeDependent;
+      int WindowSize;
+      int WindowOffset;
+};
+
 struct IBC_TDVPSettings : TDVPSettings
 {
    double GMRESTol = 1e-13;
@@ -39,7 +66,7 @@ class IBC_TDVP : public TDVP
    public:
       IBC_TDVP() = default;
 
-      IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_);
+      IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, IBC_TDVPSettings const& Settings_);
 
       IBCWavefunction Wavefunction() const;
 
@@ -74,6 +101,7 @@ class IBC_TDVP : public TDVP
       int NExpand;
       int Comoving;
 
+      WindowHamiltonian HamWindow;
       const InfiniteWavefunctionLeft PsiLeft;
       const InfiniteWavefunctionRight PsiRight;
       QuantumNumber LeftQShift;

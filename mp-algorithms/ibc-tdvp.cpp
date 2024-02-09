@@ -21,11 +21,98 @@
 #include "triangular_mpo_solver.h"
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
+#include "lattice/unitcell-parser.h"
 #include "linearalgebra/eigen.h"
 
-IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
+WindowHamiltonian::WindowHamiltonian(std::string HamStrBackground, std::string HamStrWindow,
+                                     int Size_, std::string Magnus_, std::string TimeVar_, int Verbose_)
+   : Hamiltonian(HamStrBackground, Size_, Magnus_, TimeVar_, Verbose_)
+{
+   if (HamStrWindow.empty())
+   {
+      WindowEmpty = true;
+      WindowTimeDependent = false;
+   }
+   else
+   {
+      WindowEmpty = false;
+      InfiniteLattice WindowLattice;
+      // NOTE: We cannot handle time-dependent windows at the moment. (TODO)
+      //std::tie(WindowOperator, WindowLattice) = ParseUniCellOperatorStringAndLattice(HamStrWindow);
+      std::tie(WindowMPO, WindowLattice) = ParseUnitCellOperatorAndLattice(HamStrWindow);
+      WindowTimeDependent = false;
+
+      // Cannot do this since operator== is not defined for InfiniteLattice
+      // objects: we just assume that this is satified.
+      //CHECK_EQUAL(Lattice, LatticeWindow);
+   }
+}
+
+BasicTriangularMPO
+WindowHamiltonian::operator()(int Left, int Right, std::complex<double> t, std::complex<double> dt) const
+{
+   // Initialize the background Hamiltonian for the whole unit cells inside the window.
+   BasicTriangularMPO BackgroundMPO = this->Hamiltonian::operator()(t, dt);
+
+   int UCSize = BackgroundMPO.size();
+
+   // Find the left and right indices inside the window which are integer
+   // multiples of the unit cell size.
+   int LeftUC = -numerics::divp(-Left, UCSize).quot;
+   int RightUC = numerics::divp(Right, UCSize).quot;
+   // The remainders.
+   int LeftRem = numerics::divp(-Left, UCSize).rem;
+   int RightRem = numerics::divp(Right, UCSize).rem;
+
+   // This happens when left and right are both inside of a single unit cell.
+   // TODO: Can we handle this?
+   if (RightUC < LeftUC)
+      throw std::runtime_error("WindowHamiltonian: The desired range has no full unit cell. You must expand the window size manually to contain the operator in full unit cells.");
+
+   // Extend the background Hamiltonian to fill the desired range with respect
+   // to full unit cells (the leftover terms for partial unit cells are added
+   // later).
+   BasicTriangularMPO Result = repeat(BackgroundMPO, RightUC-LeftUC);
+
+   // Add the window Hamiltonian if it exists.
+   if (!WindowEmpty)
+   {
+      // TODO: We should incorporate extra sites into the window beforehand if this is not satisfied.
+      if ((LeftUC * UCSize > WindowMPO.offset())
+       || (RightUC * UCSize < WindowMPO.offset() + WindowMPO.size()))
+         throw std::runtime_error("WindowHamiltonian: The range needs to contain the support of the window operators in full unit cells. You must expand the window size manually.");
+
+      // We have to put the window MPO in triangular form so it can be added
+      // onto the triangular background MPO.
+      Result = Result + make_triangular(ExtendToCover(WindowMPO, (RightUC-LeftUC) * UCSize, LeftUC * UCSize));
+   }
+
+   // Now add the leftover terms to Hamiltonian by partially incorporating unit
+   // cells from the left/right boundaries.
+   std::vector<OperatorComponent> HamiltonianNew(Result.data().begin(), Result.data().end());
+
+   auto HLeft = BackgroundMPO.end();
+   for (int i = 0; i < LeftRem; ++i)
+   {
+      --HLeft;
+      HamiltonianNew.insert(HamiltonianNew.begin(), *HLeft);
+   }
+
+   auto HRight = BackgroundMPO.begin();
+   for (int i = 0; i < RightRem; ++i)
+   {
+      HamiltonianNew.insert(HamiltonianNew.end(), *HRight);
+      ++HRight;
+   }
+
+   Result = BasicTriangularMPO(HamiltonianNew);
+
+   return Result;
+}
+
+IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
    : TDVP(Ham_, Settings_),
-   GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), NExpand(Settings_.NExpand),
+   HamWindow(Ham_), GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), NExpand(Settings_.NExpand),
    Comoving(Settings_.Comoving), PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
    // We do not (currently) support time dependent Hamiltonians.
@@ -159,6 +246,10 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
    // Check whether there are any sites in the window, and if not, add some.
    if (Psi_.window_size() == 0)
    {
+      // TODO: Expand window automatically.
+      if (!HamWindow.is_window_empty())
+         throw std::runtime_error("fatal: If using a window operator, your initial wavefunction window cannot be empty. You must expand the window size manually to contain the operator in full unit cells.");
+
       Psi = LinearWavefunction();
       MatrixOperator Lambda = Psi_.window().lambda_r();
       Lambda = Psi_.window().LeftU() * Lambda * Psi_.window().RightU();
@@ -184,31 +275,16 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, Hamiltonian const& Ham_, IBC_TDV
 
       C = Psi.begin();
 
-      // The window size minus the sites partially incorporated from the
-      // left/right boundaries.
-      int WindowSizeWholeUCs = Psi.size() - WindowRightSites - WindowLeftSites;
+      // Get the Hamiltonian for the window, being the sum of the background
+      // Hamiltonian and the window Hamiltonian.
+      HamiltonianWindow = HamWindow(Psi_.window_offset(), Psi_.window_offset() + Psi_.window_size());
 
-      // Initialise the Hamiltonian for the whole unit cells inside the window.
-      HamiltonianWindow = repeat(Ham(), WindowSizeWholeUCs / Ham().size());
-
-      // Now add the "left over" terms to Hamiltonian from partially
-      // incorporating unit cells from the left/right boundaries.
-      std::vector<OperatorComponent> HamiltonianNew;
-      HamiltonianNew.insert(HamiltonianNew.begin(), HamiltonianWindow.data().begin(), HamiltonianWindow.data().end());
-
+      // Update iterators for the boundary MPOs to be added into the window when expanding.
       for (int i = 0; i < WindowLeftSites; ++i)
-      {
          --HLeft;
-         HamiltonianNew.insert(HamiltonianNew.begin(), *HLeft);
-      }
 
       for (int i = 0; i < WindowRightSites; ++i)
-      {
-         HamiltonianNew.insert(HamiltonianNew.end(), *HRight);
          ++HRight;
-      }
-
-      HamiltonianWindow = BasicTriangularMPO(HamiltonianNew);
 
       H = HamiltonianWindow.begin();
 

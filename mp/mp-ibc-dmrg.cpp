@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
 //
-// mp/mp-ibc-tdvp.cpp
+// mp/mp-ibc-dmrg.cpp
 //
-// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
-#include "mp-algorithms/ibc-tdvp.h"
+#include "mp-algorithms/ibc-dmrg.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "parser/number-parser.h"
@@ -43,14 +43,10 @@ int main(int argc, char** argv)
       std::string HamStr;
       std::string HamStrWindow;
       std::string InputFile;
-      std::string OutputPrefix;
-      std::string TimestepStr;
       int N = 1;
-      int SaveEvery = 1;
       bool Expand = false;
       bool TwoSite = false;
       int Verbose = 0;
-      int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
       std::string Magnus = "2";
       std::string TimeVar = "t";
@@ -58,7 +54,7 @@ int main(int argc, char** argv)
       int EvolutionWindowLeft = 0;
       int EvolutionWindowRight = 0;
 
-      IBC_TDVPSettings Settings;
+      IBC_DMRGSettings Settings;
       Settings.SInfo.MinStates = 1;
       Settings.SInfo.TruncationCutoff = 0;
       Settings.SInfo.EigenvalueCutoff = 1e-16;
@@ -71,10 +67,7 @@ int main(int argc, char** argv)
          ("window-operator,W", prog_opt::value(&HamStrWindow),
           "Operator to use for the window Hamiltonian")
          ("wavefunction,w", prog_opt::value(&InputFile), "Input wavefunction (required)")
-         ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
-         ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
          ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
-         ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
          ("maxiter", prog_opt::value(&Settings.MaxIter),
           FormatDefault("Maximum number of Lanczos iterations per step", Settings.MaxIter).c_str())
          ("errtol", prog_opt::value(&Settings.ErrTol),
@@ -89,7 +82,7 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
-         ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
+         //("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site DMRG") // Not implemented yet.
          ("fidtol,f", prog_opt::value(&Settings.FidTol),
           FormatDefault("Tolerance in the boundary fidelity for expanding the window", Settings.FidTol).c_str())
          ("n-expand", prog_opt::value(&Settings.NExpand), "Expand the window manually every n timesteps")
@@ -109,10 +102,10 @@ int main(int argc, char** argv)
                       options(opt).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("timestep") == 0)
+      if (vm.count("help") || vm.count("wavefunction") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> [options]" << std::endl;
          std::cerr << desc << std::endl;
          std::cerr << "Available compositions:" << std::endl;
          for (auto const& c : Compositions)
@@ -123,7 +116,7 @@ int main(int argc, char** argv)
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      std::cout << "Starting IBC TDVP..." << std::endl;
+      std::cout << "Starting IBC DMRG..." << std::endl;
       std::cout << "Hamiltonian: " << HamStr << std::endl;
       if (!HamStrWindow.empty())
          std::cout << "Window operator: " << HamStrWindow << std::endl;
@@ -145,38 +138,11 @@ int main(int argc, char** argv)
       }
 
       // Open the wavefunction.
-      mp_pheap::InitializeTempPHeap();
-      pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
+      //mp_pheap::InitializeTempPHeap();
+      //pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
+      pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize());
 
       IBCWavefunction Psi = PsiPtr->get<IBCWavefunction>();
-
-      // Output prefix - if it wasn't specified then use the wavefunction attribute, or
-      // fallback to the wavefunction name.
-      if (OutputPrefix.empty())
-         OutputPrefix = PsiPtr->Attributes()["Prefix"].as<std::string>();
-
-      if (OutputPrefix.empty())
-         OutputPrefix = InputFile;
-
-      // Get the initial time & beta from the wavefunction attributes.
-      std::complex<double> InitialTime = 0.0;
-
-      std::string T = PsiPtr->Attributes()["Time"].as<std::string>();
-      if (!T.empty())
-         InitialTime.real(std::stod(T));
-      std::string B = PsiPtr->Attributes()["Beta"].as<std::string>();
-      if (!B.empty())
-         InitialTime.imag(-std::stod(B));
-
-      // Allow both timestep and betastep.
-      std::complex<double> Timestep = 0.0;
-      if (!TimestepStr.empty())
-         Timestep += ParseNumber(TimestepStr);
-
-      OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
-
-      Settings.InitialTime = InitialTime;
-      Settings.Timestep = Timestep;
 
       // Get the Hamiltonian from the attributes, if it wasn't supplied.
       // Get it from EvolutionHamiltonian, if it exists, or from Hamiltonian.
@@ -231,85 +197,59 @@ int main(int argc, char** argv)
       if (Expand || TwoSite)
          std::cout << Settings.SInfo << std::endl;
 
-      IBC_TDVP tdvp(Psi, Ham, Settings);
-
-      if (SaveEvery == 0)
-         SaveEvery = N;
+      IBC_DMRG dmrg(Psi, Ham, Settings);
 
       // Calculate initial values of epsilon_1 and epsilon_2.
       if (Settings.Epsilon)
-         tdvp.CalculateEps();
+         dmrg.CalculateEps();
 
       std::cout << "Timestep=" << 0
-                << " Time=" << formatting::format_digits(InitialTime, OutputDigits)
-                << " WindowSize=" << tdvp.Psi.size()
-                << " EvWindowSize=" << tdvp.RightStop-tdvp.LeftStop+1
-                << " MaxStates=" << tdvp.MaxStates
-                << " E=" << std::real(tdvp.Energy());
+                << " WindowSize=" << dmrg.Psi.size()
+                << " EvWindowSize=" << dmrg.RightStop-dmrg.LeftStop+1
+                << " MaxStates=" << dmrg.MaxStates
+                << " E=" << std::real(dmrg.Energy());
       if (Settings.Epsilon)
-         std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
-                   << " Eps2SqSum=" << tdvp.Eps2SqSum;
+         std::cout << " Eps1SqSum=" << dmrg.Eps1SqSum
+                   << " Eps2SqSum=" << dmrg.Eps2SqSum;
       std::cout << std::endl;
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
          if (TwoSite)
-            tdvp.Evolve2();
+            dmrg.Evolve2();
          else
-            tdvp.Evolve(Expand);
+            dmrg.Evolve(Expand);
 
          std::cout << "Timestep=" << tstep
-                   << " Time=" << formatting::format_digits(InitialTime+double(tstep)*Timestep, OutputDigits)
-                   << " WindowSize=" << tdvp.Psi.size()
-                   << " EvWindowSize=" << tdvp.RightStop-tdvp.LeftStop+1
-                   << " MaxStates=" << tdvp.MaxStates
-                   << " E=" << std::real(tdvp.Energy());
+                   << " WindowSize=" << dmrg.Psi.size()
+                   << " EvWindowSize=" << dmrg.RightStop-dmrg.LeftStop+1
+                   << " MaxStates=" << dmrg.MaxStates
+                   << " E=" << std::real(dmrg.Energy());
          if (TwoSite)
-            std::cout << " TruncErrSum=" << tdvp.TruncErrSum;
+            std::cout << " TruncErrSum=" << dmrg.TruncErrSum;
          if (Settings.Epsilon)
-            std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
-                      << " Eps2SqSum=" << tdvp.Eps2SqSum;
+            std::cout << " Eps1SqSum=" << dmrg.Eps1SqSum
+                      << " Eps2SqSum=" << dmrg.Eps2SqSum;
          std::cout << std::endl;
-
-         // Save the wavefunction.
-         if ((tstep % SaveEvery) == 0 || tstep == N)
-         {
-            IBCWavefunction PsiSave = tdvp.Wavefunction();
-
-            // Stream the boundaries, if the input file does.
-            PsiSave.set_left_filename(Psi.get_left_filename());
-            PsiSave.set_right_filename(Psi.get_right_filename());
-
-            std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
-            std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
-
-            MPWavefunction Wavefunction;
-            Wavefunction.Wavefunction() = std::move(PsiSave);
-            Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
-            Wavefunction.SetDefaultAttributes();
-            Wavefunction.Attributes()["Time"] = TimeStr;
-            Wavefunction.Attributes()["Beta"] = BetaStr;
-            Wavefunction.Attributes()["Prefix"] = OutputPrefix;
-            Wavefunction.Attributes()["EvolutionHamiltonian"] = HamStr;
-            Wavefunction.Attributes()["EvolutionWindowLeft"] = tdvp.LeftStop;
-            Wavefunction.Attributes()["EvolutionWindowRight"] = tdvp.RightStop;
-
-            std::string FName = OutputPrefix;
-            if (std::real(InitialTime + double(tstep)*Timestep) != 0.0)
-            {
-               FName += ".t" + TimeStr;
-            }
-            if (std::imag(InitialTime + double(tstep)*Timestep) != 0.0)
-            {
-               FName += ".b" + BetaStr;
-            }
-            *PsiPtr.mutate() = std::move(Wavefunction);
-            pheap::ExportHeap(FName, PsiPtr);
-
-            if (Verbose > 0)
-               std::cout << "Wavefunction saved" << std::endl;
-         }
       }
+
+      IBCWavefunction PsiSave = dmrg.Wavefunction();
+
+      // Stream the boundaries, if the input file does.
+      PsiSave.set_left_filename(Psi.get_left_filename());
+      PsiSave.set_right_filename(Psi.get_right_filename());
+
+      MPWavefunction Wavefunction;
+      Wavefunction.Wavefunction() = std::move(PsiSave);
+      Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
+      Wavefunction.SetDefaultAttributes();
+      Wavefunction.Attributes()["Hamiltonian"] = HamStr;
+      Wavefunction.Attributes()["EvolutionWindowLeft"] = dmrg.LeftStop;
+      Wavefunction.Attributes()["EvolutionWindowRight"] = dmrg.RightStop;
+
+      // Save wavefunction.
+      pvalue_ptr<MPWavefunction> P(new MPWavefunction(Wavefunction));
+      pheap::ShutdownPersistent(P);
    }
    catch (prog_opt::error& e)
    {
