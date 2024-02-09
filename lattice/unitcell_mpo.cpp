@@ -107,16 +107,16 @@ UnitCellMPO::ExtendToCover(int OtherSize, int OtherOffset)
    if (Offset > OtherOffset)
    {
       // need to extend this operator at the front with JW strings
-      Op = join(coarse_grain(repeat(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()),
-                (Offset-OtherOffset) * CoarseGrain / SiteList->size()), CoarseGrain), Op);
+      Op = join(repeat(coarse_grain(string_mpo(*SiteList, Com.SignOperator(), Op.qn1()), CoarseGrain),
+                       (Offset-OtherOffset) * CoarseGrain / SiteList->size()), Op);
       Offset = OtherOffset;
    }
 
    // do we need to extend the operator on the right?
    if (Offset+Op.size() < OtherOffset+OtherSize)
    {
-      Op = join(Op, coarse_grain(repeat(identity_mpo(*SiteList, Op.qn2()),
-                (OtherOffset+OtherSize-Offset-Op.size()) * CoarseGrain / SiteList->size()), CoarseGrain));
+      Op = join(Op, repeat(coarse_grain(identity_mpo(*SiteList, Op.qn2()), CoarseGrain),
+                (OtherOffset+OtherSize-Offset-Op.size()) * CoarseGrain / SiteList->size()));
    }
 }
 
