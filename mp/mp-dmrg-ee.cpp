@@ -94,9 +94,9 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
+         << " Env=" << CurrentEnvStates
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
-         << " Env=" << CurrentEnvStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -131,9 +131,9 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
       std::cout << "Sweep=" << SweepNum
          << " Site=" << dmrg.Site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
+         << " Env=" << CurrentEnvStates
          << " States=" << States.KeptStates()
          << " Extra=" << States.ExtraStates()
-         << " Env=" << CurrentEnvStates
          << " Truncrror=" << States.TruncationError()
          << " FidelityLoss=" << dmrg.Solver().LastFidelityLoss()
          << " Iter=" << dmrg.Solver().LastIter()
@@ -176,8 +176,8 @@ int main(int argc, char** argv)
       ExpansionInfo PreExpand;
       ExpansionInfo PostExpand;
       double InitialFidelity = 1e-7;
-      std::string PreExpandAlgo = ExpansionAlgorithm().Name();
-      std::string PostExpandAlgo = ExpansionAlgorithm().Name();
+      std::string PreExpandAlgo = PreExpansionAlgorithm().Name();
+      std::string PostExpandAlgo = PostExpansionAlgorithm().Name();
       double RangeFindingOverhead = 2.0;
       bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the folllowing sweep
 
@@ -210,11 +210,11 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-          ("pre-expand-algorithm", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + ExpansionAlgorithm::ListAvailable(), PreExpandAlgo).c_str())
+          ("pre-expand-algorithm", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PreExpansionAlgorithm::ListAvailable(), PreExpandAlgo).c_str())
           ("pre-expand-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Pre-expansion growth factor for basis size increase", PreExpand.IncrementFactor).c_str())
          ("pre-expand-factor", prog_opt::value(&PreExpand.ExpandFactor), FormatDefault("Pre-expansion factor", PreExpand.ExpandFactor).c_str())
          ("pre-expand-per-sector", prog_opt::value(&PreExpand.ExpandPerSector), FormatDefault("Pre-expansion number of additional environment states in each quantum number sector", PreExpand.ExpandPerSector).c_str())
-         ("post-expand-algorithm", prog_opt::value(&PostExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + ExpansionAlgorithm::ListAvailable(), PostExpandAlgo).c_str())
+         ("post-expand-algorithm", prog_opt::value(&PostExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PostExpansionAlgorithm::ListAvailable(), PostExpandAlgo).c_str())
          ("post-expand-increment", prog_opt::value(&PostExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
          ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
          ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
@@ -304,8 +304,8 @@ int main(int argc, char** argv)
       // Now we can construct the actual DMRG object
       DMRG dmrg(Psi, HamMPO, Verbose);
 
-      dmrg.PreExpansionAlgo = ExpansionAlgorithm(PreExpandAlgo);
-      dmrg.PostExpansionAlgo = ExpansionAlgorithm(PostExpandAlgo);
+      dmrg.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
+      dmrg.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
 
       dmrg.UseDGKS = UseDGKS;
       dmrg.RangeFindingOverhead = RangeFindingOverhead;

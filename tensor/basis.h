@@ -367,6 +367,44 @@ DimensionPerSector(VectorBasis const& b)
    return Result;
 }
 
+// Given some opearator over basis (B1,B2), return the rank of each quantum number sector, as the
+// map from each quantum number -> minimum of the dimension of that sector in B1 and B2.
+// There is also a version that uses a TensorOperator, defined in tensor.h, that also looks at the
+// structure of the tensor.
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+RankPerSector(VectorBasis const& B1, VectorBasis const& B2)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Basis1Size, Basis2Size;
+   for (int i = 0; i < B1.size(); ++i)
+      Basis1Size[B1[i]] += B1.dim(i);
+   for (int j = 0; j < B2.size(); ++j)
+      Basis2Size[B2[j]] += B2.dim(j);
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (auto const& q : Basis1Size)
+   {
+      if (q.second > 0 && Basis2Size[q.first] > 0)
+         Result[q.first] = std::min(q.second, Basis2Size[q.first]);
+   }
+   return Result;
+}
+
+// Returns the dimension of the quantum number sectors in B1, but with sectors that don't exist in B2
+// removed.
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+CullMissingSectors(VectorBasis const& B1, VectorBasis const& B2)
+{
+   std::set<QuantumNumbers::QuantumNumber> QuantumNumbersInB2 = QuantumNumbersInBasis(B2);
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < B1.size(); ++i)
+   {
+      if (QuantumNumbersInB2.count(B1[i]) > 0)
+         Result[B1[i]] += B1.dim(i);
+   }
+   return Result;
+}
+
 // Given two vector bases B1 and B2, construct a third basis that for each quantum number q that is in
 // B1 and B2, has dimension equal to min(d1,d2), where d1,d2 are the dimensions of the q sector in B1 and B2
 // respectively.  The second and third components of the tuple are arrays of size B1.size() and B2.size() respectively,

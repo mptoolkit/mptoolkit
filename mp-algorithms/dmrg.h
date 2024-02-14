@@ -22,6 +22,7 @@
 
 #include "common/leftrightstack.h"
 #include "common/conflist.h"
+#include "common/namedenum.h"
 #include "mp-algorithms/eigensolver.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
@@ -29,39 +30,25 @@
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
-class ExpansionAlgorithm
+struct PreExpansionTraits
 {
-   public:
-      enum Algorithm { BEGIN, SVD = BEGIN, RangeFinding, FastRangeFinding, DEFAULT = FastRangeFinding, Random, NoExpansion, END };
-
-      ExpansionAlgorithm() : algorithm(DEFAULT) {}
-
-      ExpansionAlgorithm(Algorithm a) : algorithm(a) {}
-
-      explicit ExpansionAlgorithm(std::string Name);
-
-      // Enable iteration (including range-based for loop) over the available algorithms
-      ExpansionAlgorithm begin() const { return BEGIN; }
-      ExpansionAlgorithm end() const { return END; }
-
-      bool operator==(ExpansionAlgorithm const& Other) const { return algorithm == Other.algorithm; }
-      bool operator!=(ExpansionAlgorithm const& Other) const { return algorithm != Other.algorithm; }
-      bool operator==(Algorithm a) const { return algorithm == a; }
-      bool operator!=(Algorithm a) const { return algorithm != a; }
-      ExpansionAlgorithm& operator++() { algorithm = static_cast<Algorithm>(algorithm+1); return *this; }
-      const ExpansionAlgorithm& operator*() const { return *this; }
-
-      static const std::vector<std::string> AlgorithmNames;
-
-      static std::string ListAvailable();
-
-      std::string Name() const { return AlgorithmNames[algorithm]; }
-
-      Algorithm Algo() const { return algorithm; }
-
-   private:
-      Algorithm algorithm;
+   enum Enum { RangeFinding, RangeFindingProject, Random, NoExpansion };
+   static constexpr Enum Default = RangeFinding;
+   static constexpr char const* StaticName = "pre-expansion algorithm";
+   static constexpr std::array<char const*,4> Names = { "rangefinding", "rangefindingproject", "random", "none" };
 };
+
+using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
+
+struct PostExpansionTraits
+{
+   enum Enum { SVD, RangeFinding, FastRangeFinding, Random, NoExpansion };
+   static constexpr Enum Default = FastRangeFinding;
+   static constexpr char const* StaticName = "post-expansion algorithm";
+   static constexpr std::array<char const*, 5> Names = { "svd", "rangefinding", "fastrangefinding", "random", "none"};
+};
+
+using PostExpansionAlgorithm = NamedEnumeration<PostExpansionTraits>;
 
 class DMRG
 {
@@ -159,7 +146,8 @@ class DMRG
       double SweepEnergyError;       // standard error of the energy at each iteration
       double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
 
-      ExpansionAlgorithm PreExpansionAlgo, PostExpansionAlgo;
+      PreExpansionAlgorithm PreExpansionAlgo;
+      PostExpansionAlgorithm PostExpansionAlgo;
       double RangeFindingOverhead;
 
       // some statistics, for current iteration

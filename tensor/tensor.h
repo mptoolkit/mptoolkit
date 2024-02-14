@@ -525,24 +525,6 @@ MakeIdentityFrom(IrredTensor<T, Basis1T, Basis2T, Structure> const& s)
 // structurally non-zero matrix elements. This is only an upper bound for the true rank,
 // which would require some SVD or rank-revealing QR.
 
-inline
-std::map<QuantumNumbers::QuantumNumber, int>
-RankPerSector(VectorBasis const& B1, VectorBasis const& B2)
-{
-   std::map<QuantumNumbers::QuantumNumber, int> Basis1Size, Basis2Size;
-   for (int i = 0; i < B1.size(); ++i)
-      Basis1Size[B1[i]] += B1.dim(i);
-      for (int j = 0; j < B2.size(); ++j)
-      Basis2Size[B2[j]] += B2.dim(j);
-   std::map<QuantumNumbers::QuantumNumber, int> Result;
-   for (auto const& q : Basis1Size)
-   {
-      if (q.second > 0 && Basis2Size[q.first] > 0)
-         Result[q.first] = std::min(q.second, Basis2Size[q.first]);
-   }
-   return Result;
-}
-
 template <typename T, typename Structure>
 std::map<QuantumNumbers::QuantumNumber, int>
 RankPerSector(IrredTensor<T, VectorBasis, VectorBasis, Structure> const& s)
