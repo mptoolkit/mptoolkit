@@ -32,10 +32,10 @@
 
 struct PreExpansionTraits
 {
-   enum Enum { RangeFinding, RangeFindingProject, Random, NoExpansion };
+   enum Enum { SVD, RSVD, RangeFinding, RangeFindingProject, Random, NoExpansion };
    static constexpr Enum Default = RangeFinding;
    static constexpr char const* StaticName = "pre-expansion algorithm";
-   static constexpr std::array<char const*,4> Names = { "rangefinding", "rangefindingproject", "random", "none" };
+   static constexpr std::array<char const*,5> Names = { "svd", "rsvd", "range", "random", "none" };
 };
 
 using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
@@ -149,6 +149,7 @@ class DMRG
       PreExpansionAlgorithm PreExpansionAlgo;
       PostExpansionAlgorithm PostExpansionAlgo;
       double RangeFindingOverhead;
+      bool ProjectTwoSiteTangent;
 
       // some statistics, for current iteration
       int IterationNumMultiplies;

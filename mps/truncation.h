@@ -402,7 +402,7 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    // first pass: keep the next NumStatesWithWeight in order from heighest weight,
    // as long as they have non-zero weight.
    auto f = States.cbegin();
-   while (NumStates > 0 && f != States.cend() && f->Eigenvalue > 0.0)
+   while (NumStates > 0 && f != States.cend() && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
    {
       Result.push_back(*f);
       ++f;

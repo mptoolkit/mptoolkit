@@ -83,7 +83,7 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
-      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop)
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0)) // && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandRightEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
@@ -121,7 +121,7 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
       int DesiredStates = SInfo.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
-      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0) && dmrg.Site < dmrg.RightStop)
+      if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0)) // && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandLeftEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
@@ -180,6 +180,7 @@ int main(int argc, char** argv)
       std::string PostExpandAlgo = PostExpansionAlgorithm().Name();
       double RangeFindingOverhead = 2.0;
       bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the folllowing sweep
+      bool ProjectTwoSiteTangent = false;
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 0.0;
@@ -218,7 +219,8 @@ int main(int argc, char** argv)
          ("post-expand-increment", prog_opt::value(&PostExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
          ("post-expand-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
          ("post-expand-per-sector", prog_opt::value(&PostExpand.ExpandPerSector), FormatDefault("Post-expansion number of additional environment states in each quantum number sector", PostExpand.ExpandPerSector).c_str())
-         ("nogreedy", prog_opt::bool_switch(&NoGreedy), FormatDefault("Don't expand the basis one sweep ahead", NoGreedy).c_str())
+         ("nogreedy", prog_opt::bool_switch(&NoGreedy), "Don't expand the basis one sweep ahead")
+         ("twositetangent", prog_opt::bool_switch(&ProjectTwoSiteTangent), "Project onto the two-site tangent space during pre-expansion")
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -306,11 +308,11 @@ int main(int argc, char** argv)
 
       dmrg.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
       dmrg.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
-
       dmrg.UseDGKS = UseDGKS;
       dmrg.RangeFindingOverhead = RangeFindingOverhead;
-      dmrg.Solver().SetSolver(Solver);
+      dmrg.ProjectTwoSiteTangent = ProjectTwoSiteTangent;
 
+      dmrg.Solver().SetSolver(Solver);
       dmrg.Solver().MaxTol = MaxTol;
       dmrg.Solver().MinTol = MinTol;
       dmrg.Solver().MinIter = MinIter;
