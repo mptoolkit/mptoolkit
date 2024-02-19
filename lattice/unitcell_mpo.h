@@ -133,7 +133,7 @@ class UnitCellMPO
 
       // returns a representation of the JW string operator as a BasicFiniteMPO
       // acting on a single unit cell
-      BasicFiniteMPO GetJWStringUnit();
+      BasicFiniteMPO GetJWStringUnit() const;
 
    private:
       SiteListPtrType SiteList;
