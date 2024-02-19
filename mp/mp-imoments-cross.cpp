@@ -511,6 +511,11 @@ int main(int argc, char** argv)
       MatrixOperator TLeft, TRight;
       std::tie(lambda, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, q);
 
+      if (!Quiet)
+      {
+         std::cout << "#transfer matrix eigenvalue = " << formatting::format_complex(lambda) << '\n';
+      }
+
       TRight = delta_shift(TRight, Psi2.qshift());
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
@@ -532,6 +537,11 @@ int main(int argc, char** argv)
 
       LinearWavefunction Phi1 = get_left_canonical(Psi1).first;
       LinearWavefunction Phi2 = get_left_canonical(Psi2).first;
+
+      // This does the equivalent.  Probably would have been easier to implement it this way in the first place,
+      // but maybe more general to have lambda as an explicit argument?
+      Phi2 *= (1.0 / lambda);
+      lambda = 1.0;
 
       // first power
       std::vector<KMatrixPolyType> E;
