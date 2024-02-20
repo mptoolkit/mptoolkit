@@ -32,23 +32,40 @@
 
 struct PreExpansionTraits
 {
-   enum Enum { SVD, RSVD, RangeFinding, RangeFindingProject, Random, NoExpansion };
+   enum Enum { SVD, RSVD, RangeFinding, Random, NoExpansion };
+   static constexpr std::array<char const*,5> Names = { "svd", "rsvd", "range", "random", "none" };
    static constexpr Enum Default = RangeFinding;
    static constexpr char const* StaticName = "pre-expansion algorithm";
-   static constexpr std::array<char const*,5> Names = { "svd", "rsvd", "range", "random", "none" };
 };
 
 using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
 
 struct PostExpansionTraits
 {
-   enum Enum { SVD, RangeFinding, FastRangeFinding, Random, NoExpansion };
-   static constexpr Enum Default = FastRangeFinding;
+   enum Enum { SVD, RSVD, RangeFinding, Random, Mixing, NoExpansion };
+   static constexpr std::array<char const*, 6> Names = { "svd", "rsvd", "range", "random", "mixing", "none"};
+   static constexpr Enum Default = RangeFinding;
    static constexpr char const* StaticName = "post-expansion algorithm";
-   static constexpr std::array<char const*, 5> Names = { "svd", "rangefinding", "fastrangefinding", "random", "none"};
 };
 
 using PostExpansionAlgorithm = NamedEnumeration<PostExpansionTraits>;
+
+// structure to represent the 'oversampling' of the random range finding algorithm for the randomized SVD.
+// In each quantum number sector, if the desired number of states is n,
+// then over-sample to min(n+Add, n*Scale)
+// Recommended value of Add is 10
+// Scale should work OK from 1.0 and up.
+struct OversamplingInfo
+{
+   OversamplingInfo() : Add(0), Scale(1.0) {}
+   OversamplingInfo(int Add_, double Scale_) : Add(Add_), Scale(Scale_) {}
+
+   // return the actual number of vectors to use, if we want to get k accurate vectors
+   int operator()(int k) const { return std::min(k+Add, int(k*Scale+0.5)); }  // round up
+
+   int Add;
+   double Scale;
+};
 
 class DMRG
 {
@@ -148,7 +165,7 @@ class DMRG
 
       PreExpansionAlgorithm PreExpansionAlgo;
       PostExpansionAlgorithm PostExpansionAlgo;
-      double RangeFindingOverhead;
+      OversamplingInfo Oversampling;
       bool ProjectTwoSiteTangent;
 
       // some statistics, for current iteration

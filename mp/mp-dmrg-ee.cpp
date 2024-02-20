@@ -178,9 +178,9 @@ int main(int argc, char** argv)
       double InitialFidelity = 1e-7;
       std::string PreExpandAlgo = PreExpansionAlgorithm().Name();
       std::string PostExpandAlgo = PostExpansionAlgorithm().Name();
-      double RangeFindingOverhead = 2.0;
       bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the folllowing sweep
       bool ProjectTwoSiteTangent = false;
+      OversamplingInfo Oversampling(10, 1.0);
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 0.0;
@@ -237,7 +237,8 @@ int main(int argc, char** argv)
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
-         ("rangefindingoverhead", prog_opt::value(&RangeFindingOverhead), FormatDefault("For the partial SVD, how much excess tokeep", RangeFindingOverhead).c_str())
+         ("oversample", prog_opt::value(&Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())
+         ("oversample-min", prog_opt::value(&Oversampling.Add), FormatDefault("For random SVD, minimum amount of oversampling", Oversampling.Add).c_str())
          ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy), "For the shift-invert and shift-invert-direct solver, the target energy")
          ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
          ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
@@ -309,7 +310,7 @@ int main(int argc, char** argv)
       dmrg.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
       dmrg.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
       dmrg.UseDGKS = UseDGKS;
-      dmrg.RangeFindingOverhead = RangeFindingOverhead;
+      dmrg.Oversampling = Oversampling;
       dmrg.ProjectTwoSiteTangent = ProjectTwoSiteTangent;
 
       dmrg.Solver().SetSolver(Solver);

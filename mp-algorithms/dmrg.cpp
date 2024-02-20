@@ -40,7 +40,7 @@ using MessageLogger::msg_log;
 
 // These are not needed in C++17 (?), but C++14 requires the initializer
 constexpr std::array<char const*,5> PreExpansionTraits::Names;
-constexpr std::array<char const*, 5> PostExpansionTraits::Names;
+constexpr std::array<char const*, 6> PostExpansionTraits::Names;
 
 // Helper function to construct a projector that removes the first and last components from a BasisList
 SimpleOperator ProjectRemoveFirstLast(BasisList const& B)
@@ -204,7 +204,7 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
 // On entry: X is a p x q matrix (typically = p m*d, q = w*m)
 // On exit: Result' is a VectorBasis of size ExtraStates + additional states per sector
 VectorBasis
-MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo const& Oversampling)
 {
    std::map<QuantumNumbers::QuantumNumber, int> Weights;
    for (auto n : NumAvailablePerSector)
@@ -220,16 +220,21 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
             Weights[n.first] = 1;
       }
    }
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, int(ExtraStates*RangeFindingOverhead+0.5), int(ExtraStatesPerSector*RangeFindingOverhead+0.5));
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
 
+   // Now that we have the distribution, apply the over-sampling
+   for (auto& r : NumExtraPerSector)
+   {
+      r.second = std::min(NumAvailablePerSector.at(r.first), Oversampling(r.second));
+   }
    return VectorBasis(SL, NumExtraPerSector.begin(), NumExtraPerSector.end());
 }
 
 // Helper function to use the random range-finding algorithm to get the important left-singular vectors of X.
 // The candidate basis is obtained using the relative sizes contained in KeptStateDimension.
-MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead)
+MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling)
 {
-   VectorBasis RangeBasis = MakeExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
+   VectorBasis RangeBasis = MakeExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, Oversampling);
    MatrixOperator A = X * MakeRandomMatrixOperator(X.Basis2(), RangeBasis);
    auto QR = QR_Factorize(A);
    X = herm(QR.first) * X;
@@ -241,10 +246,85 @@ MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int>
    return QR.first * ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
 }
 
+#if 0
+// The randomized SVD version of the 3S algorithm
+MatrixOperator
+TruncateMixBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, PostExpansionAlgorithm Algo, StatesInfo const& States, int k, OversamplingInfo const& Oversampling, TruncationInfo& Info)
+{
+   // Reshape C to m x dm
+   MatrixOperator CMat = ReshapeBasis2(C);
+
+   CMatSVD DM(CMat);
+   // unless we are reducing the basis size, this will keep all of the non-sero singular values.  But we need to
+   // do the SVD anyway so that we have VKeep, of the states to keep.
+   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
+   StateComponent R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
+   // R is the right-orthogonal A-matrix of states to keep.  The algorithms below obtain R in different ways.
+
+   SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
+   SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
+
+   // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
+   VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
+
+   // Get the basis of candidate states based on the ranks of the kept states
+   VectorBasis EBasis = MakeExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), k, Oversampling);
+
+   // Construct the gaussian random embedding matrix
+   MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
+   StateComponent Ms = ReshapeFromBasis2(M, W.Basis1(), C.Basis1());
+
+   // The embedding matrix replaces the E matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
+   // multiply of the wavefunction.
+   StateComponent RNull = operator_prod_inner(W*P*H, Ms, C, herm(RightHam));
+
+   // project out the kept states
+   RNull = RNull - scalar_prod(RNull, herm(R)) * R;
+
+   // Range-finding algorithm via LQ decomposition.  We can throw away 'L' here.  It is important that we
+   // do the QR *after* projecting out R.  Otherwise we would be doing rangefinding onto the leading
+   // singular values including the kept states.
+   OrthogonalizeBasis1_LQ(RNull);
+   // We don't have to worry about RNull containing numerically small elements in the direction of R, since
+   // we're going to combine it with the C tensor anyway
+
+   // Now find the matrix elements of the mixing term in the RNull basis
+   StateComponent D = contract_from_right(herm(W*P*H), RNull, RightHam, herm(C));
+   MatrixOperator X = ReshapeBasis2(D);
+
+   // Now mix X into C and do another SVD of the combined set
+
+   // normalize X
+   // We choose the mixing factor from the truncation error associated with the final k singular values of C.
+   // If the final k singular values are all zero, then we are going to keep all of the expansion vectors anyway so
+   // the choice of normalization is not sensitive; we can set it to some small number such as 1e-16 (since it
+   // is used in an SVD we take the square root, so numerically epsilon ends ip as 1e-8)
+   // Pivot marks the start of the last k singular values.  But clamp it between 0 and the number of kept states
+   int Pivot = std::min(std::max(C.Basis1().total_dimension() - k, 0), R.Basis1().total_dimension());
+   double MixFactor = std::max(DensitySigma(DM.begin()+Pivot, DM.end(), 1e-16);
+   X *= (std::sqrt(MixFactor) / norm_frob(X));
+
+   // Now reconstruct R using the SVD of the mixing matrix
+   DM = CMatSVD(tensor_row_sum(CMat, X));
+   DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
+   R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
+
+   // Construct the new Lambda matrix
+   MatrixOperator Lambda = scalar_prod(C, herm(R));
+   C = std::move(R);
+   CHECK_EQUAL(LeftHam.Basis1(), Lambda.Basis1());
+   CHECK_EQUAL(Lambda.Basis2(), C.Basis1());
+   CHECK_EQUAL(C.Basis2(), RightHam.Basis1());
+   return Lambda;
+}
+#endif
+
 // Expand the Basis1 of C.
 // On exit, Result' * C' = C (up to truncation!), and C is right-orthogonal
 MatrixOperator
-TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, PostExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, double RangeFindingOverhead)
+TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, PostExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, OversamplingInfo Oversampling)
 {
    // Reshape C to m x dm
    MatrixOperator CMat = ReshapeBasis2(C);
@@ -262,7 +342,15 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       Algo = PostExpansionAlgorithm::NoExpansion;
    }
 
-   if (Algo == PostExpansionAlgorithm::NoExpansion || Algo == PostExpansionAlgorithm::FastRangeFinding)
+   if (Algo == PostExpansionAlgorithm::NoExpansion)
+   {
+      CMatSVD DM(CMat);
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
+      R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
+      Info.ExtraStates_ = 0;
+   }
+   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)\
    {
       // We can do a thin SVD here.  In the no expansion case we just do the basic truncation and we are done.
       // In the fastrangefinding algorithm we implicitly use the full space of m*d states, but project out
@@ -273,37 +361,33 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
       R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
 
-      if (Algo == PostExpansionAlgorithm::NoExpansion)
+      SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
+      SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
+
+      // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
+      VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
+
+      // Get the basis of candidate states based on the ranks of the kept states
+      VectorBasis EBasis = MakeExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, Oversampling);
+
+      // Construct the gaussian random embedding matrix
+      MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
+      StateComponent Ms = ReshapeFromBasis2(M, W.Basis1(), C.Basis1());
+
+      // The embedding matrix replaces the E matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
+      // multiply of the wavefunction.
+      StateComponent RNull = operator_prod_inner(W*P*H, Ms, C, herm(RightHam));
+
+      // project out the kept states
+      RNull = RNull - scalar_prod(RNull, herm(R)) * R;
+
+      // Range-finding algorithm via LQ decomposition.  We can throw away 'L' here.  It is important that we
+      // do the QR *after* projecting out R.  Otherwise we would be doing rangefinding onto the leading
+      // singular values including the kept states.
+      OrthogonalizeBasis1_LQ(RNull);
+
+      if (Algo == PostExpansionAlgorithm::RSVD)
       {
-         Info.ExtraStates_ = 0;
-      }
-      else if (Algo == PostExpansionAlgorithm::FastRangeFinding)
-      {
-         SimpleOperator P = ProjectRemoveFirstLast(LeftHam.LocalBasis());
-         SimpleOperator W = ConstructWeights(local_prod(P, LeftHam));
-
-         // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
-         VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
-
-         // Get the basis of candidate states based on the ranks of the kept states
-         VectorBasis EBasis = MakeExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
-
-         // Construct the gaussian random embedding matrix
-         MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
-         StateComponent Ms = ReshapeFromBasis2(M, W.Basis1(), C.Basis1());
-
-         // The embedding matrix replaces the E matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
-         // multiply of the wavefunction.
-         StateComponent RNull = operator_prod_inner(W*P*H, Ms, C, herm(RightHam));
-
-         // project out the kept states
-         RNull = RNull - scalar_prod(RNull, herm(R)) * R;
-
-         // Range-finding algorithm via LQ decomposition.  We can throw away 'L' here.  It is important that we
-         // do the QR *after* projecting out R.  Otherwise we would be doing rangefinding onto the leading
-         // singular values including the kept states.
-         OrthogonalizeBasis1_LQ(RNull);
-
          // From here it is the same as the SVD algorithm: construct the mixing term in the projected RNull space
          // and find the expansion vectors from the SVD. The only difference is that RNull will contain some numerical
          // noise from projecting out the kept states, so we need to do an additional explicit orthogonalization.
@@ -317,15 +401,15 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          MatrixOperator QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
 
          RNull = herm(QExpand) * RNull;
-         Info.ExtraStates_ = RNull.Basis1().total_dimension();
-
-         R = RegularizeBasis1(tensor_col_sum(R, RNull));
-         OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
       }
+      Info.ExtraStates_ = RNull.Basis1().total_dimension();
+
+      R = RegularizeBasis1(tensor_col_sum(R, RNull));
+      OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
    }
-   else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::RangeFinding || Algo == PostExpansionAlgorithm::Random)
+   else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::Random)
    {
-      // The SVD, rangefinding, and randokm algorithms differ only by rangefinding using a randomized SVD.
+      // The SVD, rangefinding, and random algorithms differ only by rangefinding using a randomized SVD.
       // We need to calculate the null space, so we want all of the right singular vectors
       CMatSVD DM(CMat, CMatSVD::Right);
 
@@ -363,16 +447,9 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          MatrixOperator X = ReshapeBasis2(contract_from_right(herm(W*P*H), RNull, RightHam, herm(C)));
          // X is now (discarded basis) x (wm) matrix
 
-         if (Algo == PostExpansionAlgorithm::SVD)
-         {
-            CMatSVD ExpandDM(X, CMatSVD::Left);
-            auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
-            QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
-         }
-         else if (Algo == PostExpansionAlgorithm::RangeFinding)
-         {
-            QExpand = RangeFindingBasis1(X, DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
-         }
+         CMatSVD ExpandDM(X, CMatSVD::Left);
+         auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+         QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
       }
 
       RNull = herm(QExpand) * RNull;
@@ -397,7 +474,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 // Apply subspace expansion / truncation on the right (C.Basis2()).
 // On exit, C' * Result' = C (up to truncation!), and C' is left-orthogonal
 MatrixOperator
-TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, PostExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, double RangeFindingOverhead)
+TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H, StateComponent const& RightHam, PostExpansionAlgorithm Algo, StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector, TruncationInfo& Info, OversamplingInfo Oversampling)
 {
    // Reshape C to dm x m
    MatrixOperator CMat = ReshapeBasis1(C);
@@ -413,8 +490,19 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       Algo = PostExpansionAlgorithm::NoExpansion;
    }
 
-   if (Algo == PostExpansionAlgorithm::NoExpansion || Algo == PostExpansionAlgorithm::FastRangeFinding)
+   if (Algo == PostExpansionAlgorithm::NoExpansion)
    {
+      CMatSVD DM(CMat);
+      auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
+      L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
+      Info.ExtraStates_ = 0;
+   }
+   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)
+   {
+      // if we're range-finding, reset the Oversampling to zero
+      if (Algo == PostExpansionAlgorithm::RangeFinding)
+         Oversampling = OversamplingInfo();
       // We can do a thin SVD here.  In the no expansion case we just do the basic truncation and we are done.
       // In the fastrangefinding algorithm we implicitly use the full space of m*d states, but project out
       // the kept states.  The arrangement of contractions means that this is faster than constructing the
@@ -424,34 +512,34 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
       L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
 
-      if (Algo == PostExpansionAlgorithm::FastRangeFinding)
+      SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
+      SimpleOperator W = ConstructWeights(local_prod(P, RightHam));
+
+      // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
+      VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis2(), C.Basis2()).Basis()).Basis();
+
+      // Get the basis of candidate states based on the ranks of the kept states
+      VectorBasis EBasis = MakeExpansionBasis(UKeep.GetSymmetryList(), RankPerSector(UKeep.Basis1(), RBasis), DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, Oversampling);
+
+      // Construct the gaussian random embedding matrix
+      MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
+      StateComponent Ms = ReshapeFromBasis2(M, W.Basis2(), C.Basis2());
+
+      // The embedding matrix replaces the F matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
+      // multiply of the wavefunction.
+      StateComponent LNull = operator_prod_inner(H*herm(P)*W, LeftHam, C, herm(Ms));
+
+      // Project out the kept states
+      LNull = LNull - L * scalar_prod(herm(L), LNull);
+
+      // Range-finding algorithm via QR decomposition.  We can throw away 'R' here.  It is important that we
+      // do the QR *after* projecting out L.  Otherwise we would be doing rangefinding onto the leading
+      // singular values including the kept states.
+      // LNull is now (dm) x 2k orthogonal, and is the sample space for the expansion vectors
+      OrthogonalizeBasis2_QR(LNull); // throw away the 'R', we don't need it
+
+      if (Algo == PostExpansionAlgorithm::RSVD)
       {
-         SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
-         SimpleOperator W = ConstructWeights(local_prod(P, RightHam));
-
-         // Construct the embedding matrix from the w*m dimensional basis to k dimensions. Firstly get the w*m basis
-         VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis2(), C.Basis2()).Basis()).Basis();
-
-         // Get the basis of candidate states based on the ranks of the kept states
-         VectorBasis EBasis = MakeExpansionBasis(UKeep.GetSymmetryList(), RankPerSector(UKeep.Basis1(), RBasis), DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
-
-         // Construct the gaussian random embedding matrix
-         MatrixOperator M = MakeRandomMatrixOperator(EBasis, RBasis);
-         StateComponent Ms = ReshapeFromBasis2(M, W.Basis2(), C.Basis2());
-
-         // The embedding matrix replaces the F matrix elements; the contraction is otherwise the same as a Hamiltonian-vector
-         // multiply of the wavefunction.
-         StateComponent LNull = operator_prod_inner(H*herm(P)*W, LeftHam, C, herm(Ms));
-
-         // Project out the kept states
-         LNull = LNull - L * scalar_prod(herm(L), LNull);
-
-         // Range-finding algorithm via QR decomposition.  We can throw away 'R' here.  It is important that we
-         // do the QR *after* projecting out L.  Otherwise we would be doing rangefinding onto the leading
-         // singular values including the kept states.
-         // LNull is now (dm) x 2k orthogonal, and is the sample space for the expansion vectors
-         OrthogonalizeBasis2_QR(LNull); // throw away the 'R', we don't need it
-
          // From here it is the same as the SVD algorithm: construct the mixing term in the projected LNull space
          // and find the expansion vectors from the SVD. The only difference is that LNull will contain some numerical
          // noise from projecting out the kept states, so we need to do an additional explicit orthogonalization.
@@ -466,14 +554,15 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // UExpand is (discarded_states, states_to_expand)
 
          LNull = LNull * QExpand;
-         Info.ExtraStates_ = LNull.Basis2().total_dimension();
-
-         // LNull might not be exactly orthogonal
-         L = RegularizeBasis2(tensor_row_sum(L, LNull));
-         OrthogonalizeBasis2_QR(L);
       }
+
+      Info.ExtraStates_ = LNull.Basis2().total_dimension();
+
+      // LNull might not be exactly orthogonal
+      L = RegularizeBasis2(tensor_row_sum(L, LNull));
+      OrthogonalizeBasis2_QR(L);
    }
-   else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::RangeFinding || Algo == PostExpansionAlgorithm::Random)
+   else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::Random)
    {
       // The SVD, rangefinding, and randokm algorithms differ only by rangefinding using a randomized SVD.
       // We need to calculate the null space, so we want all of the left singular vectors
@@ -507,23 +596,16 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       }
       else
       {
-         // For SVD and rangefinding, we construct the mixing term from the 3S algorithm
+         // For SVD, we construct the mixing term from the 3S algorithm
          SimpleOperator P = ProjectRemoveFirstLast(RightHam.LocalBasis());
          SimpleOperator W = ConstructWeights(local_prod(P, RightHam));
          MatrixOperator X = ReshapeBasis2(contract_from_left(H*herm(P)*W, herm(LNull), LeftHam, C));
          // X is now (discarded basis) x (wm) matrix
 
-         if (Algo == PostExpansionAlgorithm::SVD)
-         {
-            // Get the kept and discarded states
-            CMatSVD ExpandDM(X, CMatSVD::Left);
-            auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
-            QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
-         }
-         else if (Algo == PostExpansionAlgorithm::RangeFinding)
-         {
-            QExpand = RangeFindingBasis1(X, DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, RangeFindingOverhead);
-         }
+         // Get the kept and discarded states
+         CMatSVD ExpandDM(X, CMatSVD::Left);
+         auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+         QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
       }
 
       LNull = LNull * QExpand;
@@ -641,7 +723,7 @@ DMRG::DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, i
      IsPsiConverged(false), IsConvergedValid(false),
      MixUseEnvironment(false), UseDGKS(false), Solver_(LocalEigensolver::Solver::Lanczos),
      Verbose(Verbose_),
-     RangeFindingOverhead(2.0),
+     Oversampling(),
      ProjectTwoSiteTangent(false)
 {
    // construct the HamMatrix elements
@@ -747,6 +829,7 @@ void DMRG::StartSweep(bool IncrementSweepNumber, double /* Broad_ */)
 
 double DMRG::FidelityLoss() const
 {
+   return std::numeric_limits<double>::signaling_NaN();
 #if 0
    return 2.0 * (1.0 - norm_frob(inner_prod(Psi.Center(), PsiPrevC))
                  / norm_frob(Psi.Center()));
@@ -839,6 +922,7 @@ SimpleOperator ProjectMiddle(BasisList const& B)
       return Result;
 }
 
+#if 0
 // Given a two-site section of MPS, given by (L, C) in left and center ortho respectively, expand the basis between them.
 // E and F are the Hamiltonian matrices for L.Basis1() and C.Basis2() respectively.
 // Returns the number of states that were added to the environment basis.
@@ -854,7 +938,6 @@ ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
    DEBUG_CHECK_EQUAL(L.LocalBasis(), HL.LocalBasis2());
    DEBUG_CHECK_EQUAL(C.LocalBasis(), HR.LocalBasis2());
 
-#if 0
    int ExtraStates = StatesWanted - C.Basis1().total_dimension();
    // Calculate left null space of left site.
    StateComponent LNull = NullSpace2(L);
@@ -917,17 +1000,17 @@ ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
    C = RegularizeBasis1(R, tensor_col_sum(C, Z, NewBasis));
 
    return StatesToKeep.size();
-   #endif
 }
+#endif
 
 // helper to subtract one std::Map<T,int> from another
 template <typename T>
 std::map<T, int>
-subtract(std::map<T, int> x, std::map<T, int> const& y)
+exclude(std::map<T, int> x, std::map<T, int> const& y)
 {
    for (auto const& yi : y)
    {
-      if ((x[yi.first] -= yi.second) == 0)
+      if ((x[yi.first] -= yi.second) <= 0)
          x.erase(yi.first);
    }
    return x;
@@ -935,14 +1018,18 @@ subtract(std::map<T, int> x, std::map<T, int> const& y)
 
 // Pre-expand Basis 2 of C, by adding vectors to the right-ortho Basis1() of R.
 void
-PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead, bool ProjectTwoSiteTangent)
+PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
 {
    // quick return if we don't need to do anything
    if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == PreExpansionAlgorithm::NoExpansion)
       return;
 
+   #if 0
    if (Algo == PreExpansionAlgorithm::SVD)
    {
+      // The SVD is very slow, only useful for debugging/benchmarking.
+      // There is no facility to project onto the 2-site tangent space, although it could be done
+      // by reshaping C,R into dm*m and m*dm matrices
       StateComponent CR = local_tensor_prod(C, R);
       OperatorComponent H = local_tensor_prod(HLeft, HRight);
       StateComponent X = operator_prod_inner(H, LeftHam, CR, herm(RightHam));
@@ -956,9 +1043,20 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       MatrixOperator U = scalar_prod(R, herm(Q));
       C = C * U;
       R = Q;
+   }
+   #endif
 
-      #if 0
-      // Add the expansion vectors, and do another LQ factorization to ensure that the basis is orthogonal
+   if (Algo == PreExpansionAlgorithm::SVD)
+   {
+      StateComponent RNull = NullSpace1(R);
+      StateComponent F = contract_from_right(herm(HRight), RNull, RightHam, herm(R));
+      MatrixOperator X = ReshapeBasis1(operator_prod_inner(HLeft, LeftHam, C, herm(F)));
+
+      CMatSVD ExpandDM(X, CMatSVD::Right);
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, true);
+      auto QExpand = ExpandDM.ConstructRightVectors(ExpandedStates.begin(), ExpandedStates.end());
+
+      StateComponent Q = QExpand * RNull;
       StateComponent RNew = tensor_col_sum(R, Q);
       OrthogonalizeBasis1_LQ(RNew);
 
@@ -966,8 +1064,8 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       MatrixOperator U = scalar_prod(R, herm(RNew));
       C = C * U;
       R = RNew;
-      #endif
    }
+
    else if (Algo == PreExpansionAlgorithm::Random)
    {
       // Get the d*m dimensional full basis for the right hand side.  This is the candidate space for the states to add
@@ -976,10 +1074,10 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
 
       // Get the dimensions of the 2-site null space
       // See comment for PreExpandBasis1
-      // auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
-      auto NumAvailablePerSector = subtract(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
+      // auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
+      auto NumAvailablePerSector = exclude(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
 
-      VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, 1.0);
+      VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, OversamplingInfo());  // don't oversample
 
       //TRACE(ExpansionBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
 
@@ -994,18 +1092,20 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
 
       R = ReshapeFromBasis2(RMatNew, R.LocalBasis(), R.Basis2());
    }
-   else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RangeFindingProject || Algo == PreExpansionAlgorithm::RSVD)
+   else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RSVD)
    {
+      if (Algo == PreExpansionAlgorithm::RangeFinding)
+         Oversampling = OversamplingInfo();
+
       // Get the d*m dimensional full basis for the right hand side.  This is the candidate space for the states to add
       VectorBasis RFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(R.LocalBasis(), R.Basis2()).Basis()).Basis();
       VectorBasis LFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(adjoint(C.LocalBasis()), C.Basis1()).Basis()).Basis();
 
       // Get the dimensions of the 2-site null space
       // See comment for PreExpandBasis1
-      //auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
-      auto NumAvailablePerSector = subtract(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
+      //auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
+      auto NumAvailablePerSector = exclude(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
 
-      double Oversampling = (Algo == PreExpansionAlgorithm::RangeFindingProject) ? RangeFindingOverhead : 1.0;
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, Oversampling);
 
       // Construct Gaussian random matrix
@@ -1026,7 +1126,8 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       // Project out the kept states from R
       StateComponent Q = X - scalar_prod(X, herm(R)) * R;
       // LQ decomposition, and we can throw away L
-      OrthogonalizeBasis1_LQ(Q);
+      OrthogonalizeBasis1_LQ(Q);                // Range finding step
+      Q = Q - scalar_prod(Q, herm(R)) * R;      // Ensure that Q is orthogonal to R
 
       if (Algo == PreExpansionAlgorithm::RSVD)
       {
@@ -1058,12 +1159,14 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
 
 // Pre-expand Basis 1 of C, by adding vectors to the left-ortho Basis2() of L.
 void
-PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, double RangeFindingOverhead, bool ProjectTwoSiteTangent)
+PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
 {
    // quick return if we don't need to do anything
    if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == PreExpansionAlgorithm::NoExpansion)
       return;
 
+   // SVD update
+   #if 0
    if (Algo == PreExpansionAlgorithm::SVD)
    {
       StateComponent LC = local_tensor_prod(L, C);
@@ -1079,17 +1182,27 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       MatrixOperator U = scalar_prod(herm(Q), L);
       C = U * C;
       L = Q;
+   }
+   #endif
 
-      #if 0
-      // Add the expansion vectors, and do another QR factorization to ensure that the basis is orthogonal
+   if (Algo == PreExpansionAlgorithm::SVD)
+   {
+      // This is slow, we could avoid constructing the null space but the bottleneck is the SVD anyway
+      StateComponent LNull = NullSpace2(L);
+      StateComponent E = contract_from_left(HLeft, herm(LNull), LeftHam, L);
+      MatrixOperator X = ReshapeBasis2(operator_prod_inner(HRight, E, C, herm(RightHam)));
+
+      CMatSVD ExpandDM(X, CMatSVD::Left);
+      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, true);
+      auto QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
+
+      StateComponent Q = LNull * QExpand;
       StateComponent LNew = tensor_row_sum(L, Q);
       OrthogonalizeBasis2_QR(LNew);
 
-      // add the expansion vectors to C
       MatrixOperator U = scalar_prod(herm(LNew), L);
       C = U * C;
       L = LNew;
-      #endif
    }
    else if (Algo == PreExpansionAlgorithm::Random)
    {
@@ -1103,8 +1216,8 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       // Nevertheless we could keep more than the minimum, which will allow the truncation to mix between those states
       // when choosing the final kept states. But at minimum, we do want to cull states that have no available state at all
       // in RFullBasis.  Some limited empircal testing shows essentially no difference between these choices.
-      // auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
-      auto NumAvailablePerSector = subtract(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      // auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      auto NumAvailablePerSector = exclude(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
 
       // TRACE(LFullBasis)(RFullBasis);
       // for (auto x : NumAvailablePerSector)
@@ -1112,7 +1225,7 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       //    TRACE(x.first)(x.second);
       // }
 
-      VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, 1.0);
+      VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, OversamplingInfo()); // Don't oversample
 
       //TRACE(ExpansionBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
 
@@ -1128,19 +1241,20 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
 
       L = ReshapeFromBasis1(LMatNew, L.LocalBasis(), L.Basis1());
    }
-   else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RangeFindingProject || Algo == PreExpansionAlgorithm::RSVD)
+   else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RSVD)
    {
+      if (Algo == PreExpansionAlgorithm::RangeFinding)
+         Oversampling = OversamplingInfo();
+
       // Form the dm x k matrix, from doing a 2-site Hamiltonian matrix-vector multiply, with a dm x k matrix inserted
 
       VectorBasis LFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(adjoint(L.LocalBasis()), L.Basis1()).Basis()).Basis();
       VectorBasis RFullBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(C.LocalBasis(), C.Basis2()).Basis()).Basis();
 
       // See comment above
-      //auto NumAvailablePerSector = subtract(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
-      auto NumAvailablePerSector = subtract(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      //auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      auto NumAvailablePerSector = exclude(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
 
-      // TODO: if we had rangefinding overhead...
-      double Oversampling = (Algo == PreExpansionAlgorithm::RangeFindingProject) ? RangeFindingOverhead : 1.0;
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, Oversampling);
 
       // Construct Gaussian random matrix
@@ -1160,7 +1274,8 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       // Project out the kept states from L
       StateComponent Q = X - L * scalar_prod(herm(L), X);
       // QR decomposition, we can throw away 'R'
-      OrthogonalizeBasis2_QR(Q);
+      OrthogonalizeBasis2_QR(Q);                  // Range finding step
+      Q = Q - L * scalar_prod(herm(L), Q);        // Ensure that Q is orthogonal to L
 
       if (Algo == PreExpansionAlgorithm::RSVD)
       {
@@ -1200,7 +1315,7 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
 
    //::ExpandLeftEnvironment(*CLeft, *C, HamMatrices.left(), HamMatrices.right(), *HLeft, *H, StatesWanted, ExtraStatesPerSector);
 
-   PreExpandBasis1(*CLeft, *C, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, RangeFindingOverhead, ProjectTwoSiteTangent);
+   PreExpandBasis1(*CLeft, *C, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
    // reconstruct the E matrix with the expanded environment
    HamMatrices.push_left(contract_from_left(*HLeft, herm(*CLeft), HamMatrices.left(), *CLeft));
@@ -1216,7 +1331,7 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    auto HRight = H;
    ++HRight;
 
-   PreExpandBasis2(*C, *CRight, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, RangeFindingOverhead, ProjectTwoSiteTangent);
+   PreExpandBasis2(*C, *CRight, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
    // auto EnvStates = ::ExpandRightEnvironment(*C, *CRight, HamMatrices.left(), HamMatrices.right(), *H, *HRight, StatesWanted, ExtraStatesPerSector);
 
@@ -1229,7 +1344,7 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
 TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    TruncationInfo Info;
-   MatrixOperator X = TruncateExpandBasis1(*C, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, RangeFindingOverhead);
+   MatrixOperator X = TruncateExpandBasis1(*C, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, Oversampling);
    if (Verbose > 1)
    {
       std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
@@ -1260,7 +1375,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraSt
    // Truncate right
    StateComponent CC = *C;
    TruncationInfo Info;
-   MatrixOperator X = TruncateExpandBasis2(CC, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, RangeFindingOverhead);
+   MatrixOperator X = TruncateExpandBasis2(CC, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, Oversampling);
    *C = CC;
    if (Verbose > 1)
    {
