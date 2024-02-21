@@ -236,7 +236,8 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
             Weights[n.first] = 1;
       }
    }
-   auto NumExtraPerSector = DistributeStates(Weights, exclude(NumAvailablePerSector, KeptStateDimension), ExtraStates, ExtraStatesPerSector+Oversampling.ExtraPerSector);
+   NumAvailablePerSector = exclude(NumAvailablePerSector, KeptStateDimension);
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector+Oversampling.ExtraPerSector);
 
    // Now that we have the distribution, apply the over-sampling
    for (auto& r : NumExtraPerSector)
@@ -368,6 +369,9 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis1(), C.Basis1()).Basis()).Basis();
 
       // Get the basis of candidate states based on the ranks of the kept states
+      if (Algo == PostExpansionAlgorithm::RangeFinding)
+         Oversampling = OversamplingInfo();  // Don't oversample in the rangefinding algorithm
+
       VectorBasis EBasis = MakeExpansionBasis(VKeep.GetSymmetryList(), RankPerSector(VKeep.Basis2(), RBasis), DimensionPerSector(VKeep.Basis1()), ExtraStates, ExtraStatesPerSector, Oversampling);
 
       // Construct the gaussian random embedding matrix
@@ -519,6 +523,9 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       VectorBasis RBasis = Regularizer(ProductBasis<BasisList, VectorBasis>(W.Basis2(), C.Basis2()).Basis()).Basis();
 
       // Get the basis of candidate states based on the ranks of the kept states
+      if (Algo == PostExpansionAlgorithm::RangeFinding)
+         Oversampling = OversamplingInfo();  // Don't oversample in the rangefinding algorithm
+
       VectorBasis EBasis = MakeExpansionBasis(UKeep.GetSymmetryList(), RankPerSector(UKeep.Basis1(), RBasis), DimensionPerSector(UKeep.Basis2()), ExtraStates, ExtraStatesPerSector, Oversampling);
 
       // Construct the gaussian random embedding matrix
