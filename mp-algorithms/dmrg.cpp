@@ -195,16 +195,32 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
    return Result;
 }
 
+// helper to exclude y from x.  That is, the elements of Result' satisfy
+// Result'[a] = std::max(x[a] - y[a], 0)
+// This is used in calculating the dimensions of sectors, where we want to exclude (for example) states that are already kept
+template <typename T>
+std::map<T, int>
+exclude(std::map<T, int> x, std::map<T, int> const& y)
+{
+   for (auto const& yi : y)
+   {
+      if ((x[yi.first] -= yi.second) <= 0)
+         x.erase(yi.first);
+   }
+   return x;
+}
+
 // Get a basis for use in the randomized SVD, selecting ExtraStates*RangeFindingOverhead states out of the available states.
 // The quantum number sectors for the singular vectors are chosen according to the relative number of states in
 // KeptStateDimension, with at least ExtraStatesPerSector states in each available quantum number sector.
-// RangeFindingOverhead is a number >= 1 which indicates how large the embedding space should be for the randomized SVD.
-// Typically RangeFindingOverhead = 2.
+// NumAvailablePerSector is the total size of the space; we exclude the KeptStateDimension before allocating states.
+// That is, the number of states allocated to some quantum number sector q is no larger than
+// NumAvailablePerSector[q] - KeptStateDimension[q]
 // Typically KeptStateDimension will be initialized as DimensionPerSector() of some basis of kept states.
 // On entry: X is a p x q matrix (typically = p m*d, q = w*m)
 // On exit: Result' is a VectorBasis of size ExtraStates + additional states per sector
 VectorBasis
-MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> const& NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo const& Oversampling)
+MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo const& Oversampling)
 {
    std::map<QuantumNumbers::QuantumNumber, int> Weights;
    for (auto n : NumAvailablePerSector)
@@ -220,7 +236,7 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
             Weights[n.first] = 1;
       }
    }
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector+Oversampling.ExtraPerSector);
+   auto NumExtraPerSector = DistributeStates(Weights, exclude(NumAvailablePerSector, KeptStateDimension), ExtraStates, ExtraStatesPerSector+Oversampling.ExtraPerSector);
 
    // Now that we have the distribution, apply the over-sampling
    for (auto& r : NumExtraPerSector)
@@ -228,22 +244,6 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
       r.second = std::min(NumAvailablePerSector.at(r.first), Oversampling(r.second));
    }
    return VectorBasis(SL, NumExtraPerSector.begin(), NumExtraPerSector.end());
-}
-
-// Helper function to use the random range-finding algorithm to get the important left-singular vectors of X.
-// The candidate basis is obtained using the relative sizes contained in KeptStateDimension.
-MatrixOperator RangeFindingBasis1(MatrixOperator X, std::map<QuantumNumber, int> const& KeptStateDimension, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling)
-{
-   VectorBasis RangeBasis = MakeExpansionBasis(X.GetSymmetryList(), RankPerSector(X), KeptStateDimension, ExtraStates, ExtraStatesPerSector, Oversampling);
-   MatrixOperator A = X * MakeRandomMatrixOperator(X.Basis2(), RangeBasis);
-   auto QR = QR_Factorize(A);
-   X = herm(QR.first) * X;
-
-   CMatSVD ExpandDM(X, CMatSVD::Left);
-
-   auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
-
-   return QR.first * ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
 }
 
 #if 0
@@ -350,7 +350,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
       Info.ExtraStates_ = 0;
    }
-   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)\
+   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)
    {
       // We can do a thin SVD here.  In the no expansion case we just do the basic truncation and we are done.
       // In the fastrangefinding algorithm we implicitly use the full space of m*d states, but project out
@@ -537,6 +537,11 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // singular values including the kept states.
       // LNull is now (dm) x 2k orthogonal, and is the sample space for the expansion vectors
       OrthogonalizeBasis2_QR(LNull); // throw away the 'R', we don't need it
+
+      // At this point, LNull might have some non-zero numerical overlap with L. But it should be very small, since
+      // the number of expansion vectors is controlled by the rank of the null space.
+      // Since we do a QR at the end anyway, we don't need to worry about a numerically non-orthogonal basis.
+      // A faster alternative to the QR would be Gram-Schmidt orthogonalization.
 
       if (Algo == PostExpansionAlgorithm::RSVD)
       {
@@ -1003,19 +1008,6 @@ ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
 }
 #endif
 
-// helper to subtract one std::Map<T,int> from another
-template <typename T>
-std::map<T, int>
-exclude(std::map<T, int> x, std::map<T, int> const& y)
-{
-   for (auto const& yi : y)
-   {
-      if ((x[yi.first] -= yi.second) <= 0)
-         x.erase(yi.first);
-   }
-   return x;
-}
-
 // Pre-expand Basis 2 of C, by adding vectors to the right-ortho Basis1() of R.
 void
 PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
@@ -1050,7 +1042,15 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
    {
       StateComponent RNull = NullSpace1(R);
       StateComponent F = contract_from_right(herm(HRight), RNull, RightHam, herm(R));
-      MatrixOperator X = ReshapeBasis1(operator_prod_inner(HLeft, LeftHam, C, herm(F)));
+      StateComponent CPrime = operator_prod_inner(HLeft, LeftHam, C, herm(F));
+
+      if (ProjectTwoSiteTangent)
+      {
+         StateComponent LKeep = C;
+         OrthogonalizeBasis2_QR(LKeep);
+         CPrime = CPrime - LKeep * scalar_prod(herm(LKeep), CPrime);
+      }
+      MatrixOperator X = ReshapeBasis1(CPrime);
 
       CMatSVD ExpandDM(X, CMatSVD::Right);
       auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, true);
@@ -1075,7 +1075,7 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       // Get the dimensions of the 2-site null space
       // See comment for PreExpandBasis1
       // auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
-      auto NumAvailablePerSector = exclude(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
+      auto NumAvailablePerSector = CullMissingSectors(RFullBasis, LFullBasis);
 
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, OversamplingInfo());  // don't oversample
 
@@ -1104,7 +1104,7 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       // Get the dimensions of the 2-site null space
       // See comment for PreExpandBasis1
       //auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis2()));
-      auto NumAvailablePerSector = exclude(CullMissingSectors(RFullBasis, LFullBasis), DimensionPerSector(C.Basis2()));
+      auto NumAvailablePerSector = CullMissingSectors(RFullBasis, LFullBasis);
 
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, Oversampling);
 
@@ -1190,7 +1190,15 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       // This is slow, we could avoid constructing the null space but the bottleneck is the SVD anyway
       StateComponent LNull = NullSpace2(L);
       StateComponent E = contract_from_left(HLeft, herm(LNull), LeftHam, L);
-      MatrixOperator X = ReshapeBasis2(operator_prod_inner(HRight, E, C, herm(RightHam)));
+      StateComponent CPrime = operator_prod_inner(HRight, E, C, herm(RightHam));
+
+      if (ProjectTwoSiteTangent)
+      {
+         StateComponent RKeep = C;
+         OrthogonalizeBasis1_LQ(RKeep);
+         CPrime = CPrime - scalar_prod(CPrime, herm(RKeep)) * RKeep;
+      }
+      MatrixOperator X = ReshapeBasis2(CPrime);
 
       CMatSVD ExpandDM(X, CMatSVD::Left);
       auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, true);
@@ -1217,7 +1225,7 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       // when choosing the final kept states. But at minimum, we do want to cull states that have no available state at all
       // in RFullBasis.  Some limited empircal testing shows essentially no difference between these choices.
       // auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
-      auto NumAvailablePerSector = exclude(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      auto NumAvailablePerSector = CullMissingSectors(LFullBasis, RFullBasis);
 
       // TRACE(LFullBasis)(RFullBasis);
       // for (auto x : NumAvailablePerSector)
@@ -1253,7 +1261,9 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
 
       // See comment above
       //auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
-      auto NumAvailablePerSector = exclude(CullMissingSectors(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
+      // Note that we no longer need to exclude DimensionPerSector(C.Basis1()) from NumAvailablePerSector, since this
+      // is now done by MakeExpansionBasis()
+      auto NumAvailablePerSector = CullMissingSectors(LFullBasis, RFullBasis);
 
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, Oversampling);
 

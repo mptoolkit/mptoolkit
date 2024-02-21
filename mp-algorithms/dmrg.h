@@ -33,7 +33,7 @@
 struct PreExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, NoExpansion };
-   static constexpr std::array<char const*,5> Names = { "svd", "rsvd", "range", "random", "none" };
+   static constexpr std::array<char const*,5> Names = { "fullsvd", "rsvd", "range", "random", "none" };
    static constexpr Enum Default = RangeFinding;
    static constexpr char const* StaticName = "pre-expansion algorithm";
 };
@@ -43,7 +43,7 @@ using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
 struct PostExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, Mixing, NoExpansion };
-   static constexpr std::array<char const*, 6> Names = { "svd", "rsvd", "range", "random", "mixing", "none"};
+   static constexpr std::array<char const*, 6> Names = { "fullsvd", "rsvd", "range", "random", "mixing", "none"};
    static constexpr Enum Default = RangeFinding;
    static constexpr char const* StaticName = "post-expansion algorithm";
 };
