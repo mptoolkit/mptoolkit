@@ -55,16 +55,19 @@ using PostExpansionAlgorithm = NamedEnumeration<PostExpansionTraits>;
 // then over-sample to min(n+Add, n*Scale)
 // Recommended value of Add is 10
 // Scale should work OK from 1.0 and up.
+// ExtraPerSector is an additional 'ExtraStatesPerSector' that applies at the oversampling phase
 struct OversamplingInfo
 {
-   OversamplingInfo() : Add(0), Scale(1.0) {}
-   OversamplingInfo(int Add_, double Scale_) : Add(Add_), Scale(Scale_) {}
+   OversamplingInfo() : Add(0), Scale(1.0), ExtraPerSector(0.0) {}
+   OversamplingInfo(int Add_, double Scale_) : Add(Add_), Scale(Scale_), ExtraPerSector(0.0) {}
+   OversamplingInfo(int Add_, double Scale_, int Extra_) : Add(Add_), Scale(Scale_), ExtraPerSector(Extra_) {}
 
    // return the actual number of vectors to use, if we want to get k accurate vectors
    int operator()(int k) const { return std::min(k+Add, int(k*Scale+0.5)); }  // round up
 
    int Add;
    double Scale;
+   int ExtraPerSector;
 };
 
 class DMRG

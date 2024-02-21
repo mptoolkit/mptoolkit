@@ -180,7 +180,7 @@ int main(int argc, char** argv)
       std::string PostExpandAlgo = PostExpansionAlgorithm().Name();
       bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the folllowing sweep
       bool ProjectTwoSiteTangent = false;
-      OversamplingInfo Oversampling(10, 1.0);
+      OversamplingInfo Oversampling(10, 1.0, 1); // Oversample extra state per sector
 
       // Defaults for expansion
       PreExpand.IncrementFactor = 0.0;

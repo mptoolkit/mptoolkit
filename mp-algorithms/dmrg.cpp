@@ -220,7 +220,7 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
             Weights[n.first] = 1;
       }
    }
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector);
+   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates, ExtraStatesPerSector+Oversampling.ExtraPerSector);
 
    // Now that we have the distribution, apply the over-sampling
    for (auto& r : NumExtraPerSector)
@@ -1273,7 +1273,7 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       StateComponent X = operator_prod_inner(HLeft, LeftHam, L, herm(F));
       // Project out the kept states from L
       StateComponent Q = X - L * scalar_prod(herm(L), X);
-      // QR decomposition, we can throw away 'R'
+      // QR decomposition, we can throw away R
       OrthogonalizeBasis2_QR(Q);                  // Range finding step
       Q = Q - L * scalar_prod(herm(L), Q);        // Ensure that Q is orthogonal to L
 
