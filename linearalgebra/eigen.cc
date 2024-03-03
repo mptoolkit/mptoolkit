@@ -1277,6 +1277,61 @@ struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
    }
 };
 
+// OrthogonalizeRowsAgainst / OrthogonalizeColsAgainst
+
+template <typename T>
+void
+OrthogonalizeRowsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size2(), Y.size2());
+   CHECK(X.size1() + Y.size1() <= X.size2())("Cannot orthogonalize - rank mismatch")(X.size1())(Y.size1())(X.size2());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y and then
+   // orthogonalize via LQ. Then test how orthogonal X and Y are, and if necessary do another round.
+   Matrix<T> M = X*herm(Y);
+   X = X - M*Y;
+   X = LQ_FactorizeThin(std::move(X)).second;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the row vectors of Y and the
+   // row vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = X*herm(Y);
+   if (amax(M) > eps)
+   {
+      X = X - M*Y;
+      X = LQ_FactorizeThin(std::move(X)).second;
+   }
+}
+
+template <typename T>
+void
+OrthogonalizeColsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size1(), Y.size1());
+   CHECK(X.size2() + Y.size2() <= X.size1())("Cannot orthogonalize - rank mismatch")(X.size2())(Y.size2())(X.size1());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y
+   // to orthogonalize X against Y, and then do a QR decomposition of X.  If X remains orthogonal to Y, when we've finished.
+   // Otherwise, do another iteration.
+   Matrix<T> M = herm(Y)*X;
+   X = X - Y*M;
+   X = QR_FactorizeThin(std::move(X)).first;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the column vectors of Y and the
+   // column vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = herm(Y)*X;
+   if (amax(M) > eps)
+   {
+      X = X - Y*M;
+      X = QR_FactorizeThin(std::move(X)).first;
+   }
+}
+
 //
 // InvertHPD
 //

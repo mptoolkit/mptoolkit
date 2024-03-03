@@ -50,6 +50,8 @@ namespace prog_opt = boost::program_options;
 bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
 std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
 
+bool Flush = false;  // set to true to flush standard output every step
+
 struct ExpansionInfo
 {
    double IncrementFactor;        // If the number of states is increasing from m to m', then add IncrementFactor*(m'-m) states
@@ -102,10 +104,12 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo
          << " Iter=" << dmrg.Solver().LastIter()
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
       //dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
@@ -139,10 +143,12 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& SInfo, ExpansionInfo 
          << " Iter=" << dmrg.Solver().LastIter()
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
       //dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << States.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << States.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
@@ -243,6 +249,7 @@ int main(int argc, char** argv)
          ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
          ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
+         ("flush", prog_opt::bool_switch(&Flush), "Flush terminal output after each line")
           ;
 
       prog_opt::options_description opt;
@@ -269,8 +276,10 @@ int main(int argc, char** argv)
          print_preamble(std::cout, argc, argv);
 
       if (Bench)
+      {
          print_preamble(BenchFile, argc, argv);
-
+         BenchFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #Tol\n";
+      }
 
       std::cout << "Starting DMRG...\n";
       std::cout << "Input wavefunction: " << FName << std::endl;

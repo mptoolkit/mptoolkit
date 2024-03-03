@@ -1015,35 +1015,50 @@ ExpandLeftEnvironment(StateComponent& L, StateComponent& C,
 }
 #endif
 
+void OrthogonalizeRowsAgainst(StateComponent& X, StateComponent const& Y)
+{
+   #if 1
+   // This is faster than reshaping
+   X = X - scalar_prod(X, herm(Y)) * Y;
+   OrthogonalizeBasis1_LQ(X);
+   X = X - scalar_prod(X, herm(Y)) * Y;
+   OrthogonalizeBasis1_LQ(X);
+   #else
+   auto XM = ReshapeBasis2(X);
+   auto YM = ReshapeBasis2(Y);
+   OrthogonalizeRowsAgainst(XM, YM);
+   X = ReshapeFromBasis2(XM, X.LocalBasis(), X.Basis2());
+   #endif
+}
+
+void OrthogonalizeColsAgainst(StateComponent& X, StateComponent const& Y)
+{
+   #if 1
+   // This is faster than reshaping
+   X = X - Y * scalar_prod(herm(Y), X);
+   OrthogonalizeBasis2_QR(X);
+   X = X - Y * scalar_prod(herm(Y), X);
+   OrthogonalizeBasis2_QR(X);
+   #else
+   auto XM = ReshapeBasis1(X);
+   auto YM = ReshapeBasis1(Y);
+   OrthogonalizeColsAgainst(XM, YM);
+   X = ReshapeFromBasis1(XM, X.LocalBasis(), X.Basis1());
+   #endif
+}
+
 // Pre-expand Basis 2 of C, by adding vectors to the right-ortho Basis1() of R.
-void
-PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
+// Returns the expansion vectors in the basis of R.
+// Result'.Basis2() == R.Basis2()
+// Result'.Basis1() can be anything that doesn't exhaust the rank of R.Basis1() + Result'.Basis1(),
+// eg returning random vectors is OK, they do not need to be in the null space as it is assumed that the
+// caller will handle that.
+StateComponent
+PreExpandBasis2(StateComponent const& C, StateComponent const& R, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
 {
    // quick return if we don't need to do anything
    if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == PreExpansionAlgorithm::NoExpansion)
-      return;
-
-   #if 0
-   if (Algo == PreExpansionAlgorithm::SVD)
-   {
-      // The SVD is very slow, only useful for debugging/benchmarking.
-      // There is no facility to project onto the 2-site tangent space, although it could be done
-      // by reshaping C,R into dm*m and m*dm matrices
-      StateComponent CR = local_tensor_prod(C, R);
-      OperatorComponent H = local_tensor_prod(HLeft, HRight);
-      StateComponent X = operator_prod_inner(H, LeftHam, CR, herm(RightHam));
-      AMatSVD ExpandDM(X, make_product_basis(C.LocalBasis(), R.LocalBasis()));
-      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates+R.Basis1().total_dimension(), ExtraStatesPerSector, true);
-
-      StateComponent L, Q;
-      RealDiagonalOperator Lambda;
-      ExpandDM.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), L, Lambda, Q);
-
-      MatrixOperator U = scalar_prod(R, herm(Q));
-      C = C * U;
-      R = Q;
-   }
-   #endif
+      return StateComponent(R.LocalBasis(), VectorBasis(R.GetSymmetryList()), R.Basis2());
 
    if (Algo == PreExpansionAlgorithm::SVD)
    {
@@ -1064,13 +1079,7 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
       auto QExpand = ExpandDM.ConstructRightVectors(ExpandedStates.begin(), ExpandedStates.end());
 
       StateComponent Q = QExpand * RNull;
-      StateComponent RNew = tensor_col_sum(R, Q);
-      OrthogonalizeBasis1_LQ(RNew);
-
-      // add the expansion vectors to C
-      MatrixOperator U = scalar_prod(R, herm(RNew));
-      C = C * U;
-      R = RNew;
+      return Q;
    }
 
    else if (Algo == PreExpansionAlgorithm::Random)
@@ -1086,18 +1095,11 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
 
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis2()), ExtraStates, ExtraStatesPerSector, OversamplingInfo());  // don't oversample
 
-      //TRACE(ExpansionBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
-
       // Construct Haar random states to use as expansion vectors.
       MatrixOperator RMat = ReshapeBasis2(R);
       MatrixOperator M = MakeRandomMatrixOperator(ExpansionBasis, RMat.Basis2());
-      MatrixOperator RMatNew = LQ_Factorize(tensor_col_sum(RMat, M)).second;
 
-      // now we need to extend C to match
-      MatrixOperator U = RMat * herm(RMatNew);
-      C = C * U;
-
-      R = ReshapeFromBasis2(RMatNew, R.LocalBasis(), R.Basis2());
+      return ReshapeFromBasis2(M, R.LocalBasis(), R.Basis2());
    }
    else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RSVD)
    {
@@ -1129,16 +1131,15 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
 
       // Contract the left half
       StateComponent E = contract_from_left(HLeft, herm(Omega), LeftHam, C);
-      StateComponent X = operator_prod_inner(HRight, E, R, herm(RightHam));
-      // Project out the kept states from R
-      StateComponent Q = X - scalar_prod(X, herm(R)) * R;
-      // LQ decomposition, and we can throw away L
-      OrthogonalizeBasis1_LQ(Q);                // Range finding step
-      Q = Q - scalar_prod(Q, herm(R)) * R;      // Ensure that Q is orthogonal to R
+      StateComponent Q = operator_prod_inner(HRight, E, R, herm(RightHam));
 
       if (Algo == PreExpansionAlgorithm::RSVD)
       {
-         // Randomized SVD: Feed Q^\dagger back into the tensor network
+         // Complete the range finding step and feed Q^\dagger back into the tensor network
+         //OrthogonalizeRowsAgainst(Q, R)
+         Q = Q - scalar_prod(Q, herm(R)) * R;
+         OrthogonalizeBasis1_LQ(Q);
+
          StateComponent F = contract_from_right(herm(HRight), Q, RightHam, herm(R));
          StateComponent QX = operator_prod_inner(HLeft, LeftHam, C, herm(F));
 
@@ -1149,48 +1150,27 @@ PreExpandBasis2(StateComponent& C, StateComponent& R, StateComponent const& Left
          Q = QExpand*Q;
       }
 
-      // Add the expansion vectors, and do another LQ factorization to ensure that the basis is orthogonal
-      StateComponent RNew = tensor_col_sum(R, Q);
-      OrthogonalizeBasis1_LQ(RNew);
-
-      // add the expansion vectors to C
-      MatrixOperator U = scalar_prod(R, herm(RNew));
-      C = C * U;
-      R = RNew;
+      return Q;
    }
    else
    {
       PANIC("Unsupported pre-expansion algorithm.");
+      return C; // suppress warning about missing return
    }
 }
 
 // Pre-expand Basis 1 of C, by adding vectors to the left-ortho Basis2() of L.
-void
-PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
+// Returns the expansion vectors in the basis of L.
+// Result'.Basis1() == L.Basis1()
+// Result'.Basis2() can be anything that doesn't exhaust the rank of L.Basis2() + Result'.Basis2(),
+// eg returning random vectors is OK, they do not need to be in the null space as it is assumed that the
+// caller will handle that.
+StateComponent
+PreExpandBasis1(StateComponent const& L, StateComponent const& C, StateComponent const& LeftHam, OperatorComponent const& HLeft, OperatorComponent const& HRight, StateComponent const& RightHam, PreExpansionAlgorithm Algo, int ExtraStates, int ExtraStatesPerSector, OversamplingInfo Oversampling, bool ProjectTwoSiteTangent)
 {
    // quick return if we don't need to do anything
    if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == PreExpansionAlgorithm::NoExpansion)
-      return;
-
-   // SVD update
-   #if 0
-   if (Algo == PreExpansionAlgorithm::SVD)
-   {
-      StateComponent LC = local_tensor_prod(L, C);
-      OperatorComponent H = local_tensor_prod(HLeft, HRight);
-      StateComponent X = operator_prod_inner(H, LeftHam, LC, herm(RightHam));
-      AMatSVD ExpandDM(X, make_product_basis(L.LocalBasis(), C.LocalBasis()));
-      auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates+L.Basis2().total_dimension(), ExtraStatesPerSector, true);
-
-      StateComponent Q, R;
-      RealDiagonalOperator Lambda;
-      ExpandDM.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), Q, Lambda, R);
-
-      MatrixOperator U = scalar_prod(herm(Q), L);
-      C = U * C;
-      L = Q;
-   }
-   #endif
+      StateComponent(L.LocalBasis(), L.Basis1(), VectorBasis(L.GetSymmetryList()));
 
    if (Algo == PreExpansionAlgorithm::SVD)
    {
@@ -1212,12 +1192,7 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       auto QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
 
       StateComponent Q = LNull * QExpand;
-      StateComponent LNew = tensor_row_sum(L, Q);
-      OrthogonalizeBasis2_QR(LNew);
-
-      MatrixOperator U = scalar_prod(herm(LNew), L);
-      C = U * C;
-      L = LNew;
+      return Q;
    }
    else if (Algo == PreExpansionAlgorithm::Random)
    {
@@ -1234,27 +1209,13 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
       // auto NumAvailablePerSector = exclude(RankPerSector(LFullBasis, RFullBasis), DimensionPerSector(C.Basis1()));
       auto NumAvailablePerSector = CullMissingSectors(LFullBasis, RFullBasis);
 
-      // TRACE(LFullBasis)(RFullBasis);
-      // for (auto x : NumAvailablePerSector)
-      // {
-      //    TRACE(x.first)(x.second);
-      // }
-
       VectorBasis ExpansionBasis = MakeExpansionBasis(C.GetSymmetryList(), NumAvailablePerSector, DimensionPerSector(C.Basis1()), ExtraStates, ExtraStatesPerSector, OversamplingInfo()); // Don't oversample
-
-      //TRACE(ExpansionBasis.total_dimension())(RFullBasis.total_dimension()-C.Basis2().total_dimension())(R.Basis2().total_dimension());
 
       // Construct Haar random states to use as expansion vectors.
       MatrixOperator LMat = ReshapeBasis1(L);
-
       MatrixOperator M = MakeRandomMatrixOperator(LMat.Basis1(), ExpansionBasis);
-      MatrixOperator LMatNew = QR_Factorize(tensor_row_sum(LMat, M)).first;
 
-      // now we need to extend C to match
-      MatrixOperator U = herm(LMatNew) * LMat;
-      C = U * C;
-
-      L = ReshapeFromBasis1(LMatNew, L.LocalBasis(), L.Basis1());
+      return ReshapeFromBasis1(M, L.LocalBasis(), L.Basis1());
    }
    else if (Algo == PreExpansionAlgorithm::RangeFinding || Algo == PreExpansionAlgorithm::RSVD)
    {
@@ -1287,16 +1248,15 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
 
       // Contract the right half
       StateComponent F = contract_from_right(herm(HRight), Omega, RightHam, herm(C));
-      StateComponent X = operator_prod_inner(HLeft, LeftHam, L, herm(F));
-      // Project out the kept states from L
-      StateComponent Q = X - L * scalar_prod(herm(L), X);
-      // QR decomposition, we can throw away R
-      OrthogonalizeBasis2_QR(Q);                  // Range finding step
-      Q = Q - L * scalar_prod(herm(L), Q);        // Ensure that Q is orthogonal to L
+      StateComponent Q = operator_prod_inner(HLeft, LeftHam, L, herm(F));
 
       if (Algo == PreExpansionAlgorithm::RSVD)
       {
-         // Randomized SVD: Feed Q^\dagger back into the tensor network
+         // Complete the range finding step and feed Q^\dagger back into the tensor network
+         //OrthogonalizeColsAgainst(Q, L);
+         Q = Q - L * scalar_prod(herm(L), Q);
+         OrthogonalizeBasis2_QR(Q);
+
          StateComponent E = contract_from_left(HLeft, herm(Q), LeftHam, L);
          StateComponent QX = operator_prod_inner(HRight, E, C, herm(RightHam));
 
@@ -1307,18 +1267,12 @@ PreExpandBasis1(StateComponent& L, StateComponent& C, StateComponent const& Left
          Q = Q*QExpand;
       }
 
-      // Add the expansion vectors, and do another QR factorization to ensure that the basis is orthogonal
-      StateComponent LNew = tensor_row_sum(L, Q);
-      OrthogonalizeBasis2_QR(LNew);
-
-      // add the expansion vectors to C
-      MatrixOperator U = scalar_prod(herm(LNew), L);
-      C = U * C;
-      L = LNew;
+      return Q;
    }
    else
    {
       PANIC("Unsupported pre-expansion algorithm.");
+      return C; // suppress warning about missing return
    }
 }
 
@@ -1326,16 +1280,50 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
 {
    auto CLeft = C;
    --CLeft;
+   StateComponent E = HamMatrices.left(); // the old E matrices
    HamMatrices.pop_left();
    auto HLeft = H;
    --HLeft;
 
-   //::ExpandLeftEnvironment(*CLeft, *C, HamMatrices.left(), HamMatrices.right(), *HLeft, *H, StatesWanted, ExtraStatesPerSector);
+   StateComponent CC = *C;
+   StateComponent L = *CLeft;
 
-   PreExpandBasis1(*CLeft, *C, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
+   StateComponent LExpand = PreExpandBasis1(L, CC, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
-   // reconstruct the E matrix with the expanded environment
-   HamMatrices.push_left(contract_from_left(*HLeft, herm(*CLeft), HamMatrices.left(), *CLeft));
+   #if 0
+   // Orthogonalize the expansion vectors and add them to the left side
+   OrthogonalizeColsAgainst(LExpand, L);
+   StateComponent LNew = tensor_row_sum(L, LExpand);
+   *CLeft = LNew;
+
+   // Augment the C matrix with zeros
+   StateComponent CExpand(CC.LocalBasis(), LExpand.Basis2(), CC.Basis2());
+   *C = tensor_col_sum(CC, CExpand);
+
+   // Expansion of the E matrices
+   // There are 3 components we need to add.  The additional rows for (LExpand, CLeft),
+   // the additional columns for (CLeft, LExpand), and the diagonal (LExpand, LExpand).
+   // We can add the rows first, and then add the columns (including the diagonal)
+   // Alternatively, we can reconstruct the new E matrices from LNew
+   StateComponent ERows = contract_from_left(*HLeft, herm(LExpand), HamMatrices.left(), L);
+   E = tensor_col_sum(E, ERows);
+   StateComponent ECols = contract_from_left(*HLeft, herm(LNew), HamMatrices.left(), LExpand);
+   E = tensor_row_sum(E, ECols);
+   HamMatrices.push_left(E);
+
+   #else
+   StateComponent LNew = tensor_row_sum(L, LExpand);
+   OrthogonalizeBasis2_QR(LNew);
+
+   // The full reconstruction would be:
+   HamMatrices.push_left(contract_from_left(*HLeft, herm(LNew), HamMatrices.left(), LNew));
+
+   // Update C in the new basis
+   MatrixOperator U = scalar_prod(herm(LNew), L);
+   *C = U * CC;
+   *CLeft = LNew;
+
+   #endif
 
    return C->Basis1().total_dimension();
 }
@@ -1344,16 +1332,54 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
 {
    auto CRight = C;
    ++CRight;
+   StateComponent F = HamMatrices.right();  // the old F matrix
    HamMatrices.pop_right();
    auto HRight = H;
    ++HRight;
 
-   PreExpandBasis2(*C, *CRight, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
+   StateComponent CC = *C;
+   StateComponent R = *CRight;
 
-   // auto EnvStates = ::ExpandRightEnvironment(*C, *CRight, HamMatrices.left(), HamMatrices.right(), *H, *HRight, StatesWanted, ExtraStatesPerSector);
+   StateComponent RExpand = PreExpandBasis2(CC, R, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
-   // reconstsruct the F matrix with the expanded environment
-   HamMatrices.push_right(contract_from_right(herm(*HRight), *CRight, HamMatrices.right(), herm(*CRight)));
+   #if 0
+   // In theory this code should be faster, but somehow it isn't. Enabling this makes the code slower,
+   // and the CPU time per step is rather sporadic.
+
+   // Orthogonalize the expansion vectors and add add them as new rows
+   OrthogonalizeRowsAgainst(RExpand, R);
+   StateComponent RNew = tensor_col_sum(R, RExpand);
+   *CRight = RNew;
+
+   // Augment the C matrix with zeros
+   StateComponent CExpand(CC.LocalBasis(), CC.Basis1(), RExpand.Basis1());
+   *C = tensor_row_sum(CC, CExpand);
+
+   // Expansion of the F matrices
+   // There are 3 components we need to add.  The additional rows for (RExpand, CRight),
+   // the additional columns for (CRight, RExpand), and the diagonal (RExpand, RExpand).
+   // We can add the rows first, and then add the columns (including the diagonal)
+   // Alternatively, we can simply reconsruct the new F matrices from RNew
+   StateComponent FRows = contract_from_right(herm(*HRight), RExpand, HamMatrices.right(), herm(R));
+   F = tensor_col_sum(F, FRows);
+   StateComponent FCols = contract_from_right(herm(*HRight), RNew, HamMatrices.right(), herm(RExpand));
+   F = tensor_row_sum(F, FCols);
+   HamMatrices.push_right(F);
+
+   #else
+   StateComponent RNew = tensor_col_sum(R, RExpand);
+   OrthogonalizeBasis1_LQ(RNew);
+
+   // reconstruct the F matrix with the expanded environment
+   // if we reconstructed the complete F matrix, it would look like:
+   HamMatrices.push_right(contract_from_right(herm(*HRight), RNew, HamMatrices.right(), herm(RNew)));
+
+   // Update C in the new basis
+   MatrixOperator U = scalar_prod(R, herm(RNew));
+   *C = CC*U;
+   *CRight = RNew;
+
+   #endif
 
    return C->Basis2().total_dimension();
 }

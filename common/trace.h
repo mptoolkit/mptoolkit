@@ -306,7 +306,8 @@ assert_handler set_panic_handler(assert_handler H);
 assert_handler set_trace_handler(assert_handler H);
 
 // invokes the panic handler
-void panic [[noreturn]] (char const* Msg);
+[[noreturn]]
+void panic (char const* Msg);
 
 // invokes the trace handler
 void trace(char const* Msg);
@@ -508,9 +509,7 @@ class Assert
       // msg(Value) is invoked instead.
       // Additionally, if T is an arithmetic type and the string conversion coincides with
       // Name, then nothing is displayed.  This avoids silly messages like "0 = 0".
-   //      template <typename T>
-      Assert& print_value(char const* Name, //T const& Value,
-                          std::string const& ValueStr);
+      Assert& print_value(char const* Name, std::string const& ValueStr);
 
       template <typename T>
       Assert& operator<<(T const& x);
@@ -527,7 +526,7 @@ class Assert
           Message(Message_),
         Handler(Handler_) {}
 
-      Assert& operator=(Assert const&); // not implemented
+      Assert& operator=(Assert const&) = delete;
 
       typedef std::pair<std::string, std::string> NameValuePair;
       typedef std::vector<NameValuePair>          VariableListType;
@@ -630,7 +629,7 @@ Assert<Dummy>::~Assert()
    this->Handler(FullMessage.c_str());
 }
 
-inline
+[[noreturn]] inline
 void DefaultPanicHandler(char const* msg)
 {
    std::cerr << msg;
@@ -675,6 +674,7 @@ assert_handler set_panic_handler(assert_handler H)
    return Old;
 }
 
+[[noreturn]]
 inline
 void panic(char const* msg)
 {

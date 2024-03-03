@@ -470,18 +470,18 @@ QR_FactorizeFull(M& m)
 // The 'default' QR factorization returns a pair of matrices Q,R where Q is m x n, and R is n x n.
 // we can use move sematics to avoid creating a new matrix where possible.
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 QR_Factorize(Matrix<std::complex<double>> M);
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 QR_Factorize(Matrix<double> M);
 
 // The 'thin' QR factorization where Q is m x min(m,n) and R is min(m,n) x n
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 QR_FactorizeThin(Matrix<std::complex<double>> M);
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 QR_FactorizeThin(Matrix<double> M);
 
 //
@@ -506,19 +506,39 @@ LQ_FactorizeFull(M& m)
 // The 'default' LQ factorization returns a pair of matrices L,Q where L is m x m, and Q is m x n.
 // we can use move sematics to avoid creating a new matrix where possible.
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 LQ_Factorize(Matrix<std::complex<double>> M);
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 LQ_Factorize(Matrix<double> M);
 
 // The 'thin' LQ factorization where L is m x min(m,n) and Q is min(m,n) x n
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 LQ_FactorizeThin(Matrix<std::complex<double>> M);
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 LQ_FactorizeThin(Matrix<double> M);
+
+//
+// OrthogonalizeRowsAgainst
+// Orthogonalizes rows of X, and also against the matrix Y.
+// X and Y must have the same number of columns.
+// It is an error if X.size1() + Y.size1() > X.size2()
+//
+// It is assumed that the rows of Y are already orthonormal.  If that isn't correct, the error epsilon might not be appropriate.
+//
+
+double amax(Matrix<double> const& X);
+double amax(Matrix<std::complex<double>> const& X);
+
+template <typename T>
+void
+OrthogonalizeRowsAgainst(Matrix<T>& X, Matrix<T> const& Y);
+
+template <typename T>
+void
+OrthogonalizeColsAgainst(Matrix<T>& X, Matrix<T> const& Y);
 
 //
 // TridiagonalizeHermitian

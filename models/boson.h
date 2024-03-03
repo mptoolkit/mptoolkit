@@ -38,11 +38,11 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 inline
 LatticeSite Boson(int MaxN)
 {
-   SymmetryList Symmetry("N:Null");
+   SymmetryList Symmetry("Null:Null");
    QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number
    SiteBasis Basis(Symmetry);
    SiteOperator B, BH, P, R, N, N2, Q, I, U;
-   LatticeSite Site;
+   LatticeSite Site("Boson, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -69,6 +69,7 @@ LatticeSite Boson(int MaxN)
    Site["N2"] = N2;
    R = I;
    Site["R"] = R;
+   Site["P"] = I;
 
    U = SiteOperator(Basis, QNum, LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
@@ -86,8 +87,6 @@ LatticeSite Boson(int MaxN)
         + boost::lexical_cast<std::string>(n);
       Site[OpName] = X;
    }
-
-   DEBUG_TRACE(BH)(B)(I)(N)(N2)(U);
 
    return Site;
 }

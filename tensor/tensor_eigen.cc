@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "linearalgebra/matrix_utility.h"
+#include "regularize.h"
 
 namespace Tensor
 {
@@ -83,6 +84,108 @@ ExtractRealDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<T>>, VectorBa
       Result(i,i).diagonal() = real_diagonal_vector(A(i,i));
    }
    return Result;
+}
+
+template <typename T>
+void
+OrthogonalizeRowsAgainstRegular(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>& X, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& Y)
+{
+   DEBUG_CHECK(is_regular_basis(X.Basis1()));
+   DEBUG_CHECK(is_regular_basis(X.Basis2()));
+   DEBUG_CHECK(is_regular_basis(Y.Basis1()));
+   DEBUG_CHECK_EQUAL(X.Basis2(), Y.Basis2());
+   for (auto I = iterate(X); I; ++I)
+   {
+      for (auto J = iterate(I); J; ++J)
+      {
+         // see if any rows in Y have an entry at J.index2()
+         bool Found = false;
+         for (int i = 0; i < Y.Basis1().size(); ++i)
+         {
+            auto K = iterate_at(Y.data(), i, J.index2());
+            if (K)
+            {
+               OrthogonalizeRowsAgainst(*J, *K);
+               Found = true;
+            }
+         }
+         if (!Found)
+         {
+            *J = LQ_FactorizeThin(std::move(*J)).second;
+         }
+      }
+   }
+}
+
+template <typename T>
+void
+OrthogonalizeRowsAgainst(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>& X, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& Y)
+{
+   CHECK(is_scalar(X.TransformsAs()));
+   CHECK(is_scalar(Y.TransformsAs()));
+   DEBUG_CHECK_EQUAL(X.Basis2(), Y.Basis2());
+   if (is_regular_basis(X.Basis1()) && is_regular_basis(X.Basis2()) && is_regular_basis(Y.Basis1()))
+   {
+      OrthogonalizeRowsAgainstRegular(X, Y);
+      return;
+   }
+   // else
+
+   Regularizer R1(X.Basis1());
+   Regularizer R2(X.Basis2());
+   Regularizer S1(Y.Basis1());
+   auto XX = RegularizeBasis12(R1, std::move(X), R2);
+   auto YY = RegularizeBasis12(S1, Y, R2);
+   OrthogonalizeRowsAgainstRegular(XX, YY);
+   X = UnregularizeBasis12(R1, XX, R2);
+}
+
+template <typename T>
+void
+OrthogonalizeColsAgainstRegular(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>& X, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& Y)
+{
+   DEBUG_CHECK(is_regular_basis(X.Basis1()));
+   DEBUG_CHECK(is_regular_basis(X.Basis2()));
+   DEBUG_CHECK(is_regular_basis(Y.Basis2()));
+   DEBUG_CHECK_EQUAL(X.Basis1(), Y.Basis1());
+   for (auto I = iterate(X); I; ++I)
+   {
+      for (auto J = iterate(I); J; ++J)
+      {
+         auto K = Y.data().vec()[J.index1()].iterate();
+         if (K)
+         {
+            OrthogonalizeColsAgainst(*J, *K);
+         }
+         else
+         {
+            *J = QR_FactorizeThin(std::move(*J)).first;
+         }
+      }
+   }
+}
+
+template <typename T>
+void
+OrthogonalizeColsAgainst(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>& X, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& Y)
+{
+   CHECK(is_scalar(X.TransformsAs()));
+   CHECK(is_scalar(Y.TransformsAs()));
+   DEBUG_CHECK_EQUAL(X.Basis1(), Y.Basis1());
+   if (is_regular_basis(X.Basis1()) && is_regular_basis(X.Basis2()) && is_regular_basis(Y.Basis2()))
+   {
+      OrthogonalizeColsAgainstRegular(X, Y);
+      return;
+   }
+   // else
+
+   Regularizer R1(X.Basis1());
+   Regularizer R2(X.Basis2());
+   Regularizer S2(Y.Basis2());
+   auto XX = RegularizeBasis12(R1, std::move(X), R2);
+   auto YY = RegularizeBasis12(R1, Y, S2);
+   OrthogonalizeColsAgainstRegular(XX, YY);
+   X = UnregularizeBasis12(R1, XX, R2);
 }
 
 } // namespace Tensor

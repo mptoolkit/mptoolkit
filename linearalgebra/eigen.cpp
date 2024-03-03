@@ -770,7 +770,7 @@ void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA,
 
 // QR
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 QR_Factorize(Matrix<std::complex<double>> M)
 {
    int s1 = size1(M);
@@ -779,7 +779,7 @@ QR_Factorize(Matrix<std::complex<double>> M)
    int sz = std::min(s1, s2);  // For the QR, we require that s1 >= s2, so we are guaranteed that sz==s2 here
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+      return std::make_pair(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
    }
    Vector<std::complex<double>> Tau(sz);
    Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -799,10 +799,10 @@ QR_Factorize(Matrix<std::complex<double>> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(std::move(Q), std::move(M));
+   return std::make_pair(std::move(Q), std::move(M));
 }
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 QR_Factorize(Matrix<double> M)
 {
    int s1 = size1(M);
@@ -811,7 +811,7 @@ QR_Factorize(Matrix<double> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
+      return std::make_pair(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
    }
    Vector<double> Tau(sz);
    Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -831,9 +831,9 @@ QR_Factorize(Matrix<double> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(std::move(Q), std::move(M));
+   return std::make_pair(std::move(Q), std::move(M));
 }
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 QR_FactorizeThin(Matrix<std::complex<double>> M)
 {
    int s1 = size1(M);
@@ -841,7 +841,7 @@ QR_FactorizeThin(Matrix<std::complex<double>> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+      return std::make_pair(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
    }
    Vector<std::complex<double>> Tau(sz);
    Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -860,10 +860,10 @@ QR_FactorizeThin(Matrix<std::complex<double>> M)
          R(i,j) = M(i,j);
       }
    }
-   return std::make_tuple(std::move(Q), std::move(R));
+   return std::make_pair(std::move(Q), std::move(R));
 }
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 QR_FactorizeThin(Matrix<double> M)
 {
    int s1 = size1(M);
@@ -871,7 +871,7 @@ QR_FactorizeThin(Matrix<double> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
+      return std::make_pair(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
    }
    Vector<double> Tau(sz);
    Private::LQ_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -889,12 +889,12 @@ QR_FactorizeThin(Matrix<double> M)
          R(i,j) = M(i,j);
       }
    }
-   return std::make_tuple(std::move(Q), std::move(R));
+   return std::make_pair(std::move(Q), std::move(R));
 }
 
 // LQ
 
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 LQ_Factorize(Matrix<std::complex<double>> M)
 {
    int s1 = size1(M);
@@ -902,7 +902,7 @@ LQ_Factorize(Matrix<std::complex<double>> M)
    int sz = std::min(s1, s2);  // For the LQ, we require that s2 >= s1, so we are guaranteed that sz==s1 here
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+      return std::make_pair(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
    }
    Vector<std::complex<double>> Tau(sz);
    Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -920,10 +920,10 @@ LQ_Factorize(Matrix<std::complex<double>> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(std::move(Q), std::move(M));
+   return std::make_pair(std::move(Q), std::move(M));
 }
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 LQ_Factorize(Matrix<double> M)
 {
    int s1 = size1(M);
@@ -931,7 +931,7 @@ LQ_Factorize(Matrix<double> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
+      return std::make_pair(Matrix<double>(s1,s2,0.0), Matrix<double>(s2,s2,0.0));
    }
    Vector<double> Tau(sz);
    Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -949,9 +949,9 @@ LQ_Factorize(Matrix<double> M)
          M(i,j) = 0.0;
       }
    }
-   return std::make_tuple(std::move(M), std::move(Q));
+   return std::make_pair(std::move(M), std::move(Q));
 }
-std::tuple<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
+std::pair<Matrix<std::complex<double>>, Matrix<std::complex<double>>>
 LQ_FactorizeThin(Matrix<std::complex<double>> M)
 {
    int s1 = size1(M);
@@ -959,7 +959,7 @@ LQ_FactorizeThin(Matrix<std::complex<double>> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
+      return std::make_pair(Matrix<std::complex<double>>(s1,s2,0.0), Matrix<std::complex<double>>(s2,s2,0.0));
    }
    Vector<std::complex<double>> Tau(sz);
    Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -978,10 +978,10 @@ LQ_FactorizeThin(Matrix<std::complex<double>> M)
          L(i,j) = M(i,j);
       }
    }
-   return std::make_tuple(std::move(L), std::move(Q));
+   return std::make_pair(std::move(L), std::move(Q));
 }
 
-std::tuple<Matrix<double>, Matrix<double>>
+std::pair<Matrix<double>, Matrix<double>>
 LQ_FactorizeThin(Matrix<double> M)
 {
    int s1 = size1(M);
@@ -989,7 +989,7 @@ LQ_FactorizeThin(Matrix<double> M)
    int sz = std::min(s1, s2);
    if (sz == 0)
    {
-      return std::make_tuple(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
+      return std::make_pair(Matrix<double>(s1,sz,0.0), Matrix<double>(sz,s2,0.0));
    }
    Vector<double> Tau(sz);
    Private::QR_Factorize(size2(M), size1(M), data(M), stride1(M), data(Tau));
@@ -1008,9 +1008,37 @@ LQ_FactorizeThin(Matrix<double> M)
          L(i,j) = M(i,j);
       }
    }
-   return std::make_tuple(std::move(L), std::move(Q));
+   return std::make_pair(std::move(L), std::move(Q));
 }
 
+double amax(Matrix<double> const& X)
+{
+   double r = 0;
+   for (int i = 0; i < X.size1(); ++i)
+   {
+      for (int j = 0; j < X.size2(); ++j)
+      {
+         if (std::abs(X(i,j)) < r || r == 0)
+            r = std::abs(X(i,j));
+      }
+   }
+   return r;
+}
+
+double amax(Matrix<std::complex<double>> const& X)
+{
+   double r2 = 0;
+   for (int i = 0; i < X.size1(); ++i)
+   {
+      for (int j = 0; j < X.size2(); ++j)
+      {
+         auto x = std::norm(X(i,j));
+         if (x < r2 || r2 == 0)
+            r2 = x;
+      }
+   }
+   return std::sqrt(r2);
+}
 
 Vector<std::complex<double>>
 operator*(Matrix<std::complex<double>> const& M, Vector<std::complex<double>> const& v)
