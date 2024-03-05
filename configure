@@ -10245,8 +10245,8 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: BLAS_VENDOR" >&5
-printf "%s\n" "BLAS_VENDOR" >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $BLAS_VENDOR" >&5
+printf "%s\n" "$BLAS_VENDOR" >&6; }
 
 
 printf "%s\n" "#define BLAS_VENDOR $BLAS_VENDOR" >>confdefs.h

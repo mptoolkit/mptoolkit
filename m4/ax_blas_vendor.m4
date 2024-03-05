@@ -20,7 +20,7 @@ AC_LINK_IFELSE([AC_LANG_CALL([], [MKL_Get_Version])], [BLAS_VENDOR="MKL"], [])
 # OpenBLAS doesn't have a function to get the version, just a config string
 AC_LINK_IFELSE([AC_LANG_CALL([], [openblas_get_config])], [BLAS_VENDOR="OpenBLAS"], [])
 
-AC_MSG_RESULT([BLAS_VENDOR])
+AC_MSG_RESULT([$BLAS_VENDOR])
 
 AC_DEFINE_UNQUOTED([BLAS_VENDOR], [$BLAS_VENDOR], [The vendor of the BLAS libary])
 AC_SUBST([BLAS_VENDOR])
