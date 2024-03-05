@@ -13,6 +13,7 @@
 
 m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])
 m4_include([m4/ax_blas.m4])
+m4_include([m4/ax_blas_vendor.m4])
 m4_include([m4/ax_boost_base.m4])
 m4_include([m4/ax_boost_program_options.m4])
 m4_include([m4/ax_check_compile_flag.m4])

@@ -24,6 +24,7 @@
 #endif
 #include "config.h"
 
+#include "common/blas_vendor.h"
 #include <iostream>
 #include <iomanip>
 #include <boost/version.hpp>
@@ -56,18 +57,21 @@
 #define OPENMP_INFO
 #endif
 
+#define STRINGIZE(x) #x
+
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
-      "Copyright (C) Ian McCulloch 1999-2023\n"
+      "Copyright (C) Ian McCulloch 1999-2024\n"
+      "Copyright (C) Jesse Osborne 2021-2024\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
       "Compiler flags: " CONFIG_CXXFLAGS "\n"
       OPENMP_INFO
-      "Using Boost version " << (BOOST_VERSION / 100000)
-       << "." << (BOOST_VERSION / 100 % 1000)
-       << "." << (BOOST_VERSION % 100) << "\n"
-       "Post bugs at: " PACKAGE_BUGREPORT "\n"
+      "Using Boost version " << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << "\n"
+      "BLAS vendor: " << BLAS_Vendor() << "\n"
+      "BLAS version: " << BLAS_Version() << "\n"
+      "Post bugs at: " PACKAGE_BUGREPORT "\n"
       "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
       "This is free software, and you are welcome to redistribute it under certain conditions;\n"
       "run 'mp-info --copying' for details.\n"
@@ -75,6 +79,21 @@ void print_copyright(std::ostream& out)
       "and/or acknowledgements; run 'mp-info --citations' for details.\n"
       "Website: https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/\n"
       ;
+
+   if (BLAS_Vendor() == "MKL")
+   {
+      std::string v = BLAS_Version();
+      if (v.find("2020.0.4") != std::string::npos)
+      {
+         out << std::flush;
+         std::cerr <<  "\n****************************************************************************\n"
+                         "*WARNING*  *WARNING*  *WARNING* *WARNING*  *WARNING*  *WARNING*  *WARNING* *\n"
+                         "* The MKL version is 2020.0.4, which contains bugs in the SVD. Do not use! *\n"
+                         "*WARNING*  *WARNING*  *WARNING* *WARNING*  *WARNING*  *WARNING*  *WARNING* *\n"
+                         "****************************************************************************\n\n";
+         std::exit(EXIT_FAILURE);
+      }
+   }
 }
 
 void print_warranty(std::ostream& out)

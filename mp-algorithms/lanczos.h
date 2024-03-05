@@ -231,6 +231,15 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       if (i == Iterations-1) // finished?
       {
+         if (Verbose > 1)
+         {
+            VectorType Hy = MatVecMultiply(y);
+            VectorType Resid = Theta*y - Hy;
+            std::cerr << "lanczos: normal return. ResidNorm="
+                      << ResidNorm << ", Beta=" << Beta << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << ", ExactResidual=" << norm_frob(Resid) << '\n';
+
+         }
          Guess = y;
          Tol = -ResidNorm / SpectralDiameter;
          return Theta;

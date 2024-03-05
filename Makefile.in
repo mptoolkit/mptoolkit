@@ -14,6 +14,7 @@ HAVE_OPENMP = @HAVE_OPENMP@
 OPENMP_CXXFLAGS = @OPENMP_CXXFLAGS@
 
 HAVE_MPI = @HAVE_MPI@
+BLAS_VENDOR = @BLAS_VENDOR@
 MPICXX = @MPICXX@
 MPILIBS = @MPILIBS@
 
@@ -132,7 +133,7 @@ parserobj = parser.o
 
 mpobj = $(mpoobj) $(mpsobj) $(latticeobj) $(wavefunctionobj)
 
-commonobj = copyright.o niftycounter.o poolallocator.o proccontrol.o \
+commonobj = copyright.o blas_vendor.o niftycounter.o poolallocator.o proccontrol.o \
 	    halfint.o conflist.o terminal.o randutil.o unique.o openmp.o
 
 debugobj = backtrace.o debughandler.o
