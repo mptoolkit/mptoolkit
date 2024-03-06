@@ -222,7 +222,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-imoments mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
         mp-idivide mp-ies mp-irepeat mp-norm mp-allcorrelation \
-        mp-irotate mp-icorrelation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-dmrg-ee mp-random \
+        mp-irotate mp-icorrelation mp-itebd mp-coarsegrain mp-finegrain mp-dmrg mp-dmrg-3s mp-dmrg-2site mp-random \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
         mp-construct mp-change-lattice mp-ibc-create mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation \
@@ -486,7 +486,8 @@ mp-gmres-init : simplecg.o solver-gmres.o stateslist.o
 mp-gmres-resume : simplecg.o solver-gmres.o stateslist.o
 mp-trotter : mpexponential.o $(expokitobj)
 mp-dmrg : dmrg.o
-mp-dmrg-ee : dmrg.o
+mp-dmrg-3s : dmrg.o
+mp-dmrg-2site : dmrg.o
 mp-evolve-krylov : progressivekrylov.o krylovloop.o $(expokitobj)
 mp-evolve-magnus : progressivekrylov.o krylovloop.o $(expokitobj)
 mp-dmrg-2site : dmrg.o
@@ -540,7 +541,8 @@ mp-ies : infinitewavefunctionleft.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
-mp-dmrg-ee : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-dmrg-3s : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-dmrg-2site : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o

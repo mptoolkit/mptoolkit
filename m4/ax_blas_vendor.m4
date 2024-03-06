@@ -22,7 +22,16 @@ AC_LINK_IFELSE([AC_LANG_CALL([], [openblas_get_config])], [BLAS_VENDOR="OpenBLAS
 
 AC_MSG_RESULT([$BLAS_VENDOR])
 
-AC_DEFINE_UNQUOTED([BLAS_VENDOR], [$BLAS_VENDOR], [The vendor of the BLAS libary])
+AC_DEFINE_UNQUOTED([BLAS_VENDOR], ["$BLAS_VENDOR"], [The vendor of the BLAS libary])
+
+if test "x$BLAS_VENDOR" = "xMKL" ; then
+   AC_DEFINE([BLAS_VENDOR_MKL], [], [Using MKL])
+fi
+
+if test "x$BLAS_VENDOR" = "xOpenBLAS" ; then
+   AC_DEFINE([BLAS_VENDOR_OPENBLAS], [], [Using OpenBLAS])
+fi
+
 AC_SUBST([BLAS_VENDOR])
 
 ])dnl AX_BLAS_VENDOR

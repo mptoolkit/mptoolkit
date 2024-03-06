@@ -34,7 +34,7 @@ struct PreExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, NoExpansion };
    static constexpr std::array<char const*,5> Names = { "fullsvd", "rsvd", "range", "random", "none" };
-   static constexpr Enum Default = RangeFinding;
+   static constexpr Enum Default = NoExpansion;
    static constexpr char const* StaticName = "pre-expansion algorithm";
 };
 
@@ -44,7 +44,7 @@ struct PostExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, Mixing, NoExpansion };
    static constexpr std::array<char const*, 6> Names = { "fullsvd", "rsvd", "range", "random", "mixing", "none"};
-   static constexpr Enum Default = RangeFinding;
+   static constexpr Enum Default = RSVD;
    static constexpr char const* StaticName = "post-expansion algorithm";
 };
 
@@ -69,6 +69,8 @@ struct OversamplingInfo
    double Scale;
    int ExtraPerSector;
 };
+
+std::ostream& operator<<(std::ostream& out, OversamplingInfo const& x);
 
 class DMRG
 {
@@ -119,6 +121,12 @@ class DMRG
 
       void PrepareConvergenceTest();
       bool IsConverged() const;
+
+      // Coarse-grain the current site with the site on the right, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainRight(StatesInfo const& SInfo);
+
+      // Coarse-grain the current site with the site on the left, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& SInfo);
 
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);

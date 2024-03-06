@@ -6,6 +6,12 @@
 /* The vendor of the BLAS libary */
 #undef BLAS_VENDOR
 
+/* Using MKL */
+#undef BLAS_VENDOR_MKL
+
+/* Using OpenBLAS */
+#undef BLAS_VENDOR_OPENBLAS
+
 /* C++ compiler vendor */
 #undef CONFIG_COMPILER_VENDOR
 

@@ -42,6 +42,12 @@ using MessageLogger::msg_log;
 constexpr std::array<char const*,5> PreExpansionTraits::Names;
 constexpr std::array<char const*, 6> PostExpansionTraits::Names;
 
+std::ostream& operator<<(std::ostream& out, OversamplingInfo const& k)
+{
+   out << "Oversampling min: " << k.Add << " factor: " << k.Scale << " per-sector: " << k.ExtraPerSector << '\n';
+   return out;
+}
+
 // Helper function to construct a projector that removes the first and last components from a BasisList
 SimpleOperator ProjectRemoveFirstLast(BasisList const& B)
 {
@@ -918,6 +924,102 @@ DMRG::Solve()
    return IterationEnergy;
 }
 
+std::pair<std::complex<double>, TruncationInfo>
+DMRG::SolveCoarseGrainRight(StatesInfo const& States)
+{
+   auto R = C; ++R;
+   auto CoarseGrainBasis = make_product_basis(C->LocalBasis(), R->LocalBasis());
+   StateComponent X = local_tensor_prod(*C, *R);
+
+   auto HR = H; ++HR;
+   OperatorComponent HX = local_tensor_prod(*H, *HR);
+
+   HamMatrices.pop_right();
+
+   Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
+
+   // NOTE: *C is typically nearly, but not exactly normalized at this point.
+   // There is no point normalizing here, since we need to do it anyway after the truncation.
+
+   IterationEnergy = Solver_.LastEnergy();
+   IterationNumMultiplies = Solver_.LastIter();
+
+   IterationEnergyBeforeTrunc = IterationEnergy;
+
+   IterationEnergy = Solver_.LastEnergy();
+   IterationNumMultiplies = Solver_.LastIter();
+
+   IterationEnergyBeforeTrunc = IterationEnergy;
+
+   AMatSVD DM(X, CoarseGrainBasis);
+
+   TruncationInfo Info;
+   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   RealDiagonalOperator Lambda;
+   DM.ConstructMatrices(DM.begin(), DMPivot, *C, Lambda, *R);
+
+   Lambda *= 1.0 / norm_frob(Lambda); // normalize
+
+   // update block Hamiltonian
+   HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
+
+   // next site
+   ++Site;      // note: this is now one site ahead of the site that was optimized.
+   ++C;
+   *C = Lambda * (*C);
+   ++H;
+
+   IterationNumStates = Info.KeptStates();
+   IterationTruncation += Info.TruncationError();
+   IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+   return std::make_pair(IterationEnergy, Info);
+}
+
+std::pair<std::complex<double>, TruncationInfo>
+DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
+{
+
+   auto L = C; --L;
+   auto CoarseGrainBasis = make_product_basis(L->LocalBasis(), C->LocalBasis());
+   StateComponent X = local_tensor_prod(*L, *C);
+
+   auto HL = H; --HL;
+   OperatorComponent HX = local_tensor_prod(*HL, *H);
+
+   HamMatrices.pop_left();
+
+   Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
+
+   IterationEnergy = Solver_.LastEnergy();
+   IterationNumMultiplies = Solver_.LastIter();
+
+   IterationEnergyBeforeTrunc = IterationEnergy;
+
+   AMatSVD DM(X, CoarseGrainBasis);
+
+   TruncationInfo Info;
+   auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+   RealDiagonalOperator Lambda;
+   DM.ConstructMatrices(DM.begin(), DMPivot, *L, Lambda, *C);
+
+   Lambda *= 1.0 / norm_frob(Lambda); // normalize
+
+   // update block Hamiltonian
+   HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
+
+   // next site
+   --Site;         // note: this is now one site ahead of the site that was optimized.
+   --C;
+   *C = (*C) * Lambda;
+   --H;
+   IterationNumStates = Info.KeptStates();
+   IterationTruncation += Info.TruncationError();
+   IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+   return std::make_pair(IterationEnergy, Info);
+}
+
 bool DMRG::IsConverged() const
 {
    return IsConvergedValid && IsPsiConverged;
@@ -1170,7 +1272,7 @@ PreExpandBasis1(StateComponent const& L, StateComponent const& C, StateComponent
 {
    // quick return if we don't need to do anything
    if ((ExtraStates <= 0 && ExtraStatesPerSector <= 0) || Algo == PreExpansionAlgorithm::NoExpansion)
-      StateComponent(L.LocalBasis(), L.Basis1(), VectorBasis(L.GetSymmetryList()));
+      return StateComponent(L.LocalBasis(), L.Basis1(), VectorBasis(L.GetSymmetryList()));
 
    if (Algo == PreExpansionAlgorithm::SVD)
    {

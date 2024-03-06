@@ -10249,7 +10249,20 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 printf "%s\n" "$BLAS_VENDOR" >&6; }
 
 
-printf "%s\n" "#define BLAS_VENDOR $BLAS_VENDOR" >>confdefs.h
+printf "%s\n" "#define BLAS_VENDOR \"$BLAS_VENDOR\"" >>confdefs.h
+
+
+if test "x$BLAS_VENDOR" = "xMKL" ; then
+
+printf "%s\n" "#define BLAS_VENDOR_MKL /**/" >>confdefs.h
+
+fi
+
+if test "x$BLAS_VENDOR" = "xOpenBLAS" ; then
+
+printf "%s\n" "#define BLAS_VENDOR_OPENBLAS /**/" >>confdefs.h
+
+fi
 
 
 

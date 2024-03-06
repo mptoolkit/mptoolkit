@@ -24,9 +24,7 @@
 
 #include "blas_vendor.h"
 
-#if BLAS_VENDOR == MKL
-// MKL
-//
+#if defined(BLAS_VENDOR_MKL)
 
 extern "C" void mkl_get_version_string(char* buf, int len);
 
@@ -42,10 +40,7 @@ std::string BLAS_Version()
    return std::string(buf);
 }
 
-//
-#elif BLAS_VENDOR == OpenBLAS
-// OpenBLAS
-//
+#elif defined(BLAS_VENDOR_OPENBLAS)
 
 extern "C" char* openblas_get_config();
 
@@ -59,9 +54,8 @@ std::string BLAS_Version()
    return openblas_get_config();
 }
 
-//
-#elif BLAS_VENDOR == generic
-// generic
+#else
+// generic BLAS
 //
 
 std::string BLAS_Vendor()
@@ -73,9 +67,5 @@ std::string BLAS_Version()
 {
    return "(no version information available)";
 }
-
-#else
-
-#error "Unknown BLAS vendor " BLAS_VENDOR
 
 #endif
