@@ -722,8 +722,8 @@ iDMRG::UpdateRightBlock(double HMix)
       RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
    }
 
-   // Subtract off the energy
-   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
+   // Subtract off the energy.  Since the hamiltonian is E * herm(F) we need to conjugate here
+   RightHamiltonian.front().front() -= std::conj(Solver_.LastEnergy()) * RightHamiltonian.front().back();
 
    this->CheckConsistency();
 }
