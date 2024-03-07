@@ -82,7 +82,7 @@ class LocalEigensolver
       // void SetSolverParameter(std::string const& s);
 
       // information on the state of the solver
-      bool is_complex() const { return Solver_ == Solver::Arnoldi; }
+      bool is_complex() const { return Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiLowest; }
 
       std::complex<double> LastEnergy() const { return LastEnergy_; }
       double LastEnergyReal() const { return LastEnergy_.real(); }

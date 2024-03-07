@@ -910,7 +910,7 @@ iDMRG::ShowInfo(char c)
              << " Sweep=" << SweepNumber
              << " Energy=";
    if (Solver_.is_complex())
-      std::cout << Solver_.LastEnergy();
+      std::cout << formatting::format_complex(Solver_.LastEnergy());
    else
       std::cout << Solver_.LastEnergyReal();
    std::cout << " States=" << Info.KeptStates()
