@@ -76,12 +76,27 @@ int main(int argc, char** argv)
       pvalue_ptr<MPWavefunction> PsiPtr;
       PsiPtr = pheap::OpenPersistent(InputFile.c_str(), mp_pheap::CacheSize());
 
-      FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
-      normalize(Psi);
+      if (PsiPtr->is<FiniteWavefunctionLeft>())
+      {
+         FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
+         normalize(Psi);
+         PsiPtr.mutate()->Wavefunction() = Psi;
+      }
+      else if (PsiPtr->is<InfiniteWavefunctionLeft>())
+      {
+         PsiPtr.mutate()->get<InfiniteWavefunctionLeft>().normalize();
+      }
+      else if (PsiPtr->is<InfiniteWavefunctionRight>())
+      {
+         PsiPtr.mutate()->get<InfiniteWavefunctionRight>().normalize();
+      }
+      else
+      {
+         std::cerr << "mp-normalize: fatal: wavefunction type " << PsiPtr->Type() << " is not supported.\n";
+         return 1;
+      }
 
-      PsiPtr.mutate()->Wavefunction() = Psi;
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
-      PsiPtr.mutate()->SetDefaultAttributes();
 
       pheap::ShutdownPersistent(PsiPtr);
    }
