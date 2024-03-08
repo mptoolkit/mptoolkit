@@ -42,6 +42,7 @@ int main(int argc, char** argv)
       double K = 0.0;
       int LatticeUCSize = 1;
       std::string OutputFilename;
+      bool Normalize = false;
       bool Streaming = false;
       bool NoStreaming = false;
       bool Force = false;
@@ -55,6 +56,7 @@ int main(int argc, char** argv)
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the output wavefunction")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -149,13 +151,6 @@ int main(int argc, char** argv)
       UnitCellMPO Op;
       std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
 
-      if (Op.size() > 1)
-      {
-         // TODO
-         std::cerr << "fatal: multisite operators are not implemented yet." << std::endl;
-         return 1;
-      }
-
       // Set the lattice unit cell size.
       if (!vm.count("latticeucsize"))
          LatticeUCSize = Lattice.GetUnitCell().size();
@@ -171,7 +166,7 @@ int main(int argc, char** argv)
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
 
-      WavefunctionSectionLeft PsiWindow(PsiLeft);
+      WavefunctionSectionLeft PsiWindow(repeat(PsiLeft, Op.size()));
 
       LinearWavefunction PsiWindowLinear;
       MatrixOperator Lambda;
@@ -185,6 +180,16 @@ int main(int argc, char** argv)
 
       MatrixOperator Identity = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
       PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Identity, Verbose);
+
+      if (Normalize)
+      {
+         if (Verbose > 0)
+            std::cout << "Normalizing wavefunction..." << std::endl;
+
+         std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
+         Lambda *= 1.0 / norm_frob(Lambda);
+         PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Lambda, Verbose);
+      }
 
       EAWavefunction PsiEA(PsiLeft, std::vector<WavefunctionSectionLeft>(1, PsiWindow), PsiRight,
                            Op.qn1(), Op.qn2(), 0, 0, std::exp(std::complex<double>(0.0, math_const::pi) * (K * LatticeUCsPerPsiUC)));

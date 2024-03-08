@@ -188,8 +188,8 @@ int main(int argc, char** argv)
          SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
 
          // Ensure that the window starts and ends at the operator unit cell boundaries.
-         SitesLeft += (PsiLeft.size() - Psi.window_left_sites()) % Op.unit_cell_size();
-         SitesRight += (PsiRight.size() - Psi.window_right_sites()) % Op.unit_cell_size();
+         SitesLeft += (PsiLeft.size() - Psi.window_left_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor());
+         SitesRight += (PsiRight.size() - Psi.window_right_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor());
 
          // The new window offset.
          NewOffset = Psi.window_offset() - SitesLeft;

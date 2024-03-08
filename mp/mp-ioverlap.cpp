@@ -48,15 +48,16 @@ bool operator<(TransEigenInfo const& x, TransEigenInfo const& y)
    return LinearAlgebra::norm_frob_sq(x.x) > LinearAlgebra::norm_frob_sq(y.x);
 }
 
-void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumEigen,
-                 bool ShowRealPart, bool ShowImagPart,
+void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x,
+                 bool ShowSector, bool ShowNum, bool ShowRealPart, bool ShowImagPart,
                  bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
    std::string SectorStr = boost::lexical_cast<std::string>(q);
    std::complex<double> Value = std::pow(x, ScaleFactor);
-   std::cout << std::setw(11) << SectorStr << ' ';
-   if (NumEigen > 1)
+   if (ShowSector)
+      std::cout << std::setw(11) << SectorStr << ' ';
+   if (ShowNum)
    {
       std::cout << std::setw(6) << n << ' ';
    }
@@ -90,7 +91,6 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x, int NumE
          Arg *= 180.0 / math_const::pi;
       std::cout << std::setw(20) << Arg << "    ";
    }
-   std::cout << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -116,6 +116,12 @@ int main(int argc, char** argv)
       int CoarseGrain2 = 1;
       int NumEigen = 1; // number of eigenvalues to calculate
       bool Scale = false; // scale the overlap by 1 / sqrt(<psi1|psi1> <psi2|psi2>)
+      bool ShowSector = false;
+      bool NoShowSector = false;
+      bool ShowNum = false;
+      bool NoShowNum = false;
+      bool OneLine = false;
+      bool PadZero = false;
       std::string String;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -166,8 +172,13 @@ int main(int argc, char** argv)
           FormatDefault("Tolerance of the Arnoldi eigensolver", Tol).c_str())
          // ("iter", prog_opt::value(&Iter),
          //  FormatDefault("Maximum subspace size in the Arnoldi basis", Iter).c_str())
-         ("quiet", prog_opt::bool_switch(&Quiet),
-          "don't show the column headings")
+         ("quiet", prog_opt::bool_switch(&Quiet), "don't show the column headings")
+         ("showsector", prog_opt::bool_switch(&ShowSector), "Always show the 'sector' column")
+         ("no-showsector", prog_opt::bool_switch(&NoShowSector), "Never show the 'sector' column")
+         ("shownum", prog_opt::bool_switch(&ShowNum), "Always show the 'n' column (eigenvalue number)")
+         ("no-shownum", prog_opt::bool_switch(&NoShowNum), "Never show the 'n' column (eigenvalue number)")
+         ("oneline", prog_opt::bool_switch(&OneLine), "Show all output on one line")
+         ("pad-zero", prog_opt::bool_switch(&PadZero), "If there are less than n eigenvalues, then pad with zeros")
          ("print", prog_opt::bool_switch(&Print), "with --string, Print the MPO to standard output")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
@@ -197,6 +208,15 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> [<psi2>]\n";
          std::cerr << desc << '\n';
          return 1;
+      }
+
+      if (ShowSector && NoShowSector) // if both are specified, revert to default
+      {
+         ShowSector = NoShowSector = false;
+      }
+      if (ShowNum && NoShowNum) // if both are specified, revert to default
+      {
+         ShowNum = NoShowNum = false;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
@@ -379,6 +399,11 @@ int main(int argc, char** argv)
             }
          }
       }
+      if (Sectors.size() > 1 && !NoShowSector)
+         ShowSector = true;
+
+      if (NumEigen > 1 && !NoShowNum)
+         ShowNum = true;
 
       if (!Quiet)
       {
@@ -394,22 +419,28 @@ int main(int argc, char** argv)
             << Psi2.log_amplitude() * (double(UnitCellSize)/Psi2.size()) << '\n';
          if (Scale)
             std::cout << "#overlap will be scaled by 1/amplitude\n";
-         std::cout << "#sector     ";
-         if (NumEigen > 1)
-            std::cout << "#n     ";
-         if (ShowRealPart)
-            std::cout << "#real                   ";
-         if (ShowImagPart)
-            std::cout << "#imag                   ";
-         if (ShowCorrLength)
-            std::cout << "#corr_length            ";
-         if (ShowRate)
-            std::cout << "#rate                   ";
-         if (ShowMagnitude)
-            std::cout << "#magnitude              ";
-         if (ShowArgument)
-            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
-         std::cout << '\n';
+         if (!ShowSector && Sectors.size() == 1)
+            std::cout << "#quantum number sector is " << *Sectors.begin() << '\n';
+         if (!OneLine)
+         {
+            if (ShowSector)
+               std::cout << "#sector     ";
+            if (ShowNum)
+               std::cout << "#n     ";
+            if (ShowRealPart)
+               std::cout << "#real                   ";
+            if (ShowImagPart)
+               std::cout << "#imag                   ";
+            if (ShowCorrLength)
+               std::cout << "#corr_length            ";
+            if (ShowRate)
+               std::cout << "#rate                   ";
+            if (ShowMagnitude)
+               std::cout << "#magnitude              ";
+            if (ShowArgument)
+               std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+            std::cout << '\n';
+         }
       }
       std::cout << std::left;
 
@@ -426,8 +457,12 @@ int main(int argc, char** argv)
          int Length;
          std::tie(Eigen, Length) = overlap(Psi1, StringOp, Psi2, NumEigen, *I, !Scale, Tol, Verbose);
          ScaleFactor = double(UnitCellSize) / double(Length);
+         while (PadZero && Eigen.size() < NumEigen)  // pad the eigenvalues to NumEigen, if requested
+         {
+            Eigen.push_back({0.0, 0.0});
+         }
 
-         if (Sort)
+         if (Sort || OneLine)
          {
             int n = 0;
             for (auto const& e : Eigen)
@@ -440,21 +475,52 @@ int main(int argc, char** argv)
             int n = 0;
             for (auto const& e : Eigen)
             {
-               PrintFormat(*I, n++, e, NumEigen, ShowRealPart, ShowImagPart,
+               PrintFormat(*I, n++, e, ShowSector, ShowNum, ShowRealPart, ShowImagPart,
                   ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
+               std::cout << std::endl;
             }
 
          }
       }
 
-      if (Sort)
+      if (Sort || OneLine)
       {
-         std::sort(EigenList.begin(), EigenList.end());
+         if (Sort)
+            std::sort(EigenList.begin(), EigenList.end());
+
+         if (OneLine && !Quiet)
+         {
+            int i = 0;
+            for (auto const& e : EigenList)
+            {
+               std::string Suffix = "_" + std::to_string(i++);
+               if (ShowSector)
+                  std::cout << std::setw(12) << std::string("#sector" + Suffix);
+               if (ShowNum)
+                  std::cout << std::setw(7) << std::string("#n" + Suffix);
+               if (ShowRealPart)
+                  std::cout << std::setw(24) << std::string("#real" + Suffix);
+               if (ShowImagPart)
+                  std::cout << std::setw(24) << std::string("#imag" + Suffix);
+               if (ShowCorrLength)
+                  std::cout << std::setw(24) << std::string("#corr_length" + Suffix);
+               if (ShowRate)
+                  std::cout << std::setw(24) << std::string("#rate" + Suffix);
+               if (ShowMagnitude)
+                  std::cout << std::setw(24) << std::string("#magnitude" + Suffix);
+               if (ShowArgument)
+                  std::cout << std::setw(24) << std::string("#argument" + Suffix + (ShowRadians ? "(rad)" : "(deg)"));
+            }
+            std::cout << '\n';
+         }
          for (auto const& e : EigenList)
          {
-            PrintFormat(e.q, e.n, e.x, NumEigen, ShowRealPart, ShowImagPart,
-               ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
+            PrintFormat(e.q, e.n, e.x, ShowSector, ShowNum, ShowRealPart, ShowImagPart, ShowCorrLength, ShowRate, ShowMagnitude, ShowArgument, ShowRadians, ScaleFactor);
+            if (!OneLine)
+               std::cout << '\n';
          }
+         if (OneLine)
+            std::cout << std::endl;
       }
 
 

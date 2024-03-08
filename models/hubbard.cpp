@@ -47,7 +47,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.set_description("Fermi Hubbard model (no symmetry)");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_tup"    , "nearest neighbor hopping for up spins")

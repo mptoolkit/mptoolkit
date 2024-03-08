@@ -313,7 +313,21 @@ LocalEigensolver::Solve(StateComponent& C,
       C = MakeRandomStateComponent(C.LocalBasis(), C.Basis1(), C.Basis2());
    }
 
-   if (EvolveDelta == 0.0)
+   if (EvolveDelta != 0.0)
+   {
+      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
+      LastEnergy_ = inner_prod(ROld, C);
+
+      // We have no way of knowing a priori whether to expect the energy to be real or complex
+      if (std::abs(LastEnergy_.imag()) < 1e-14*std::abs(LastEnergy_.real()))
+         LastEnergy_ = LastEnergy_.real();
+
+      C = ROld - EvolveDelta * C; // imaginary time evolution step
+      C *= 1.0 / norm_frob(C);    // normalize
+      LastIter_ = 1;
+      LastTol_ = 0.0;
+   }
+   else
    {
       LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
       LastTol_ = std::max(LastTol_, MinTol);
@@ -327,83 +341,83 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       if (Solver_ == Solver::Lanczos)
       {
-         LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),LastIter_, LastTol_, MinIter, Verbose-1);
+         LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam), LastIter_, LastTol_, MinIter, Verbose-1);
       }
       else if (Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiSmallest)
       {
          LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-					      LastIter_, LastTol_,
-					      LinearSolvers::SmallestMagnitude,
-					      true, Verbose-1);
+         			      LastIter_, LastTol_,
+         			      LinearSolvers::SmallestMagnitude,
+         			      true, Verbose-1);
       }
       else if (Solver_ == Solver::ArnoldiLowest)
       {
          LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-					      LastIter_, LastTol_,
-					      LinearSolvers::SmallestAlgebraicReal,
-					      true, Verbose-1);
+         		      LastIter_, LastTol_,
+         		      LinearSolvers::SmallestAlgebraicReal,
+         		      true, Verbose-1);
       }
       else if (Solver_ == Solver::ShiftInvert)
       {
-      StateComponent RHS = C;
-      if (UsePreconditioning)
-      {
-         if (Verbose > 2)
-      {
-         std::cerr << "Using diagonal preconditioning\n";
-      }
-      StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+         StateComponent RHS = C;
+         if (UsePreconditioning)
+         {
+            if (Verbose > 2)
+            {
+               std::cerr << "Using diagonal preconditioning\n";
+            }
+            StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
 
-#if !defined(NDEBUG)
-	    // debug check the diagonal
-	    LinearAlgebra::Matrix<std::complex<double>> HMat = ConstructSuperOperator(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), D);
-	    PackStateComponent Pack(D);
-   	    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
-	    Pack.pack(D, v.data());
-	    LinearAlgebra::Vector<double> Diag = real(v);
-	    for (int i = 0; i < size(Diag); ++i)
-	    {
-	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
-	       {
-		         PANIC(i)(Diag[i])(HMat(i,i));
-	       }
-	    }
-#endif
+            #if !defined(NDEBUG)
+            // debug check the diagonal
+            LinearAlgebra::Matrix<std::complex<double>> HMat = ConstructSuperOperator(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), D);
+            PackStateComponent Pack(D);
+             LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
+            Pack.pack(D, v.data());
+            LinearAlgebra::Vector<double> Diag = real(v);
+            for (int i = 0; i < size(Diag); ++i)
+            {
+               if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
+               {
+                  PANIC(i)(Diag[i])(HMat(i,i));
+               }
+            }
+            #endif
 
-	    //	    TRACE(D);
-	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-			InverseDiagonalPrecondition(D, ShiftInvertEnergy),
-			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
-	    //TRACE(C);
-	 }
-	 else
-	 {
-	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-			LinearAlgebra::Identity<StateComponent>(),
-			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
-	 }
+            //	    TRACE(D);
+            LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+            InverseDiagonalPrecondition(D, ShiftInvertEnergy),
+            RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+            //TRACE(C);
+         }
+         else
+         {
+          LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+         	LinearAlgebra::Identity<StateComponent>(),
+         	RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+         }
 
-	 // normalization
-	 double CNorm = norm_frob(C);
-	 //TRACE(CNorm);
-	 // Adjust tol by CNorm to give a more realistic estimate
-	 //LastTol_ /= CNorm;
-	 C *= 1.0 / CNorm;
-	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+         // normalization
+         double CNorm = norm_frob(C);
+         //TRACE(CNorm);
+         // Adjust tol by CNorm to give a more realistic estimate
+         //LastTol_ /= CNorm;
+         C *= 1.0 / CNorm;
+         LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
       }
       else if (Solver_ == Solver::ShiftInvertDirect)
       {
-	 StateComponent RHS = C;
-	 //TRACE(ShiftInvertEnergy);
-	 LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
-	 LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);
-	 // normalization
-	 double CNorm = norm_frob(C);
-	 //TRACE(CNorm);
-	 // Adjust tol by CNorm to give a more realistic estimate
-	 //LastTol_ /= CNorm;
-	 C *= 1.0 / CNorm;
-	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+         StateComponent RHS = C;
+         //TRACE(ShiftInvertEnergy);
+         LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
+         LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);
+         // normalization
+         double CNorm = norm_frob(C);
+         //TRACE(CNorm);
+         // Adjust tol by CNorm to give a more realistic estimate
+         //LastTol_ /= CNorm;
+         C *= 1.0 / CNorm;
+         LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
       }
       else if (Solver_ == Solver::DavidsonTarget)
       {
@@ -422,17 +436,8 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       else
       {
-	 PANIC("Unsupported solver")(SolverStr(Solver_));
+         PANIC("Unsupported solver")(SolverStr(Solver_));
       }
-   }
-   else
-   {
-      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
-      LastEnergy_ = inner_prod(ROld, C).real();
-      C = ROld - EvolveDelta * C; // imaginary time evolution step
-      C *= 1.0 / norm_frob(C);    // normalize
-      LastIter_ = 1;
-      LastTol_ = 0.0;
    }
 
    LastFidelityLoss_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);

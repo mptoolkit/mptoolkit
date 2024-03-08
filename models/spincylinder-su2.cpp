@@ -103,7 +103,6 @@ int main(int argc, char** argv)
             J2d += inner(S(0)[i], S(1)[i+1]);
          }
          J1x += inner(S(0)[x-1], S(y+1)[0]);
-         J1x += inner(S(0)[x-1], S(y+1)[0]);
          J2d += inner(S(0)[x-1], S(y+2)[0]);
          for (int i = 0; i < x; ++i)
          {

@@ -129,31 +129,53 @@ int ipow(int x, int p)
 }
 
 void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
-                   bool Quiet, bool ShowRealPart, bool ShowImagPart,
+                   bool OneLine, bool Quiet, bool ShowRealPart, bool ShowImagPart,
                    bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
                    double ScaleFactor)
 {
+   std::cout << std::left;
    if (!Quiet)
    {
-      std::cout << "#cumulant ";
-      if (ShowRealPart)
-         std::cout << "#real                   ";
-      if (ShowImagPart)
-         std::cout << "#imag                   ";
-      if (ShowMagnitude)
-         std::cout << "#magnitude              ";
-      if (ShowArgument)
-         std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      if (OneLine)
+      {
+         for (int i = 1; i < Cumulants.size(); ++i)
+         {
+               std::string Suffix = "_" + std::to_string(i);
+            if (ShowRealPart)
+               std::cout << std::setw(24) << std::string("#real" + Suffix);
+            if (ShowImagPart)
+               std::cout << std::setw(24) << std::string("#imag" + Suffix);
+            if (ShowMagnitude)
+               std::cout << std::setw(24) << std::string("#magnitude" + Suffix);
+            if (ShowArgument)
+               std::cout << std::setw(24) << std::string("#argument" + Suffix + (ShowRadians ? "(rad)" : "(deg)"));
+            }
+      }
+      else
+      {
+         std::cout << "#cumulant ";
+         if (ShowRealPart)
+            std::cout << "#real                   ";
+         if (ShowImagPart)
+            std::cout << "#imag                   ";
+         if (ShowMagnitude)
+            std::cout << "#magnitude              ";
+         if (ShowArgument)
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      }
       std::cout << '\n';
    }
-   std::cout << std::left;
    for (unsigned n = 1; n < Cumulants.size(); ++n)
    {
-      std::cout << std::setw(9) << n << ' ';
+      if (!OneLine)
+         std::cout << std::setw(9) << n << ' ';
       PrintFormat(Cumulants[n]*ScaleFactor, ShowRealPart,
                   ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
-      std::cout << '\n';
+      if (!OneLine)
+         std::cout << '\n';
    }
+   if (OneLine)
+      std::cout << '\n';
 }
 
 // given an array of moment polynomials (ordered by degree, and in multiples of the
@@ -289,6 +311,7 @@ int main(int argc, char** argv)
    double Tol = 1E-15;
    bool ShouldShowAllComponents = false;
    std::string Sector;
+   bool OneLine = false;
 
    try
    {
@@ -321,6 +344,7 @@ int main(int argc, char** argv)
          ("degree,d", prog_opt::value(&Degree),
           "force setting the degree of the MPO")
          ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("oneline", prog_opt::bool_switch(&OneLine), "Show all output on one line (currently only works with --cumulants)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
@@ -333,8 +357,8 @@ int main(int argc, char** argv)
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
-	 ("showall", prog_opt::bool_switch(&ShouldShowAllComponents), "show all columns of the fixed-point "
-	  "solutions (mostly for debugging)")
+	      ("showall", prog_opt::bool_switch(&ShouldShowAllComponents), "show all columns of the fixed-point "
+          "solutions (mostly for debugging)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -480,11 +504,17 @@ int main(int argc, char** argv)
          std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
          std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
                    << (UnitCellSize == 1 ? " site\n" : " sites\n");
+         std::cout << "#quantum number sector is " << q << '\n';
       }
 
       std::complex<double> lambda;
       MatrixOperator TLeft, TRight;
       std::tie(lambda, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, q);
+
+      if (!Quiet)
+      {
+         std::cout << "#transfer matrix eigenvalue = " << formatting::format_complex(lambda) << '\n';
+      }
 
       TRight = delta_shift(TRight, Psi2.qshift());
 
@@ -507,6 +537,11 @@ int main(int argc, char** argv)
 
       LinearWavefunction Phi1 = get_left_canonical(Psi1).first;
       LinearWavefunction Phi2 = get_left_canonical(Psi2).first;
+
+      // This does the equivalent.  Probably would have been easier to implement it this way in the first place,
+      // but maybe more general to have lambda as an explicit argument?
+      Phi2 *= (1.0 / lambda);
+      lambda = 1.0;
 
       // first power
       std::vector<KMatrixPolyType> E;
@@ -581,7 +616,7 @@ int main(int argc, char** argv)
             std::cout << '\n';
 
          std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
-         ShowCumulants(Cumulants, Quiet, ShowRealPart,
+         ShowCumulants(Cumulants, OneLine, Quiet, ShowRealPart,
                        ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
                        ScaleFactor);
       }

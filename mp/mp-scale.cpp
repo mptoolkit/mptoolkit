@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 
       if (Psi->is<FiniteWavefunctionLeft>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             x = std::exp(x);
          }
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionLeft>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             if (vm.count("unitcell"))
             {
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionRight>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             if (vm.count("unitcell"))
             {
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
          }
          else
          {
-            if (vm.count("unitcell"))
+            if (Log)
             {
                int u = Psi->get<InfiniteWavefunctionRight>().size();
                x = std::pow(x, double(u) / double(UnitCell));
