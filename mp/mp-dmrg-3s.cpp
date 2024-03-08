@@ -46,14 +46,14 @@
 
 namespace prog_opt = boost::program_options;
 
-void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
+void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum, double MixFactor)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
    while (dmrg.Site < dmrg.RightStop)
    {
       dmrg.Solve();
-      TruncationInfo States = dmrg.TruncateAndShiftRight(SInfo);
+      TruncationInfo States = dmrg.TruncateAndShiftRight3S(SInfo, MixFactor);
       std::cout << "Sweep=" << SweepNum
 		<< " Site=" << dmrg.Site
 		<< " Energy=";
@@ -72,14 +72,14 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
+void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum, double MixFactor)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
    while (dmrg.Site > dmrg.LeftStop)
    {
       dmrg.Solve();
-      TruncationInfo States = dmrg.TruncateAndShiftLeft(SInfo);
+      TruncationInfo States = dmrg.TruncateAndShiftLeft3S(SInfo, MixFactor);
       std::cout << "Sweep=" << SweepNum
 		<< " Site=" << dmrg.Site
 		<< " Energy=";
@@ -109,7 +109,6 @@ int main(int argc, char** argv)
       int MinIter = 4;
       int MaxStates = 100000;
       double MixFactor = 0.01;
-      double RandomMixFactor = 0.0;
       bool TwoSite = false;
       int NumSweeps = 10;
       double TruncCutoff = 0;
@@ -147,8 +146,6 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
           FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-         ("random-mix-factor", prog_opt::value(&RandomMixFactor),
-          FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -246,8 +243,6 @@ int main(int argc, char** argv)
       dmrg.Solver().SetSubspaceSize(SubspaceSize);
       dmrg.Solver().SetPreconditioning(UsePreconditioning);
 
-      dmrg.MixFactor = MixFactor;
-
       StatesInfo SInfo;
       SInfo.MinStates = 1;
       SInfo.MaxStates = MaxStates;
@@ -267,35 +262,24 @@ int main(int argc, char** argv)
       std::cout << "Number of half-sweeps: " << NumSweeps << std::endl;
       std::cout << "Using solver: " << Solver << std::endl;
 
+      int ZeroEnvCount = 0;;
+      double ModFactor = 1;
       for (int Sweeps = 0; Sweeps < MyStates.size(); ++Sweeps)
       {
-	 SInfo.MaxStates = MyStates[Sweeps].NumStates;
-         if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, SInfo, Sweeps+1);
-         else
-            SweepRight(dmrg, SInfo, Sweeps+1);
-
-#if 0
-         // the dmrg.Wavefunction() is not normalized anymore
-         double Norm2 = norm_2_sq(dmrg.Wavefunction());
-
-         // We need to re-calculate the energy, since it will have changed slightly after the truncation
-         double E = dmrg.Energy()/Norm2;
-         std::cout << "E = " << E << '\n';
-
-         if (CalculateH2)
+         SInfo.MaxStates = MyStates[Sweeps].NumStates;
+         if (MyStates[Sweeps].ZeroEnv)
          {
-            double h2 = std::abs(expectation(dmrg.Wavefunction(), Ham2, dmrg.Wavefunction()))/Norm2;
-            double nh2 = h2 - E*E;
-            std::cout << "(H-E)^2 = " << nh2 << '\n';
+            ++ZeroEnvCount;
+            int ZeroEnvRemain = 0;
+            for (int s = Sweeps+1; s < MyStates.size() && MyStates[s].ZeroEnv; ++s)
+               ++ZeroEnvRemain;
+            ModFactor = double(ZeroEnvRemain) / double(ZeroEnvRemain+ZeroEnvCount);
          }
 
-         Psi = dmrg.Wavefunction();
-         double Overlap = dmrg.FidelityLoss();
-
-         std::cout << "Wavefunction difference from last half-sweep = " << Overlap << '\n';
-         OldPsi = Psi;
-#endif
+         if (Sweeps % 2 == 0)
+            SweepLeft(dmrg, SInfo, Sweeps+1, MixFactor*ModFactor);
+         else
+            SweepRight(dmrg, SInfo, Sweeps+1, MixFactor*ModFactor);
       }
 
       // finished the iterations.

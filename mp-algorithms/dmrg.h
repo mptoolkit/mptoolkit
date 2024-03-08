@@ -131,6 +131,10 @@ class DMRG
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
 
+      // The old 3S algorithm
+      TruncationInfo TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor);
+      TruncationInfo TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor);
+
       // Expand the environment basis to that it contains at least StatesWanted states, if possible.
       // Returns the actual environment size.
       int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
@@ -172,7 +176,6 @@ class DMRG
       double SweepStartTime;         // wall time at the start of the sweep
       double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
       double SweepEnergyError;       // standard error of the energy at each iteration
-      double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
 
       PreExpansionAlgorithm PreExpansionAlgo;
       PostExpansionAlgorithm PostExpansionAlgo;
@@ -208,7 +211,6 @@ class DMRG
       LocalEigensolver Solver_;
       int Verbose;
 
-      double MixFactor;
       StateComponent PsiPrevC;
 };
 

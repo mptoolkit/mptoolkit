@@ -199,7 +199,7 @@ int main(int argc, char** argv)
       PreExpand.ExpandPerSector = 0;
 
       PostExpand.IncrementFactor = 1.0;
-      PostExpand.ExpandFactor = 0.1;
+      PostExpand.ExpandFactor = 0.05;
       PostExpand.ExpandPerSector = 0;
 
       std::cout.precision(14);

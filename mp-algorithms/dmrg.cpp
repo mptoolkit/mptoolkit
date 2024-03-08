@@ -673,7 +673,6 @@ PStream::opstream& operator<<(PStream::opstream& out, DMRG const& d)
               << d.SweepStartTime
               << d.SweepTruncatedEnergy
               << d.SweepEnergyError
-              << d.SweepLastMixFactor
 
               << d.IterationNumMultiplies
               << d.IterationNumStates
@@ -713,7 +712,6 @@ PStream::ipstream& operator>>(PStream::ipstream& in, DMRG& d)
              >> d.SweepStartTime
              >> d.SweepTruncatedEnergy
              >> d.SweepEnergyError
-             >> d.SweepLastMixFactor
 
              >> d.IterationNumMultiplies
              >> d.IterationNumStates
@@ -882,23 +880,7 @@ void DMRG::EndSweep()
    int Converged = this->IsConverged();
    double SweepTime = ProcControl::GetCumulativeElapsedTime() - SweepStartTime;
 
-   msg_log(1, "SweepLog") << TotalSweepNumber << ' '
-                          << TotalSweepRecNumber << ' '
-                          << SweepNumIterations << ' '
-                          << SweepMaxStates << ' '
-                          << SweepNumMultiplies << ' '
-                          << SweepTime << ' '
-                          << std::max(SweepTruncation, 0.0) << ' '
-                          << SweepTruncatedEnergy << ' '
-                          << SweepEnergyError << ' '
-                          << SweepEntropy << ' '
-                          << Overlap << ' '
-                          << OverlapDifference << ' '
-                          << SweepEnergy << ' '
-                          << SweepLastMixFactor << ' '
-                          << Converged
-                          << std::endl;
-   msg_log(1, "EnergyLog") << std::flush;
+   // this is where we would write some log info per sweep
 }
 
 std::complex<double>
@@ -1546,6 +1528,198 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraSt
 
    return Info;
 }
+
+std::pair<MatrixOperator, RealDiagonalOperator>
+SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
+                     double MixFactor, StatesInfo const& States, TruncationInfo& Info,
+                     StateComponent const& LeftHam)
+{
+#if defined(SSC)
+   MatrixOperator Lambda;
+   SimpleStateComponent CX;
+   std::tie(Lambda, CX) = ExpandBasis1_(C);
+#else
+   MatrixOperator Lambda = ExpandBasis1(C);
+#endif
+
+   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
+   if (MixFactor > 0)
+   {
+#if defined(SSC)
+      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
+#else
+      StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
+#endif
+      MatrixOperator RhoMix;
+      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
+
+      // Skip the identity and the Hamiltonian
+      for (unsigned i = 1; i < RH.size()-1; ++i)
+      {
+         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
+         if (Prefactor == 0)
+            Prefactor = 1;
+         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
+	 //TRACE(i)(Prefactor);
+      }
+      // check for a zero mixing term - can happen if there are no interactions that span
+      // the current bond
+      double RhoTrace = trace(RhoMix).real();
+      if (RhoTrace != 0)
+         Rho += (MixFactor / RhoTrace) * RhoMix;
+   }
+
+   DensityMatrix<MatrixOperator> DM(Rho);
+   //DM.DensityMatrixReport(std::cout);
+   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
+      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
+                                         States,
+                                         Info);
+
+   std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
+   std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+
+   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   Lambda = Lambda * herm(UKeep);
+
+   //TRACE(Lambda);
+
+#if defined(SSC)
+   C = UKeep*CX; //prod(U, CX);
+#else
+   C = prod(UKeep, C);
+#endif
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
+
+   //TRACE(U)(D)(Vh);
+
+   C = prod(Vh, C);
+   return std::make_pair(U, D);
+}
+
+// Apply subspace expansion / truncation on the right (C.Basis2()).
+// Returns Lambda matrix (diagonal) and a unitary matrix
+// Postcondition: C' Lambda' U' = C (up to truncation!)
+std::pair<RealDiagonalOperator, MatrixOperator>
+SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
+                     double MixFactor, StatesInfo const& States, TruncationInfo& Info,
+                     StateComponent const& RightHam)
+{
+   MatrixOperator Lambda = ExpandBasis2(C);
+
+   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
+   if (MixFactor > 0)
+   {
+      StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
+      MatrixOperator RhoMix;
+
+      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
+
+      for (unsigned i = 1; i < LH.size()-1; ++i)
+      {
+         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
+         if (Prefactor == 0)
+            Prefactor = 1;
+         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
+	 //	 TRACE(i)(Prefactor);
+      }
+      double RhoTrace = trace(RhoMix).real();
+      if (RhoTrace != 0)
+         Rho += (MixFactor / RhoTrace) * RhoMix;
+   }
+   DensityMatrix<MatrixOperator> DM(Rho);
+   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
+      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
+                                         States,
+                                         Info);
+   std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
+   std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+
+   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+
+   Lambda = UKeep * Lambda;
+   C = prod(C, herm(UKeep));
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
+
+   C = prod(C, U);
+
+   return std::make_pair(D, Vh);
+}
+
+TruncationInfo DMRG::TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor)
+{
+   MatrixOperator U;
+   RealDiagonalOperator Lambda;
+   TruncationInfo Info;
+   LinearWavefunction::const_iterator CNext = C;
+   --CNext;
+   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor, States, Info, HamMatrices.left());
+
+   if (Verbose > 1)
+   {
+      std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
+   }
+   // update blocks
+   HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
+   HamMatrices.pop_left();
+
+   // next site
+   --Site;
+   --H;
+   --C;
+
+   *C = prod(*C, U*Lambda);
+
+   // normalize
+   *C *= 1.0 / norm_frob(*C);
+
+   IterationNumStates = Info.KeptStates();
+   IterationTruncation += Info.TruncationError();
+   IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+   return Info;
+}
+
+TruncationInfo DMRG::TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor)
+{
+   // Truncate right
+   RealDiagonalOperator Lambda;
+   MatrixOperator U;
+   TruncationInfo Info;
+   LinearWavefunction::const_iterator CNext = C;
+   ++CNext;
+   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixFactor, States, Info, HamMatrices.right());
+   if (Verbose > 1)
+   {
+      std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
+   }
+   // update blocks
+   HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
+   HamMatrices.pop_right();
+
+   // next site
+   ++Site;
+   ++H;
+   ++C;
+
+   *C = prod(Lambda*U, *C);
+
+   // normalize
+   *C *= 1.0 / norm_frob(*C);
+
+   IterationNumStates = Info.KeptStates();
+   IterationTruncation += Info.TruncationError();
+   IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+   return Info;
+}
+
 
 void DMRG::debug_check_structure() const
 {
