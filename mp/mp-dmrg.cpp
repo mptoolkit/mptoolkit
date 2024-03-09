@@ -46,6 +46,8 @@
 
 namespace prog_opt = boost::program_options;
 
+bool Flush = false;
+
 void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 {
    double SweepTruncation = 0;
@@ -67,6 +69,8 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
@@ -93,6 +97,8 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
@@ -166,12 +172,11 @@ int main(int argc, char** argv)
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
          ("no-keep-list", prog_opt::bool_switch(&NoKeepList), "Don't use the KeepList for quantum number subspaces")
-	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
-	  "For the shift-invert and shift-invert-direct solver, the target energy")
-	 ("subspacesize", prog_opt::value(&SubspaceSize),
-	  FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
-	 ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
+	      ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy), "For the shift-invert and shift-invert-direct solver, the target energy")
+	      ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
+	      ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
+         ("flush", prog_opt::bool_switch(&Flush), "Flush terminal output after each line")
           ;
 
       prog_opt::options_description opt;

@@ -103,6 +103,8 @@ int main(int argc, char** argv)
       std::string SplitOutputPrefix;
       bool Entropy = false;
       std::vector<double> Renyi;
+      bool Conj = false;
+      bool Reflect = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -114,7 +116,8 @@ int main(int argc, char** argv)
          ("qsector,q", prog_opt::value(&QSector), "Quantum number sector of the transfer operator [default scalar sector]")
          ("entropy,e", prog_opt::bool_switch(&Entropy), "Calculate the von Neumann entropy")
          ("reyni,a", prog_opt::value(&Renyi), "Calculate the Renyi entropy for this value of alpha (can be used more than once)")
-
+         ("conj", prog_opt::bool_switch(&Conj), "complex conjugate psi1")
+         ("reflect", prog_opt::bool_switch(&Reflect), "reflect psi1")
          ("sectors", prog_opt::bool_switch(&SplitBySectors), "sort output by quantum number sector")
          ("sectors-prefix", prog_opt::value(&SplitOutputPrefix),
           "Write the output to a separate file for each quantum number sector prefix.sector.dat")
@@ -171,6 +174,19 @@ int main(int argc, char** argv)
       auto q = QuantumNumber(Psi1.GetSymmetryList());
       if (vm.count("qsector"))
          q = QuantumNumber(Psi1.GetSymmetryList(), QSector);
+
+      if (Reflect)
+      {
+         if (Verbose)
+            std::cout << "Reflecting psi1..." << std::endl;
+         inplace_reflect(Psi1);
+      }
+      if (Conj)
+      {
+         if (Verbose)
+            std::cout << "Conjugating psi1..." << std::endl;
+         inplace_conj(Psi1);
+      }
 
       // Get the matrix
       std::complex<double> e;
