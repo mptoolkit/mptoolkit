@@ -291,7 +291,7 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Move the temp file to the actual filename
       mv "$temp_file" "$file"
-      echo "Updated header in $file"
+      echo "Updated header of $file"
       if $backup; then
          echo "Old version saved as $file.bak"
       fi
@@ -304,7 +304,10 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Add new header to the temporary file
       new_header=$(get_header "$file") || exit 1
-      echo -e "$new_header\n$(cat "$file")" > "$temp_file"
+      echo -e "$new_header" > "$temp_file"
+      # add a blank line, if there wasn't one already
+      [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
+      cat "$file" >> "$temp_file"
 
       # Backup the original file if --backup is specified
       if $backup; then
