@@ -99,30 +99,30 @@ function get_original_header {
   fi
 }
 
-# get_copyright_strings $1
-# exit 1
-
 # Function to display usage information
 function show_usage {
   cat <<EOF
-Usage: $0 [--show|--files|--diff|--commit]
+Usage: $0 [--help|--show|--files|--exclude [path]|--diff|--commit|file [names...]]
 
 Options:
-  --show        : Display the updated header for each file.
-  --files       : List the files to be examined.
-  --file [name] : Show the updated header for this file only.
-  --diff        : Show the diff between the existing file content and the proposed changes.
-  --commit      : Apply the changes to the header.
+  --help            : Display this help message.
+  --show            : Display the updated header for each file (default action with --files).
+  --files           : List the files to be examined.
+  --exclude [path]  : Exclude this path from the search; can be used more than once.
+  --diff            : Show the diff between the existing file content and the proposed changes.
+  --commit          : Apply the changes to the header.
+  --backup          : With --commit, save the old file as filename.bak.
+  --file [names...] : Show the updated header for this list of files. Can be used with --diff.
 
 EOF
-  exit 1
 }
 
 # Function to get the first and last years of contribution for each contributor
 function get_header {
   local file=$1
-  local top_directory=$(git rev-parse --show-toplevel) || exit 1
-  local relative_filename=$(realpath --relative-to="$top_directory" "$file") || exit 1
+  local top_directory=$(git rev-parse --show-toplevel)
+  local relative_filename=$(realpath --relative-to="$top_directory" "$file")
+  [[ -z  "$relative_filename" ]] && exit 1
   local header_template="// -*- C++ -*-
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
@@ -143,9 +143,7 @@ function get_header {
 // ENDHEADER"
 
    local copyright_strings=$(get_copyright_strings "$file") || exit 1
-   if [ -z "$copyright_strings" ]; then
-      exit 1
-   fi
+   [[ -z  "$copyright_strings" ]] && exit 1
    local updated_header=$(awk -v copyright="$copyright_strings" '/GENERATED_FILE_NOTICE/ { print copyright; next } 1' <<< "$header_template")
 
    echo "$updated_header"
@@ -164,6 +162,10 @@ excludes=()
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    --help)
+      show_usage
+      exit 0
+      ;;
     --show)
       ((num_options++))
       show=true
@@ -172,11 +174,11 @@ while [ "$#" -gt 0 ]; do
       ((num_options++))
       files=true
       ;;
-      --backup)
-        backup=true
-        ;;
+    --backup)
+      backup=true
+      ;;
     --file)
-      ((num_options++))
+      #((num_options++))
       showfile=true
       ;;
     --diff)
@@ -187,10 +189,6 @@ while [ "$#" -gt 0 ]; do
       ((num_options++))
       commit=true
       ;;
-    --backup)
-      ((num_options++))
-      backup=true
-      ;;
     --exclude)
       if [ "$#" -ge 2 ]; then
          excludes+=("'./$2*'")
@@ -198,6 +196,7 @@ while [ "$#" -gt 0 ]; do
       else
          echo "Error: --exclude option requires a directory or file argument." >&2
          show_usage
+         exit 1
       fi
       ;;
     *)
@@ -205,6 +204,7 @@ while [ "$#" -gt 0 ]; do
         filenames+=("$1")
       else
         show_usage
+        exit 1
       fi
       ;;
   esac
@@ -212,48 +212,33 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$num_options" -eq 0 ]; then
-   show_usage
-fi
-
-if $showfile; then
-   if [ ${#filenames[@]} -eq 0 ]; then
-      echo "Error: At least one filename is required after --file option." >&2
+   # If we've specified some files, then default to --show
+   if $showfile; then
+      show=true
+      num_options=1
+   else
+      show_usage
       exit 1
    fi
-
-   if $diff; then
-      if [ ${#filenames[@]} -eq 1 ]; then
-         echo "Error: --diff requires more than one filename after --file option." >&2
-         exit 1
-      fi
-   fi
-
-   for ((i=0; i<${#filenames[@]}; i++)); do
-      filename="${filenames[i]}"
-      updated_header=$(get_header "$filename") || exit 1
-
-      if [ "$i" -gt 0 ]; then
-         echo
-      fi
-
-      if $diff; then
-         original_header=$(get_original_header "$filename")
-         echo -e "File: $filename\nDifferences in the updated header:"
-         diff -u -L "Original $filename" -L "Updated $filename" <(echo -e "$original_header") <(echo -e "$updated_header")
-      else
-         echo -e "File: $filename\n$updated_header\n"
-      fi
-   done
-
-  exit 0
 fi
 
 if [ "$num_options" -ne 1 ]; then
   echo "Error: too many options specified."
   show_usage
+  exit 1
 fi
 
-find_command="find . -type f \( -name '*.h' -o -name '*.cpp' \) ${excludes[@]/#/-and -not -path }"
+if $backup && ! $commit; then
+   echo "Error: --backup option only makes sense with --commit."
+   show_usage
+   exit 1
+fi
+
+if $showfile; then
+   find_command="printf '%s\n' \"\${filenames[@]}\""
+else
+   find_command="find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.cc' \) ${excludes[@]/#/-and -not -path }"
+fi
 
 eval "$find_command" | while IFS= read -r file; do
 
@@ -286,6 +271,13 @@ eval "$find_command" | while IFS= read -r file; do
       # Create a temporary file
       temp_file=$(mktemp) || exit 1
 
+
+      original_header=$(get_original_header "$file")
+      if [ "$updated_header" == "$original_header" ]; then
+         echo "No changes required in $file"
+         continue
+      fi
+
       # Add the updated header to the temp file
       echo -e "$updated_header" > "$temp_file"
 
@@ -299,8 +291,10 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Move the temp file to the actual filename
       mv "$temp_file" "$file"
-
-      echo "Updated header in $file."
+      echo "Updated header in $file"
+      if $backup; then
+         echo "Old version saved as $file.bak"
+      fi
     fi
   else
     # Add new header only if --commit is specified
@@ -319,7 +313,10 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Replace the old file with the updated one
       mv "$temp_file" "$file"
-      echo "Added new header to $file."
+      echo "Added new header to $file"
+      if $backup; then
+         echo "Old version saved as $file.bak"
+      fi
     fi
   fi
 done
