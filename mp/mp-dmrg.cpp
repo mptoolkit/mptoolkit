@@ -46,6 +46,8 @@
 
 namespace prog_opt = boost::program_options;
 
+bool Flush = false;
+
 void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 {
    double SweepTruncation = 0;
@@ -67,6 +69,8 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
@@ -93,6 +97,8 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum)
 		<< " Iter=" << dmrg.Solver().LastIter()
 		<< " Tol=" << dmrg.Solver().LastTol()
 		<< '\n';
+      if (Flush)
+         std::cout << std::flush;
       SweepTruncation += States.TruncationError();
    }
    std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
@@ -125,6 +131,7 @@ int main(int argc, char** argv)
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       std::string States = "100";
       double EvolveDelta = 0.0;
+      bool NoKeepList = false;
 
       std::cout.precision(14);
 
@@ -164,12 +171,12 @@ int main(int argc, char** argv)
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
-	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
-	  "For the shift-invert and shift-invert-direct solver, the target energy")
-	 ("subspacesize", prog_opt::value(&SubspaceSize),
-	  FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
-	 ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
+         ("no-keep-list", prog_opt::bool_switch(&NoKeepList), "Don't use the KeepList for quantum number subspaces")
+	      ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy), "For the shift-invert and shift-invert-direct solver, the target energy")
+	      ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
+	      ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
+         ("flush", prog_opt::bool_switch(&Flush), "Flush terminal output after each line")
           ;
 
       prog_opt::options_description opt;
@@ -230,6 +237,7 @@ int main(int argc, char** argv)
       DMRG dmrg(Psi, HamMPO, Verbose);
 
       dmrg.UseDGKS = UseDGKS;
+      dmrg.DoUpdateKeepList = !NoKeepList;
       dmrg.Solver().SetSolver(Solver);
 
       dmrg.Solver().MaxTol = MaxTol;

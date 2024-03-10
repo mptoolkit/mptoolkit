@@ -317,7 +317,13 @@ UnitCell::local_operator(std::string const& Op, int Cell, int n) const
 UnitCell::operator_type
 UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) const
 {
-   std::string SignOperator = Operator.Commute().SignOperator();
+   return this->map_local_operator(SimpleOperator(Operator), Operator.Commute(), Operator.description(), Cell, n);
+}
+
+UnitCell::operator_type
+UnitCell::map_local_operator(SimpleOperator const& Operator, LatticeCommute Commute, std::string Description, int Cell, int n) const
+{
+   std::string SignOperator = Commute.SignOperator();
 
    BasicFiniteMPO Result(Sites->size());
 
@@ -346,8 +352,7 @@ UnitCell::map_local_operator(SiteOperator const& Operator, int Cell, int n) cons
       Result[i](0,0) = I;
    }
 
-   return UnitCellMPO(Sites, Result, Operator.Commute(), Cell*this->size(),
-                      Operator.description());
+   return UnitCellMPO(Sites, Result, Commute, Cell*this->size(), Description);
 }
 
 UnitCell::operator_type

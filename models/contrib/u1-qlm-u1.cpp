@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// U(1) one-dimensional U(1) quantum link model
+// U(1) 1+1D U(1) quantum link model
 
 #include "pheap/pheap.h"
 #include "lattice/infinitelattice.h"
@@ -55,16 +55,17 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1) one-dimensional U(1) quantum link model");
+      OpDescriptions.set_description("U(1) 1+1D U(1) quantum link model");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
-         ("G0"   , "Guass' law operator for the fermion site 0")
-         ("G2"   , "Guass' law operator for the antifermion site 2")
+         ("G0"   , "Gauss's law operator for the fermion site 0")
+         ("G2"   , "Gauss's law operator for the antifermion site 2")
          ;
       OpDescriptions.add_operators()
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
          ("H_chi", "background field")
+         ("H_g"  , "gauge coupling")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -106,7 +107,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO t, m, chi;
+      UnitCellMPO t, m, chi, g;
 
       t += Sp(0)[1] * dot(CH(0)[0], C(0)[2]) + Sm(0)[1] * dot(CH(0)[2], C(0)[0]);
       t += Sp(0)[3] * dot(CH(0)[2], C(1)[0]) + Sm(0)[3] * dot(CH(1)[0], C(0)[2]);
@@ -114,12 +115,14 @@ int main(int argc, char** argv)
       m += N(0)[0] - N(0)[2];
 
       chi += Sz(0)[1] + Sz(0)[3];
+      g += Sz(0)[1]*Sz(0)[1] + Sz(0)[3]*Sz(0)[3];
 
       Lattice["H_t"] = sum_unit(t);
       Lattice["H_m"] = sum_unit(m);
       Lattice["H_chi"] = sum_unit(chi);
+      Lattice["H_g"] = sum_unit(g);
 
-      // Gauss' law operators.
+      // Gauss's law operators.
       UnitCellOperator G0(Cell, "G0"), G2(Cell, "G2");
 
       G0 = N(0)[0] - Sz(0)[1] + Sz(-1)[3];

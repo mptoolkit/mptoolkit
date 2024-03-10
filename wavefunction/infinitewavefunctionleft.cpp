@@ -837,6 +837,11 @@ void InfiniteWavefunctionLeft::scale_log(std::complex<double> x)
    }
 }
 
+void InfiniteWavefunctionLeft::normalize()
+{
+   LogAmplitude = 0;
+}
+
 InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x)
 {
    psi.scale(x);

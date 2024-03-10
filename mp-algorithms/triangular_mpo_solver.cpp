@@ -181,6 +181,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR;
                std::tie(EtaR, UnitMatrixRight) = get_right_transfer_eigenvector(Psi, Psi, QShift, ProductMPO(Diag), Tol, Verbose);
+               UnitMatrixRight = delta_shift(UnitMatrixRight, QShift); // Shift into Basis1
                 // = FindClosestUnitEigenvalue(UnitMatrixRight,
                 //                                                      InjectRightQShift(Diag, Psi,
                 //                                                                        QShift),
@@ -199,9 +200,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
 
                // normalize the left/right eigenvector pair
                //              UnitMatrixLeft *= 1.0 / (inner_prod(UnitMatrixRight, UnitMatrixLeft));
-
-               //          TRACE(trace(UnitMatrixLeft))(trace(UnitMatrixRight));
-
 
                UnitMatrixRight *= 1.0 / (inner_prod(UnitMatrixLeft, UnitMatrixRight));
                CHECK(norm_frob(inner_prod(UnitMatrixLeft, UnitMatrixRight) - 1.0) < 1E-12);
@@ -275,7 +273,6 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
                // Conj here because this comes from an overlap(x, RightUnitMatrix)
                E[I->first][J->first] += std::conj(J->second) * UnitMatrixLeft;
                DEBUG_TRACE(std::conj(J->second));
-               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], RightIdentity));
             }
          }
 

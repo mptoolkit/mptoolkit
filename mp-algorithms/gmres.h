@@ -162,14 +162,14 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
   TRACE(norm_frob(r));
 #endif
 
-  DEBUG_TRACE(normb);
+  //DEBUG_TRACE(normb);
   if (normb == 0.0)
     normb = 1;
   double resid = norm_frob(r) / normb;
-  DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)))(beta);
-  DEBUG_TRACE(resid)(norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
+  //DEBUG_TRACE(norm_frob(b))(norm_frob(MatVecMultiply(x)))(beta);
+  //DEBUG_TRACE(resid)(norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
 
-  DEBUG_TRACE(r)(norm_frob(w))(norm_frob(x));
+  //DEBUG_TRACE(r)(norm_frob(w))(norm_frob(x));
 
   if ((resid = norm_frob(r) / normb) <= tol || norm_frob(w) / norm_frob(x) <= tol)
   {
@@ -214,7 +214,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
         double NormFrobSqF = norm_frob_sq(w);
         if (NormFrobSqF < DGKS_Threshold * DGKS_Threshold * NormFrobSqH)
         {
-           DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
+           //DEBUG_TRACE("DGKS correction in GMRES")(NormFrobSqF / (DGKS_Threshold * DGKS_Threshold * NormFrobSqH));
            for (int k = 0; k <= i; k++)
            {
               value_type z = inner_prod(v[k], w);
@@ -276,7 +276,7 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
         tol = UpdatedResid;
         max_iter = j;
         delete [] v;
-        DEBUG_TRACE(beta)(normb);
+        //DEBUG_TRACE(beta)(normb);
         if (Verbose > 0)
            std::cerr << "GMRES: finished, iter=" << (j-1) << ", approx resid=" << resid
                      << ", actual resid=" << UpdatedResid << std::endl;
@@ -292,8 +292,8 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, double normb, Vector const& b,
            std::cerr << "GMRES: restarting, iter=" << (j-1) << ", resid=" << resid << '\n';
      }
      resid = beta / normb;
-     DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
-        (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
+     //DEBUG_TRACE(resid)(norm_frob(Precondition(b - MatVecMultiply(x))) / normb)
+     //   (norm_frob(b - MatVecMultiply(x)) / norm_frob(b));
   }
 
   tol = resid;

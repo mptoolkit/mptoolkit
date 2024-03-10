@@ -19,7 +19,7 @@
 
 #include "mpwavefunction.h"
 
-// default version is 7.
+// default version is 8.
 //
 // Versions 1 and 2 don't contain an AttributeList (although older versions of
 // InfiniteWavefunction do, but it isn't used anywhere so no need to keep it).
@@ -38,26 +38,41 @@
 // AttributeList
 //
 // Version 4:
-// boost::variant<InfiniteWavefunctionLeft>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft>
 //
 // Version 5:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction>
 //
 // Version 6:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
 //
 // Version 7:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
+//
+// Version 8:
+// Psi
+// AttributeList
+// HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
+//
+// For future versions, it is possible to *add* entries to the WavefunctionTypes variant freely, without increasing the
+// overall version number.  Technically this was possible since version 3, but prior to version 8 the streaming code didn't allow
+// old wavefunction types saved with a newer version number.  We now only check that the current version of the toolkit understands
+// the actual type contained in the Psi variant.
 
-PStream::VersionTag MPWavefunction::VersionT(7);
+PStream::VersionTag MPWavefunction::VersionT(8);
 
 PStream::ipstream&
 operator>>(PStream::ipstream& in, MPWavefunction& Psi)
@@ -106,33 +121,21 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
 
    Psi.Version_ = Version;
 
-   if (Version <= 4)
+   if (Version <= 8)
    {
-      boost::variant<InfiniteWavefunctionLeft> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 5)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 6)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 7)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight> x;
-      in >> x;
-      Psi.Psi_ = x;
+      int which = in.read<int>();
+      if (which >= PStream::variant_size<WavefunctionTypes>::value)
+      {
+         std::cerr << "error loading wavefunction: this wavefunction type (" << which << ") is not recognized.\n"
+            "This probably means this version of the toolkit is too old.\n";
+         std::exit(1);
+      }
+      PStream::load_variant(in, which, Psi.Psi_);
    }
    else
    {
-      PANIC("Version of MPWavefunction is newer than this sofware!");
+      std::cerr << "error loading wavefunction: this version of the toolkit is too old to load this wavefunction type.\n";
+      std::exit(1);
    }
 
    in >> Psi.Attr_;

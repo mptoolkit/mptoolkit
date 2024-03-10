@@ -141,13 +141,13 @@ struct push_prod_unit
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
       DEBUG_TRACE("Parsing UnitCellMPO")(std::string(Start,End));
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
-      eval.push(prod_unit_left_to_right(Op.MPO(), Sites));
+      eval.push(prod_unit_left_to_right(Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -166,12 +166,12 @@ struct push_prod_unit_r
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
       UnitCellMPO Op = ParseUnitCellOperator(Lattice.GetUnitCell(), 0, std::string(Start, End), Args);
       Op.ExtendToCoverUnitCell(Sites);
-      eval.push(prod_unit_right_to_left(Op.MPO(), Sites));
+      eval.push(prod_unit_right_to_left(Op, Sites));
    }
 
    InfiniteLattice const& Lattice;
@@ -230,7 +230,7 @@ struct push_sum_unit
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -272,7 +272,7 @@ struct push_sum_k
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -312,7 +312,7 @@ struct push_sum_kink
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -356,7 +356,7 @@ struct push_sum_string_inner
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -418,7 +418,7 @@ struct push_sum_string_dot
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
       // here we expect 3 operators, separated by commas
@@ -479,7 +479,7 @@ struct push_sum_partial
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -518,7 +518,7 @@ struct push_sum_partial3
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
       {
-         throw ParserError::AtRange("Number  of sites must be a multiple of the lattice unit cell size",
+         throw ParserError::AtRange("Number of sites must be a multiple of the lattice unit cell size",
                                     Start, End);
       }
 
@@ -568,9 +568,7 @@ struct push_coarse_grain
                                     + " canot coarse-grain to zero or negative size!",
                                     Start, End);
 
-      BasicTriangularMPO TOp = boost::get<BasicTriangularMPO>(Op);
-      TOp = coarse_grain(TOp, Sites);
-      eval.push(ElementType(TOp));
+      eval.push(boost::apply_visitor(coarse_grain_element<ElementType>(Sites), Op));
    }
 
    InfiniteLattice const& Lattice;

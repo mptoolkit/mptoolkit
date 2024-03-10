@@ -41,7 +41,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
                      MixInfo const& Mix, KeepListType& KeepList,
 		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
 		     StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& LeftHam)
+                     StateComponent const& LeftHam, bool DoUpdateKeepList)
 {
    // truncate - FIXME: this is the s3e step
 #if defined(SSC)
@@ -96,14 +96,11 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 
    std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
+
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList,
-		  AddedQN,
-		  DM.Basis(),
-		  KeptStates,
-		  DiscardStates,
-		  Info);
+   if (DoUpdateKeepList)
+      UpdateKeepList(KeepList, AddedQN, DM.Basis(), KeptStates, DiscardStates, Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
    Lambda = Lambda * herm(UKeep);
@@ -134,7 +131,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
                      MixInfo const& Mix, KeepListType& KeepList,
 		     std::set<QuantumNumbers::QuantumNumber> const& AddedQN,
 		     StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& RightHam)
+                     StateComponent const& RightHam, bool DoUpdateKeepList)
 {
    // truncate - FIXME: this is the s3e step
    MatrixOperator Lambda = ExpandBasis2(C);
@@ -174,12 +171,8 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
    // Update the keep list.  It would perhaps be better to do this with respect
    // to the stage 2 density matrix, but easier to do it here
-   UpdateKeepList(KeepList,
-		  AddedQN,
-		  DM.Basis(),
-		  KeptStates,
-		  DiscardStates,
-		  Info);
+   if (DoUpdateKeepList)
+      UpdateKeepList(KeepList, AddedQN, DM.Basis(), KeptStates, DiscardStates, Info);
 
    MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
 
@@ -194,8 +187,6 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
    return std::make_pair(D, Vh);
 }
-
-
 
 PStream::opstream& operator<<(PStream::opstream& out, DMRG const& d)
 {
@@ -622,7 +613,7 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States)
    std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixingInfo,
 					      KeepList, adjoint(QuantumNumbersInBasis(CNext->LocalBasis())),
 					      States, Info,
-					      HamMatrices.left());
+					      HamMatrices.left(), DoUpdateKeepList);
 
    if (Verbose > 1)
    {
@@ -660,7 +651,7 @@ TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States)
    std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixingInfo,
 					      KeepList, QuantumNumbersInBasis(CNext->LocalBasis()),
 					      States, Info,
-					      HamMatrices.right());
+					      HamMatrices.right(), DoUpdateKeepList);
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';

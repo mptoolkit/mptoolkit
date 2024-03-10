@@ -74,7 +74,7 @@ FindParallelParts(MatrixPolyType& C,
       if ((MaxDegree == 0 || I->first <= MaxDegree))
       {
          CParallel[I->first] = Overlap;
-         DEBUG_TRACE("Adding component")(I->first)(Overlap);
+         //DEBUG_TRACE("Adding component")(I->first)(Overlap);
       }
       else if (norm_frob(Overlap) > 1E-10)
       {
@@ -106,7 +106,7 @@ UpdateParallelParts(ComplexPolyType const& CParallel, std::complex<double> Momen
       if (EParallel.has_term(m+1))
       {
          EParallel[m+1] *= 1.0 / (1.0 + m);
-         DEBUG_TRACE("Component at ")(m+1)(EParallel[m+1]);
+         //DEBUG_TRACE("Component at ")(m+1)(EParallel[m+1]);
       }
    }
    return EParallel;
@@ -132,7 +132,7 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
-   DEBUG_TRACE("Unit diagonal element")(Factor);
+   //DEBUG_TRACE("Unit diagonal element")(Factor);
 
    // decompose C into components parallel and perpendicular to the identity
    // The only part we have to care about is a component with the same momentum as our unit operator
@@ -144,9 +144,9 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
       // Is this the same momentum as our unit operator?
       if (norm_frob(K - Factor) < UnityEpsilon*10)
       {
-         DEBUG_TRACE("Component at equal momenta")(K);
+         //DEBUG_TRACE("Component at equal momenta")(K);
          // same momenta, these components diverge
-         DEBUG_TRACE(CParallel);
+         //DEBUG_TRACE(CParallel);
          for (int m = CParallel.degree(); m >= 0; --m)
          {
             EParallel[Factor] = UpdateParallelParts(CParallel, Factor);
@@ -191,7 +191,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       if (Verbose > 0)
          std::cerr << "Degree " << m << std::endl;
 
-      DEBUG_TRACE("degree")(m);
+      //DEBUG_TRACE("degree")(m);
       MatrixOperator Rhs = std::conj(K) * C[m];
       for (int k = m+1; k <= E.degree(); ++k)
       {
@@ -204,15 +204,15 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       // DGKS correction
       if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
       {
-         DEBUG_TRACE(inner_prod(Rhs, Rho))("should be small");
+         //DEBUG_TRACE(inner_prod(Rhs, Rho))("should be small");
          Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
-         DEBUG_TRACE(inner_prod(Rhs, Rho))("should be zero");
-         DEBUG_TRACE(inner_prod(Rhs, Identity));
+         //DEBUG_TRACE(inner_prod(Rhs, Rho))("should be zero");
+         //DEBUG_TRACE(inner_prod(Rhs, Identity));
       }
 
       double RhsNorm2 = norm_frob_sq(Rhs);
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-      DEBUG_TRACE(RhsNorm2);
+      //DEBUG_TRACE(RhsNorm2);
 
       //if (RhsNorm2 > 1E-22)
       {
@@ -223,7 +223,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
             E[m] -= std::conj(inner_prod(E[m], Rho)) * Identity;
-            DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
+            //DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
          }
 
          LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
@@ -234,13 +234,13 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {
             std::complex<double> z = inner_prod(E[m], Rho);
-            DEBUG_TRACE(z);
+            //DEBUG_TRACE(z);
             if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };
             E[m] -= std::conj(z) * Identity;
-            DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
+            //DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
          }
       }
    }
@@ -295,7 +295,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
       if (Verbose > 0)
          std::cerr << "Degree " << m << std::endl;
 
-      DEBUG_TRACE("degree")(m);
+      //DEBUG_TRACE("degree")(m);
       MatrixOperator Rhs = std::conj(K) * C[m];
       for (int k = m+1; k <= F.degree(); ++k)
       {
@@ -313,7 +313,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
 
       double RhsNorm2 = norm_frob_sq(Rhs);
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-      DEBUG_TRACE(RhsNorm2);
+      //DEBUG_TRACE(RhsNorm2);
 
       //if (RhsNorm2 > 1E-22)
       {
@@ -330,13 +330,13 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                      Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
 
-         DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
+         //DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && F[m].TransformsAs() == Rho.TransformsAs())
          {
             std::complex<double> z = inner_prod(F[m], Rho);
-            if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
+            if (LinearAlgebra::norm_frob_sq(z) > 1E-8)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };

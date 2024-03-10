@@ -27,6 +27,9 @@
 #include <map>
 #include <cmath>
 #include <ostream>
+#include <vector>
+#include "common/math_const.h"
+#include "common/trace.h"
 
 double const default_angle_resolution = 1E-10;
 
@@ -276,6 +279,32 @@ operator*(Scalar const& x, angle_map<T> Input)
 {
    for (auto& I : Input)
       I.second = x * I.second;
+   return Input;
+}
+
+// Operators for vectors of angle maps.
+
+template <typename T>
+std::vector<angle_map<T>>
+operator+=(std::vector<angle_map<T>>& Input1, std::vector<angle_map<T>> const& Input2)
+{
+   CHECK_EQUAL(Input1.size(), Input2.size());
+   auto I1 = Input1.begin();
+   auto I2 = Input2.begin();
+   while (I1 != Input1.end())
+   {
+      *I1 += *I2;
+      ++I1, ++I2;
+   }
+   return Input1;
+}
+
+template <typename T, typename Scalar>
+std::vector<angle_map<T>>
+ScalarMultiply(Scalar const& x, std::vector<angle_map<T>> Input)
+{
+   for (auto& I : Input)
+      I = x * I;
    return Input;
 }
 

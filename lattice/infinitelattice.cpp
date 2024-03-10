@@ -478,30 +478,36 @@ SetComponents(OperatorComponent& C, OperatorComponent const& Op, int xStart, int
    }
 }
 
+BasicTriangularMPO make_triangular(UnitCellMPO const& Op)
+{
+   if (Op.is_null())
+      return BasicTriangularMPO();
+
+   CHECK_EQUAL(Op.Basis1().size(), 1)("Operator Basis1 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
+   CHECK_EQUAL(Op.Basis2().size(), 1)("Operator Basis2 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
+
+   return sum_unit(Op.GetJWStringUnit(), Op.MPO(), Op.size());
+}
+
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op)
 {
    if (Op.is_null())
       return BasicTriangularMPO();
-   return sum_unit(*Op.GetSiteList(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
+   return sum_unit(Op, Op.GetSiteList()->size());
 }
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize)
 {
    if (Op.is_null())
       return BasicTriangularMPO();
-   return sum_unit(*Op.GetSiteList(), ExtendToCoverUnitCell(Op, UnitCellSize).MPO(), Op.Commute(), UnitCellSize);
-}
 
-BasicTriangularMPO sum_unit(UnitCell const& Cell, BasicFiniteMPO const& Op, LatticeCommute Com)
-{
-   return sum_unit(*Cell.GetSiteList(), Op, Com, Cell.size());
-}
-
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
-{
    CHECK_EQUAL(Op.Basis1().size(), 1)("Operator Basis1 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
    CHECK_EQUAL(Op.Basis2().size(), 1)("Operator Basis2 is not one dimensional.  Basis must contain only one quantum number for sum_unit()");
-   return sum_unit(SiteList, string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
+
+   CHECK(UnitCellSize % Op.coarse_grain_factor() == 0);
+
+   return sum_unit(Op.GetJWStringUnit(), ExtendToCoverUnitCell(Op, UnitCellSize / Op.coarse_grain_factor()).MPO(),
+                   UnitCellSize / Op.coarse_grain_factor());
 }
 
 std::vector<std::vector<OperatorComponent>>
@@ -520,7 +526,7 @@ std::vector<std::vector<OperatorComponent>>
    return Result;
 }
 
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& JW2, BasicFiniteMPO const& Op2, int UnitCellSize)
+BasicTriangularMPO sum_unit(BasicFiniteMPO const& JW2, BasicFiniteMPO const& Op2, int UnitCellSize)
 {
    BasicFiniteMPO Op = Op2;
    optimize(Op);
@@ -531,14 +537,12 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
    if (Op.is_null())
       return BasicTriangularMPO();
    CHECK(Op.is_irreducible());
-   CHECK(UnitCellSize % SiteList.size() == 0)
-      ("UnitCellSize for sum_unit() must be a multiple of UnitCell.size()");
    CHECK(Op.size() % UnitCellSize == 0)
       ("Operator for sum_unit() must be a multiple of the unit cell")
       (Op.size())(UnitCellSize);
    // THe JW string operator must have a unit cell that is a divisor of UnitCellSize
    CHECK(UnitCellSize % JW.size() == 0)
-      ("JW string for sum_unit() must divide UnitCell.size()");
+      ("JW string for sum_unit() must divide UnitCellSize");
 
    // Suppose that the unit cell size is 1.  Then if Op is A \times B \otimes C, then
    // the resulting BasicTriangularMPO is
@@ -568,17 +572,14 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
    // which is the desired operator.  This is quite straightforward,
    // since X,A have 1 row, and F,I have 1 column.
 
-   DEBUG_TRACE(Op.size())(UnitCellSize)(SiteList.size());
-
    // To construct this operator, we firstly split Op into UnitCellSize pieces
    std::vector<std::vector<OperatorComponent>> SplitOp = SplitOperator(Op, UnitCellSize);
-
-   // and finally the identity operator
-   BasicFiniteMPO Ident = identity_mpo(SiteList, Op.qn2());
 
    BasicTriangularMPO Result(UnitCellSize);
    for (int i = 0; i < UnitCellSize; ++i)
    {
+      OperatorComponent Ident = OperatorComponent::make_identity(Op[i].LocalBasis1());
+
       // Construct the basis
       BasisList Basis1(Op.GetSymmetryList());
       BasisList Basis2(Op.GetSymmetryList());
@@ -591,11 +592,9 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
          JoinBasis(Basis1, SplitOp[n][i].Basis1());
          JoinBasis(Basis2, SplitOp[n][i].Basis2());
       }
-      JoinBasis(Basis1, Ident[i%SiteList.size()].Basis1());
+      JoinBasis(Basis1, Ident.Basis1());
       if (i != int(UnitCellSize)-1)
-         JoinBasis(Basis2, Ident[i%SiteList.size()].Basis2());
-
-      DEBUG_TRACE(Basis1)(Basis2)(SplitOp.size());
+         JoinBasis(Basis2, Ident.Basis2());
 
       // Construct the OperatorComponent
       OperatorComponent C(Op[i].LocalBasis1(), Op[i].LocalBasis2(), Basis1, Basis2);
@@ -620,13 +619,11 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
       if (i != int(UnitCellSize)-1)
          c += SplitOp.back()[i].Basis2().size();
       // The identity goes in the bottom right
-      SetComponents(C, Ident[i%SiteList.size()], r, c);
+      SetComponents(C, Ident, r, c);
 
       // check that we're at the end
-      CHECK_EQUAL(r+Ident[i%SiteList.size()].Basis1().size(), Basis1.size());
-      CHECK_EQUAL(c+Ident[i%SiteList.size()].Basis2().size(), Basis2.size());
-
-      DEBUG_TRACE(C);
+      CHECK_EQUAL(r+Ident.Basis1().size(), Basis1.size());
+      CHECK_EQUAL(c+Ident.Basis2().size(), Basis2.size());
 
       C.debug_check_structure();
 
@@ -638,54 +635,49 @@ BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& 
    return Result;
 }
 
-BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize)
-{
-   if (Op.is_null() || Kink.is_null())
-      return BasicTriangularMPO();
-   return sum_kink(*Op.GetSiteList(),
-                   ExtendToCoverUnitCell(Kink, UnitCellSize).MPO(),
-                   ExtendToCoverUnitCell(Op, UnitCellSize).MPO(),
-                   Op.Commute(),
-                   UnitCellSize);
-}
-
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op)
 {
    if (Op.is_null() || Kink.is_null())
       return BasicTriangularMPO();
+
    CHECK_EQUAL(Kink.GetSiteList()->size(), Op.GetSiteList()->size())
       ("Operators for sum_kink must have the same unit cell!");
-   return sum_kink(*Op.GetSiteList(), Kink.MPO(), Op.MPO(), Op.Commute(), Op.GetSiteList()->size());
+
+   return sum_kink(Kink, Op, Op.GetSiteList()->size());
 }
 
-BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
+BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize)
 {
-   BasicFiniteMPO Ident = repeat(string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Kink.size() / SiteList.size());
-   return sum_unit(SiteList, Kink*Ident, Op, UnitCellSize);
-}
-
-BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize)
-{
-   return sum_unit(SiteList, exp(std::complex<double>(0,1)*k)
-                   *string_mpo(SiteList, Com.SignOperator(), Op.qn1()), Op, UnitCellSize);
-}
-
-BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize)
-{
-   if (Op.is_null())
+   if (Op.is_null() || Kink.is_null())
       return BasicTriangularMPO();
-   return sum_unit(*Op.GetSiteList(), exp(std::complex<double>(0,1)*k)
-                   *string_mpo(*Op.GetSiteList(), Op.Commute().SignOperator(), Op.qn1()), Op.MPO(), UnitCellSize);
+
+   CHECK(UnitCellSize % Op.coarse_grain_factor() == 0);
+
+   UnitCellMPO Kink_ = ExtendToCoverUnitCell(Kink, UnitCellSize / Op.coarse_grain_factor());
+   UnitCellMPO Op_ = ExtendToCoverUnitCell(Op, UnitCellSize / Op.coarse_grain_factor());
+
+   BasicFiniteMPO Ident = repeat(Op_.GetJWStringUnit(), Kink_.size() / (Op_.GetSiteList()->size() / Op_.coarse_grain_factor()));
+   return sum_unit(Kink_.MPO()*Ident, Op_.MPO(), UnitCellSize / Op.coarse_grain_factor());
 }
 
 BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op)
 {
    if (Op.is_null())
       return BasicTriangularMPO();
-   return sum_unit(*Op.GetSiteList(), exp(std::complex<double>(0,1)*k)
-                   *string_mpo(*Op.GetSiteList(), Op.Commute().SignOperator(), Op.qn1()), Op.MPO(),
-                   Op.GetSiteList()->size());
+
+   return sum_k(k, Op, Op.GetSiteList()->size());
+}
+
+BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize)
+{
+   if (Op.is_null())
+      return BasicTriangularMPO();
+
+   CHECK(UnitCellSize % Op.coarse_grain_factor() == 0);
+
+   return sum_unit(exp(std::complex<double>(0,1)*k) * Op.GetJWStringUnit(),
+                   ExtendToCoverUnitCell(Op, UnitCellSize / Op.coarse_grain_factor()).MPO(),
+                   UnitCellSize / Op.coarse_grain_factor());
 }
 
 BasicTriangularMPO make_zero(SiteListType const& SiteList)

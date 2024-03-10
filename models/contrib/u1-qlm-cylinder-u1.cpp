@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-// U(1) two-dimensional U(1) quantum link model
+// U(1) 2+1D U(1) quantum link model
 // Example for (x,y) = (0,2).
 //
 //     UC 1          UC 2
@@ -74,13 +74,14 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1) two-dimensional U(1) quantum link model (U.-J. Wiese, Annalen der Physik 525, 777 (2013), arXiv:1305.1602)");
+      OpDescriptions.set_description("U(1) 2+1D U(1) quantum link model (U.-J. Wiese, Annalen der Physik 525, 777 (2013), arXiv:1305.1602)");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
          ("H_tx" , "nearest-neighbor hopping in y-direction")
          ("H_ty" , "nearest-neighbor hopping in x-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
+         ("H_g"  , "gauge coupling")
          ("H_J"  , "plaquette interactions")
          ("H_flux"     , "electric flux")
          ("H_stag_flux", "staggered electric flux")
@@ -115,7 +116,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m, J, flux, stag_flux;
+      UnitCellMPO tx, ty, m, g, J, flux, stag_flux;
       // the XY configuration is special
       if (x == 0)
       {
@@ -131,6 +132,7 @@ int main(int argc, char** argv)
             J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
             J += Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y];
             flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
+            g += Sz(0)[i+1]*Sz(0)[i+1] + Sz(0)[i+2]*Sz(0)[i+2] + Sz(0)[i+1+3*y]*Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y]*Sz(0)[i+2+3*y];
          }
          for (int i = 0; i < 3*y; i += 6)
          {
@@ -158,24 +160,25 @@ int main(int argc, char** argv)
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
       Lattice["H_m"] = sum_unit(m);
+      Lattice["H_g"] = sum_unit(g);
       Lattice["H_J"] = sum_unit(J);
       Lattice["H_flux"] = sum_unit(flux);
       Lattice["H_stag_flux"] = sum_unit(stag_flux);
 
-      // Gauss' law operators.
+      // Gauss's law operators.
       UnitCellMPO G[2*y];
 
       for (int i = 0; i < y; ++i)
       {
          G[i] = N(0)[3*i] - Sz(0)[3*i+1] + Sz(-1)[3*(i+y)+1] - Sz(0)[3*i+2] + Sz(0)[(3*(i+y)-1)%(3*y)];
-         G[i].set_description("Gauss' law operator for site " + std::to_string(3*i));
+         G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }
 
       for (int i = y; i < 2*y; ++i)
       {
          G[i] = N(0)[3*i] - Sz(0)[3*i+1] + Sz(0)[3*(i-y)+1] - Sz(0)[3*i+2] + Sz(0)[(3*i-1)%(3*y)+3*y];
-         G[i].set_description("Gauss' law operator for site " + std::to_string(3*i));
+         G[i].set_description("Gauss's law operator for site " + std::to_string(3*i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
       }
 

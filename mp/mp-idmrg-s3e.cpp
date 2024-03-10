@@ -722,8 +722,8 @@ iDMRG::UpdateRightBlock(double HMix)
       RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
    }
 
-   // Subtract off the energy
-   RightHamiltonian.front().front() -= Solver_.LastEnergy() * RightHamiltonian.front().back();
+   // Subtract off the energy.  Since the hamiltonian is E * herm(F) we need to conjugate here
+   RightHamiltonian.front().front() -= std::conj(Solver_.LastEnergy()) * RightHamiltonian.front().back();
 
    this->CheckConsistency();
 }
@@ -910,7 +910,7 @@ iDMRG::ShowInfo(char c)
              << " Sweep=" << SweepNumber
              << " Energy=";
    if (Solver_.is_complex())
-      std::cout << Solver_.LastEnergy();
+      std::cout << formatting::format_complex(Solver_.LastEnergy());
    else
       std::cout << Solver_.LastEnergyReal();
    std::cout << " States=" << Info.KeptStates()

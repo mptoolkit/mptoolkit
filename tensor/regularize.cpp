@@ -38,7 +38,7 @@ Regularizer::Regularizer(VectorBasis const& b)
       SizeMap[b[i]] += b.dim(i);
    }
 
-   RegularBasis = VectorBasis(SizeMap.begin(), SizeMap.end());
+   RegularBasis = VectorBasis(b.GetSymmetryList(), SizeMap.begin(), SizeMap.end());
 
    // <Map the quantum numbers in the basis to the index in the regular basis
    std::map<QuantumNumbers::QuantumNumber, int> IndexOfQ;

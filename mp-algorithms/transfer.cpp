@@ -120,6 +120,7 @@ get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction
    int n = Pack.size();
    int NumEigen = 1;
 
+   //TRACE(StringOp.Basis1())(Psi1.Basis1())(Psi2.Basis1())(n);
    std::vector<std::complex<double>> OutVec;
       LinearAlgebra::Vector<std::complex<double>> LeftEigen =
          LinearAlgebra::DiagonalizeARPACK(MakePackApplyFunc(Pack, LeftMultiplyOperator(Psi1, QShift, StringOp, Psi2, QShift,
