@@ -20,9 +20,12 @@
 #include "density.h"
 #include "common/proccontrol.h"
 #include "linearalgebra/eigen.h"
+#include "common/randutil.h"
 
 //typedef LinearAlgebra::Vector<std::pair<int, LinearAlgebra::Range> > BasisMappingType;
 
+// Sort eigenvalues by weight instead of by raw eigenvalue.  This is probably good in
+bool EigenSortByWeight = false;
 
 LinearBasis<VectorBasis>::LinearBasis(VectorBasis const& B)
    : VectorBasis(B.GetSymmetryList()), Orig(B), Mapping(B.size())
@@ -125,13 +128,13 @@ DensityMatrixBase::DensityMatrixReport(std::ostream& outstream, int MaxEigenvalu
       double EVal = Iter->Eigenvalue / this->EigenSum();
       double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
 
-      int OuterDegen = ShowDegen ? Iter->Degree : 1;
-      int DisplayDegen = ShowDegen ? 1 : Iter->Degree;
+      int OuterDegen = ShowDegen ? Iter->Degree() : 1;
+      int DisplayDegen = ShowDegen ? 1 : Iter->Degree();
 
       for (int i = 0; i < OuterDegen; ++i)
       {
-         double Weight = EVal * Iter->Degree / OuterDegen;
-         TotalDegree += Iter->Degree;
+         double Weight = EVal * Iter->Degree() / OuterDegen;
+         TotalDegree += Iter->Degree();
          ++n;
          out << std::right << std::setw(7) << n << "  "
              << std::right << std::setw(20) << Iter->Eigenvalue
@@ -159,7 +162,7 @@ DensityMatrixBase::Entropy(bool Base2) const
    {
       double EVal = Iter->Eigenvalue / this->EigenSum();
       if (EVal > 0)
-         x -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree;
+         x -= EVal * (Base2 ? log2(EVal) : log(EVal)) * Iter->Degree();
    }
    return x;
 }
@@ -171,7 +174,7 @@ DensityMatrixBase::EvaluateCasimir(int n) const
    double ESum = this->EigenSum();
    for (const_iterator Iter = begin(); Iter != end(); ++Iter)
    {
-      x += (Iter->Eigenvalue / ESum) * Iter->Degree * casimir(this->Lookup(Iter->Subspace), n);
+      x += (Iter->Eigenvalue / ESum) * Iter->Degree() * casimir(this->Lookup(Iter->Subspace), n);
    }
    return x;
 }
@@ -185,7 +188,7 @@ DensityMatrixBase::EvaluateCasimirMoment(int n) const
    for (const_iterator Iter = begin(); Iter != end(); ++Iter)
    {
       double xx = casimir(this->Lookup(Iter->Subspace), n);
-      x += (Iter->Eigenvalue / ESum) * Iter->Degree * (xx-c) * (xx-c);
+      x += (Iter->Eigenvalue / ESum) * Iter->Degree() * (xx-c) * (xx-c);
    }
    return x;
 }
@@ -207,7 +210,7 @@ void DensityMatrixBase::DiagonalizeDMHelper(bool Sort)
       // add the eigenvalues and eigenvector pointers to EigenInfoList
       for (std::size_t i = 0; i < RawDMList[q1].size1(); ++i)
       {
-         EigenInfoList.push_back(EigenInfo(Eigenvalues[i], CurrentDegree, q1, i));
+         EigenInfoList.push_back(EigenInfo(Eigenvalues[i], q1, i, this->Lookup(q1)));
          ESum += Eigenvalues[i] * CurrentDegree;
       }
    }
@@ -439,33 +442,165 @@ SingularDecompositionBase::~SingularDecompositionBase()
 {
 }
 
-void SingularDecompositionBase:: Diagonalize(std::vector<RawDMType> const& M)
+std::ostream& SingularDecompositionBase::DensityMatrixReport(std::ostream& outstream)
 {
+   bool Quiet = false;
+   int MaxEigenvalues = -1;
+   bool Base2 = false;
+   bool ShowDegen = false;
+   std::ostringstream out;
+   out.precision(12);
+   out << std::scientific;
+   if (MaxEigenvalues < 0) MaxEigenvalues = EigenInfoList.size();
+   if (!Quiet)
+   {
+      out << "#Eigenvalue sum = " << this->EigenSum() << '\n';
+      if (MaxEigenvalues > 0)
+	 out << "#Number    #Eigenvalue         #Degen    #Weight               #Energy             #QuantumNumber\n";
+   }
+   int n = 0;
+   int TotalDegree = 0;
+   double EShift = 0;
+   double EScale = 1.0;
+#if 0
+   if (EigenInfoList.size() >= 2)
+   {
+      EShift = -log(EigenInfoList[0].Eigenvalue / this->EigenSum());
+      double E2 = -log(EigenInfoList[1].Eigenvalue / this->EigenSum());
+      EScale = E2 - EShift;
+   }
+#endif
+   for (const_iterator Iter = this->begin(); Iter != this->end() && n < MaxEigenvalues; ++Iter)
+   {
+      double EVal = Iter->Eigenvalue / this->EigenSum();
+      double Energy = EVal > 0 ? ((-log(EVal) - EShift) / EScale) : 0.0;
+
+      int OuterDegen = ShowDegen ? Iter->Degree() : 1;
+      int DisplayDegen = ShowDegen ? 1 : Iter->Degree();
+
+      for (int i = 0; i < OuterDegen; ++i)
+      {
+         double Weight = EVal * Iter->Degree() / OuterDegen;
+         TotalDegree += Iter->Degree();
+         ++n;
+         out << std::right << std::setw(7) << n << "  "
+             << std::right << std::setw(20) << Iter->Eigenvalue
+             << "  " << std::setw(6) << DisplayDegen
+             << "  " << std::setw(20) << Weight
+             << "  " << std::setw(20) << Energy
+             << "  " << std::left
+             << this->Lookup(Iter->Subspace) << '\n';
+      }
+   }
+   if (!Quiet)
+   {
+      out << '#' << n << " out of " << (ShowDegen ? TotalDegree : EigenInfoList.size()) << " eigenvalues shown.  ";
+      out << "Total degree = " << TotalDegree << '\n';
+   }
+   outstream << out.str();
+   return outstream;
+
+}
+
+void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which, WhichVectors WhichCalculate)
+{
+   //TRACE(M.size());
    ESum = 0;  // Running sum of squares of the singular values
    for (std::size_t i = 0; i < M.size(); ++i)
    {
-      LinearAlgebra::Matrix<std::complex<double> > U, Vh;
+      //TRACE(i)(M[i].size1())(M[i].size2());
+      LinearAlgebra::Matrix<std::complex<double>> U, Vh;
       LinearAlgebra::Vector<double> D;
-      SingularValueDecomposition(M[i], U, D, Vh);
-
-      LeftVectors.push_back(U);
-      RightVectors.push_back(Vh);
-      SingularValues.push_back(D);
+      if (Which == Both)
+      {
+         if (WhichCalculate == Left)
+         {
+            SingularValueDecompositionLeft(M[i], U, D);
+            LeftVectors.push_back(U);
+            SingularValues.push_back(D);
+         }
+         else if (WhichCalculate == Right)
+         {
+            SingularValueDecompositionRight(M[i], D, Vh);
+            SingularValues.push_back(D);
+            RightVectors.push_back(Vh);
+         }
+         else
+         {
+            SingularValueDecomposition(M[i], U, D, Vh);
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
+      }
+      if (Which == Left)
+      {
+         if (WhichCalculate == Left)
+         {
+            SingularValueDecompositionLeftFull(M[i], U, D);
+            LeftVectors.push_back(U);
+            SingularValues.push_back(D);
+         }
+         else
+         {
+            LinearAlgebra::DiagonalMatrix<double> DD;
+            SingularValueDecompositionFullLeft(M[i], U, DD, Vh);
+            D = DD.diagonal();
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
+         //TRACE(D)(U)(M[i]);
+      }
+      else if (Which == Right)
+      {
+         if (WhichCalculate == Right)
+         {
+            SingularValueDecompositionRightFull(M[i], D, Vh);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
+         else
+         {
+            LinearAlgebra::DiagonalMatrix<double> DD;
+            SingularValueDecompositionFullRight(M[i], U, DD, Vh);
+            D = DD.diagonal();
+            LeftVectors.push_back(U);
+            RightVectors.push_back(Vh);
+            SingularValues.push_back(D);
+         }
+      }
 
       int CurrentDegree = degree(this->Lookup(i));
       for (unsigned j = 0; j < size(D); ++j)
       {
          double Weight = D[j]*D[j];
-         EigenInfoList.push_back(EigenInfo(Weight, CurrentDegree, i, j));
+         EigenInfoList.push_back(EigenInfo(Weight, i, j, this->Lookup(i)));
          ESum += Weight * CurrentDegree;
       }
    }
 
+   // randomize the order of singular values, so that we are guaranteed that
+   // the sort leaves degenerate singular values in a random order.  They might
+   // not be random on entry to this function.
+   randutil::random_stream stream;
+   stream.seed();
+   std::shuffle(EigenInfoList.begin(), EigenInfoList.end(), stream.u_rand);
+
    std::sort(EigenInfoList.begin(), EigenInfoList.end(), EigenCompare);
 }
 
-
 SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M)
+   : SingularDecomposition(M, Both)
+{
+}
+
+SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M, WhichVectors Which)
+   : SingularDecomposition(M, Which, Which)
+{
+}
+
+SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(MatrixOperator const& M, WhichVectors Which, WhichVectors WhichCalculate)
    : B1(M.Basis1()), B2(M.Basis2()), IndexOfi(B1.size(), -1)
 {
    // Assemble the raw matrices
@@ -474,24 +609,60 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
    // and how they map onto the components in Basis1 and Basis2.
    // We can make use of the fact that each quantum number only appears at most once in
    // the LinearBasis.
-   for (unsigned i = 0; i < B1.size(); ++i)
+   // If we have requested only the left or right singular vectors, then we ensure that we get all of them,
+   // even if there is no matching state in the right basis.  This results in elements in the linear basis
+   // that are effectively m*0 or 0*n matrices.  This is signalled by the Basis.find_first(q) == -1.
+   // If we request both left and right singular vectors, then we ignore these zero singular values.
+   if (Which == Left)
    {
-      QuantumNumber q = B1[i];
-      int j = B2.find_first(q);
-      if (j == -1)
-         continue;
+      for (unsigned i = 0; i < B1.size(); ++i)
+      {
+         QuantumNumber q = B1[i];
+         int j = B2.find_first(q);
 
-      IndexOfi[i] = UsedQuantumNumbers.size();
-      q_iLinear.push_back(i);
-      q_jLinear.push_back(j);
-      UsedQuantumNumbers.push_back(q);
+         IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+      }
+   }
+   else if (Which == Right)
+   {
+      for (unsigned j = 0; j < B2.size(); ++j)
+      {
+         QuantumNumber q = B2[j];
+         int i = B1.find_first(q);
+         if (i >= 0)
+            IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+      }
+   }
+   else if (Which == Both)
+   {
+      for (unsigned i = 0; i < B1.size(); ++i)
+      {
+         QuantumNumber q = B1[i];
+         int j = B2.find_first(q);
+         if (j == -1)
+            continue;
+
+         IndexOfi[i] = UsedQuantumNumbers.size();
+         UsedQuantumNumbers.push_back(q);
+         q_iLinear.push_back(i);
+         q_jLinear.push_back(j);
+      }
+
    }
 
    // Now assemble the list of raw matrices, initialized to zero
    std::vector<RawDMType> Matrices(q_iLinear.size());
    for (unsigned n = 0; n < q_iLinear.size(); ++n)
    {
-      Matrices[n] = RawDMType(B1.dim(q_iLinear[n]), B2.dim(q_jLinear[n]), 0.0);
+      // Here we generate 0-dimensional matrices in the case where some quantum number doesn't exist in the basis.
+      // The Diagonalize() function sets the singular vectors in such a case to random unitaries.
+      Matrices[n] = RawDMType(q_iLinear[n] >= 0 ? B1.dim(q_iLinear[n]) : 0, q_jLinear[n] >= 0 ? B2.dim(q_jLinear[n]) : 0, 0.0);
    }
 
    // fill the raw matrices with the components in M
@@ -510,8 +681,49 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::SingularDecomposition(Mat
       }
    }
 
+   // // If we are calculating the left or right vectors only, add zero vectors for basis states that have
+   // // zero singular value becasuse there is no corresponding right/left state
+   // if (Which == Left)
+   // {
+   //    // Find states that exist only in Basis1
+   //    for (unsigned i = 0; i < B1.size(); ++i)
+   //    {
+   //       if (B2.find_first(B1[i]) == -1)
+   //       {
+   //          int n = UsedQuantumNumbers.size();
+   //          q_iLinear.push_back(i);
+   //          q_jLinear.push_back(-1);
+   //          UsedQuantumNumbers.push_back(B1[i]);
+   //          // No corresponding state in B2, add zero singular values
+   //          for (int j = 0; j < B1.dim(i); ++j)
+   //          {
+   //             EigenInfoList.push_back(EigenInfo(0.0, n, j, B1[i]));
+   //          }
+   //       }
+   //    }
+   // }
+   // else if (Which == Right)
+   // {
+   //    // Find states that exist only in Basis1
+   //    for (unsigned i = 0; i < B2.size(); ++i)
+   //    {
+   //       if (B1.find_first(B2[i]) == -1)
+   //       {
+   //          int n = UsedQuantumNumbers.size();
+   //          q_iLinear.push_back(-1);
+   //          q_jLinear.push_back(i);
+   //          UsedQuantumNumbers.push_back(B2[i]);
+   //          // No corresponding state in B2, add zero singular values
+   //          for (int j = 0; j < B2.dim(i); ++j)
+   //          {
+   //             EigenInfoList.push_back(EigenInfo(0.0, n, j, B2[i]));
+   //          }
+   //       }
+   //    }
+   // }
+
    // do the SVD
-   this->Diagonalize(Matrices);
+   this->Diagonalize(Matrices, Which, WhichCalculate);
 }
 
 QuantumNumber
@@ -520,27 +732,17 @@ SingularDecomposition<MatrixOperator, MatrixOperator>::Lookup(int Subspace) cons
    return UsedQuantumNumbers[Subspace];
 }
 
-void
+MatrixOperator
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
-                  MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+DoConstructLeftVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
 {
-   // Construct the truncated basis
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
    int NumQ = UsedQuantumNumbers.size();
-   VectorBasis NewBasis(B1.GetSymmetryList());
-   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
-   for (int q = 0; q < NumQ; ++q)
-   {
-      if (LinearMapping[q].size() > 0)
-      {
-         NewSubspace[q] = NewBasis.size();
-         NewBasis.push_back(UsedQuantumNumbers[q], LinearMapping[q].size());
-      }
-   }
 
    // Now we construct the actual matrices
-   A = MatrixOperator(B1.MappedBasis(), NewBasis);
-   B = MatrixOperator(NewBasis, B2.MappedBasis());
+   MatrixOperator A(B1.MappedBasis(), NewBasis);
    for (int q = 0; q < NumQ; ++q)
    {
       int ss = NewSubspace[q];
@@ -556,21 +758,61 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       int i = B1.MappedBasis().find_first(Q);
       while (i != -1)
       {
+         DEBUG_CHECK(q < LeftVectors.size())("The left vector doesn't exist - did you construct the left vectors?");
          A(i,ss) = LeftVectors[q](B1.Lookup(i).second, lm);
          i = B1.MappedBasis().find_next(Q, i);
       }
+   }
+   A.debug_check_structure();
+   return A;
+}
 
-      // and B
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+DoConstructRightVectors(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
+{
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
+   int NumQ = UsedQuantumNumbers.size();
+
+   // Now we construct the actual matrices
+   MatrixOperator B(NewBasis, B2.MappedBasis());
+   for (int q = 0; q < NumQ; ++q)
+   {
+      int ss = NewSubspace[q];
+      if (ss == -1) // is this subspace used?
+         continue;
+
+      QuantumNumber Q = UsedQuantumNumbers[q];
+
+      // The set of indices of states we need to keep
+      std::vector<int> lm(LinearMapping[q].begin(), LinearMapping[q].end());
+
+      // Now assemble this quantum number component for B
       int j = B2.MappedBasis().find_first(Q);
       while (j != -1)
       {
+         DEBUG_CHECK(q < RightVectors.size())("The right vector doesn't exist - did you construct the right vectors?");
          B(ss,j) = RightVectors[q](lm, B2.Lookup(j).second);
          j = B2.MappedBasis().find_next(Q, j);
       }
    }
+   B.debug_check_structure();
+   return B;
+}
+
+RealDiagonalOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+DoConstructSingularValues(std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>> const Mapping)
+{
+   VectorBasis const& NewBasis = std::get<0>(Mapping);
+   std::vector<std::set<int>> const& LinearMapping = std::get<1>(Mapping);
+   std::vector<int> const& NewSubspace = std::get<2>(Mapping);
+   int NumQ = UsedQuantumNumbers.size();
 
    // Finally the center matrix
-   C = RealDiagonalOperator(NewBasis, NewBasis);
+   RealDiagonalOperator C(NewBasis, NewBasis);
    for (int i = 0; i < NumQ; ++i)
    {
       if (!LinearMapping[i].empty())
@@ -580,9 +822,9 @@ ConstructOrthoMatrices(std::vector<std::set<int> > const& LinearMapping,
       }
    }
 
-   A.debug_check_structure();
-   B.debug_check_structure();
+   return C;
 }
+
 
 QuantumNumber
 SingularDecomposition<StateComponent, StateComponent>::Lookup(int Subspace) const

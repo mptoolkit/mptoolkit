@@ -554,6 +554,13 @@ contract_from_left(OperatorComponent const& M,
 
 
 // Action of an operator on B
+//
+// +-i' s' i-+
+// |    |    |
+// E----M----F^\dagger
+// |    |    |
+// +----A----+
+//
 // Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))
 StateComponent
 operator_prod_inner(OperatorComponent const& M,

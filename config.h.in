@@ -3,6 +3,15 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* The vendor of the BLAS libary */
+#undef BLAS_VENDOR
+
+/* Using MKL */
+#undef BLAS_VENDOR_MKL
+
+/* Using OpenBLAS */
+#undef BLAS_VENDOR_OPENBLAS
+
 /* C++ compiler vendor */
 #undef CONFIG_COMPILER_VENDOR
 
@@ -151,9 +160,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Define as the return type of signal handlers (`int' or `void'). */
-#undef RETSIGTYPE
 
 /* The size of `double', as computed by sizeof. */
 #undef SIZEOF_DOUBLE

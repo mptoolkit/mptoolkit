@@ -84,6 +84,13 @@ RegularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, Vec
 
 template <typename T>
 IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis1(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
+{
+   return RegularizeBasis1(Regularizer(M.Basis1()), M);
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
 UnregularizeBasis1(Regularizer const& R, IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
 {
    IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> Result(R.OriginalBasis(), M.Basis2(), M.TransformsAs());
@@ -120,6 +127,13 @@ RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
       }
    }
    return Result;
+}
+
+template <typename T>
+IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis>
+RegularizeBasis2(IrredTensor<LinearAlgebra::Matrix<T>, VectorBasis, VectorBasis> const& M)
+{
+   return RegularizeBasis2(M, Regularizer(M.Basis2()));
 }
 
 template <typename T>
@@ -171,7 +185,7 @@ UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>,
    {
       for (int j = 0; j < Result.Basis2().size(); ++j)
       {
-         auto r = iterate_at(M.data(), R1.IndexOf(i), R2.IndexOf(i));
+         auto r = iterate_at(M.data(), R1.IndexOf(i), R2.IndexOf(j));
          if (r)
          {
             Result(i,j) = (*r)(R1.RangeOf(i), R2.RangeOf(j));
@@ -181,19 +195,40 @@ UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::Matrix<T>,
    return Result;
 }
 
-
 template <typename T>
 IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
 RegularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& M, Regularizer const& R2)
 {
-   PANIC("Not implemented");
+   // the DiagonalStucture is a diagonal matrix of diagonal matrices.  This requires that R1 == R2, and
+   // we should also have M.Basis1() == M.Basis2(), but we'll assume we have that already
+   //DEBUG_CHECK_EQUAL(R1, R2);
+   // NOTE: this has never been tested as it is currently unused
+   IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(R1.Basis(), R2.Basis(), M.TransformsAs());
+   // initialize the matrix, not sure if this is necessary?
+   for (int ii = 0; ii < Result.size1(); ++ii)
+   {
+      // TRACE(Result[ii]);
+      Result[ii] = LinearAlgebra::DiagonalMatrix<T>(Result.Basis1().dim(ii), 0.0);
+   }
+   for (int i = 0; i < M.size1(); ++i)
+   {
+      int ii = R1.IndexOf(i);
+      Result.diagonal()[ii][R1.RangeOf(i)] = M[i].diagonal();
+   }
+   return Result;
 }
 
 template <typename T>
 IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure>
 UnregularizeBasis12(Regularizer const& R1, IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> const& M, Regularizer const& R2)
 {
-   PANIC("Not implemented");
+   IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(R1.OriginalBasis(), R2.OriginalBasis(), M.TransformsAs());
+   for (int i = 0; i < Result.size1(); ++i)
+   {
+      int ii = R1.IndexOf(i);
+      Result.data().diagonal()[i].diagonal() = M.data().diagonal()[ii].diagonal()[R1.RangeOf(i)];
+   }
+   return Result;
 }
 
 } // namespace Tensor

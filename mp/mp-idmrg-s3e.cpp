@@ -64,6 +64,7 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/proccontrol.h"
+#include "common/formatting.h"
 #include "common/prog_options.h"
 #include <iostream>
 #include "common/environment.h"
@@ -908,12 +909,8 @@ iDMRG::ShowInfo(char c)
 {
    std::cout << c
              << " Sweep=" << SweepNumber
-             << " Energy=";
-   if (Solver_.is_complex())
-      std::cout << formatting::format_complex(Solver_.LastEnergy());
-   else
-      std::cout << Solver_.LastEnergyReal();
-   std::cout << " States=" << Info.KeptStates()
+             << " Energy=" << formatting::format_complex(Solver_.LastEnergy())
+             << " States=" << Info.KeptStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy()
              << " FidelityLoss=" << Solver_.LastFidelityLoss()
@@ -931,8 +928,7 @@ int main(int argc, char** argv)
       int NumIter = 20;
       int MinIter = 4;
       int MinStates = 1;
-      std::string States = "100";
-      int NumSteps = 10;
+      std::string States = "";
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
       std::string FName;
@@ -1009,8 +1005,6 @@ int main(int argc, char** argv)
           "(useful for integer spin chains, can be used multiple times)")
          ("create,b", prog_opt::bool_switch(&NoFixedPoint),
           "Construct a new wavefunction from a random state or single-cell diagonalization")
-         ("steps,s", prog_opt::value<int>(&NumSteps),
-          FormatDefault("Number of DMRG steps to perform", NumSteps).c_str())
          ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
           "Don't orthogonalize the wavefunction before saving")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -1195,7 +1189,7 @@ int main(int argc, char** argv)
          // adjust for periodic basis
          StateComponent x = prod(Psi.get_back(), UR);
          std::tie(R, UR);
-         MatrixOperator X = TruncateBasis2(x); // the Basis2 is already 1-dim.  This just orthogonalizes x
+         MatrixOperator X = Multiply(TruncateBasis2(x)); // the Basis2 is already 1-dim.  This just orthogonalizes x
          MatrixOperator U;
          SingularValueDecomposition(X, U, R, UR);
          x = prod(x, U);
@@ -1265,10 +1259,6 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       StatesList MyStates(States);
-      if (vm.count("steps") && MyStates.size() == 1)
-      {
-         MyStates.Repeat(NumSteps);
-      }
       std::cout << MyStates << '\n';
 
       std::complex<double> InitialEnergy = 0.0;

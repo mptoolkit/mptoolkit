@@ -114,6 +114,7 @@ std::tuple<std::complex<double>, MatrixOperator>
 get_left_transfer_eigenvector(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift, ProductMPO const& StringOp, double tol, int Verbose)
 {
    int ncv = 0;
+   TRACE(StringOp.Basis1());  // FIXME: this is the error here, the StringOp is invalid
    CHECK_EQUAL(Psi1.size(), Psi2.size());
    CHECK_EQUAL(Psi1.size() % StringOp.size(), 0);
    PackStateComponent Pack(StringOp.Basis1(), Psi1.Basis1(), Psi2.Basis1());

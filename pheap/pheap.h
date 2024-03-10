@@ -196,7 +196,9 @@ class PHeapObject
 
       ~PHeapObject();
 
-      bool DoLockCountZero(); // the slow part of SubLock()
+      // The slow part of SubLock()
+      // Returns true if the reference count is also zero and we can unlock the ObjectMutex and delete *this
+      bool DoLockCountZero();
 
       PHeapObject* CopyOnWriteLockCountZero();  // the non-template part of CopyOnWrite()
 

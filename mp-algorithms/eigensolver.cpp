@@ -304,6 +304,15 @@ LocalEigensolver::Solve(StateComponent& C,
 
    StateComponent ROld = C;
 
+   if (norm_frob(C) == 0.0)
+   {
+      if (Verbose > 0)
+      {
+         std::cerr << "eigensolver: initial guess vector is zero, making a new random initial state.\n";
+      }
+      C = MakeRandomStateComponent(C.LocalBasis(), C.Basis1(), C.Basis2());
+   }
+
    if (EvolveDelta != 0.0)
    {
       C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));

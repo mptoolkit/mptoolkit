@@ -377,7 +377,7 @@ bool PHeapObject::DoLockCountZero()
       if (--ReferenceCount == 0)
       {
          //ObjectMutex.unlock();
-         delete this;
+         //delete this;           // Locking fix: wait until the caller unlocks the mutex and deletes this themself
          return true;
       }
       else

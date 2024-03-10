@@ -23,9 +23,11 @@
 // The default seed is a constant -- applications should call one of the
 // seed() functions before generating random numbers.
 //
-// If multiple independent streams of random numbers are required, 
+// If multiple independent streams of random numbers are required,
 // then use the class random_stream.  It is safe to use different
 // random_stream objects in different threads.
+//
+// 2024-02-08: Changed the default seeding to random (crypto) seed rather than deterministic
 
 #if !defined(MPTOOLKIT_COMMON_RANDUTIL_H)
 #define MPTOOLKIT_COMMON_RANDUTIL_H
@@ -39,7 +41,7 @@ namespace randutil
 
 // the random number generator.  This is the basic generator that is used
 // to construct a specific distribution, which uses a 32-bit Mersenne Twister.
-// It is an object that is declared here, but defined somewhere else 
+// It is an object that is declared here, but defined somewhere else
 // (in the randutil.cpp implementation file) so we declare it as 'extern'
 //
 // We can also get an unsigned integer with
@@ -52,7 +54,11 @@ extern std::mt19937 u_rand;
 // a seed for a pseudo-random generator.  The seed() function uses this generator
 // to seed the Mersenne Twister.
 
+// return a single cryptographically secure random unsigned integer
 unsigned crypto_rand();
+
+// return an array of n cryptographically secure random unsigned integers
+std::vector<unsigned> crypto_rand_vector(int n);
 
 // functions to get random numbers from specific distributions
 
@@ -69,7 +75,7 @@ double randn();
 // functions seed the generator
 //
 
-// seed the generator from 256 bits of 'cryptographically secure' random numbers
+// re-seed the generator from 256 bits of 'cryptographically secure' random numbers
 void seed();
 
 // seed from a single integer
@@ -140,7 +146,7 @@ class random_stream
       // seed from a list
       template <typename T>
       void seed(std::initializer_list<T> s);
-   
+
       // returns the seed that was previously set
       std::vector<unsigned> get_seed();
 

@@ -389,11 +389,11 @@ left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::Quantum
    MatrixOperator U = U0;
    RealDiagonalOperator D = D0;
    X = herm(U0) * (D*U);
-   // Do a sequence of SVD's to orthogonalize Psi
+   // Do a sequence of SVD's to orthogonalize Psi, and remove zero singular values
    for (auto& A : Psi)
    {
       A = X*A;
-      std::tie(D, U) = OrthogonalizeBasis2(A);
+      std::tie(D, U) = TruncateBasis2(A);
       X = D*U;
    }
    // Incorporate the final unitaries.  This ensures that the final basis doesn't change.
@@ -591,6 +591,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    MatrixOperator U;
    RealDiagonalOperator D;
    std::tie(D, U) = DiagonalizeHermitian(std::move(Y)); // Now Y = U^\dagger D U
+   // FIXME: we probably should remove zero singular values from D here, if there are any
 
    Psi.set_front(delta_shift(U, QShift) * Psi.get_front());
    Psi.set_back(Psi.get_back() * herm(U));

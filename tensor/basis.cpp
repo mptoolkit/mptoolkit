@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "basis.h"
+#include "regularize.h"
 #include "common/statistics.h"
 
 namespace Tensor
@@ -252,6 +253,29 @@ std::string show_projections(VectorBasis const& B)
       }
    }
    return Out.str();
+}
+
+std::tuple<VectorBasis, std::vector<int>, std::vector<int>>
+MakeMinimalBasis(VectorBasis const& B1, VectorBasis const& B2)
+{
+   DEBUG_CHECK(is_regular_basis(B1));
+   DEBUG_CHECK(is_regular_basis(B2));
+
+   std::vector<std::pair<QuantumNumbers::QuantumNumber, int>> B3;
+   std::vector<int> B1Index(B1.size(), -1);
+   std::vector<int> B2Index(B2.size(), -1);
+   B3.reserve(std::min(B1.size(), B2.size()));
+   for (int i = 0; i < B1.size(); ++i)
+   {
+      QuantumNumber q = B1[i];
+      int j = B2.find_first(q);
+      if (j == -1)
+         continue;
+      B1Index[i] = B3.size();
+      B2Index[j] = B3.size();
+      B3.emplace_back(q, std::min(B1.dim(i), B2.dim(j)));
+   }
+   return std::make_tuple(VectorBasis(B1.GetSymmetryList(), B3.begin(), B3.end()), std::move(B1Index), std::move(B2Index));
 }
 
 void

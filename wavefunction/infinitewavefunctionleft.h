@@ -191,6 +191,7 @@ left_branch_degen(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& 
 
 // Take a wavefunction that is already in left orthogonal form, and gauge fix it so that the right
 // transfer matrix eigenvector is diagonal.  Return value is the Lambda matrix on the right-hand-side.
+// This changes the basis at the edge of the unit cell.
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol = 1E-14, int Verbose = 0);
 
