@@ -17,23 +17,33 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#if !defined(TRUNCATION_H_SDCHJYUTYFHLUH53247895732489)
-#define TRUNCATION_H_SDCHJYUTYFHLUH53247895732489
+// This header exists to provide some declarations of common classes to avoid
+// recursive includes, since state_component.h uses functionality from
+// density.h, but cannot include.
+
+#if !defined(MPTOOLKIT_MPS_TRUNCATION_H)
+#define MPTOOLKIT_MPS_TRUNCATION_H
 
 #include <limits>
 #include <iostream>
+#include <quantumnumbers/quantumnumber.h>
 
 // Structure to hold information on a particular density matrix eigenstate,
 // or the square of a singular value
 struct EigenInfo
 {
    double Eigenvalue;
-   int Degree;              // degree of the representation
    int Subspace, Index;     // subspace/index into the basis
+   QuantumNumbers::QuantumNumber Q;
+
+   double Degree() const
+   {
+      return degree(Q);
+   }
 
    double Weight() const
    {
-      return Degree*Eigenvalue;
+      return degree(Q)*Eigenvalue;
    }
 
    double Entropy(double TotalWeight) const
@@ -41,11 +51,10 @@ struct EigenInfo
       if (TotalWeight < std::numeric_limits<double>::epsilon())
          return 0;
       double x = Eigenvalue/TotalWeight;
-      return x > 0 ? -x * Degree * log(x) : 0;
+      return x > 0 ? -x * this->Degree() * log(x) : 0;
    }
-
-   EigenInfo(double Eigen_, int Degree_, int QuantumNumber_, int LinearIndex_)
-      : Eigenvalue(Eigen_), Degree(Degree_), Subspace(QuantumNumber_), Index(LinearIndex_) {}
+   EigenInfo(double Eigen_, int QuantumNumber_, int LinearIndex_, QuantumNumbers::QuantumNumber Q_)
+      : Eigenvalue(Eigen_), Subspace(QuantumNumber_), Index(LinearIndex_), Q(Q_) {}
 
    bool operator==(EigenInfo const& Other) const
    {
@@ -67,15 +76,14 @@ struct EigenInfo
    {
       typedef bool result_type;
 
-      QuantumNumberEqualTo(VectorBasis const& B_, QuantumNumbers::QuantumNumber const& q_)
-         : B(B_), q(q_) {}
+      QuantumNumberEqualTo(QuantumNumbers::QuantumNumber const& q_)
+         :q(q_) {}
 
       bool operator()(EigenInfo const& e) const
       {
-         return B[e.Subspace] == q;
+         return e.Q == q;
       }
 
-      VectorBasis const& B;
       QuantumNumbers::QuantumNumber q;
    };
 
@@ -87,25 +95,32 @@ struct EigenInfo
 // is slightly better for finite systems, but possibly doesnt
 // work well in iDMRG where it favours higher spin representations
 // that increase the degeneracy of the groundstate unnecessarily.
+// Default value is false.
 //
+// For finite DMRG, we can set EigenSortByWeight=true
+
+extern bool EigenSortByWeight;
 
 inline
 bool EigenCompareWeight(EigenInfo const& x, EigenInfo const& y)
 {
-   return y.Eigenvalue*y.Degree < x.Eigenvalue*x.Degree;
+   return y.Eigenvalue*degree(y.Q) < x.Eigenvalue*degree(x.Q);
 }
 
 inline
 bool EigenCompare(EigenInfo const& x, EigenInfo const& y)
 {
-   return y.Eigenvalue < x.Eigenvalue;
+   if (EigenSortByWeight)
+      return y.Eigenvalue*degree(y.Q) < x.Eigenvalue*degree(x.Q);
+   else
+      return y.Eigenvalue < x.Eigenvalue;
 }
 
 // the information we use to determine which states to keep is getting bigger, make it a structure
 // this is the information that we set to determine the truncation of the basis
 struct StatesInfo
 {
-   static int const DefaultMaxStates = 100000;  // we need a large default for the max states to keep
+   static int const DefaultMaxStates = 1000000;  // we need a large default for the max states to keep
 
    int MinStates;
    int MaxStates;
@@ -116,11 +131,19 @@ struct StatesInfo
    // otherwise the cutoff values are in absolute units
 
    StatesInfo()
-      : MinStates(0),
+      : MinStates(1),
         MaxStates(DefaultMaxStates),
         TruncationCutoff(0),
         EigenvalueCutoff(0),
         TruncateRelative(false){}
+
+   explicit StatesInfo(int MaxStates_)
+      : MinStates(1), MaxStates(MaxStates_), TruncationCutoff(0), EigenvalueCutoff(0), TruncateRelative(false)
+   {}
+
+   // helper function that returns true if the configuration of the StatesInfo is such that
+   // we want to keep eigenvalues that are exactly zero
+   bool KeepZeroEigenvalues() const { return TruncationCutoff < 0 && EigenvalueCutoff < 0; }
 };
 
 inline
@@ -153,10 +176,13 @@ struct TruncationInfo
    double KeptWeight_;
    int TotalStates_;
    int KeptStates_;
+   int ExtraStates_;
    double TotalEntropy_;
    double KeptEntropy_;
    double SmallestKeptEigenvalue_;
    double LargestDiscardedEigenvalue_;
+
+   TruncationInfo();
 
    // return the total weight of all states considered
    double TotalWeight() const { return TotalWeight_; }
@@ -169,6 +195,9 @@ struct TruncationInfo
 
    // return the number of states that were kept
    int KeptStates() const { return KeptStates_; }
+
+   // return the number of extra that were kept
+   int ExtraStates() const { return ExtraStates_; }
 
    // return the total entropy (natural units) of all of the states
    double TotalEntropy() const { return TotalEntropy_; }
@@ -187,6 +216,12 @@ struct TruncationInfo
    double LargestDiscardedEigenvalue() const { return LargestDiscardedEigenvalue_; }
 };
 
+inline
+TruncationInfo::TruncationInfo()
+   : TotalWeight_(0), KeptWeight_(0), TotalStates_(0), KeptStates_(0), ExtraStates_(0), TotalEntropy_(0), KeptEntropy_(0), SmallestKeptEigenvalue_(0), LargestDiscardedEigenvalue_(0)
+{
+}
+
 // functor to get the cumulative sum of eigenvalues
 template <class FwdIter>
 double DensitySigma(FwdIter first, FwdIter last)
@@ -194,7 +229,7 @@ double DensitySigma(FwdIter first, FwdIter last)
    double Acc = 0;
    while (first != last)
    {
-      Acc += first->Eigenvalue * first->Degree;
+      Acc += first->Eigenvalue * degree(first->Q);
       ++first;
    }
    return Acc;
@@ -211,7 +246,7 @@ double DensityEntropyBase2(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-         E -= x * log2(x) * first->Degree;
+         E -= x * log2(x) * degree(first->Q);
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -231,7 +266,7 @@ double DensityEntropyBaseE(FwdIter first, FwdIter last, double EigenSum)
    {
       double x = first->Eigenvalue/EigenSum;
       if (x > 0)
-         E -= x * log(x) * first->Degree;
+         E -= x * log(x) * degree(first->Q);
       else if (x < -1E-10)
       {
          WARNING("Entropy: eigenvalue is negative and big!")(x)(first->Eigenvalue)(EigenSum);
@@ -257,7 +292,7 @@ double DensityTruncation(FwdIter first, FwdIter last, double EigenSum)
    double E = 0;
    while (first != last)
    {
-      double x = first->Eigenvalue * first->Degree;
+      double x = first->Eigenvalue * degree(first->Q);
       if (x > 0)
          E += x;
 
@@ -276,6 +311,7 @@ TruncateFixTruncationErrorRelative(FwdIter first, FwdIter last,
    Info.TotalStates_ = std::distance(first, last);
    Info.TotalEntropy_ = DensityEntropy(first, last, Info.TotalWeight_);
    Info.KeptStates_ = 0;
+   Info.ExtraStates_ = 0;
    Info.KeptWeight_ = 0;
    Info.KeptEntropy_ = 0;
    Info.SmallestKeptEigenvalue_ = 0;
@@ -309,6 +345,7 @@ TruncateFixTruncationErrorAbsolute(FwdIter first, FwdIter last,
    Info.TotalStates_ = std::distance(first, last);
    Info.TotalEntropy_ = DensityEntropy(first, last, Info.TotalWeight_);
    Info.KeptStates_ = 0;
+   Info.ExtraStates_ = 0;
    Info.KeptWeight_ = 0;
    Info.KeptEntropy_ = 0;
    Info.SmallestKeptEigenvalue_ = 0;
@@ -340,6 +377,54 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
    return States.TruncateRelative
       ? TruncateFixTruncationErrorRelative(first, last, States, Info)
       : TruncateFixTruncationErrorAbsolute(first, last, States, Info);
+}
+
+// Intended for finding optimal states to keep in an expanded environment.
+// We keep, if possible, at least StatesPerSector states in each distinct quantum number
+// sector.  Normally we want this to be small, typically 1 state should suffice.
+// We do this even if the weight of the state is zero.
+// Secondly, we attempt to keep at least NumStates number of states, ideally states that have
+// non-zero weight, which means that we might end up keeping more than NumStates states if
+// some of the states that we added in StatesPerSector had zero weight.
+// We keep at least NumStates states, even if some have zero weight; the implementation
+// of the SVD ensures that these are unbiased random states.
+template <typename FwdIter>
+std::list<EigenInfo>
+TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool StatesPerSectorAllowZeroWeight)
+{
+   // We need to copy the EigenInfo, because we need to do two passes over it, and
+   // possibly remove some elements on the first pass.
+   std::list<EigenInfo> States(first, last);
+
+   std::list<EigenInfo> Result;
+   std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
+
+   // first pass: keep the next NumStatesWithWeight in order from heighest weight,
+   // as long as they have non-zero weight.
+   auto f = States.cbegin();
+   while (NumStates > 0 && f != States.cend() && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
+   {
+      Result.push_back(*f);
+      ++f;
+      --NumStates;
+   }
+
+   // second pass: keep at least StatesPerSector states in each quantum number sector.
+   f = States.cbegin();
+   while (f != States.cend())
+   {
+      if (KeptStatesPerSector[f->Q] < StatesPerSector && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
+      {
+         Result.push_back(*f);
+         if (f->Eigenvalue > 0.0)
+            --NumStates;
+         ++KeptStatesPerSector[f->Q];
+         f = States.erase(f);
+      }
+      ++f;
+   }
+
+   return Result;
 }
 
 #endif

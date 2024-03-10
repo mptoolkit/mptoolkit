@@ -22,6 +22,7 @@
 
 #include "common/leftrightstack.h"
 #include "common/conflist.h"
+#include "common/namedenum.h"
 #include "mp-algorithms/eigensolver.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
@@ -29,11 +30,47 @@
 #include <boost/shared_ptr.hpp>
 #include <fstream>
 
-struct MixInfo
+struct PreExpansionTraits
 {
-   double MixFactor;
-   double RandomMixFactor;
+   enum Enum { SVD, RSVD, RangeFinding, Random, NoExpansion };
+   static constexpr std::array<char const*,5> Names = { "fullsvd", "rsvd", "range", "random", "none" };
+   static constexpr Enum Default = NoExpansion;
+   static constexpr char const* StaticName = "pre-expansion algorithm";
 };
+
+using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
+
+struct PostExpansionTraits
+{
+   enum Enum { SVD, RSVD, RangeFinding, Random, Mixing, NoExpansion };
+   static constexpr std::array<char const*, 6> Names = { "fullsvd", "rsvd", "range", "random", "mixing", "none"};
+   static constexpr Enum Default = RSVD;
+   static constexpr char const* StaticName = "post-expansion algorithm";
+};
+
+using PostExpansionAlgorithm = NamedEnumeration<PostExpansionTraits>;
+
+// structure to represent the 'oversampling' of the random range finding algorithm for the randomized SVD.
+// In each quantum number sector, if the desired number of states is n,
+// then over-sample to min(n+Add, n*Scale)
+// Recommended value of Add is 10
+// Scale should work OK from 1.0 and up.
+// ExtraPerSector is an additional 'ExtraStatesPerSector' that applies at the oversampling phase
+struct OversamplingInfo
+{
+   OversamplingInfo() : Add(0), Scale(1.0), ExtraPerSector(0.0) {}
+   OversamplingInfo(int Add_, double Scale_) : Add(Add_), Scale(Scale_), ExtraPerSector(0.0) {}
+   OversamplingInfo(int Add_, double Scale_, int Extra_) : Add(Add_), Scale(Scale_), ExtraPerSector(Extra_) {}
+
+   // return the actual number of vectors to use, if we want to get k accurate vectors
+   int operator()(int k) const { return std::min(k+Add, int(k*Scale+0.5)); }  // round up
+
+   int Add;
+   double Scale;
+   int ExtraPerSector;
+};
+
+std::ostream& operator<<(std::ostream& out, OversamplingInfo const& x);
 
 class DMRG
 {
@@ -55,9 +92,6 @@ class DMRG
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
 
-      void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
-      void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
-
       //   int LeftSize() const { return Psi.LeftSize(); }
       //   int RightSize() const { return Psi.RightSize(); }
 
@@ -76,14 +110,35 @@ class DMRG
       // wavefunction (set to psi by StartSweep())
       double FidelityLoss() const;
 
+      // returns the dimension of the Basis1() of the active site
+      int BasisTotalDimension1() const { return C->Basis1().total_dimension(); }
+
+      // returns the dimension of the Basis2() of the active site
+      int BasisTotalDimension2() const { return C->Basis2().total_dimension(); }
+
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 
       void PrepareConvergenceTest();
       bool IsConverged() const;
 
-      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo);
-      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo);
+      // Coarse-grain the current site with the site on the right, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainRight(StatesInfo const& SInfo);
+
+      // Coarse-grain the current site with the site on the left, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& SInfo);
+
+      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+
+      // The old 3S algorithm
+      TruncationInfo TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor);
+      TruncationInfo TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor);
+
+      // Expand the environment basis to that it contains at least StatesWanted states, if possible.
+      // Returns the actual environment size.
+      int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
+      int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
 
       void debug_check_structure() const;
 
@@ -121,7 +176,11 @@ class DMRG
       double SweepStartTime;         // wall time at the start of the sweep
       double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
       double SweepEnergyError;       // standard error of the energy at each iteration
-      double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
+
+      PreExpansionAlgorithm PreExpansionAlgo;
+      PostExpansionAlgorithm PostExpansionAlgo;
+      OversamplingInfo Oversampling;
+      bool ProjectTwoSiteTangent;
 
       // some statistics, for current iteration
       int IterationNumMultiplies;
@@ -152,7 +211,6 @@ class DMRG
       LocalEigensolver Solver_;
       int Verbose;
 
-      MixInfo    MixingInfo;
       StateComponent PsiPrevC;
 };
 

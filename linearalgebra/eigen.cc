@@ -19,6 +19,7 @@
 
 #include "matrix.h"
 #include "scalarmatrix.h"
+#include "matrix_utility.h"
 
 // randomize signs of vectors in debug mode
 #if !defined(NDEBUG) && !defined(RANDOMIZE_VECTORS)
@@ -47,8 +48,7 @@ void SingularValueDecomposition(int Size1, int Size2,
                                 std::complex<double>* A, std::complex<double>* U,
                                 double* D, std::complex<double>* VH);
 
-void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U,
-                                    double* D, double* VT);
+void SingularValueDecompositionFull(int Size1, int Size2, double* A, double* U, double* D, double* VT);
 
 void SingularValueDecompositionFull(int Size1, int Size2,
                                     std::complex<double>* A, std::complex<double>* U,
@@ -99,7 +99,17 @@ void InvertGeneral(int Size, std::complex<double>* A, int ldA);
 void InvertUpperTriangular(int Size, std::complex<double>* A, int ldA);
 void InvertLowerTriangular(int Size, std::complex<double>* A, int ldA);
 
+void LQ_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau);
 void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void LQ_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
+void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void QR_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau);
+void QR_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void QR_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
+void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
 
 } // namespace Private
 
@@ -469,6 +479,52 @@ struct ImplementDiagonalize<M, L&, R&,
 
 // SingularValueDecomposition
 
+template <typename A, typename D,
+          typename Ai, typename Di>
+struct ImplementSingularValues<A, D, Concepts::MatrixExpression<double, Ai>, VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<double> Acopy(a);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D,
+          typename Ai, typename Di>
+struct ImplementSingularValues<A, D, Concepts::MatrixExpression<std::complex<double>, Ai>, VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double>> Acopy(a);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      assign(d, Dres);
+   }
+};
+
 // TODO: we could avoid some temporaries here with some overloads for CONTIGUOUS_MATRIX
 // But that is hardly necessary with the reference counted implementation
 
@@ -556,6 +612,79 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
    }
 };
 
+template <typename A, typename U, typename D,
+          typename Ai, typename Ui, typename Di>
+struct ImplementSingularValueDecompositionLeft<A, U, D,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
+                                           VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(u, n, min_mn);
+      try_resize(d, min_mn);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double> > Acopy(a);
+      Matrix<std::complex<double> > Ures(n, min_mn);
+      Vector<double> Dres(min_mn);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < min_mn; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Ures(LinearAlgebra::all,i) *= Phase;
+      }
+#endif
+      assign(u, Ures);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D, typename Vt,
+          typename Ai, typename Di, typename Vti>
+struct ImplementSingularValueDecompositionRight<A, D, Vt,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           VECTOR_EXPRESSION(double, Di),
+                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d, Vt& vt) const
+   {
+      int m = a.size2();
+      int n = a.size1();
+      int min_mn = std::min(m,n);
+
+      try_resize(d, min_mn);
+      try_resize(vt, min_mn, m);
+
+      if (min_mn == 0) return;
+
+      Matrix<std::complex<double> > Acopy(a);
+      Vector<double> Dres(min_mn);
+      Matrix<std::complex<double> > Vtres(min_mn, m);
+
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < min_mn; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
+      }
+#endif
+      assign(d, Dres);
+      assign(vt, Vtres);
+   }
+};
+
+
 // version taking a diagonal matrix for D
 
 // Real is either double or complex<double>
@@ -622,11 +751,28 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       try_resize(d, max_mn, max_mn);
       try_resize(vt, max_mn, n);
 
-      if (min_mn == 0) return;
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (min_mn == 0)
+      {
+         if (n == 0)
+         {
+            // set u to be a random m x m orthogonal matrix
+            u = LinearAlgebra::random_unitary<Real>(m, m);
+         }
+         else // m == 0
+         {
+            // set vt to be a random n x n orthogonal matrix
+            vt = LinearAlgebra::random_unitary<Real>(n, n);
+         }
+         zero_all(d);
+         return;
+      }
 
       Matrix<Real> Acopy(a);
       Matrix<Real> Ures(m, m);
-      Vector<double> Dres(min_mn);
+      Vector<double> Dres(max_mn);
       Matrix<Real> Vtres(n, n);
 
       Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
@@ -644,7 +790,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       zero_all(d);
       zero_all(vt);
       assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
-      assign(d.diagonal()[LinearAlgebra::range(0, min_mn)], Dres);
+      assign(d.diagonal(), Dres);
       assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
    }
 };
@@ -682,6 +828,116 @@ struct ImplementSingularValueDecompositionFullRight<A, U, D, Vt,
          return SingularValueDecomposition(a, u, d, vt);
       else
          return SingularValueDecompositionFull(a, u, d, vt);
+   }
+};
+
+template <typename A, typename U, typename D,
+          typename Ai, typename Ui, typename Di>
+struct ImplementSingularValueDecompositionLeftFull<A, U, D,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           Concepts::MatrixExpression<std::complex<double>, Ui>,
+                                           VECTOR_EXPRESSION(double, Di)>
+{
+   typedef void result_type;
+   void operator()(A const& a, U& u, D& d) const
+   {
+      int m = a.size1();
+      int n = a.size2();
+
+      try_resize(u, m, m);
+      try_resize(d, m);
+
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (n == 0)
+      {
+         if (m > 0)
+         {
+            // set u to be a random m x m orthogonal matrix
+            assign(u, LinearAlgebra::random_unitary<std::complex<double>>(m, m));
+            zero_all(d);
+         }
+         //else we have a 0 x 0 matrix
+         return;
+      }
+      if (m == 0)
+         return;    // matrices are 0x0
+
+      Matrix<std::complex<double>> Acopy(a);
+      Matrix<std::complex<double>> Ures(m, m);
+      Vector<double> Dres(m);
+      //TRACE(m)(n);
+
+      if (m < n)
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+      else
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < m; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Ures(LinearAlgebra::all,i) *= Phase;
+      }
+#endif
+      assign(u, Ures);
+      assign(d, Dres);
+   }
+};
+
+template <typename A, typename D, typename Vt,
+          typename Ai, typename Di, typename Vti>
+struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
+                                           Concepts::MatrixExpression<std::complex<double>, Ai>,
+                                           VECTOR_EXPRESSION(double, Di),
+                                           Concepts::MatrixExpression<std::complex<double>, Vti>>
+{
+   typedef void result_type;
+   void operator()(A const& a, D& d, Vt& vt) const
+   {
+      int m = a.size1();
+      int n = a.size2();
+
+      try_resize(d, n);
+      try_resize(vt, n, n);
+
+      // If there are no non-zero singular values then we can't call LAPACK, and the usual SVD
+      // isn't well defined.  But we can interpret the full SVD for an Mx0 matrix as an MxM random orthogonal
+      // U, an MxM zero matrix D, and an Mx0 matrix Vt, and similarly for a 0xN matrix.
+      if (m == 0)
+      {
+         if (n > 0)
+         {
+            // set vt to be a random n x n orthogonal matrix
+            vt = LinearAlgebra::random_unitary<std::complex<double>>(n, n);
+            zero_all(d);
+         }
+         return;
+      }
+
+      // if n is zero, then the matrices are 0x0 so we can quit now
+      if (n == 0)
+         return;
+
+      Matrix<std::complex<double> > Acopy(a);
+      Vector<double> Dres(n);
+      Matrix<std::complex<double> > Vtres(n, n);
+
+      if (n < m)
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+      else
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+
+#if defined(RANDOMIZE_VECTORS)
+      for (int i = 0; i < n; ++i)
+      {
+         double Phase = (rand() % 2) * 2.0 - 1.0;
+         Vtres(i,LinearAlgebra::all) *= Phase;
+      }
+#endif
+      assign(d, Dres);
+      assign(vt, Vtres);
    }
 };
 
@@ -888,48 +1144,193 @@ struct ImplementSingularFactorize<M, Concepts::MatrixExpression<double, Mi>>
 };
 
 //
-// QR_Factorize
+// QR_FactorizeFull
 //
 
 template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, Concepts::MatrixExpression<std::complex<double>, Mi>>
+struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
 {
-   typedef Matrix<std::complex<double> > result_type;
-   result_type operator()(M const& m) const
-   {
-      Matrix<std::complex<double> > Mat(m);
-      return QR_Factorize(m);
-   }
-};
-
-#if 0
-template <typename M, typename Mi>
-struct ImplementQRFactorize<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
-{
-   typedef Matrix<std::complex<double> > result_type;
+   typedef Matrix<double> result_type;
    result_type operator()(M& m) const
    {
       int s1 = size1(m);
       int s2 = size2(m);
       int sz = std::min(s1, s2);
-      Vector<std::complex<double> > Tau(sz);
+      Vector<double> Tau(sz);
       Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
 
-      Matrix<std::complex<double> > U = ScalarMatrix<double>(size1(m), size1(m), 1.0);
-      Matrix<std::complex<double> > v(size1(m),1, 0.0);
-      for (int i = sz-1; i >= 0; --i)
+      // Convert the product of elementary reflectors into the Q matrix
+      // NOTE: There is an alternative approach, which is to keep the matrix as it is
+      // and use LAPACK dormqr() function to multiply another matrix directly, without explicitly constructing Q.
+      // We could also use LAPACK dlacpy here
+      Matrix<double> Q(s1, s1, 0.0);
+      Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+
+      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes upper-triangular
+      for (int i = 0; i < s1; ++i)
       {
-         v(i,0) = 1.0;
-         for (int j = i+1; j < s1; ++j)
+         int msz = std::min(i,s2);
+         for (int j = 0; j < msz; ++j)
          {
-            v(j,0) = m(j,i); m(j,i) = 0.0;  // zero out the lower part while forming the elementary reflector
+            m(i,j) = 0.0;
          }
-         U = Matrix<std::complex<double>>(ScalarMatrix<double>(size1(m), size1(m), 1.0) - conj(Tau[i])*v*herm(v)) * U;
       }
-      return U;
+      return Q;
    }
 };
-#endif
+
+template <typename M, typename Mi>
+struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
+{
+   typedef Matrix<std::complex<double>> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<std::complex<double>> Tau(sz);
+      Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      // NOTE: There is an alternative approach, which is to keep the matrix as it is
+      // and use LAPACK dormqr() function to multiply another matrix directly, without explicitly constructing Q.
+      // We could also use LAPACK dlacpy here
+      Matrix<std::complex<double>> Q(s1, s1, 0.0);
+      Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
+
+      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes upper-triangular
+      for (int i = 0; i < s1; ++i)
+      {
+         int msz = std::min(i,s2);
+         for (int j = 0; j < msz; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+//
+// LQ_FactorizeFull
+//
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
+{
+   typedef Matrix<double> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<double> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<double> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
+{
+   typedef Matrix<std::complex<double>> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<std::complex<double>> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<std::complex<double>> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+// OrthogonalizeRowsAgainst / OrthogonalizeColsAgainst
+
+template <typename T>
+void
+OrthogonalizeRowsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size2(), Y.size2());
+   CHECK(X.size1() + Y.size1() <= X.size2())("Cannot orthogonalize - rank mismatch")(X.size1())(Y.size1())(X.size2());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y and then
+   // orthogonalize via LQ. Then test how orthogonal X and Y are, and if necessary do another round.
+   Matrix<T> M = X*herm(Y);
+   X = X - M*Y;
+   X = LQ_FactorizeThin(std::move(X)).second;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the row vectors of Y and the
+   // row vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = X*herm(Y);
+   if (amax(M) > eps)
+   {
+      X = X - M*Y;
+      X = LQ_FactorizeThin(std::move(X)).second;
+   }
+}
+
+template <typename T>
+void
+OrthogonalizeColsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size1(), Y.size1());
+   CHECK(X.size2() + Y.size2() <= X.size1())("Cannot orthogonalize - rank mismatch")(X.size2())(Y.size2())(X.size1());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y
+   // to orthogonalize X against Y, and then do a QR decomposition of X.  If X remains orthogonal to Y, when we've finished.
+   // Otherwise, do another iteration.
+   Matrix<T> M = herm(Y)*X;
+   X = X - Y*M;
+   X = QR_FactorizeThin(std::move(X)).first;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the column vectors of Y and the
+   // column vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = herm(Y)*X;
+   if (amax(M) > eps)
+   {
+      X = X - Y*M;
+      X = QR_FactorizeThin(std::move(X)).first;
+   }
+}
 
 //
 // InvertHPD

@@ -521,6 +521,38 @@ MakeIdentityFrom(IrredTensor<T, Basis1T, Basis2T, Structure> const& s)
    return IrredTensor<T, Basis1T, Basis2T, Structure>::make_identity(s.Basis1());
 }
 
+// for a scalar operator, get the rank of each quantum number sector, as measured by the
+// structurally non-zero matrix elements. This is only an upper bound for the true rank,
+// which would require some SVD or rank-revealing QR.
+
+template <typename T, typename Structure>
+std::map<QuantumNumbers::QuantumNumber, int>
+RankPerSector(IrredTensor<T, VectorBasis, VectorBasis, Structure> const& s)
+{
+   CHECK(is_scalar(s.TransformsAs()));
+   std::set<int> UsedBasis1, UsedBasis2;
+   for (auto i = iterate(s.data()); i; ++i)
+   {
+      for (auto j = iterate(i); j; ++j)
+      {
+         UsedBasis1.insert(i.index());
+         UsedBasis2.insert(j.index2());
+      }
+   }
+   std::map<QuantumNumbers::QuantumNumber, int> Basis1Size, Basis2Size;
+   for (auto i : UsedBasis1)
+      Basis1Size[s.Basis1()[i]] += s.Basis1().dim(i);
+   for (auto j : UsedBasis2)
+      Basis2Size[s.Basis2()[j]] += s.Basis2().dim(j);
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (auto const& q : Basis1Size)
+   {
+      if (q.second > 0 && Basis2Size[q.first] > 0)
+         Result[q.first] = std::min(q.second, Basis2Size[q.first]);
+   }
+   return Result;
+}
+
 } // namespace Tensor
 
 namespace LinearAlgebra

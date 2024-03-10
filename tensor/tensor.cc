@@ -195,7 +195,7 @@ template <typename T, typename B1, typename B2, typename S>
 std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
 {
    return out << "Operator transforms with symmetry " << Op.GetSymmetryList()
-              << " as " << Op.TransformsAs() << ":\n" << Op.data();
+              << " as " << Op.TransformsAs() << ":\nBasis 1 is: " << Op.Basis1() << "\nBasis2 is: " << Op.Basis2() << "\n" << Op.data();
 }
 
 template <typename T, typename B1, typename B2, typename S>

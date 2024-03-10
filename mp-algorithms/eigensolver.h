@@ -27,6 +27,7 @@
 class LocalEigensolver
 {
    public:
+      // FIXME: this could use common/namedenum.h
       enum class Solver { InvalidSolver, Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
                              Davidson, DavidsonTarget, DavidsonMaxOverlap,
                              LastSolver = DavidsonMaxOverlap};

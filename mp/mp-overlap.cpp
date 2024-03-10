@@ -29,7 +29,7 @@
 namespace prog_opt = boost::program_options;
 
 void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPart,
-                 bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
+                 bool ShowRate, bool ShowMagnitude, bool ShowArgument, bool ShowRadians)
 {
    if (ShowRealPart)
    {
@@ -38,6 +38,12 @@ void PrintFormat(std::complex<double> Value, bool ShowRealPart, bool ShowImagPar
    if (ShowImagPart)
    {
       std::cout << std::setw(20) << Value.imag() << "    ";
+   }
+   if (ShowRate)
+   {
+      // NOTE: we don't negate the log term here
+      std::cout << std::setw(20) << (std::log(LinearAlgebra::norm_frob(Value)))
+                << "    ";
    }
    if (ShowMagnitude)
    {
@@ -62,7 +68,7 @@ int main(int argc, char** argv)
       bool UseTempFile = false;
       bool ShowRealPart = false, ShowImagPart = false, ShowMagnitude = false;
       bool ShowCartesian = false, ShowPolar = false, ShowArgument = false;
-      bool ShowRadians = false, ShowCorrLength = false;
+      bool ShowRadians = false, ShowCorrLength = false, ShowRate = false;
       std::string LhsStr, RhsStr;
       bool Quiet = false;
       bool Reflect = false;
@@ -85,6 +91,8 @@ int main(int argc, char** argv)
           "display the argument (angle) of the result")
          ("radians", prog_opt::bool_switch(&ShowRadians),
           "display the argument in radians instead of degrees")
+          ("rate", prog_opt::bool_switch(&ShowRate),
+           "display the rate function log(magnitude) (no minus sign!)")
          ("reflect", prog_opt::bool_switch(&Reflect),
           "reflect psi2")
          ("conj", prog_opt::bool_switch(&Conj),
@@ -130,11 +138,12 @@ int main(int argc, char** argv)
       // If no output switches are used, default to showing everything
       if (!ShowRealPart && !ShowImagPart && !ShowMagnitude
           && !ShowCartesian && !ShowPolar && !ShowArgument
-          && !ShowRadians && !ShowCorrLength)
+          && !ShowRadians && !ShowCorrLength && !ShowRate)
       {
          ShowCartesian = true;
          ShowPolar = true;
          ShowCorrLength = true;
+         ShowRate = true;
       }
 
       if (ShowCartesian)
@@ -204,6 +213,8 @@ int main(int argc, char** argv)
             std::cout << "#real                   ";
          if (ShowImagPart)
             std::cout << "#imag                   ";
+         if (ShowRate)
+            std::cout << "#rate                   ";
          if (ShowMagnitude)
             std::cout << "#magnitude              ";
          if (ShowArgument)
@@ -214,7 +225,7 @@ int main(int argc, char** argv)
 
       std::complex<double> x = overlap(Psi1, Psi2);
 
-      PrintFormat(x, ShowRealPart, ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
+      PrintFormat(x, ShowRealPart, ShowImagPart, ShowRate, ShowMagnitude, ShowArgument, ShowRadians);
 
       pheap::Shutdown();
 
