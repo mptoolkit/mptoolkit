@@ -1,6 +1,25 @@
 #!/bin/bash
+# Matrix Product Toolkit http://mptoolkit.qusim.net/
+#
+# scripts/update-copyright-header.sh
+#
+# Copyright (C) 2016-2024 Ian McCulloch <ian@qusim.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Reseach publications making use of this software should include
+# appropriate citations and acknowledgements as described in
+# the file CITATIONS in the main source directory.
+#----------------------------------------------------------------------------
+# ENDHEADER
 
-# Lookup table for names to email addresses
+# This script automates the process of updating and managing file headers, including
+# copyright notices, contributors' information, and license details.
+
+# Lookup table for mapping contributor names to email addresses
 declare -A email_lookup=(
   ["Ian McCulloch"]="ian@qusim.net"
   ["Jesse Osborne"]="j.osborne@uqconnect.edu.au"
@@ -12,32 +31,33 @@ declare -A email_lookup=(
   # Add more entries as needed
 )
 
-# Function to get the email address for a contributor
-function get_email {
-  local contributor="$1"
-
-  if [ "${email_lookup[$contributor]+isset}" ]; then
-    echo "${email_lookup[$contributor]}"
-  else
-    echo "Error: Email address for $contributor not found in email lookup table." >&2
-    echo "Names appearing in the git log are: " >&2
-    git log --all --format="%aN <%aE>" | grep "$contributor" | sort -u >&2
-    exit 1
-  fi
-}
-
 # Function to get the copyright strings for the header
 function get_copyright_strings {
    local file=$1
+   local original_header="$2"
 
    # Function to get a list of contributors for the copyright notice
    function get_contributors {
       local file=$1
 
       local contributors_git=$(git log --follow --pretty=format:'%an' "$file" | sort -u) || exit 1
-      local contributors_existing=$(grep -oP "// Copyright \(C\) [0-9]+-[0-9]+ \K[^<]+|// Copyright \(C\) [0-9]+-[0-9]+ \K[^<]+(?= <)" "$file" | sed 's/ $//' | sort -u) || exit 1
+      local contributors_existing=$(echo "$original_header" | grep -oP "// Copyright \(C\) [0-9]+-[0-9]+ \K[^<]+(?= <)" | sort -u)
 
       echo -e "$contributors_git\n$contributors_existing" | grep -v '^$' | sort -u
+   }
+
+   # Function to get the email address for a contributor
+   function get_email {
+      local contributor="$1"
+
+      if [ "${email_lookup[$contributor]+isset}" ]; then
+         echo "${email_lookup[$contributor]}"
+      else
+         echo "Error: Email address for $contributor not found in email lookup table." >&2
+         echo "Names appearing in the git log are: " >&2
+         git log --all --format="%aN <%aE>" | grep "$contributor" | sort -u >&2
+         exit 1
+      fi
    }
 
    # Function to get the dates of contributions for a specific contributor
@@ -46,16 +66,17 @@ function get_copyright_strings {
       local contributor="$2"
 
       # Get dates from existing copyright header
-      local existing_dates=$(grep -oP "// Copyright \(C\) [0-9]+(-[0-9]+)? $contributor" "$file" | grep -oP '[0-9]+(-[0-9]+)?' | sed 's/-/\n/g' | sort -u)
+      local existing_dates=$(echo "$original_header" | grep -oP "// Copyright \(C\) [0-9]+(-[0-9]+)? $contributor" | grep -oP '[0-9]+(-[0-9]+)?' | sed 's/-/\n/g' | sort -u)
 
       # Get dates from git logs
-      local git_dates=$(git log --follow --pretty=format:'%an %ad' --date=format:%Y "$file" | grep "$contributor" | awk '{print $NF}' | cut -d'-' -f1 | sort -u)
+      local git_dates=$(git log --follow --pretty=format:'%an %ad' --date=format:%Y "$file" | awk -v contributor="$contributor" '$0 ~ contributor {print $NF}' | sort -u)
 
-      # Combine and format dates
+      # Combine and format dates from existing header and git logs
       local all_dates=$(echo -e "$existing_dates\n$git_dates" | grep -v '^$' | sort -u)
       local first_year=$(echo "$all_dates" | head -n 1)
       local last_year=$(echo "$all_dates" | tail -n 1)
 
+      # Format the date range for the contributor
       if [ "$first_year" = "$last_year" ]; then
          echo "$first_year"
       else
@@ -72,58 +93,77 @@ function get_copyright_strings {
          echo "Error occurred while processing file $file" >&2
          exit 1
       fi
-      copyright_strings+="// Copyright (C) $(get_contributor_dates "$file" "$contributor") $contributor <$email>\n" || exit 1
+      copyright_strings+="Copyright (C) $(get_contributor_dates "$file" "$contributor") $contributor <$email>\n" || exit 1
    done <<< "$contributors"
 
-   echo -e "$copyright_strings"
+   echo -ne "$copyright_strings"
 }
 
-# Function to get the original header from the file
+# Function to retrieve the original header from a file
 function get_original_header {
-  local file="$1"
 
-  # Check if the file exists
-  if [ ! -f "$file" ]; then
-    echo "Error: File not found: $file" >&2
-    exit 1
-  fi
+   # Check if the file exists
+   if [ ! -f "$file" ]; then
+      echo "Error: File not found: $file" >&2
+      exit 1
+   fi
 
-  # Get the header content up to // ENDHEADER (inclusive)
-  original_header=$(awk '/\/\/ ENDHEADER/{print; exit} 1' "$file")
+   case "$file" in
+   *.h | *.cpp | *.cc)
+      local end_pattern="\/\/ ENDHEADER"
+      ;;
+   *.sh)
+      local end_pattern="# ENDHEADER"
+      ;;
+   *.py)
+      local end_pattern="# ENDHEADER"
+      ;;
+   *)
+      echo "Unsupported file type: $file" >&2
+      exit 1
+      ;;
+   esac
 
-  # If there is no header, exit an empty string
-  if [ -z "$original_header" ]; then
-    echo ""
-  else
-    echo "$original_header"
-  fi
+   # Use grep to check for the presence of ENDHEADER
+   if grep -q "^$end_pattern" "$file"; then
+      local original_header=$(awk "/$end_pattern/{print; exit} {print}" "$file")
+      echo -e "$original_header"
+   else
+      echo ""
+   fi
 }
 
 # Function to display usage information
 function show_usage {
   cat <<EOF
-Usage: $0 [--help|--show|--files|--exclude [path]|--diff|--commit|file [names...]]
+Usage: $0 [--help|--show|--list|--diff|--commit|--backup|--exclude [path]|file [names...]]
 
 Options:
   --help            : Display this help message.
-  --show            : Display the updated header for each file (default action with --files).
-  --files           : List the files to be examined.
-  --exclude [path]  : Exclude this path from the search; can be used more than once.
+  --show            : Display the updated headers.
+  --list            : Don't update anything, just list the files to be examined.
   --diff            : Show the diff between the existing file content and the proposed changes.
-  --commit          : Apply the changes to the header.
+  --commit          : Apply the changes to the headers.
   --backup          : With --commit, save the old file as filename.bak.
-  --file [names...] : Show the updated header for this list of files. Can be used with --diff.
+  --exclude [path]  : Exclude this path from the search; can be used more than once.
+  --file [names...] : Instead of searching, use this list of files.
 
 EOF
 }
 
-# Function to get the first and last years of contribution for each contributor
+# Function to generate the updated header template
 function get_header {
-  local file=$1
-  local top_directory=$(git rev-parse --show-toplevel)
-  local relative_filename=$(realpath --relative-to="$top_directory" "$file")
-  [[ -z  "$relative_filename" ]] && exit 1
-  local header_template="// -*- C++ -*-
+   local file=$1
+   local original_header=$2
+   local top_directory=$(git rev-parse --show-toplevel)
+   local relative_filename=$(realpath --relative-to="$top_directory" "$file")
+   [[ -z "$relative_filename" ]] && exit 1
+
+   # Check file extension to determine language
+   case "$file" in
+      *.h | *.cpp | *.cc)
+      local comment="// "
+      local header_template="// -*- C++ -*-
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
@@ -141,18 +181,79 @@ function get_header {
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER"
+      ;;
+      *.sh)
+      local comment="# "
+      local header_template="#!/bin/bash
+# Matrix Product Toolkit http://mptoolkit.qusim.net/
+#
+# $relative_filename
+#
+# GENERATED_FILE_NOTICE
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Reseach publications making use of this software should include
+# appropriate citations and acknowledgements as described in
+# the file CITATIONS in the main source directory.
+#----------------------------------------------------------------------------
+# ENDHEADER"
+      ;;
+      *.py)
+      local comment="# "
+      local header_template="#!/usr/bin/env python
+# Matrix Product Toolkit http://mptoolkit.qusim.net/
+#
+# $relative_filename
+#
+# GENERATED_FILE_NOTICE
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Reseach publications making use of this software should include
+# appropriate citations and acknowledgements as described in
+# the file CITATIONS in the main source directory.
+#----------------------------------------------------------------------------
+# ENDHEADER"
+      ;;
+      *)
+      echo "Unsupported file type: $file" >&2
+      exit 1
+      ;;
+   esac
 
-   local copyright_strings=$(get_copyright_strings "$file") || exit 1
+   local copyright_strings=$(get_copyright_strings "$file" "$original_header" | sort) || exit 1
    [[ -z  "$copyright_strings" ]] && exit 1
+
+   # Initialize the modified string
+   local mcopyright_strings=""
+
+   # Loop over each line and add the comment string
+   while IFS= read -r line; do
+      mcopyright_strings+="$comment$line\n"
+   done <<< "$copyright_strings"
+
+   copyright_strings=$(echo -e "$mcopyright_strings" | sed '$s/\\n$//')
+
+   # Combine the updated copyright strings with the header template
    local updated_header=$(awk -v copyright="$copyright_strings" '/GENERATED_FILE_NOTICE/ { print copyright; next } 1' <<< "$header_template")
+
+
+   #local updated_header=$(awk -v comment="$comment" -v copyright="$copyright_strings" '/GENERATED_FILE_NOTICE/ { print comment copyright; next } 1' <<< "$header_template")
 
    echo "$updated_header"
 }
 
 # Parse command-line options
 show=false
-files=false
-showfile=false
+list=false
+filelist=false
 diff=false
 commit=false
 backup=false
@@ -160,6 +261,7 @@ num_options=0
 filenames=()
 excludes=()
 
+# Main loop to process files based on command-line options
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --help)
@@ -170,16 +272,15 @@ while [ "$#" -gt 0 ]; do
       ((num_options++))
       show=true
       ;;
-    --files)
+    --list)
       ((num_options++))
-      files=true
+      list=true
       ;;
     --backup)
       backup=true
       ;;
     --file)
-      #((num_options++))
-      showfile=true
+      filelist=true
       ;;
     --diff)
       ((num_options++))
@@ -200,7 +301,7 @@ while [ "$#" -gt 0 ]; do
       fi
       ;;
     *)
-      if $showfile; then
+      if $filelist; then
         filenames+=("$1")
       else
         show_usage
@@ -212,14 +313,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$num_options" -eq 0 ]; then
-   # If we've specified some files, then default to --show
-   if $showfile; then
-      show=true
-      num_options=1
-   else
-      show_usage
-      exit 1
-   fi
+   echo "Missing option, need one of --show|--list|--diff|--commit"
+   show_usage
+   exit 1
 fi
 
 if [ "$num_options" -ne 1 ]; then
@@ -234,84 +330,72 @@ if $backup && ! $commit; then
    exit 1
 fi
 
-if $showfile; then
+if $filelist; then
    find_command="printf '%s\n' \"\${filenames[@]}\""
 else
-   find_command="find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.cc' \) ${excludes[@]/#/-and -not -path }"
+   find_command="find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.sh' -o -name '*.py' \) ${excludes[@]/#/-and -not -path }"
 fi
 
 eval "$find_command" | while IFS= read -r file; do
 
-  # If --files is specified, just list the files
-  if $files; then
-    echo "$file"
-    continue
-  fi
+   # If --list is specified, just list the files
+   if $list; then
+      echo "$file"
+      continue
+   fi
 
-  # Check if the file contains the marker "// ENDHEADER"
-  if grep -q '// ENDHEADER' "$file"; then
-    # Generate the updated header template
-    updated_header=$(get_header "$file") || exit 1
+   # scan the original header
+   original_header=$(get_original_header "$file")
 
-    # Show file content
-    if $show; then
+   # Generate the updated header template
+   updated_header=$(get_header "$file" "$original_header") || exit 1
+
+   # Show file content
+   if $show; then
       echo -e "File: $file\n$updated_header\n"
-    fi
+      continue
+   fi
 
-    # Display the diff
-    if $diff; then
-      original_header=$(get_original_header "$file") || exit 1
-      echo -e "File: $file\nDifferences in the updated header:"
-      diff -u -L "Original $file" -L "Updated $file" <(echo -e "$original_header") <(echo -e "$updated_header")
+   if [ "$updated_header" == "$original_header" ]; then
+      echo "No changes required in $file"
       echo
-    fi
+      continue
+   fi
 
-    # Apply changes only if --commit is specified
-    if $commit; then
+   # Display the diff
+   if $diff; then
+      if [ -z "$original_header" ]; then
+         echo "New header for file $file"
+      fi
+      diff -u -L "Current $file" -L "Updated $file" <(echo -e "$original_header") <(echo -e "$updated_header")
+      echo
+      continue
+   fi
+
+   if $commit; then
+
       # Create a temporary file
       temp_file=$(mktemp) || exit 1
-
-
-      original_header=$(get_original_header "$file")
-      if [ "$updated_header" == "$original_header" ]; then
-         echo "No changes required in $file"
-         continue
-      fi
 
       # Add the updated header to the temp file
       echo -e "$updated_header" > "$temp_file"
 
-      # Add the original file contents after // ENDHEADER to the temp file
-      sed -n '/\/\/ ENDHEADER/,$p' "$file" | tail -n +2 >> "$temp_file"
+      if [ -z "$original_header" ]; then
+         # if there is no header
+
+         # add a blank line, if there wasn't one already
+         [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
+         cat "$file" >> "$temp_file"
+      else
+         # there is an existing header
+
+         # Add the original file contents after // ENDHEADER or # ENDHEADER to the temp file
+         awk '/^\/\/ ENDHEADER|^# ENDHEADER/{flag=1; next} flag' "$file" >> "$temp_file"
+      fi
 
       # Backup the original file if --backup is specified
       if $backup; then
          mv "$file" "$file.bak"
-      fi
-
-      # Move the temp file to the actual filename
-      mv "$temp_file" "$file"
-      echo "Updated header of $file"
-      if $backup; then
-         echo "Old version saved as $file.bak"
-      fi
-    fi
-  else
-    # Add new header only if --commit is specified
-    if $commit; then
-      # Create a temporary file to write the updated content
-      temp_file=$(mktemp) || exit 1
-
-      # Add new header to the temporary file
-      new_header=$(get_header "$file") || exit 1
-      echo -e "$new_header" > "$temp_file"
-      # add a blank line, if there wasn't one already
-      [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
-      cat "$file" >> "$temp_file"
-
-      # Backup the original file if --backup is specified
-      if $backup; then
-        mv "$file" "$file.bak"
       fi
 
       # Replace the old file with the updated one
@@ -320,6 +404,5 @@ eval "$find_command" | while IFS= read -r file; do
       if $backup; then
          echo "Old version saved as $file.bak"
       fi
-    fi
-  fi
+   fi
 done
