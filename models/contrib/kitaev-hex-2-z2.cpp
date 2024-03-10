@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/contrib/kitaev-hex-2-z2.cpp
 //
-// Copyright (C) 2020 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2020-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------

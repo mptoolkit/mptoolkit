@@ -10,7 +10,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -176,7 +176,7 @@ function get_header {
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ function get_header {
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -204,7 +204,7 @@ function get_header {
       ;;
       *.py)
       local comment="# "
-      local header_template="#!/usr/bin/env python
+      local header_template="#!/usr/bin/python3
 # Matrix Product Toolkit http://mptoolkit.qusim.net/
 #
 # $relative_filename
@@ -216,7 +216,7 @@ function get_header {
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -357,8 +357,10 @@ eval "$find_command" | while IFS= read -r file; do
    fi
 
    if [ "$updated_header" == "$original_header" ]; then
+      if $diff; then
+         echo
+      fi
       echo "No changes required in $file"
-      echo
       continue
    fi
 
@@ -382,12 +384,14 @@ eval "$find_command" | while IFS= read -r file; do
 
       if [ -z "$original_header" ]; then
          # if there is no header
+         echo "Added new header to $file"
 
          # add a blank line, if there wasn't one already
          [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
          cat "$file" >> "$temp_file"
       else
          # there is an existing header
+         echo "Updating header of $file"
 
          # Add the original file contents after // ENDHEADER or # ENDHEADER to the temp file
          awk '/^\/\/ ENDHEADER|^# ENDHEADER/{flag=1; next} flag' "$file" >> "$temp_file"
@@ -400,7 +404,6 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Replace the old file with the updated one
       mv "$temp_file" "$file"
-      echo "Added new header to $file"
       if $backup; then
          echo "Old version saved as $file.bak"
       fi
