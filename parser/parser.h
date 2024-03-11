@@ -1,10 +1,11 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // parser/parser.h
 //
-// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2012-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

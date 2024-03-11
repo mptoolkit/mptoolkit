@@ -1,10 +1,11 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/tdvp.cpp
 //
 // Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

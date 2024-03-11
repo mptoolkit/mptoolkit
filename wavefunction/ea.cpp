@@ -1,10 +1,10 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // wavefunction/ea.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 // Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify

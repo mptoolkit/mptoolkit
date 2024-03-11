@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // common/rangelist.h
 //

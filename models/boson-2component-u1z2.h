@@ -1,10 +1,11 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/boson-2component-u1z2.h
 //
-// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2013 Fei Zhan <enfeizhan@gmail.com>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

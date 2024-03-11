@@ -1,10 +1,12 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // linearalgebra/arpack_wrapper.cc
 //
-// Copyright (C) 2007-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2007-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2012 Stefan Depenbrock <Stefan.Depenbrock@physik.uni-muenchen.de>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

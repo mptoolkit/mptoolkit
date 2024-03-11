@@ -1,10 +1,12 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/spinchain.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2018 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2015-2016 Seyed Saadatmand <s.saadatmand@uq.edu.au>
+// Copyright (C) 2017 Tomohiro <tomohiro.hashizume@uq.net.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

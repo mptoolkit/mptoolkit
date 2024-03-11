@@ -1,8 +1,8 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/bosehaldane.cpp
+// models/contrib/bosehaldane-u1.cpp
 //
 // Copyright (C) 2020 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
