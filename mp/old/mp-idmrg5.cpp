@@ -1,10 +1,13 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp/mp-idmrg5.cpp
+// mp/old/mp-idmrg5.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2017 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2012 Stefan Depenbrock <Stefan.Depenbrock@physik.uni-muenchen.de>
+// Copyright (C) 2014-2015 Seyed Saadatmand <s.saadatmand@uq.edu.au>
+// Copyright (C) 2014 Henry Nourse <henry.nourse@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

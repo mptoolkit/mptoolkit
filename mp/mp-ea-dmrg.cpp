@@ -1,8 +1,8 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp/mp-ea-extend.cpp
+// mp/mp-ea-dmrg.cpp
 //
 // Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //

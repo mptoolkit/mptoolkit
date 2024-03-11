@@ -1,10 +1,10 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mpo/operator_component.cpp
 //
-// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2022 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

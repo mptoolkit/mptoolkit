@@ -1,9 +1,10 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-construct.cpp
 //
+// Copyright (C) 2012-2017 Ian McCulloch <ian@qusim.net>
 // Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify

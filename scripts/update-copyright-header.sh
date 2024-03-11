@@ -31,6 +31,10 @@ declare -A email_lookup=(
   # Add more entries as needed
 )
 
+# BuildBot's information.  We want to ignore commits from this user when scanning the logs
+BUILDBOT_USER="MPToolkit BuildBot"
+BUILDBOT_EMAIL="mptoolkit@qusim.net"
+
 # Function to get the copyright strings for the header
 function get_copyright_strings {
    local file=$1
@@ -40,7 +44,7 @@ function get_copyright_strings {
    function get_contributors {
       local file=$1
 
-      local contributors_git=$(git log --follow --pretty=format:'%an' "$file" | sort -u) || exit 1
+      local contributors_git=$(git log --follow --invert-grep --author="$BUILDBOT_USER" --pretty=format:'%an' "$file" | sort -u) || exit 1
       local contributors_existing=$(echo "$original_header" | grep -oP "// Copyright \(C\) [0-9]+-[0-9]+ \K[^<]+(?= <)" | sort -u)
 
       echo -e "$contributors_git\n$contributors_existing" | grep -v '^$' | sort -u
@@ -69,7 +73,7 @@ function get_copyright_strings {
       local existing_dates=$(echo "$original_header" | grep -oP "// Copyright \(C\) [0-9]+(-[0-9]+)? $contributor" | grep -oP '[0-9]+(-[0-9]+)?' | sed 's/-/\n/g' | sort -u)
 
       # Get dates from git logs
-      local git_dates=$(git log --follow --pretty=format:'%an %ad' --date=format:%Y "$file" | awk -v contributor="$contributor" '$0 ~ contributor {print $NF}' | sort -u)
+      local git_dates=$(git log --follow --invert-grep --author="$BUILDBOT_USER" --pretty=format:'%an %ad' --date=format:%Y "$file" | awk -v contributor="$contributor" '$0 ~ contributor {print $NF}' | sort -u)
 
       # Combine and format dates from existing header and git logs
       local all_dates=$(echo -e "$existing_dates\n$git_dates" | grep -v '^$' | sort -u)
@@ -142,8 +146,10 @@ Options:
   --help            : Display this help message.
   --show            : Display the updated headers.
   --list            : Don't update anything, just list the files to be examined.
+  --add             : Add headers to files that don't currently have one.
   --diff            : Show the diff between the existing file content and the proposed changes.
-  --commit          : Apply the changes to the headers.
+  --apply           : Apply the changes to the headers.
+  --commit          : Commit the changes to the git repository (implies --apply).
   --backup          : With --commit, save the old file as filename.bak.
   --exclude [path]  : Exclude this path from the search; can be used more than once.
   --file [names...] : Instead of searching, use this list of files.
@@ -250,13 +256,22 @@ function get_header {
    echo "$updated_header"
 }
 
+# Check if the current directory is a Git repository
+if [ ! -d ".git" ]; then
+    echo "Error: Not a Git repository. Exiting."
+    show_usage
+    exit 1
+fi
+
 # Parse command-line options
 show=false
 list=false
 filelist=false
 diff=false
+apply=false
 commit=false
 backup=false
+add=false
 num_options=0
 filenames=()
 excludes=()
@@ -286,9 +301,20 @@ while [ "$#" -gt 0 ]; do
       ((num_options++))
       diff=true
       ;;
+    --apply)
+      ((num_options++))
+      apply=true
+      ;;
     --commit)
       ((num_options++))
       commit=true
+      if $apply; then
+         ((num_options--))
+      fi
+      apply=true
+      ;;
+    --add)
+      add=true
       ;;
     --exclude)
       if [ "$#" -ge 2 ]; then
@@ -313,7 +339,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$num_options" -eq 0 ]; then
-   echo "Missing option, need one of --show|--list|--diff|--commit"
+   echo "Missing option, need one of --show|--list|--diff|--apply|--commit"
    show_usage
    exit 1
 fi
@@ -325,7 +351,7 @@ if [ "$num_options" -ne 1 ]; then
 fi
 
 if $backup && ! $commit; then
-   echo "Error: --backup option only makes sense with --commit."
+   echo "Error: --backup option only makes sense with --apply."
    show_usage
    exit 1
 fi
@@ -336,7 +362,27 @@ else
    find_command="find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.sh' -o -name '*.py' \) ${excludes[@]/#/-and -not -path }"
 fi
 
-eval "$find_command" | while IFS= read -r file; do
+# Check for uncommitted changes in the repository
+if $apply && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
+   read -p "There are uncommitted changes in the git repo. Do you want to continue? (y/N): " continue_confirm
+   if [[ "$continue_confirm" != "y" ]]; then
+      echo "Exiting without modifying headers."
+      exit 1
+   fi
+fi
+
+# Check if MPTOOLKIT_BUILD_BOT_GPG_KEY_ID is set
+if $commit && [ -z "$MPTOOLKIT_BUILD_BOT_GPG_KEY_ID" ]; then
+   echo "Error: MPTOOLKIT_BUILD_BOT_GPG_KEY_ID environment variable is not set. Please set it to the GPG key ID for the $BUILD_BOT user."
+   exit 1
+fi
+
+# track whether we actually changed a file using --commit
+changedfiles=false
+
+#Originally this was: eval "$find_command" | while IFS= read -r file; do
+# but that runs in a subshell due to the | pipe, and we can't modify local variables inside a subshell
+while IFS= read -r file; do
 
    # If --list is specified, just list the files
    if $list; then
@@ -358,7 +404,6 @@ eval "$find_command" | while IFS= read -r file; do
 
    if [ "$updated_header" == "$original_header" ]; then
       echo "No changes required in $file"
-      echo
       continue
    fi
 
@@ -372,7 +417,17 @@ eval "$find_command" | while IFS= read -r file; do
       continue
    fi
 
-   if $commit; then
+   if $apply; then
+
+      if [ -z "$original_header" ] && ! $add; then
+         echo "Ignoring $file as it doesn't have a header."
+         continue
+      fi
+
+      changedfiles=true
+
+      # Get the permissions of the original file
+      original_mode=$(stat -c %a "$file")
 
       # Create a temporary file
       temp_file=$(mktemp) || exit 1
@@ -381,13 +436,20 @@ eval "$find_command" | while IFS= read -r file; do
       echo -e "$updated_header" > "$temp_file"
 
       if [ -z "$original_header" ]; then
-         # if there is no header
+         if $add; then
+            # if there is no header
+            echo "Added new header to $file"
 
-         # add a blank line, if there wasn't one already
-         [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
-         cat "$file" >> "$temp_file"
+            # add a blank line, if there wasn't one already
+            [[ -z $(head -n 1 "$file") ]] || echo >> "$temp_file"
+            cat "$file" >> "$temp_file"
+         else
+            echo "oops, we shouldn't get here!" >&2
+            exit 1
+         fi
       else
          # there is an existing header
+         echo "Updated header of $file"
 
          # Add the original file contents after // ENDHEADER or # ENDHEADER to the temp file
          awk '/^\/\/ ENDHEADER|^# ENDHEADER/{flag=1; next} flag' "$file" >> "$temp_file"
@@ -400,9 +462,31 @@ eval "$find_command" | while IFS= read -r file; do
 
       # Replace the old file with the updated one
       mv "$temp_file" "$file"
-      echo "Added new header to $file"
+      # Update the new file's mode to match the original file
+      chmod "$original_mode" "$file"
       if $backup; then
          echo "Old version saved as $file.bak"
       fi
    fi
-done
+done < <(eval "$find_command")
+
+git_commit_command="GIT_COMMITTER_NAME=\"MPToolkit BuildBot\" GIT_COMMITTER_EMAIL=\"mptoolkit@qusim.net\" git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -S --gpg-sign=$MPTOOLKIT_BUILD_BOT_GPG_KEY_ID -m \"Auto-generate copyright headers\""
+
+if $apply; then
+   if $changedfiles || ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
+      if $commit; then
+         # Commit the changes to the git repo
+         echo -e "\nCommitting changes to the git repository..."
+         eval "$git_commit_command"
+         echo -e "\nSummary of the commit:"
+         git log -1 --stat
+      else
+         echo -e "\nThere are changes to the headers. Commit these to the repository using:"
+         echo -e "$git_commit_command"
+         exit 1
+      fi
+   else
+      echo -e "\nThere were no changes to the headers, nothing else to do."
+      exit 1
+   fi
+fi

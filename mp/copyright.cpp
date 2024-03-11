@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/copyright.cpp
 //
 // Copyright (C) 2002-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Research publications making use of this software should include
+// Reseach publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
