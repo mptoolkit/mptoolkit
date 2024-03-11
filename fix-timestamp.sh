@@ -11,7 +11,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
