@@ -10,7 +10,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -182,7 +182,7 @@ function get_header {
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -202,7 +202,7 @@ function get_header {
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -222,7 +222,7 @@ function get_header {
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Reseach publications making use of this software should include
+# Research publications making use of this software should include
 # appropriate citations and acknowledgements as described in
 # the file CITATIONS in the main source directory.
 #----------------------------------------------------------------------------
@@ -371,12 +371,6 @@ if $apply && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --ex
    fi
 fi
 
-# Check if MPTOOLKIT_BUILD_BOT_GPG_KEY_ID is set
-if $commit && [ -z "$MPTOOLKIT_BUILD_BOT_GPG_KEY_ID" ]; then
-   echo "Error: MPTOOLKIT_BUILD_BOT_GPG_KEY_ID environment variable is not set. Please set it to the GPG key ID for the $BUILD_BOT user."
-   exit 1
-fi
-
 # track whether we actually changed a file using --commit
 changedfiles=false
 
@@ -470,7 +464,7 @@ while IFS= read -r file; do
    fi
 done < <(eval "$find_command")
 
-git_commit_command="GIT_COMMITTER_NAME=\"MPToolkit BuildBot\" GIT_COMMITTER_EMAIL=\"mptoolkit@qusim.net\" git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -S --gpg-sign=$MPTOOLKIT_BUILD_BOT_GPG_KEY_ID -m \"Auto-generate copyright headers\""
+git_commit_command="git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -m \"Auto-generate copyright headers\""
 
 if $apply; then
    if $changedfiles || ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
