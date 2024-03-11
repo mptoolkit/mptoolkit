@@ -77,7 +77,7 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& States)
       if (Bench)
          BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+   std::cout << "Cumulative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
 void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& States)
@@ -104,7 +104,7 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& States)
       if (Bench)
          BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+   std::cout << "Cumulative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
 int main(int argc, char** argv)

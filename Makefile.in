@@ -485,16 +485,14 @@ mp-dmrg-resume : dmrg.o stateslist.o
 mp-gmres-init : simplecg.o solver-gmres.o stateslist.o
 mp-gmres-resume : simplecg.o solver-gmres.o stateslist.o
 mp-trotter : mpexponential.o $(expokitobj)
-mp-dmrg : dmrg.o
-mp-dmrg-3s : dmrg.o
-mp-dmrg-2site : dmrg.o
+mp-dmrg : expansion.o dmrg.o finitedmrg.o
+mp-dmrg-3s : expansion.o dmrg.o finitedmrg.o
+mp-dmrg-2site : expansion.o dmrg.o finitedmrg.o
 mp-evolve-krylov : progressivekrylov.o krylovloop.o $(expokitobj)
 mp-evolve-magnus : progressivekrylov.o krylovloop.o $(expokitobj)
-mp-dmrg-2site : dmrg.o
 mp-apply-opt : prodoptimizer.o
 mp-apply-multiple : prodoptimizer.o
 mp-evolve-mixed : aggregator.o $(expokitobj)
-mp-dmrg-infinite-klm : dmrg.o
 mp-evolve-krylov-simple : simplekrylov.o $(expokitobj)
 mp-wigner-eckart : wigner_eckart.o
 
@@ -541,9 +539,9 @@ mp-ies : infinitewavefunctionleft.o
 mp-ies-cross : infinitewavefunctionleft.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
 mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
-mp-dmrg : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
-mp-dmrg-3s : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
-mp-dmrg-2site : dmrg.o $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-dmrg : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-dmrg-3s : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-dmrg-2site : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-overlap : finitewavefunctionleft.o
 mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o

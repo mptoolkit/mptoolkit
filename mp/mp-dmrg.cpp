@@ -18,33 +18,22 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include "mpo/basic_triangular_mpo.h"
-#include "wavefunction/finitewavefunctionleft.h"
+#include "mp-algorithms/finitedmrg.h"
 #include "wavefunction/mpwavefunction.h"
+#include "lattice/infinite-parser.h"
+#include "mp-algorithms/stateslist.h"
 #include "quantumnumbers/all_symmetries.h"
-#include "pheap/pheap.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/proccontrol.h"
 #include "common/prog_options.h"
-#include <iostream>
 #include "common/environment.h"
 #include "common/statistics.h"
 #include "common/formatting.h"
 #include "common/prog_opt_accum.h"
-#include "tensor/tensor_eigen.h"
-#include "tensor/regularize.h"
-#include "mp-algorithms/stateslist.h"
-#include "wavefunction/operator_actions.h"
-
 #include "interface/inittemp.h"
-#include "mp-algorithms/random_wavefunc.h"
-
-#include "lattice/infinitelattice.h"
-#include "lattice/unitcelloperator.h"
-#include "lattice/infinite-parser.h"
-#include "mp-algorithms/dmrg.h"
+#include <fstream>
 
 namespace prog_opt = boost::program_options;
 
@@ -81,14 +70,13 @@ std::ostream& operator<<(std::ostream& out, ExpansionInfo const& Info)
    return out;
 }
 
-void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
+void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
 {
-   double SweepTruncation = 0;
    dmrg.StartSweep();
-   while (dmrg.Site < dmrg.RightStop)
+   while (dmrg.Site() < dmrg.size()-1)
    {
       dmrg.StartIteration();
-      int CurrentEnvStates = dmrg.BasisTotalDimension2();
+      int CurrentEnvStates = dmrg.Basis2TotalDimension();
       int DesiredStates = States.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
@@ -100,8 +88,8 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInf
       int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*States.MaxStates));
       //TRACE(Delta)(PostExpand.IncrementFactor)(PostExpand.ExpandFactor);
       TruncationInfo Info = dmrg.TruncateAndShiftRight(States, Delta, PostExpand.ExpandPerSector);
-      std::cout << "Sweep=" << SweepNum
-         << " Site=" << dmrg.Site
+      std::cout << "Sweep=" << dmrg.TotalNumSweeps
+         << " Site=" << dmrg.Site()-1  // -1 since we've already moved on to the next site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " Env=" << CurrentEnvStates
          << " States=" << Info.KeptStates()
@@ -113,22 +101,23 @@ void SweepRight(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInf
          << '\n';
       if (Flush)
          std::cout << std::flush;
-      SweepTruncation += Info.TruncationError();
-      //dmrg.EndIteration();
+      dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << dmrg.Site() << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+
+   dmrg.EndSweep();
+   std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
+   std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
 
-void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
+void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
 {
-   double SweepTruncation = 0;
    dmrg.StartSweep();
-   while (dmrg.Site > dmrg.LeftStop)
+   while (dmrg.Site() > 0)
    {
       dmrg.StartIteration();
-      int CurrentEnvStates = dmrg.BasisTotalDimension1();
+      int CurrentEnvStates = dmrg.Basis1TotalDimension();
       int DesiredStates = States.MaxStates;
       int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
 
@@ -139,8 +128,8 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInfo
       dmrg.Solve();
       int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*States.MaxStates));
       TruncationInfo Info = dmrg.TruncateAndShiftLeft(States, Delta, PostExpand.ExpandPerSector);
-      std::cout << "Sweep=" << SweepNum
-         << " Site=" << dmrg.Site
+      std::cout << "Sweep=" << dmrg.TotalNumSweeps
+         << " Site=" << dmrg.Site()+1       // +1 since we've already moved on to the next site
          << " Energy=" << formatting::format_complex(dmrg.Solver().LastEnergy())
          << " Env=" << CurrentEnvStates
          << " States=" << Info.KeptStates()
@@ -152,12 +141,15 @@ void SweepLeft(DMRG& dmrg, int SweepNum, StatesInfo const& States, ExpansionInfo
          << '\n';
       if (Flush)
          std::cout << std::flush;
-      SweepTruncation += Info.TruncationError();
+      dmrg.EndIteration();
       //dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << SweepNum << ' ' << dmrg.Site << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << dmrg.Site() << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+
+   dmrg.EndSweep();
+   std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
+   std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
 
 int main(int argc, char** argv)
@@ -245,14 +237,13 @@ int main(int argc, char** argv)
 			+ boost::algorithm::join(LocalEigensolver::EnumerateSolvers(), ", ") + ")", Solver).c_str())
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
-         ("dgks", prog_opt::bool_switch(&UseDGKS), "Use DGKS correction for the orthogonality vectors")
          ("oversample", prog_opt::value(&Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())
          ("oversample-min", prog_opt::value(&Oversampling.Add), FormatDefault("For random SVD, minimum amount of oversampling", Oversampling.Add).c_str())
          ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy), "For the shift-invert and shift-invert-direct solver, the target energy")
          ("subspacesize", prog_opt::value(&SubspaceSize), FormatDefault("Maximum Krylov subspace size for shift-invert solver", SubspaceSize).c_str())
          ("precondition", prog_opt::bool_switch(&UsePreconditioning), "use diagonal preconditioning in the shift-invert solver")
-         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
          ("flush", prog_opt::bool_switch(&Flush), "Flush terminal output after each line")
+         ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")
           ;
 
       prog_opt::options_description opt;
@@ -317,11 +308,10 @@ int main(int argc, char** argv)
 	 HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
 
       // Now we can construct the actual DMRG object
-      DMRG dmrg(Psi, HamMPO, Verbose);
+      FiniteDMRG dmrg(Psi, HamMPO, Verbose);
 
       dmrg.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
       dmrg.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
-      dmrg.UseDGKS = UseDGKS;
       dmrg.Oversampling = Oversampling;
       dmrg.ProjectTwoSiteTangent = ProjectTwoSiteTangent;
 
@@ -404,9 +394,9 @@ int main(int argc, char** argv)
          }
          NumStatesKeepNext = (!NoGreedy && Sweeps < MyStates.size()-1) ? MyStates[Sweeps+1].NumStates : MyStates[Sweeps].NumStates;
          if (Sweeps % 2 == 0)
-            SweepLeft(dmrg, Sweeps+1, States, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
+            SweepLeft(dmrg, States, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
          else
-            SweepRight(dmrg, Sweeps+1, States, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
+            SweepRight(dmrg, States, PreExpand*ModFactor, PostExpand*ModFactor, NumStatesKeepNext);
       }
 
       // finished the iterations.

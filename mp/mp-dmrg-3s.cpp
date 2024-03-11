@@ -70,7 +70,7 @@ void SweepRight(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum, double MixFac
 		<< '\n';
       SweepTruncation += States.TruncationError();
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+   std::cout << "Cumulative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
 void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum, double MixFactor)
@@ -96,7 +96,7 @@ void SweepLeft(DMRG& dmrg, StatesInfo const& SInfo, int SweepNum, double MixFact
 		<< '\n';
       SweepTruncation += States.TruncationError();
    }
-   std::cout << "Cumumative truncation error for sweep: " << SweepTruncation << '\n';
+   std::cout << "Cumulative truncation error for sweep: " << SweepTruncation << '\n';
 }
 
 int main(int argc, char** argv)
