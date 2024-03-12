@@ -19,6 +19,11 @@
 # This script automates the process of updating and managing file headers, including
 # copyright notices, contributors' information, and license details.
 
+# BuildBot's information.  We want to ignore commits from this user when scanning the logs
+BUILDBOT_USER="MPToolkit BuildBot"
+BUILDBOT_EMAIL="mptoolkit@qusim.net"
+COMMIT_MESSAGE="Auto-generate copyright headers"
+
 # Lookup table for mapping contributor names to email addresses
 declare -A email_lookup=(
   ["Ian McCulloch"]="ian@qusim.net"
@@ -28,12 +33,9 @@ declare -A email_lookup=(
   ["Henry Nourse"]="henry.nourse@uqconnect.edu.au"
   ["Stefan Depenbrock"]="Stefan.Depenbrock@physik.uni-muenchen.de"
   ["Fei Zhan"]="enfeizhan@gmail.com"
+  ["$BUILDBOT_USER"]="$BUILDBOT_EMAIL"
   # Add more entries as needed
 )
-
-# BuildBot's information.  We want to ignore commits from this user when scanning the logs
-BUILDBOT_USER="MPToolkit BuildBot"
-BUILDBOT_EMAIL="mptoolkit@qusim.net"
 
 # Function to get the copyright strings for the header
 function get_copyright_strings {
@@ -116,7 +118,7 @@ function get_original_header {
    *.h | *.cpp | *.cc)
       local end_pattern="\/\/ ENDHEADER"
       ;;
-   *.sh)
+   *.sh | Makefile.in)
       local end_pattern="# ENDHEADER"
       ;;
    *.py)
@@ -140,7 +142,7 @@ function get_original_header {
 # Function to display usage information
 function show_usage {
   cat <<EOF
-Usage: $0 [--help|--show|--list|--diff|--commit|--backup|--exclude [path]|file [names...]]
+Usage: $0 [--help|--show|--list|--diff|--commit|--backup|--repo-only|--all|file [names...]]
 
 Options:
   --help            : Display this help message.
@@ -151,7 +153,8 @@ Options:
   --apply           : Apply the changes to the headers.
   --commit          : Commit the changes to the git repository (implies --apply).
   --backup          : With --commit, save the old file as filename.bak.
-  --exclude [path]  : Exclude this path from the search; can be used more than once.
+  --repo-only       : Ignore files that are not part of the git repository
+  --all             : Check all files, even if they haven't been modified (needed if the header format changes)
   --file [names...] : Instead of searching, use this list of files.
 
 EOF
@@ -188,7 +191,7 @@ function get_header {
 //----------------------------------------------------------------------------
 // ENDHEADER"
       ;;
-      *.sh)
+      *.sh | Makefile.in)
       local comment="# "
       local header_template="#!/bin/bash
 # Matrix Product Toolkit http://mptoolkit.qusim.net/
@@ -272,9 +275,10 @@ apply=false
 commit=false
 backup=false
 add=false
+repo_only=false
+check_all=false
 num_options=0
 filenames=()
-excludes=()
 
 # Main loop to process files based on command-line options
 while [ "$#" -gt 0 ]; do
@@ -297,6 +301,9 @@ while [ "$#" -gt 0 ]; do
     --file)
       filelist=true
       ;;
+    --repo-only)
+      git_repo_only=true
+      ;;
     --diff)
       ((num_options++))
       diff=true
@@ -316,15 +323,8 @@ while [ "$#" -gt 0 ]; do
     --add)
       add=true
       ;;
-    --exclude)
-      if [ "$#" -ge 2 ]; then
-         excludes+=("'./$2*'")
-         shift
-      else
-         echo "Error: --exclude option requires a directory or file argument." >&2
-         show_usage
-         exit 1
-      fi
+    --all)
+      check_all=true
       ;;
     *)
       if $filelist; then
@@ -356,12 +356,6 @@ if $backup && ! $commit; then
    exit 1
 fi
 
-if $filelist; then
-   find_command="printf '%s\n' \"\${filenames[@]}\""
-else
-   find_command="find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.cc' -o -name '*.sh' -o -name '*.py' \) ${excludes[@]/#/-and -not -path }"
-fi
-
 # Check for uncommitted changes in the repository
 if $apply && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
    read -p "There are uncommitted changes in the git repo. Do you want to continue? (y/N): " continue_confirm
@@ -371,12 +365,40 @@ if $apply && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --ex
    fi
 fi
 
+if $filelist; then
+   all_files=$(printf "%s\n" "${filenames[@]}")
+elif $check_all; then
+   all_files=$(git ls-files && git ls-files --others --exclude-standard)
+else
+   # Get the hash of the last commit by the build bot with the magic commit message
+   last_commit_hash=$(git log --author="$BUILDBOT_USER" --grep="$COMMIT_MESSAGE" -n 1 --pretty=format:%H)
+   # Get the list of modified and new files since the last commit by the buildbot
+   all_files=$(git diff --name-only $last_commit_hash && git ls-files --others --exclude-standard)
+fi
+all_files=${all_files%%$'\n'}  # Remove any trailing newlines
+
 # track whether we actually changed a file using --commit
 changedfiles=false
 
-#Originally this was: eval "$find_command" | while IFS= read -r file; do
+#Originally this was: eval "..." | while IFS= read -r file; do
 # but that runs in a subshell due to the | pipe, and we can't modify local variables inside a subshell
 while IFS= read -r file; do
+
+   # ignore files that don't exist, eg they have been deleted
+   if [ ! -f "$file" ]; then
+      continue
+   fi
+
+   case "$file" in
+    *.c | *.cc | *.cpp | *.h | *.sh | *.py | Makefile.in)
+      # Continue with processing
+      ;;
+    *)
+      # Warn about unknown file type and set flag to skip processing
+      echo "Warning: Unknown file type for $file. Skipping."
+      continue
+      ;;
+    esac
 
    # If --list is specified, just list the files
    if $list; then
@@ -390,14 +412,15 @@ while IFS= read -r file; do
    # Generate the updated header template
    updated_header=$(get_header "$file" "$original_header") || exit 1
 
-   # Show file content
-   if $show; then
-      echo -e "File: $file\n$updated_header\n"
+   # If the header is unchanged, then skip to the next file
+   if [ "$updated_header" == "$original_header" ]; then
+      echo "No changes required in $file"
       continue
    fi
 
-   if [ "$updated_header" == "$original_header" ]; then
-      echo "No changes required in $file"
+   # Show the updated header
+   if $show; then
+      echo -e "File: $file\n$updated_header\n"
       continue
    fi
 
@@ -462,7 +485,7 @@ while IFS= read -r file; do
          echo "Old version saved as $file.bak"
       fi
    fi
-done < <(eval "$find_command")
+done <<< "$all_files"
 
 git_commit_command="git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -m \"Auto-generate copyright headers\""
 
