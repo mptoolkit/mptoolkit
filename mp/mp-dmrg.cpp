@@ -86,7 +86,6 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const&
       }
       dmrg.Solve();
       int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*States.MaxStates));
-      //TRACE(Delta)(PostExpand.IncrementFactor)(PostExpand.ExpandFactor);
       TruncationInfo Info = dmrg.TruncateAndShiftRight(States, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << dmrg.TotalNumSweeps
          << " Site=" << dmrg.Site()-1  // -1 since we've already moved on to the next site
@@ -101,9 +100,9 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const&
          << '\n';
       if (Flush)
          std::cout << std::flush;
-      dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << dmrg.Site() << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+      dmrg.EndIteration();
    }
 
    dmrg.EndSweep();
@@ -141,10 +140,9 @@ void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& 
          << '\n';
       if (Flush)
          std::cout << std::flush;
-      dmrg.EndIteration();
-      //dmrg.EndIteration();
       if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << dmrg.Site() << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+      dmrg.EndIteration();
    }
 
    dmrg.EndSweep();

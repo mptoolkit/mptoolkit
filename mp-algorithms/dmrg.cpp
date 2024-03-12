@@ -158,6 +158,7 @@ std::pair<std::complex<double>, TruncationInfo>
 DMRG::SolveCoarseGrainRight(StatesInfo const& States)
 {
    auto R = C; ++R;
+   StateComponent Rold = *R;
    auto CoarseGrainBasis = make_product_basis(C->LocalBasis(), R->LocalBasis());
    StateComponent X = local_tensor_prod(*C, *R);
 
@@ -186,9 +187,12 @@ DMRG::SolveCoarseGrainRight(StatesInfo const& States)
    // update block Hamiltonian
    HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
 
+   MatrixOperator SweepCProj = scalar_prod(herm(*C), SweepC);
+
    // next site
    ++Site_;      // note: this is now one site ahead of the site that was optimized.
    ++C;
+   SweepC = prod(SweepCProj, Rold);
    *C = Lambda * (*C);
    ++H;
 
@@ -202,8 +206,8 @@ DMRG::SolveCoarseGrainRight(StatesInfo const& States)
 std::pair<std::complex<double>, TruncationInfo>
 DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
 {
-
    auto L = C; --L;
+   StateComponent Lold = *L;
    auto CoarseGrainBasis = make_product_basis(L->LocalBasis(), C->LocalBasis());
    StateComponent X = local_tensor_prod(*L, *C);
 
@@ -229,11 +233,15 @@ DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
    // update block Hamiltonian
    HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
 
+   MatrixOperator SweepCProj = scalar_prod(SweepC, herm(*C));
+
    // next site
    --Site_;         // note: this is now one site ahead of the site that was optimized.
-   --C;
-   *C = (*C) * Lambda;
+   --C;             // Now C == L
    --H;
+   SweepC = prod(Lold, SweepCProj);
+   *C = (*C) * Lambda;
+
    IterationNumStates = Info.KeptStates();
    IterationTruncation += Info.TruncationError();
    IterationEntropy = Info.KeptEntropy();
@@ -243,6 +251,10 @@ DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
 
 int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
 {
+   // Quick return if there is no need to expand the basis
+   if (PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion || (StatesWanted <= C->Basis1().total_dimension() && ExtraStatesPerSector <= 0))
+      return C->Basis1().total_dimension();
+
    auto CLeft = C;
    --CLeft;
    StateComponent E = HamMatrices.left(); // the old E matrices
@@ -264,6 +276,7 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
    // Augment the C matrix with zeros
    StateComponent CExpand(CC.LocalBasis(), LExpand.Basis2(), CC.Basis2());
    *C = tensor_col_sum(CC, CExpand);
+   SweepC = tensor_col_sum(SweepC, CExpand);
 
    // Expansion of the E matrices
    // There are 3 components we need to add.  The additional rows for (LExpand, CLeft),
@@ -287,6 +300,7 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
    MatrixOperator U = scalar_prod(herm(LNew), L);
    *C = U * CC;
    *CLeft = LNew;
+   SweepC = U * SweepC;
 
    #endif
 
@@ -295,6 +309,10 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
 
 int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
 {
+   // Quick return if there is no need to expand the basis
+   if (PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion || (StatesWanted <= C->Basis2().total_dimension() && ExtraStatesPerSector <= 0))
+      return C->Basis2().total_dimension();
+
    auto CRight = C;
    ++CRight;
    StateComponent F = HamMatrices.right();  // the old F matrix
@@ -319,6 +337,7 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    // Augment the C matrix with zeros
    StateComponent CExpand(CC.LocalBasis(), CC.Basis1(), RExpand.Basis1());
    *C = tensor_row_sum(CC, CExpand);
+   SweepC = tensor_row_sum(SweepC, CExpand);
 
    // Expansion of the F matrices
    // There are 3 components we need to add.  The additional rows for (RExpand, CRight),
@@ -343,6 +362,7 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    MatrixOperator U = scalar_prod(R, herm(RNew));
    *C = CC*U;
    *CRight = RNew;
+   SweepC = SweepC*U;
 
    #endif
 
@@ -416,11 +436,8 @@ TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraSta
 
 TruncationInfo DMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
-   // Truncate right
-   StateComponent CC = *C;
    TruncationInfo Info;
-   MatrixOperator X = TruncateExpandBasis2(CC, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, Oversampling);
-   *C = CC;
+   MatrixOperator X = TruncateExpandBasis2(*C, HamMatrices.left(), *H, HamMatrices.right(), PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector, Info, Oversampling);
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
