@@ -35,7 +35,19 @@ class FiniteDMRG : public DMRG
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 
+      virtual void StartSweep();
+      virtual void EndSweep();
+
+      virtual void ShiftLeft(MatrixOperator const& Lambda);
+      virtual void ShiftRight(MatrixOperator const& Lambda);
+
+      virtual void ModifyLeftBasis(MatrixOperator const& U);
+      virtual void ModifyRightBasis(MatrixOperator const& U);
+
       virtual void check_structure() const;
+
+      // The wavefunction from the start of the sweep, projected into the basis of C
+      StateComponent SweepC;
 
       //      std::vector<CenterWavefunction> Ortho;              // set of wavefunctions that we want to be
       //      left_right_stack<MatrixOperator> PsiOrthoProjector;  // orthogonal to

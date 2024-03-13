@@ -27,26 +27,6 @@
 #include "mpo/basic_triangular_mpo.h"
 #include "mp-algorithms/expansion.h"
 
-// The members that are actually used by the DMRG code:
-// Basis1TotalDimension
-// Basis2TotalDimension
-// EndIteration
-// ExpandLeftEnvironment
-// ExpandRightEnvironment
-// Oversampling
-// PostExpansionAlgo
-// PreExpansionAlgo
-// ProjectTwoSiteTangent
-// Site
-// Solve
-// Solver
-// StartIteration
-// StartSweep
-// TruncateAndShiftLeft
-// TruncateAndShiftRight
-// UseDGKS
-// Wavefunction
-
 class DMRG
 {
    public:
@@ -61,7 +41,7 @@ class DMRG
 
       int Site() const { return Site_; }
 
-      void StartSweep(bool IncrementSweepNumber = true, double Broad = 0);
+      virtual void StartSweep();
 
       void EndSweep();    // statistics for end of sweep
 
@@ -114,8 +94,12 @@ class DMRG
       virtual void debug_check_structure() const;
 
       // internal use only
-      void ShiftRight(MatrixOperator const& Lambda);
-      void ShiftLeft(MatrixOperator const& Lambda);
+      virtual void ShiftRight(MatrixOperator const& Lambda);
+      virtual void ShiftLeft(MatrixOperator const& Lambda);
+
+      // Modify the left and right basis of *C
+      virtual void ModifyLeftBasis(MatrixOperator const& U);
+      virtual void ModifyRightBasis(MatrixOperator const& U);
 
       left_right_stack<StateComponent> HamMatrices;
       LinearWavefunction Psi;
@@ -124,9 +108,6 @@ class DMRG
       BasicTriangularMPO Hamiltonian;
       BasicTriangularMPO::const_iterator H;
       LocalEigensolver Solver_;
-
-      // The wavefunction from the start of the sweep, projected into the basis of C
-      StateComponent SweepC;
 
       // Basis expansion
       PreExpansionAlgorithm PreExpansionAlgo;

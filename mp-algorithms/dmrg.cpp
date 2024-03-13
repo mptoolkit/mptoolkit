@@ -73,8 +73,6 @@ DMRG::InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham
       ++Site_;
    }
 
-   SweepC = *C;
-
    HamMatrices.push_right(F);
 
    // clear the global statistics
@@ -82,7 +80,8 @@ DMRG::InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham
    TotalNumIterations = 0;
    TotalNumMultiplies = 0;
 
-  this->debug_check_structure();
+   // Call this version, not the virtual function, since derived classes won't have finished their setup yet
+   this->DMRG::check_structure();
 }
 
 void DMRG::StartIteration()
@@ -107,7 +106,7 @@ void DMRG::EndIteration()
    SweepEnergyVariance = statistics::variance(SweepEnergyEachIteration.begin(), SweepEnergyEachIteration.end());
 }
 
-void DMRG::StartSweep(bool IncrementSweepNumber, double /* Broad_ */)
+void DMRG::StartSweep()
 {
    ++TotalNumSweeps;
 
@@ -121,17 +120,13 @@ void DMRG::StartSweep(bool IncrementSweepNumber, double /* Broad_ */)
    SweepStartTime = ProcControl::GetCumulativeElapsedTime();
    SweepEnergyVariance = std::numeric_limits<double>::infinity();
    SweepEnergyEachIteration.clear();
-
-   SweepC = *C;
 }
 
 void DMRG::EndSweep()
 {
    TotalNumIterations += SweepNumIterations;
    TotalNumMultiplies += SweepNumMultiplies;
-
    LastSweepTime = ProcControl::GetCumulativeElapsedTime() - SweepStartTime;
-   LastSweepFidelity = norm_frob(inner_prod(*C, SweepC));
 }
 
 std::complex<double>
@@ -165,6 +160,11 @@ DMRG::SolveCoarseGrainRight(StatesInfo const& States)
    auto HR = H; ++HR;
    OperatorComponent HX = local_tensor_prod(*H, *HR);
 
+   // We don't actually use HamMatrices.right() here, but we need to push it back onto the operator
+   // stack so that we can use the usual ShiftRight() function to advance the site, and that is expecting
+   // to be able to pop the right hamiltonian.  We could just add some dummy matrix elements, but we might
+   // as well save the actual operators, just in case we wanted to use them.
+   StateComponent SaveF = HamMatrices.right();
    HamMatrices.pop_right();
 
    Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
@@ -182,19 +182,9 @@ DMRG::SolveCoarseGrainRight(StatesInfo const& States)
    RealDiagonalOperator Lambda;
    DM.ConstructMatrices(DM.begin(), DMPivot, *C, Lambda, *R);
 
-   Lambda *= 1.0 / norm_frob(Lambda); // normalize
-
-   // update block Hamiltonian
-   HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
-
-   MatrixOperator SweepCProj = scalar_prod(herm(*C), SweepC);
-
-   // next site
-   ++Site_;      // note: this is now one site ahead of the site that was optimized.
-   ++C;
-   SweepC = prod(SweepCProj, Rold);
-   *C = Lambda * (*C);
-   ++H;
+   // Restore the old F matrices
+   HamMatrices.push_right(SaveF);
+   this->ShiftRight(Lambda);
 
    IterationNumStates = Info.KeptStates();
    IterationTruncation += Info.TruncationError();
@@ -214,6 +204,11 @@ DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
    auto HL = H; --HL;
    OperatorComponent HX = local_tensor_prod(*HL, *H);
 
+   // We don't actually use HamMatrices.left() here, but we need to push it back onto the operator
+   // stack so that we can use the usual ShiftLeft() function to advance the site, and that is expecting
+   // to be able to pop the left hamiltonian.  We could just add some dummy matrix elements, but we might
+   // as well save the actual operators, just in case we wanted to use them.
+   StateComponent SaveE = HamMatrices.left();
    HamMatrices.pop_left();
 
    Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
@@ -228,19 +223,9 @@ DMRG::SolveCoarseGrainLeft(StatesInfo const& States)
    RealDiagonalOperator Lambda;
    DM.ConstructMatrices(DM.begin(), DMPivot, *L, Lambda, *C);
 
-   Lambda *= 1.0 / norm_frob(Lambda); // normalize
-
-   // update block Hamiltonian
-   HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
-
-   MatrixOperator SweepCProj = scalar_prod(SweepC, herm(*C));
-
-   // next site
-   --Site_;         // note: this is now one site ahead of the site that was optimized.
-   --C;             // Now C == L
-   --H;
-   SweepC = prod(Lold, SweepCProj);
-   *C = (*C) * Lambda;
+   // Restore the old E matrices
+   HamMatrices.push_left(SaveE);
+   this->ShiftLeft(Lambda);
 
    IterationNumStates = Info.KeptStates();
    IterationTruncation += Info.TruncationError();
@@ -255,17 +240,12 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
    if (PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion || (StatesWanted <= C->Basis1().total_dimension() && ExtraStatesPerSector <= 0))
       return C->Basis1().total_dimension();
 
-   auto CLeft = C;
-   --CLeft;
+   auto L = C; --L;
    StateComponent E = HamMatrices.left(); // the old E matrices
    HamMatrices.pop_left();
-   auto HLeft = H;
-   --HLeft;
+   auto HL = H; --HL;
 
-   StateComponent CC = *C;
-   StateComponent L = *CLeft;
-
-   StateComponent LExpand = PreExpandBasis1(L, CC, HamMatrices.left(), *HLeft, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
+   StateComponent LExpand = PreExpandBasis1(*L, *C, HamMatrices.left(), *HL, *H, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis1().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
    #if 0
    // Orthogonalize the expansion vectors and add them to the left side
@@ -290,17 +270,18 @@ int DMRG::ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector)
    HamMatrices.push_left(E);
 
    #else
-   StateComponent LNew = tensor_row_sum(L, LExpand);
+   StateComponent LNew = tensor_row_sum(*L, LExpand);
    OrthogonalizeBasis2_QR(LNew);
 
    // The full reconstruction would be:
-   HamMatrices.push_left(contract_from_left(*HLeft, herm(LNew), HamMatrices.left(), LNew));
+   HamMatrices.push_left(contract_from_left(*HL, herm(LNew), HamMatrices.left(), LNew));
 
-   // Update C in the new basis
-   MatrixOperator U = scalar_prod(herm(LNew), L);
-   *C = U * CC;
-   *CLeft = LNew;
-   SweepC = U * SweepC;
+   // Map from the old basis to the new
+   MatrixOperator U = scalar_prod(herm(LNew), *L);
+
+   // Update L and C
+   *L = LNew;
+   this->ModifyLeftBasis(U);
 
    #endif
 
@@ -313,17 +294,12 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    if (PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion || (StatesWanted <= C->Basis2().total_dimension() && ExtraStatesPerSector <= 0))
       return C->Basis2().total_dimension();
 
-   auto CRight = C;
-   ++CRight;
+   auto R = C; ++R;
    StateComponent F = HamMatrices.right();  // the old F matrix
    HamMatrices.pop_right();
-   auto HRight = H;
-   ++HRight;
+   auto HR = H; ++HR;
 
-   StateComponent CC = *C;
-   StateComponent R = *CRight;
-
-   StateComponent RExpand = PreExpandBasis2(CC, R, HamMatrices.left(), *H, *HRight, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
+   StateComponent RExpand = PreExpandBasis2(*C, *R, HamMatrices.left(), *H, *HR, HamMatrices.right(), PreExpansionAlgo, StatesWanted-C->Basis2().total_dimension(), ExtraStatesPerSector, Oversampling, ProjectTwoSiteTangent);
 
    #if 0
    // In theory this code should be faster, but somehow it isn't. Enabling this makes the code slower,
@@ -351,18 +327,19 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    HamMatrices.push_right(F);
 
    #else
-   StateComponent RNew = tensor_col_sum(R, RExpand);
+   StateComponent RNew = tensor_col_sum(*R, RExpand);
    OrthogonalizeBasis1_LQ(RNew);
 
    // reconstruct the F matrix with the expanded environment
    // if we reconstructed the complete F matrix, it would look like:
-   HamMatrices.push_right(contract_from_right(herm(*HRight), RNew, HamMatrices.right(), herm(RNew)));
+   HamMatrices.push_right(contract_from_right(herm(*HR), RNew, HamMatrices.right(), herm(RNew)));
 
-   // Update C in the new basis
-   MatrixOperator U = scalar_prod(R, herm(RNew));
-   *C = CC*U;
-   *CRight = RNew;
-   SweepC = SweepC*U;
+   // Map from the old basis to the new
+   MatrixOperator U = scalar_prod(*R, herm(RNew));
+
+   // Update C and R
+   *R = RNew;
+   this->ModifyRightBasis(U);
 
    #endif
 
@@ -376,21 +353,15 @@ DMRG::ShiftRight(MatrixOperator const& Lambda)
    HamMatrices.push_left(contract_from_left(*H, herm(*C), HamMatrices.left(), *C));
    HamMatrices.pop_right();
 
-   // The projection operator that maps from the SweepC basis to the new basis
-   MatrixOperator SweepCProj = scalar_prod(herm(*C), SweepC);
-
    // next site
    ++Site_;
    ++H;
    ++C;
 
-   SweepC = prod(SweepCProj, *C);
-
    *C = prod(Lambda, *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
-
 }
 
 void
@@ -400,20 +371,27 @@ DMRG::ShiftLeft(MatrixOperator const& Lambda)
    HamMatrices.push_right(contract_from_right(herm(*H), *C, HamMatrices.right(), herm(*C)));
    HamMatrices.pop_left();
 
-   // The projection operator that maps from the SweepC basis to the new basis
-   MatrixOperator SweepCProj = scalar_prod(SweepC, herm(*C));
-
    // Move to the next site
    --Site_;
    --H;
    --C;
 
-   SweepC = prod(*C, SweepCProj);
-
    *C = prod(*C, Lambda);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
+}
+
+void
+DMRG::ModifyLeftBasis(MatrixOperator const& U)
+{
+   *C = prod(U, *C);
+}
+
+void
+DMRG::ModifyRightBasis(MatrixOperator const& U)
+{
+   *C = prod(*C, U);
 }
 
 TruncationInfo DMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
@@ -504,11 +482,6 @@ void DMRG::check_structure() const
 
    CHECK_EQUAL(C->LocalBasis(), H->LocalBasis1());
    CHECK_EQUAL(H->LocalBasis1(), H->LocalBasis1());
-
-   CHECK_EQUAL(C->LocalBasis(), SweepC.LocalBasis());
-   CHECK_EQUAL(C->Basis1(), SweepC.Basis1());
-   CHECK_EQUAL(C->Basis2(), SweepC.Basis2());
-
 }
 void DMRG::debug_check_structure() const
 {
