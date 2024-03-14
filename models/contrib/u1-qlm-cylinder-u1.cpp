@@ -83,6 +83,7 @@ int main(int argc, char** argv)
          ("H_m"  , "fermion mass")
          ("H_g"  , "gauge coupling")
          ("H_J"  , "plaquette interactions")
+         ("H_lambda"   , "Rokhsar-Kivelson coupling")
          ("H_flux"     , "electric flux")
          ("H_stag_flux", "staggered electric flux")
          ;
@@ -116,7 +117,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m, g, J, flux, stag_flux;
+      UnitCellMPO tx, ty, m, g, J, lambda, flux, stag_flux;
       // the XY configuration is special
       if (x == 0)
       {
@@ -131,6 +132,10 @@ int main(int argc, char** argv)
             J += Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2];
             J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
             J += Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y];
+            lambda += (Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2] +  Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2])
+                    * (Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2] +  Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2]);
+            lambda += (Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y] + Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y])
+                    * (Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y] + Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y]);
             flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
             g += Sz(0)[i+1]*Sz(0)[i+1] + Sz(0)[i+2]*Sz(0)[i+2] + Sz(0)[i+1+3*y]*Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y]*Sz(0)[i+2+3*y];
          }
@@ -162,6 +167,7 @@ int main(int argc, char** argv)
       Lattice["H_m"] = sum_unit(m);
       Lattice["H_g"] = sum_unit(g);
       Lattice["H_J"] = sum_unit(J);
+      Lattice["H_lambda"] = sum_unit(lambda);
       Lattice["H_flux"] = sum_unit(flux);
       Lattice["H_stag_flux"] = sum_unit(stag_flux);
 
