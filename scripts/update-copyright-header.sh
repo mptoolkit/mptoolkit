@@ -46,10 +46,14 @@ function get_copyright_strings {
    function get_contributors {
       local file=$1
 
-      local contributors_git=$(git log --follow --invert-grep --author="$BUILDBOT_USER" --pretty=format:'%an' "$file" | sort -u) || exit 1
+      local contributors_git=$(git log --follow --invert-grep --author="$BUILDBOT_USER" --pretty=format:'%an' "$file" | sort -u)
       local contributors_existing=$(echo "$original_header" | grep -oP "// Copyright \(C\) [0-9]+-[0-9]+ \K[^<]+(?= <)" | sort -u)
 
-      echo -e "$contributors_git\n$contributors_existing" | grep -v '^$' | sort -u
+      if [ -z "$contributors_git" ] && [ -z "$contributors_existing" ]; then
+         echo -e $(git config --get user.name)
+      else
+         echo -e "$contributors_git\n$contributors_existing" | grep -v '^$' | sort -u
+      fi
    }
 
    # Function to get the email address for a contributor
@@ -277,6 +281,7 @@ backup=false
 add=false
 repo_only=false
 check_all=false
+currentuser=false
 num_options=0
 filenames=()
 
@@ -323,6 +328,9 @@ while [ "$#" -gt 0 ]; do
     --add)
       add=true
       ;;
+    --user)
+      currentuser=true
+      ;;
     --all)
       check_all=true
       ;;
@@ -339,25 +347,31 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$num_options" -eq 0 ]; then
-   echo "Missing option, need one of --show|--list|--diff|--apply|--commit"
+   echo -e "Missing option, need one of --show|--list|--diff|--apply|--commit"
    show_usage
    exit 1
 fi
 
 if [ "$num_options" -ne 1 ]; then
-  echo "Error: too many options specified."
+  echo -e "Error: too many options specified."
   show_usage
   exit 1
 fi
 
 if $backup && ! $commit; then
-   echo "Error: --backup option only makes sense with --apply."
+   echo -e "Error: --backup option only makes sense with --apply."
    show_usage
    exit 1
 fi
 
-# Check for uncommitted changes in the repository
-if $apply && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
+if $currentuser && $check_all; then
+   echo -e "Error: --user is incompatible with --all."
+   show_usage
+   exit 1
+fi
+
+# Check for uncommitted changes in the repository. This doesn't matter if we are only checking user files
+if $apply && ! $currentuser && ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
    read -p "There are uncommitted changes in the git repo. Do you want to continue? (y/N): " continue_confirm
    if [[ "$continue_confirm" != "y" ]]; then
       echo "Exiting without modifying headers."
@@ -372,8 +386,16 @@ elif $check_all; then
 else
    # Get the hash of the last commit by the build bot with the magic commit message
    last_commit_hash=$(git log --author="$BUILDBOT_USER" --grep="$COMMIT_MESSAGE" -n 1 --pretty=format:%H)
-   # Get the list of modified and new files since the last commit by the buildbot
-   all_files=$(git diff --name-only $last_commit_hash && git ls-files --others --exclude-standard)
+   if $currentuser; then
+      # Get the list of new and modified files by the current user since the last commit by the buildbot
+      all_files=$(git diff --name-only $last_commit_hash..HEAD --author="$(git config user.name)")
+   else
+      # Get the list of modified and new files since the last commit by the buildbot
+      all_files=$(git diff --name-only $last_commit_hash..HEAD)
+   fi
+   if ! $repo_only; then
+      all_files="$all_files"$'\n'"$(git ls-files --others --exclude-standard)"
+   fi
 fi
 all_files=${all_files%%$'\n'}  # Remove any trailing newlines
 
@@ -469,7 +491,7 @@ while IFS= read -r file; do
          echo "Updated header of $file"
 
          # Add the original file contents after // ENDHEADER or # ENDHEADER to the temp file
-         awk '/^\/\/ ENDHEADER|^# ENDHEADER/{flag=1; next} flag' "$file" >> "$temp_file"
+         awk '/^\/\/ ENDHEADER|^# ENDHEADER/{if (++flag==1) next} flag' "$file" >> "$temp_file"
       fi
 
       # Backup the original file if --backup is specified
@@ -487,7 +509,11 @@ while IFS= read -r file; do
    fi
 done <<< "$all_files"
 
-git_commit_command="git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -m \"Auto-generate copyright headers\""
+if $currentuser; then
+   git_commit_command="git commit -a"
+else
+   git_commit_command="git commit -a --author=\"$BUILDBOT_USER <$BUILDBOT_EMAIL>\" -m \"Auto-generate copyright headers\""
+fi
 
 if $apply; then
    if $changedfiles || ([ -n "$(git diff --exit-code)" ] || [ -n "$(git diff --cached --exit-code)" ]); then
@@ -496,7 +522,7 @@ if $apply; then
          echo -e "\nCommitting changes to the git repository..."
          eval "$git_commit_command"
          echo -e "\nSummary of the commit:"
-         git log -1 --stat
+         git --no-pager log -1 --stat
       else
          echo -e "\nThere are changes to the headers. Commit these to the repository using:"
          echo -e "$git_commit_command"

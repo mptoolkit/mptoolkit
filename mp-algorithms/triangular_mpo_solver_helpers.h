@@ -67,7 +67,6 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
          std::cerr << "Refinement step, increasing m to " << m << '\n';
       }
 
-      //      TRACE("Refinement step")(iter);
       // iterative refinement step
 #if defined(USE_ITERATIVE_REFINEMENT)
       MatrixOperator R = Rhs- F(x);

@@ -20,6 +20,8 @@
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
 
+#include "mp-algorithms/transfer.h"
+
 void
 SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                     LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
@@ -271,8 +273,9 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
             {
                // Conj here because this comes from an overlap(x, RightUnitMatrix)
                E[I->first][J->first] += std::conj(J->second) * UnitMatrixLeft;
+               DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
                DEBUG_TRACE(std::conj(J->second));
-               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], RightIdentity));
+               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], UnitMatrixRight));
             }
          }
 

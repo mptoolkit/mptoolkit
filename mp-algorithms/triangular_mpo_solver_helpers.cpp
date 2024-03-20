@@ -65,6 +65,7 @@ FindParallelParts(MatrixPolyType& C,
    {
       // Orthogonalize against the identity
       std::complex<double> Overlap = inner_prod(I->second, Rho);
+      DEBUG_TRACE(Overlap);
       I->second -= std::conj(Overlap)*Identity;
 
       // **comparison** we always want to add here to get the degree of the polynomial correct.
@@ -133,7 +134,7 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
-   //DEBUG_TRACE("Unit diagonal element")(Factor);
+   DEBUG_TRACE("Unit diagonal element")(Factor);
 
    // decompose C into components parallel and perpendicular to the identity
    // The only part we have to care about is a component with the same momentum as our unit operator
@@ -145,9 +146,9 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
       // Is this the same momentum as our unit operator?
       if (norm_frob(K - Factor) < UnityEpsilon*10)
       {
-         //DEBUG_TRACE("Component at equal momenta")(K);
+         DEBUG_TRACE("Component at equal momenta")(K);
          // same momenta, these components diverge
-         //DEBUG_TRACE(CParallel);
+         DEBUG_TRACE(CParallel);
          for (int m = CParallel.degree(); m >= 0; --m)
          {
             EParallel[Factor] = UpdateParallelParts(CParallel, Factor);
