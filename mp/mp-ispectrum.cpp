@@ -382,7 +382,7 @@ int main(int argc, char** argv)
          // determine the spectrum
          EValues = get_transfer_spectrum(Psi, QShift, StringOp * ProductMPO::make_identity(StringOp.LocalBasis2List(), *qI),
                                        MaxEigen, LeftEigenvectorsPtr,
-                                       RightEigenvectorsPtr, Tl, KrylovLength, Verbose);
+                                       RightEigenvectorsPtr, Tol, KrylovLength, Verbose);
 
          for (int i = 0; i < int(size(EValues)); ++i)
          {
