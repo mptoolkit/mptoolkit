@@ -316,7 +316,7 @@ int main(int argc, char** argv)
                std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi << "  "
                          << std::setw(20) << std::abs(H.Ty(XDeque)) << "  ";
             }
-            std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
+            std::cout << std::setw(50) << formatting::format_complex(remove_small_imag(*E + Settings.Alpha)) << std::endl;
 
             // Save wavefunction.
             if (OutputPrefix != "")
