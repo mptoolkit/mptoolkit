@@ -87,6 +87,7 @@
 #include <functional>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
+#include "common/environment.h"
 
 namespace numerics
 {
