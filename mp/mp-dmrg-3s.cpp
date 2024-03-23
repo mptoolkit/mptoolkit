@@ -189,9 +189,16 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+      BenchFile.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
+
+      if (Bench)
+      {
+         print_preamble(BenchFile, argc, argv);
+         BenchFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #Tol\n";
+      }
 
       std::cout << "Starting DMRG...\n";
       std::cout << "Input wavefunction: " << FName << std::endl;

@@ -309,7 +309,7 @@ int main(int argc, char** argv)
    bool CalculateMoments = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   double Tol = 1E-15;
+   double Tol = 1E-10;
    bool ShouldShowAllComponents = false;
    std::string Sector;
    bool OneLine = false;
