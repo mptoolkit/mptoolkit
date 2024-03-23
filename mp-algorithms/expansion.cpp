@@ -70,17 +70,24 @@ SimpleOperator ConstructWeights(StateComponent const& s)
    // If any weights are zero, then manually adjust it to be equal to the smallest non-zero weight.
    // If all of the weights are zero, then set them all to be equal.
    double Min = 0.0;
+   double Max = 0.0;
    for (auto m : w)
    {
       if (m > 0.0 && (m < Min || Min == 0.0))
          Min = m;
+      if (m > Max)
+         Max = m;
    }
    // If all of the weights are identically zero, then set them to be the same
    if (Min == 0.0)
+   {
       Min = 1.0;
+      Max = 1.0;
+   }
    for (auto& m : w)
    {
-      m = std::max(m, Min);
+      if (m == 0.0)
+         m = Min;
    }
    SimpleOperator Result(s.LocalBasis());
    for (int i = 0; i < w.size(); ++i)
@@ -357,7 +364,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
       Info.ExtraStates_ = 0;
    }
-   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)
+   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding || Algo == PostExpansionAlgorithm::Mixing)
    {
       // We can do a thin SVD here.  In the no expansion case we just do the basic truncation and we are done.
       // In the fastrangefinding algorithm we implicitly use the full space of m*d states, but project out
@@ -396,7 +403,46 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // singular values including the kept states.
       OrthogonalizeBasis1_LQ(RNull);
 
-      if (Algo == PostExpansionAlgorithm::RSVD)
+      if (Algo == PostExpansionAlgorithm::RangeFinding)
+      {
+         // For rangefinding, we already have the basis, just add it to R and orthogonalize it
+         Info.ExtraStates_ = RNull.Basis1().total_dimension();
+         R = RegularizeBasis1(tensor_col_sum(R, RNull));
+         OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
+      }
+      else if (Algo == PostExpansionAlgorithm::Mixing)
+      {
+         // The 'mixing' strategy:
+         // First round SVD to m+k states.
+         // Construct another k states in the tangent space of the first m states (or tangent space of m+k?)
+         // Mix these into the first round matrix with a weight equal to g * weight of final k states, for some constant g
+         double Trunc = Info.TruncationError();
+         if (Trunc == 0)
+            Trunc = Info.SmallestKeptEigenvalue();
+         //TRACE(Trunc);
+         // In the mixing strategy, we construct the SVD of the combined CMat with the 3S term
+         StateComponent D = contract_from_right(herm(W*P*H), C, RightHam, herm(RNull));
+         MatrixOperator X = ReshapeBasis1(D);
+         // X is wdm × k
+         // Need to do a factorization to make it k × k
+         X = QR_Factorize(X).second;
+         StateComponent XNull = X * RNull;
+         X = ReshapeBasis2(XNull);
+         double g = 1.0;
+         X *= g*std::sqrt(Trunc)/norm_frob(X);
+         MatrixOperator CX = tensor_col_sum(CMat, X);
+         CMatSVD ExpandDM(CX, CMatSVD::Right);
+         auto DMPivot = TruncateFixTruncationErrorRelative(ExpandDM.begin(), ExpandDM.end(), States, Info);
+         auto AdditionalStates = TruncateExtraStates(DMPivot, ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+         Info.ExtraStates_ = AdditionalStates.size();
+         // make the list of m+k states
+         std::list<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
+         KeptStates.splice(KeptStates.end(), AdditionalStates);
+         // Construct the new kept states
+         MatrixOperator QExpand = ExpandDM.ConstructRightVectors(KeptStates.begin(), KeptStates.end());
+         R = ReshapeFromBasis2(QExpand, C.LocalBasis(), C.Basis2());
+      }
+      else if (Algo == PostExpansionAlgorithm::RSVD)
       {
          // From here it is the same as the SVD algorithm: construct the mixing term in the projected RNull space
          // and find the expansion vectors from the SVD. The only difference is that RNull will contain some numerical
@@ -405,17 +451,16 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // down to the final expansion size.
          StateComponent D = contract_from_right(herm(W*P*H), RNull, RightHam, herm(C));
          MatrixOperator X = ReshapeBasis2(D);
-
          CMatSVD ExpandDM(X, CMatSVD::Left);
          auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
          MatrixOperator QExpand = ExpandDM.ConstructLeftVectors(ExpandedStates.begin(), ExpandedStates.end());
 
          RNull = herm(QExpand) * RNull;
-      }
-      Info.ExtraStates_ = RNull.Basis1().total_dimension();
 
-      R = RegularizeBasis1(tensor_col_sum(R, RNull));
-      OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
+         Info.ExtraStates_ = RNull.Basis1().total_dimension();
+         R = RegularizeBasis1(tensor_col_sum(R, RNull));
+         OrthogonalizeBasis1_LQ(R);  // additional orthogonalization step, ensure vectors are all orthogonal
+      }
    }
    else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::Random)
    {
@@ -508,7 +553,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
       Info.ExtraStates_ = 0;
    }
-   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding)
+   else if (Algo == PostExpansionAlgorithm::RSVD || Algo == PostExpansionAlgorithm::RangeFinding || Algo == PostExpansionAlgorithm::Mixing)
    {
       // if we're range-finding, reset the Oversampling to zero
       if (Algo == PostExpansionAlgorithm::RangeFinding)
@@ -556,7 +601,43 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // Since we do a QR at the end anyway, we don't need to worry about a numerically non-orthogonal basis.
       // A faster alternative to the QR would be Gram-Schmidt orthogonalization.
 
-      if (Algo == PostExpansionAlgorithm::RSVD)
+      if (Algo == PostExpansionAlgorithm::RangeFinding)
+      {
+         Info.ExtraStates_ = LNull.Basis2().total_dimension();
+         // LNull might not be exactly orthogonal
+         L = RegularizeBasis2(tensor_row_sum(L, LNull));
+         OrthogonalizeBasis2_QR(L);
+      }
+      else if (Algo == PostExpansionAlgorithm::Mixing)
+      {
+         // The 'mixing' strategy:
+         // First round SVD to m+k states.
+         // Construct another k states in the tangent space of the first m states (or tangent space of m+k?)
+         // Mix these into the first round matrix with a weight equal to g * weight of final k states, for some constant g
+         double Trunc = Info.TruncationError();
+         if (Trunc == 0)
+            Trunc = Info.SmallestKeptEigenvalue();
+         // In the mixing strategy, we construct the SVD of the combined CMat with the 3S term
+         StateComponent D = contract_from_left(H*herm(P)*W, herm(LNull), LeftHam, C);
+         MatrixOperator X = ReshapeBasis2(D);
+         X = LQ_Factorize(X).first;
+         StateComponent XNull = LNull * X;
+         X = ReshapeBasis1(XNull);
+         double g = 1.0;
+         X *= g*std::sqrt(Trunc)/norm_frob(X);
+         MatrixOperator CX = tensor_row_sum(CMat, X);
+         CMatSVD ExpandDM(CX, CMatSVD::Left);
+         auto DMPivot = TruncateFixTruncationErrorRelative(ExpandDM.begin(), ExpandDM.end(), States, Info);
+         auto AdditionalStates = TruncateExtraStates(DMPivot, ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
+         Info.ExtraStates_ = AdditionalStates.size();
+         // make the list of m+k states
+         std::list<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
+         KeptStates.splice(KeptStates.end(), AdditionalStates);
+         // Construct the new kept states
+         MatrixOperator QExpand = ExpandDM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
+         L = ReshapeFromBasis1(QExpand, C.LocalBasis(), C.Basis1());
+      }
+      else if (Algo == PostExpansionAlgorithm::RSVD)
       {
          // From here it is the same as the SVD algorithm: construct the mixing term in the projected LNull space
          // and find the expansion vectors from the SVD. The only difference is that LNull will contain some numerical
@@ -572,13 +653,11 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
          // UExpand is (discarded_states, states_to_expand)
 
          LNull = LNull * QExpand;
+         Info.ExtraStates_ = LNull.Basis2().total_dimension();
+         // LNull might not be exactly orthogonal
+         L = RegularizeBasis2(tensor_row_sum(L, LNull));
+         OrthogonalizeBasis2_QR(L);
       }
-
-      Info.ExtraStates_ = LNull.Basis2().total_dimension();
-
-      // LNull might not be exactly orthogonal
-      L = RegularizeBasis2(tensor_row_sum(L, LNull));
-      OrthogonalizeBasis2_QR(L);
    }
    else if (Algo == PostExpansionAlgorithm::SVD || Algo == PostExpansionAlgorithm::Random)
    {
