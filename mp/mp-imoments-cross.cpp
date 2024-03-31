@@ -653,7 +653,10 @@ int main(int argc, char** argv)
             std::cout << '\n';
 
          std::vector<std::complex<double>> Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
-         // the 0th cumulant is the log of the transver matrix evalue
+         // the 0th cumulant is the log of the transfer matrix evalue.  This is because
+         // the cumulants come from the generating function
+         // F(t) = 1/N log <LHS|exp(tX)|RHS> for the operator X, so the 0th order cumulant is
+         // log <LHS|RHS> = log lambda
          Cumulants[0] = std::log(lambda0) + LogAmplitude;
          ShowCumulants(Cumulants, OneLine, Quiet, ShowRealPart,
                        ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
