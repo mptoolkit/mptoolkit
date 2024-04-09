@@ -138,16 +138,18 @@ int main(int argc, char** argv)
          (*I) = aux_tensor_prod(*MI, *I);
       }
 
+      QuantumNumber QShift = delta_shift(Psi.qshift(), StringOp.qshift());
+
       if (AssumeOrthogonal)
       {
          RealDiagonalOperator Lambda = Psi.lambda_r();
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Psi.qshift(), Lambda, Psi.log_amplitude(), Verbose);
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, QShift, Lambda, Psi.log_amplitude(), Verbose);
       }
       else
       {
          RealDiagonalOperator Lambda = Psi.lambda_r();
          MatrixOperator Rho = Lambda*Lambda;
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Rho, Psi.log_amplitude(), Verbose);
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, QShift, Rho, Psi.log_amplitude(), Verbose);
       }
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

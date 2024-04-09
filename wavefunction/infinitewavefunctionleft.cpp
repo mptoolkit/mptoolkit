@@ -543,8 +543,10 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    // 10. Gauge fix the left side with U_L^\dagger
    // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
 
-   CHECK_EQUAL(GuessRho.Basis1(), Psi.Basis2());
-   CHECK_EQUAL(GuessRho.Basis2(), Psi.Basis2());
+   if (GuessRho.Basis1() != Psi.Basis2() || GuessRho.Basis2() != Psi.Basis2())
+   {
+      GuessRho = MatrixOperator::make_identity(Psi.Basis2());
+   }
 
    std::complex<double> EValue;
    MatrixOperator Y;
@@ -603,7 +605,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
 {
-   return gauge_fix_left_orthogonal(Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
+   return gauge_fix_left_orthogonal(Psi, QShift, MatrixOperator::make_identity(Psi.Basis2()), tol, Verbose);
 }
 
 void
