@@ -311,6 +311,8 @@ class SingularDecompositionBase
 
       enum WhichVectors { Left, Right, Both };
 
+      // enum WhichSingularValues { Min, Max, Left, Right };
+
       std::ostream& DensityMatrixReport(std::ostream& out);
 
    protected:
@@ -318,6 +320,11 @@ class SingularDecompositionBase
 
       SingularDecompositionBase();
 
+      // FIXME: WhichVectors should be a choice of Min, Max, Left, Right, meaning
+      // Min: don't calculate any zero singular vectors
+      // Max: calculate all singular vectors, even if zero
+      // Left: Left matrix is square
+      // Right: Right matrix is square
       void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both, WhichVectors WhichCalculate = Both);
 
 
