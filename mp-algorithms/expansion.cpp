@@ -358,7 +358,7 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
    if (Algo == PostExpansionAlgorithm::NoExpansion)
    {
-      CMatSVD DM(CMat);
+      CMatSVD DM(CMat, States.KeepZeroEigenvalues() ? CMatSVD::Right : CMatSVD::Both, CMatSVD::Right);
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
       MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
       R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
@@ -547,7 +547,7 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
 
    if (Algo == PostExpansionAlgorithm::NoExpansion)
    {
-      CMatSVD DM(CMat);
+      CMatSVD DM(CMat, States.KeepZeroEigenvalues() ? CMatSVD::Left : CMatSVD::Both, CMatSVD::Left);
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
       MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
       L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
