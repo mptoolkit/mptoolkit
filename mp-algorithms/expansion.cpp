@@ -32,6 +32,7 @@
 #include "common/environment.h"
 #include "tensor/tensor_eigen.h"
 #include <cctype>
+#include <fstream>
 
 double const PrefactorEpsilon = 1e-16;
 
@@ -41,6 +42,8 @@ using MessageLogger::msg_log;
 // These are not needed in C++17 (?), but C++14 requires the initializer
 constexpr std::array<char const*,5> PreExpansionTraits::Names;
 constexpr std::array<char const*, 6> PostExpansionTraits::Names;
+
+std::ofstream ExpandFile(getenv_or_default("MP_EXPANDFILE", ""), std::ios_base::out | std::ios_base::trunc);
 
 std::ostream& operator<<(std::ostream& out, OversamplingInfo const& k)
 {
@@ -223,7 +226,7 @@ exclude(std::map<T, int> x, std::map<T, int> const& y)
    return x;
 }
 
-// Get a basis for use in the randomized SVD, selecting ExtraStates*RangeFindingOverhead states out of the available states.
+// Get a basis for use in the randomized SVD, selecting ExtraStates + Oversampling states out of the available states.
 // The quantum number sectors for the singular vectors are chosen according to the relative number of states in
 // KeptStateDimension, with at least ExtraStatesPerSector states in each available quantum number sector.
 // NumAvailablePerSector is the total size of the space; we exclude the KeptStateDimension before allocating states.
@@ -781,6 +784,16 @@ PreExpandBasis2(StateComponent const& C, StateComponent const& R, StateComponent
          CPrime = CPrime - LKeep * scalar_prod(herm(LKeep), CPrime);
       }
       MatrixOperator X = ReshapeBasis1(CPrime);
+
+      if (ExpandFile)
+      {
+         ExpandFile << '\n';
+         LinearAlgebra::Vector<double> v = SingularValues(X);
+         for (int i = 0; i < v.size(); ++i)
+         {
+            ExpandFile << v[i] << '\n';
+         }
+      }
 
       CMatSVD ExpandDM(X, CMatSVD::Right);
       auto ExpandedStates = TruncateExtraStates(ExpandDM.begin(), ExpandDM.end(), ExtraStates, ExtraStatesPerSector, true);

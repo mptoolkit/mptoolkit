@@ -26,6 +26,7 @@
 #include "mps/truncation.h"
 #include "common/namedenum.h"
 
+// a NamedEnumeration for the possible pre-expansion algorithms
 struct PreExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, NoExpansion };
@@ -36,6 +37,7 @@ struct PreExpansionTraits
 
 using PreExpansionAlgorithm = NamedEnumeration<PreExpansionTraits>;
 
+// a NamedEnumeration for the possible post-expansion algorithms
 struct PostExpansionTraits
 {
    enum Enum { SVD, RSVD, RangeFinding, Random, Mixing, NoExpansion };
