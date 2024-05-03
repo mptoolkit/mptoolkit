@@ -257,6 +257,8 @@ class EFMatrix
       std::map<EAIndex, std::map<int, StateComponent>> WindowUpper, WindowLower;
       std::map<EAIndex, int> IMax, JMax;
       std::map<std::pair<EAIndex, EAIndex>, std::map<int, std::vector<KMatrixPolyType>>> EMatK, FMatK;
+      // If we update the windows, we keep the old E/F matrices as initial guesses for the linear solver.
+      std::map<std::pair<EAIndex, EAIndex>, std::vector<KMatrixPolyType>> EMatKOld, FMatKOld;
 
       int UnitCellSize = 0;
       QuantumNumber QShift;

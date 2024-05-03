@@ -62,7 +62,7 @@ class angle_map
 
       T& operator[](std::complex<double> const& c);
 
-      T lookup_or_default(std::complex<double> const& c);
+      T lookup_or_default(std::complex<double> const& c) const;
 
       bool has_element(std::complex<double> const& c);
 
@@ -132,7 +132,7 @@ angle_map<T>::operator[](std::complex<double> const& c)
 
 template <typename T>
 T
-angle_map<T>::lookup_or_default(std::complex<double> const& c)
+angle_map<T>::lookup_or_default(std::complex<double> const& c) const
 {
    double r = c.real()*c.real() + c.imag()*c.imag();
    CHECK(std::abs(r - 1.0) <= Resolution)("complex angle is not sufficiently close to the unit circle!")(r);
@@ -156,7 +156,7 @@ angle_map<T>::lookup_or_default(std::complex<double> const& c)
    // else
 
    // Now search through the map
-   iterator I = Map.begin();
+   const_iterator I = Map.begin();
    while (I != Map.end() && std::abs(c - I->first) > Resolution*Resolution)
    {
       ++I;

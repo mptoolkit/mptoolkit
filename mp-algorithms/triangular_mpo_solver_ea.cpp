@@ -27,7 +27,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                 bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                 bool NeedFinalMatrix, bool EAOptimization, std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    int Dim = Op.Basis1().size();
    int StartCol = EMatK.size();
@@ -134,6 +134,10 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
+            KMatrixPolyType GuessCol;
+            if (Col < Guess.size())
+               GuessCol = Guess[Col];
+
             if (EAOptimization && Col == 0)
                E[1.0] = 0.0 * C[1.0]; // This will be zero if we are in the left gauge.
             else if (EAOptimization && Col == Dim-1)
@@ -142,11 +146,11 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the final column.
                E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TransferEVLeft, TransferEVRight,
-                                                        Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                        Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, GuessCol.lookup_or_default(1.0), Verbose);
             }
             else
                E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TransferEVLeft, TransferEVRight,
-                                                   Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                   Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, GuessCol, Verbose);
          }
          else if (Verbose > 0)
             std::cerr << "Skipping parts perpendicular to the unit matrix for the last column" << std::endl;
@@ -173,7 +177,7 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                  bool NeedFinalMatrix, bool EAOptimization, std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    int Dim = Op.Basis1().size();
    int StartRow = Dim-1-FMatK.size();
@@ -284,17 +288,21 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
+            KMatrixPolyType GuessRow;
+            if (Row < Guess.size())
+               GuessRow = Guess[Row];
+
             if (EAOptimization && Row == 0)
             {
                // This should be zero anyway, so we do not want to run the linear solver for this component.
                C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the first row.
                F[1.0] = DecomposePerpendicularPartsRight(C[1.0], 1.0, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
-                                                         Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                         Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, GuessRow.lookup_or_default(1.0), Verbose);
             }
             else
                F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
-                                                    Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                    Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, GuessRow, Verbose);
          }
          else if (Verbose > 0)
             std::cerr << "Skipping parts perpendicular to the unit matrix for the last row" << std::endl;
@@ -321,7 +329,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  QuantumNumber const& QShift, ProductMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                 int Verbose)
+                 std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    PRECONDITION(Op.is_string());
 
@@ -367,7 +375,7 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, ProductMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                  int Verbose)
+                  std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    PRECONDITION(Op.is_string());
 
@@ -413,15 +421,15 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  QuantumNumber const& QShift, InfiniteMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                 bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                 bool NeedFinalMatrix, bool EAOptimization, std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    if (Op.is_triangular())
       SolveMPO_EA_Left(EMatK, CTriK, Psi1, Psi2, QShift, Op.as_basic_triangular_mpo(),
                        TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon,
-                       NeedFinalMatrix, EAOptimization, Verbose);
+                       NeedFinalMatrix, EAOptimization, Guess, Verbose);
    else if (Op.is_product())
       SolveMPO_EA_Left(EMatK, CTriK, Psi1, Psi2, QShift, Op.as_product_mpo(),
-                       TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Verbose);
+                       TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Guess, Verbose);
    else
       throw std::runtime_error("SolveMPO_EA_Left: fatal: InfiniteMPO must be a triangular or product MPO.");
 }
@@ -432,15 +440,15 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, InfiniteMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
-                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
+                  bool NeedFinalMatrix, bool EAOptimization, std::vector<KMatrixPolyType> const& Guess, int Verbose)
 {
    if (Op.is_triangular())
       SolveMPO_EA_Right(FMatK, CTriK, Psi1, Psi2, QShift, Op.as_basic_triangular_mpo(),
                         TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon,
-                        NeedFinalMatrix, EAOptimization, Verbose);
+                        NeedFinalMatrix, EAOptimization, Guess, Verbose);
    else if (Op.is_product())
       SolveMPO_EA_Right(FMatK, CTriK, Psi1, Psi2, QShift, Op.as_product_mpo(),
-                        TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Verbose);
+                        TLeft, TRight, ExpIK, Degree, Tol, UnityEpsilon, Guess, Verbose);
    else
       throw std::runtime_error("SolveMPO_EA_Right: fatal: InfiniteMPO must be a triangular or product MPO.");
 }

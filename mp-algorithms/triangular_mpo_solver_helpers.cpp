@@ -182,6 +182,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                            std::complex<double> Scale,
                            bool HasEigenvalue1,
                            double Tol,
+                           MatrixPolyType const& Guess,
                            int Verbose)
 {
    // Identity and Rho are only used if HasEigenvalue1 is true
@@ -218,9 +219,17 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
 
       //if (RhsNorm2 > 1E-22)
       {
-         // Initial guess vector -- scale it by the norm of Rhs, improves the stability
-         E[m] = std::sqrt(RhsNorm2) *
-            MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+         if (Guess.has_term(m))
+         {
+            E[m] = Guess[m];
+         }
+         else
+         {
+            // Initial guess vector -- scale it by the norm of Rhs, improves the stability
+            E[m] = std::sqrt(RhsNorm2) *
+               MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+         }
+
          // Orthogonalize the initial guess -- this is important for the numerical stability
          if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
@@ -260,6 +269,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                             std::complex<double> Scale,
                             bool HasEigenvalue1,
                             double Tol,
+                            KMatrixPolyType const& Guess,
                             int Verbose)
 {
    // Identity and Rho are only used if HasEigenvalue1 is true
@@ -268,10 +278,26 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
-      E[K] = DecomposePerpendicularPartsLeft(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+      E[K] = DecomposePerpendicularPartsLeft(I->second, K, Diag, Identity, Rho,
+                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Guess.lookup_or_default(K), Verbose);
    }
    return E;
+}
+
+KMatrixPolyType
+DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
+                            BasicFiniteMPO const& Diag,
+                            MatrixOperator const& Identity,
+                            MatrixOperator const& Rho,
+                            LinearWavefunction const& Psi1,
+                            LinearWavefunction const& Psi2,
+                            QuantumNumber const& QShift,
+                            std::complex<double> Scale,
+                            bool HasEigenvalue1,
+                            double Tol,
+                            int Verbose)
+{
+   return DecomposePerpendicularPartsLeft(C, Diag, Identity, Rho, Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, KMatrixPolyType(), Verbose);
 }
 
 // On entry, Rho ~ Identity, InitMatrixLeft ~ Rho
@@ -286,6 +312,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  std::complex<double> Scale,
                                  bool HasEigenvalue1,
                                  double Tol,
+                                 MatrixPolyType const& Guess,
                                  int Verbose)
 {
    // Identity and Rho are only used if HasEigenvalue1 is true
@@ -319,9 +346,17 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
 
       //if (RhsNorm2 > 1E-22)
       {
-         // Initial guess vector -- scale it by the norm of Rhs, improves the stability
-         F[m] = std::sqrt(RhsNorm2) *
-            MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+         if (Guess.has_term(m))
+         {
+            F[m] = Guess[m];
+         }
+         else
+         {
+            // Initial guess vector -- scale it by the norm of Rhs, improves the stability
+            F[m] = std::sqrt(RhsNorm2) *
+               MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+         }
+
          // Orthogonalize the initial guess -- this is important for the numerical stability
          if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
@@ -360,6 +395,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
                             std::complex<double> Scale,
                             bool HasEigenvalue1,
                             double Tol,
+                            KMatrixPolyType const& Guess,
                             int Verbose)
 {
    // Identity and Rho are only used if HasEigenvalue1 is true
@@ -368,10 +404,26 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
    for (KMatrixPolyType::const_iterator I = C.begin(); I != C.end(); ++I) // sum over momenta
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
-      E[K] = DecomposePerpendicularPartsRight(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+      E[K] = DecomposePerpendicularPartsRight(I->second, K, Diag, Identity, Rho,
+                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Guess.lookup_or_default(K), Verbose);
    }
    return E;
+}
+
+KMatrixPolyType
+DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
+                            BasicFiniteMPO const& Diag,
+                            MatrixOperator const& Identity,
+                            MatrixOperator const& Rho,
+                            LinearWavefunction const& Psi1,
+                            LinearWavefunction const& Psi2,
+                            QuantumNumber const& QShift,
+                            std::complex<double> Scale,
+                            bool HasEigenvalue1,
+                            double Tol,
+                            int Verbose)
+{
+   return DecomposePerpendicularPartsRight(C, Diag, Identity, Rho, Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, KMatrixPolyType(), Verbose);
 }
 
 // Solve the components for the case where the diagonal operator is zero

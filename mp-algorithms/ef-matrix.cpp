@@ -375,7 +375,10 @@ EFMatrix::SetWindowUpper(EAIndex i, std::vector<LinearWavefunction> const& Windo
       }
 
       if (Erase)
+      {
+         EMatKOld[I->first] = I->second[UnitCellSize-1];
          I = EMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -396,7 +399,10 @@ EFMatrix::SetWindowUpper(EAIndex i, std::vector<LinearWavefunction> const& Windo
       }
 
       if (Erase)
+      {
+         FMatKOld[I->first] = I->second[0];
          I = FMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -448,7 +454,10 @@ EFMatrix::SetWindowLower(EAIndex j, std::vector<LinearWavefunction> const& Windo
       }
 
       if (Erase)
+      {
+         EMatKOld[I->first] = I->second[UnitCellSize-1];
          I = EMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -469,7 +478,10 @@ EFMatrix::SetWindowLower(EAIndex j, std::vector<LinearWavefunction> const& Windo
       }
 
       if (Erase)
+      {
+         FMatKOld[I->first] = I->second[0];
          I = FMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -501,7 +513,10 @@ EFMatrix::SetWUpper(int i, std::deque<StateComponent> const& BDeque)
       }
 
       if (Erase)
+      {
+         EMatKOld[I->first] = I->second[UnitCellSize-1];
          I = EMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -519,7 +534,10 @@ EFMatrix::SetWUpper(int i, std::deque<StateComponent> const& BDeque)
       }
 
       if (Erase)
+      {
+         FMatKOld[I->first] = I->second[0];
          I = FMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -551,7 +569,10 @@ EFMatrix::SetWLower(int j, std::deque<StateComponent> const& BDeque)
       }
 
       if (Erase)
+      {
+         EMatKOld[I->first] = I->second[UnitCellSize-1];
          I = EMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -569,7 +590,10 @@ EFMatrix::SetWLower(int j, std::deque<StateComponent> const& BDeque)
       }
 
       if (Erase)
+      {
+         FMatKOld[I->first] = I->second[0];
          I = FMatK.erase(I);
+      }
       else
          ++I;
    }
@@ -879,6 +903,16 @@ EFMatrix::SolveE(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
 {
    std::pair<EAIndex, EAIndex> Index(EAIndex(i.begin(), i.end()), EAIndex(j.begin(), j.end()));
 
+   // Use previous value as an initial guess if it exists.
+   std::vector<KMatrixPolyType> Guess;
+   if (!EMatKOld[Index].empty())
+   {
+      Guess = EMatKOld[Index];
+      // ??
+      Guess = delta_shift(Guess, QShift);
+      ShiftVariable(Guess, 1);
+   }
+
    EMatK[Index][UnitCellSize-1].clear();
 
    bool FirstElement = i == CornerIndex(NUpper, 0) && j == CornerIndex(NLower, 0);
@@ -895,7 +929,7 @@ EFMatrix::SolveE(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
    SolveMPO_EA_Left(EMatK[Index][UnitCellSize-1], CTriK, PsiUpper[i], PsiLower[j], QShift,
                     Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
                     Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
-                    !FirstElement && EAOptimization, Verbose-1);
+                    !FirstElement && EAOptimization, Guess, Verbose-1);
 
    EMatK[Index][UnitCellSize-1] = delta_shift(EMatK[Index][UnitCellSize-1], adjoint(QShift));
 
@@ -1083,6 +1117,16 @@ EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
 {
    std::pair<EAIndex, EAIndex> Index(EAIndex(i.begin(), i.end()), EAIndex(j.begin(), j.end()));
 
+   // Use previous value as an initial guess if it exists.
+   std::vector<KMatrixPolyType> Guess;
+   if (!FMatKOld[Index].empty())
+   {
+      Guess = FMatKOld[Index];
+      // ??
+      Guess = delta_shift(Guess, adjoint(QShift));
+      ShiftVariable(Guess, 1);
+   }
+
    FMatK[Index][0].clear();
 
    bool FirstElement = i == CornerIndex(NUpper, Infinity) && j == CornerIndex(NLower, Infinity);
@@ -1099,7 +1143,7 @@ EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
    SolveMPO_EA_Right(FMatK[Index][0], CTriK, PsiUpper[i], PsiLower[j], QShift,
                      Op, this->GetTLeft(i, j, true), this->GetTRight(i, j, true), std::conj(this->MomentumFactor(i, j)),
                      Degree, Tol, UnityEpsilon, !FinalElement || NeedFinalMatrix,
-                     !FirstElement && EAOptimization, Verbose-1);
+                     !FirstElement && EAOptimization, Guess, Verbose-1);
 
    FMatK[Index][0] = delta_shift(FMatK[Index][0], QShift);
 
@@ -1125,7 +1169,7 @@ EFMatrix::SolveF(CornerIndex i, CornerIndex j, std::vector<KMatrixPolyType> CTri
 
       SolveMPO_EA_Left(EMatKRight, std::vector<KMatrixPolyType>(), PsiUpper[i], PsiLower[j], QShift,
                        Op, this->GetTLeft(i, j), this->GetTRight(i, j), this->MomentumFactor(i, j),
-                       Degree, Tol, UnityEpsilon, true, false, Verbose-1);
+                       Degree, Tol, UnityEpsilon, true, false, std::vector<KMatrixPolyType>(), Verbose-1);
 
       std::complex<double> BondEnergy = 0.0;
       for (int I = 0; I < EMatKRight.size(); ++I)

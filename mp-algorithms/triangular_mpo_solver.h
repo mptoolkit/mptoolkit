@@ -163,13 +163,15 @@ SolveFirstOrderMPO_Right(StateComponent& F, InfiniteWavefunctionRight const& Psi
 // contribution w.r.t. the EA indices and ExpIK is the complex phase per MPS
 // unit cell.
 
+// Version for BasicTriangularMPOs.
 void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
-                 bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+                 bool NeedFinalMatrix = true, bool EAOptimization = false,
+                 std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 
 void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
@@ -177,15 +179,18 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, BasicTriangularMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
-                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+                  bool NeedFinalMatrix = true, bool EAOptimization = false,
+                  std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 
+// Version for ProductMPOs.
 void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, ProductMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
-                 double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+                 double UnityEpsilon = DefaultEigenUnityEpsilon,
+                 std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 
 void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
@@ -193,15 +198,18 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, ProductMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol,
-                  double UnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+                  double UnityEpsilon = DefaultEigenUnityEpsilon,
+                  std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 
+// Version for InfiniteMPOs.
 void
 SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyType> const& CTriK,
                  LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
                  QuantumNumber const& QShift, InfiniteMPO const& Op,
                  MatrixOperator const& TLeft, MatrixOperator const& TRight,
                  std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
-                 bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+                 bool NeedFinalMatrix = true, bool EAOptimization = false,
+                 std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 
 void
 SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyType> const& CTriK,
@@ -209,5 +217,6 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   QuantumNumber const& QShift, InfiniteMPO const& Op,
                   MatrixOperator const& TLeft, MatrixOperator const& TRight,
                   std::complex<double> ExpIK, int Degree, double Tol = DefaultTol, double UnityEpsilon = DefaultEigenUnityEpsilon,
-                  bool NeedFinalMatrix = true, bool EAOptimization = false, int Verbose = 0);
+                  bool NeedFinalMatrix = true, bool EAOptimization = false,
+                  std::vector<KMatrixPolyType> const& Guess = std::vector<KMatrixPolyType>(), int Verbose = 0);
 #endif
