@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/tasaki-cylinder-u1u1.cpp
+// models/contrib/tasaki-cylinder-2-u1u1.cpp
 //
 // Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
@@ -18,19 +18,18 @@
 // ENDHEADER
 
 // U(1)xU(1) Tasaki model
-// Example for (x,y) = (0,2).
+// This uses a contrived mapping onto an MPS to allow us to generate
+// unentangled highest-weight states at quarter filling.
 //
-// (0)[i]      (2)[i]
-//       (1)[i]
-// 0--1--0--1--0--1--
-// |     |     |
-// 5     5     5
-// |     |     |
-// 3--4--3--4--3--4--  ...
-// |     |     |
-// 2     2     2
-// |     |     |
-// 0--1--0--1--0--1--
+// --4--0--1--.--
+//      |     |
+//      5     .
+//      |     |
+// --.--3--.--0 (next UC) ...
+//      |     |
+//      2     .
+//      |     |
+// --4--0--1--.--
 //
 //           { 0 p site
 // i mod 3 = { 1 horizontal u site
@@ -59,7 +58,7 @@ int main(int argc, char** argv)
       desc.add_options()
          ("help", "show this help message")
          //(",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str()) TODO: twisted boundaries
-         (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
+         (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
          ("nu", prog_opt::value(&nu), FormatDefault("nu", nu).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
@@ -91,6 +90,12 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      if (y % 2 != 0)
+      {
+         std::cerr << "y must be even" << std::endl;
+         return 1;
+      }
+
       int w = x == 0 ? y : x;
       int CellSize = 3*w;
 
@@ -103,12 +108,25 @@ int main(int argc, char** argv)
                        Hu(Cell, "Hu"), N(Cell, "N"), I(Cell, "I");
 
       UnitCellMPO AHup[CellSize], AHdown[CellSize], Aup[CellSize], Adown[CellSize];
+
       for (int i = 0; i < CellSize; i += 3)
       {
-         AHup[i] = CHup(0)[i] - nu * (CHup(0)[i+1] + CHup(-1)[i+1] + CHup(0)[i+2] + CHup(0)[(i-1+CellSize)%CellSize]) ;
-         AHdown[i] = CHdown(0)[i] - nu * (CHdown(0)[i+1] + CHdown(-1)[i+1] + CHdown(0)[i+2] + CHdown(0)[(i-1+CellSize)%CellSize]);
-         Aup[i] = Cup(0)[i] - nu * (Cup(0)[i+1] + Cup(-1)[i+1] + Cup(0)[i+2] + Cup(0)[(i-1+CellSize)%CellSize]);
-         Adown[i] = Cdown(0)[i] - nu * (Cdown(0)[i+1] + Cdown(-1)[i+1] + Cdown(0)[i+2] + Cdown(0)[(i-1+CellSize)%CellSize]);
+         if (i/3 % 2 == 0)
+         {
+            // Even sites (the A operators will act locally).
+            AHup[i] = CHup(0)[i] - nu * (CHup(0)[i+1] + CHup(0)[(i-2+CellSize)%CellSize] + CHup(0)[i+2] + CHup(0)[(i-1+CellSize)%CellSize]) ;
+            AHdown[i] = CHdown(0)[i] - nu * (CHdown(0)[i+1] + CHdown(0)[(i-2+CellSize)%CellSize] + CHdown(0)[i+2] + CHdown(0)[(i-1+CellSize)%CellSize]);
+            Aup[i] = Cup(0)[i] - nu * (Cup(0)[i+1] + Cup(0)[(i-2+CellSize)%CellSize] + Cup(0)[i+2] + Cup(0)[(i-1+CellSize)%CellSize]);
+            Adown[i] = Cdown(0)[i] - nu * (Cdown(0)[i+1] + Cdown(0)[(i-2+CellSize)%CellSize] + Cdown(0)[i+2] + Cdown(0)[(i-1+CellSize)%CellSize]);
+         }
+         else
+         {
+         // Odd sites (the A operators will act across the unit cell boundary).
+            AHup[i] = CHup(0)[i] - nu * (CHup(1)[(i-5+CellSize)%CellSize] + CHup(-1)[(i+4)%CellSize] + CHup(0)[i+2] + CHup(0)[(i-1+CellSize)%CellSize]) ;
+            AHdown[i] = CHdown(0)[i] - nu * (CHdown(1)[(i-5+CellSize)%CellSize] + CHdown(-1)[(i+4)%CellSize] + CHdown(0)[i+2] + CHdown(0)[(i-1+CellSize)%CellSize]);
+            Aup[i] = Cup(0)[i] - nu * (Cup(1)[(i-5+CellSize)%CellSize] + Cup(-1)[(i+4)%CellSize] + Cup(0)[i+2] + Cup(0)[(i-1+CellSize)%CellSize]);
+            Adown[i] = Cdown(0)[i] - nu * (Cdown(1)[(i-5+CellSize)%CellSize] + Cdown(-1)[(i+4)%CellSize] + Cdown(0)[i+2] + Cdown(0)[(i-1+CellSize)%CellSize]);
+         }
 
          AHup[i].set_description("AHup " + std::to_string(i));
          Lattice.GetUnitCell().assign_operator("AHup" + std::to_string(i), AHup[i]);
@@ -121,12 +139,25 @@ int main(int argc, char** argv)
       }
 
       UnitCellMPO BHup[CellSize], BHdown[CellSize], Bup[CellSize], Bdown[CellSize];
+
       for (int i = 0; i < CellSize; i += 3)
       {
-         BHup[i+1] = CHup(0)[i+1] + nu * (CHup(0)[i] + CHup(1)[i]);
-         BHdown[i+1] = CHdown(0)[i+1] + nu * (CHdown(0)[i] + CHdown(1)[i]);
-         Bup[i+1] = Cup(0)[i+1] + nu * (Cup(0)[i] + Cup(1)[i]);
-         Bdown[i+1] = Cdown(0)[i+1] + nu * (Cdown(0)[i] + Cdown(1)[i]);
+         if (i/3 % 2 == 0)
+         {
+            // Even sites
+            BHup[i+1] = CHup(0)[i+1] + nu * (CHup(0)[i] + CHup(1)[(i-3+CellSize)%CellSize]);
+            BHdown[i+1] = CHdown(0)[i+1] + nu * (CHdown(0)[i] + CHdown(1)[(i-3+CellSize)%CellSize]);
+            Bup[i+1] = Cup(0)[i+1] + nu * (Cup(0)[i] + Cup(1)[(i-3+CellSize)%CellSize]);
+            Bdown[i+1] = Cdown(0)[i+1] + nu * (Cdown(0)[i] + Cdown(1)[(i-3+CellSize)%CellSize]);
+         }
+         else
+         {
+            // Odd sites
+            BHup[i+1] = CHup(0)[i+1] + nu * (CHup(-1)[(i+6)%CellSize] + CHup(0)[(i+3)%CellSize]);
+            BHdown[i+1] = CHdown(0)[i+1] + nu * (CHdown(-1)[(i+6)%CellSize] + CHdown(0)[(i+3)%CellSize]);
+            Bup[i+1] = Cup(0)[i+1] + nu * (Cup(-1)[(i+6)%CellSize] + Cup(0)[(i+3)%CellSize]);
+            Bdown[i+1] = Cdown(0)[i+1] + nu * (Cdown(-1)[(i+6)%CellSize] + Cdown(0)[(i+3)%CellSize]);
+         }
 
          BHup[i+1].set_description("BHup " + std::to_string(i+1));
          Lattice.GetUnitCell().assign_operator("BHup" + std::to_string(i+1), BHup[i+1]);
