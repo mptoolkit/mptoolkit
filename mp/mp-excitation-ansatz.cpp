@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       bool Random = false;
       bool Streaming = false;
       bool NoStreaming = false;
+      bool Real = false;
 
       EASettings Settings;
 
@@ -87,6 +88,7 @@ int main(int argc, char** argv)
          ("random", prog_opt::bool_switch(&Random), "Use a random initial state for each momentum (otherwise, use the previous result as an initial guess)")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
+         ("real", prog_opt::bool_switch(&Real), "Only show the real component of the excitation energies")
          ("quiet", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -316,7 +318,10 @@ int main(int argc, char** argv)
                std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi << "  "
                          << std::setw(20) << std::abs(H.Ty(XDeque)) << "  ";
             }
-            std::cout << std::setw(50) << formatting::format_complex(remove_small_imag(*E + Settings.Alpha)) << std::endl;
+            if (Real)
+               std::cout << std::setw(20) << std::real(*E + Settings.Alpha) << std::endl;
+            else
+               std::cout << std::setw(50) << formatting::format_complex(remove_small_imag(*E + Settings.Alpha)) << std::endl;
 
             // Save wavefunction.
             if (OutputPrefix != "")

@@ -133,8 +133,8 @@ std::complex<T>
 remove_small_imag(std::complex<T> x)
 {
    using std::abs;
-   double const SmallImag = getenv_or_default("MP_SMALL_IMAG", 10000.0);
-   if (abs(x.imag()) < SmallImag*std::numeric_limits<T>::epsilon() * abs(x.real()))
+   double const SmallImag = getenv_or_default("MP_SMALL_IMAG", 30.0);
+   if (abs(x.imag()) < SmallImag * std::numeric_limits<T>::epsilon() * abs(x.real()))
       x.imag(0.0);
    return x;
 }
