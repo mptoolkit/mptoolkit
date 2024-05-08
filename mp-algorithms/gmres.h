@@ -44,6 +44,7 @@
 
 #include "linearalgebra/eigen.h"
 #include "common/proccontrol.h"
+#include "common/numerics.h"
 #include <iostream>
 #include <cmath>
 
