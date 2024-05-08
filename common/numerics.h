@@ -133,7 +133,7 @@ std::complex<T>
 remove_small_imag(std::complex<T> x)
 {
    using std::abs;
-   double const SmallImag = getenv_or_default("MP_SMALL_IMAG", 30.0);
+   static double const SmallImag = getenv_or_default("MP_SMALL_IMAG", 30.0);
    if (abs(x.imag()) < SmallImag * std::numeric_limits<T>::epsilon() * abs(x.real()))
       x.imag(0.0);
    return x;
@@ -336,6 +336,25 @@ using ::norm_inf;
 using ::transpose;
 using ::conj;
 using ::herm;
+
+//
+// sfmin
+//
+// from LAPACK function dlamch('s')
+// sfmin is the smallest number such that 1/sfmin does not overflow
+
+template <typename Real>
+Real safmin()
+{
+   Real eps = 0.5 * std::numeric_limits<Real>::epsilon();
+   Real r = std::numeric_limits<Real>::min(); // returns the smallest (non-denormal) number greater than zero
+   Real small = 1.0 / std::numeric_limits<double>::max();
+   //
+   if (small >= r)
+      r = small*(1.0 + eps); // small plus a bit, just to avoid the possibility of rounding causing overflow
+                             // when computing 1/r
+   return r;
+}
 
 //
 // a functor to test whether the euclidean norm is smaller than some number v.

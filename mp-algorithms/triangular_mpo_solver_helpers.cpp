@@ -236,10 +236,13 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {
             std::complex<double> z = inner_prod(E[m], Rho);
-            //DEBUG_TRACE(z);
-            if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
+            if (Verbose > 2)
             {
-               WARNING("Possible numerical instability in triangular MPO solver")(z);
+               std::cerr << "Orthogonality of perpendicular part, RhsNorm2=" << RhsNorm2 << ", z=" << norm_frob_sq(z) << '\n';
+            }
+            if (LinearAlgebra::norm_frob_sq(z) > Tol * RhsNorm2)
+            {
+               WARNING("Possible numerical instability in triangular MPO solver")(z)(RhsNorm2);
             };
             E[m] -= std::conj(z) * Identity;
             //DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
