@@ -80,7 +80,7 @@ Update(Vector1& x, int k, Matrix const& h, Vector2 const& s, Vector1 v[])
 // This results in cs being real, so we can return a tuple of <real, complex>
 template <typename Scalar>
 auto GeneratePlaneRotation(Scalar dx, Scalar dy) {
-   using RealType = typename std::remove_reference<decltype(std::real(dx))>::type;
+   using RealType = decltype(std::real(dx));
    using std::conj;
    using std::sqrt;
 
@@ -325,6 +325,47 @@ GmRes(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
       int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
 {
    return GmRes(x, MatVecMultiply, norm_frob(b), b, m, max_iter, tol, Precondition, Verbose);
+}
+
+template <typename Vector, typename MultiplyFunc, typename PrecFunc>
+int
+GmResRefine(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
+      int m, int& max_iter, double& tol, PrecFunc Precondition, int Verbose = 0)
+{
+   // GMRES with iterative refinement
+   // the algorithm:
+   // 1. let xRefine = 0, bRefine = A(xRefine) = 0
+   // 2. solve for x: A(x) = b - bRefine
+   // 3. set xRefine = xRefine + x
+   // 4. set bRefine = a(xRefine)
+   // 5. go back to step 2 until converged
+   // The fixed point is x=0, at which point b = bRefine, and the solution is xRefine
+
+   double OriginalTol = tol;
+   int ThisMaxIter = m;
+   int TotalIter = 0;
+   double normb = norm_frob(b);
+
+   int Ret = GmRes(x, MatVecMultiply, normb, b, m, ThisMaxIter, tol, Precondition, Verbose);
+   TotalIter += ThisMaxIter;
+   // always do at least one round of iterative refinement
+   Vector xRefine = x;
+   x *= 0.0;
+   Ret = 1;
+   while (Ret == 1 && TotalIter < max_iter)
+   {
+      Vector MyB = b - MatVecMultiply(xRefine);
+      ThisMaxIter = m;
+      tol = OriginalTol;
+      Ret = GmRes(x, MatVecMultiply, normb, MyB, m, ThisMaxIter, tol, Precondition, Verbose);
+      TotalIter += ThisMaxIter;
+      xRefine = xRefine + x;
+      x *= 0.0;
+   }
+
+   x = xRefine;
+   max_iter = TotalIter;
+   return Ret;
 }
 
 #endif

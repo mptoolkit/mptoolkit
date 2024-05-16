@@ -47,12 +47,13 @@ template <typename Func>
 void
 LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
-   int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+   int MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
    int m = 30;     // krylov subspace size
    int iter = 0;   // total number of iterations performed
 
    double normb = norm_frob(Rhs);
 
+   #if 0
    int IterThisRound = m*50; // if it takes more than 50 rounds to converge, then we've proably stagnated
    double tol = Tol;
    int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
@@ -92,6 +93,9 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
          std::cerr << "Residual after refinement step = " << Resid << '\n';
       }
    }
+   #else
+   int Ret = GmResRefine(x, F, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+   #endif
 
    if (Ret != 0)
    {
