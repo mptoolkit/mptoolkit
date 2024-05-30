@@ -160,6 +160,21 @@ HEff::ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const
 }
 
 std::deque<MatrixOperator>
+HEff::ConstructXDeque(std::deque<StateComponent> const& BDeque) const
+{
+   std::deque<MatrixOperator> XDeque;
+   auto NL = NullLeftDeque.begin();
+   auto B = BDeque.begin();
+   while (NL != NullLeftDeque.end())
+   {
+      XDeque.push_back(scalar_prod(herm(*NL), *B));
+      ++NL, ++B;
+   }
+
+   return XDeque;
+}
+
+std::deque<MatrixOperator>
 HEff::InitialGuess() const
 {
    std::deque<MatrixOperator> Result;

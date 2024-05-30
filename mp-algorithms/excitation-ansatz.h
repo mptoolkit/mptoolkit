@@ -64,8 +64,11 @@ class HEff
       // calculate the expectation value of Ty.
       std::complex<double> Ty(std::deque<MatrixOperator> const& XDeque);
 
-      // Construct the B-matrices corresponding to the input X-matrices.
+      // Construct the B tensors corresponding to the X matrices.
       std::deque<StateComponent> ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const;
+
+      // Construct the X matrices corresponding to the full B tensors (assuming they obey the left gauge fixing condition).
+      std::deque<MatrixOperator> ConstructXDeque(std::deque<StateComponent> const& BDeque) const;
 
       // Generate a random initial state for a solver.
       // (This function is currently unused.)

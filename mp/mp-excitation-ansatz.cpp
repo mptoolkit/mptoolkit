@@ -51,6 +51,7 @@ int main(int argc, char** argv)
       int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
+      std::string InitFilename;
       int OutputDigits = -1;
       bool Random = false;
       bool Streaming = false;
@@ -86,6 +87,7 @@ int main(int argc, char** argv)
           FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random number generator seed")
          ("random", prog_opt::bool_switch(&Random), "Use a random initial state for each momentum (otherwise, use the previous result as an initial guess)")
+         ("init", prog_opt::value(&InitFilename), "Use this EAWavefunction as an initial guess")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
          ("real", prog_opt::bool_switch(&Real), "Only show the real component of the excitation energies")
@@ -283,6 +285,32 @@ int main(int argc, char** argv)
       std::cout << std::left;
 
       std::vector<std::complex<double>> Guess;
+
+      // If an initial guess is specified, use that.
+      if (vm.count("init"))
+      {
+         pvalue_ptr<MPWavefunction> InitPtr =  pheap::ImportHeap(InitFilename);
+         EAWavefunction PsiInit = InitPtr->get<EAWavefunction>();
+
+         PRECONDITION(PsiInit.window_size() == 1);
+
+         std::deque<StateComponent> BDeque;
+
+         // Extract the windows.
+         for (WavefunctionSectionLeft Window : PsiInit.window_vec())
+         {
+            LinearWavefunction PsiLinear;
+            MatrixOperator U;
+            std::tie(PsiLinear, U) = get_left_canonical(Window);
+            BDeque.push_back(PsiLinear.get_back()*U);
+         }
+
+         // Convert to a form usable by ARPACK.
+         PackHEff PackH = PackHEff(&H);
+
+         Guess = std::vector<std::complex<double>>(PackH.size());
+         PackH.pack(H.ConstructXDeque(BDeque), Guess.data());
+      }
 
       // Calculate the excitation spectrum for each k desired.
       for (double const k : KList)
