@@ -195,6 +195,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
 
       //DEBUG_TRACE("degree")(m);
       MatrixOperator Rhs = std::conj(K) * C[m];
+
       for (int k = m+1; k <= E.degree(); ++k)
       {
          // avoid accessing E[k] if it doesn't exist, to avoid adding a null term
@@ -216,7 +217,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
       //DEBUG_TRACE(RhsNorm2);
 
-      //if (RhsNorm2 > 1E-22)
+      if (RhsNorm2 > 0.0)
       {
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          E[m] = std::sqrt(RhsNorm2) *
@@ -228,6 +229,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
             //DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
          }
 
+         TRACE(Rhs);
          LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
                      Identity, Rho, Scale, HasEigenvalue1),
                      Rhs, Tol, Verbose);
@@ -247,6 +249,10 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
             E[m] -= std::conj(z) * Identity;
             //DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
          }
+      }
+      else
+      {
+         E[m] = MatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
       }
    }
    return E;
@@ -318,9 +324,9 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
 
       double RhsNorm2 = norm_frob_sq(Rhs);
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
-      //DEBUG_TRACE(RhsNorm2);
+      DEBUG_TRACE(RhsNorm2);
 
-      //if (RhsNorm2 > 1E-22)
+      if (RhsNorm2 > 0.0)
       {
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          F[m] = std::sqrt(RhsNorm2) *
@@ -347,6 +353,10 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
             };
             F[m] -= std::conj(z) * Identity;
          }
+      }
+      else
+      {
+         F[m] = MatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
       }
    }
    return F;

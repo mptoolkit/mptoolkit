@@ -78,6 +78,8 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       MatrixPolyType C = inject_left_mask(EMat, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
 
+      TRACE(C);
+
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
       OperatorClassification Classification = classify(Diag, UnityEpsilon);
