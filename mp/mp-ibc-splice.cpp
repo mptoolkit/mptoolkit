@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(opt).run(), vm);
+                      options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
       if (vm.count("help") || vm.count("psi-right") == 0 || vm.count("output") == 0)
