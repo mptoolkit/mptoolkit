@@ -336,4 +336,34 @@ GmResRefine(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
    return Ret;
 }
 
+
+template <typename Vector, typename MultiplyFunc, typename Preconditioner>
+int
+GmResRefineOrtho(Vector &x, Vector const& OrthoLeft, Vector const& OrthoRight, MultiplyFunc MatVecMultiply, Vector const& b,
+      int m, int& max_iter, double& tol, Preconditioner P, int Verbose = 0)
+{
+   // Assume the initial vector isn't good, so do one round of GMRES before iterative refinement
+   // We can force this simply by setting the initial vector x to zero
+   double OriginalTol = tol;
+   int Iter = 0;
+   double normb = norm_frob(b);
+
+   x *= 0.0;
+   Vector xRefine = x;
+   int Ret = 1;
+   while (Ret == 1 && Iter < max_iter)
+   {
+      Vector MyB = b - MatVecMultiply(xRefine);
+      tol = OriginalTol;
+      Ret = GmRes(x, MatVecMultiply, normb, MyB, m, Iter, Iter+m, tol, P, Verbose);
+      x -= std::conj(inner_prod(x, OrthoLeft)) * OrthoRight;
+      xRefine = xRefine + x;
+      x *= 0.0;
+   }
+
+   x = xRefine;
+   max_iter = Iter;
+   return Ret;
+}
+
 #endif

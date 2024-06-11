@@ -40,9 +40,6 @@ LinearSolve(Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose =
    return Guess;
 }
 
-//#define USE_ITERATIVE_REFINEMENT
-// iterative refinement doesn't appear to add anything useful here, but increasing the
-// krylov length has a useful effect to avoid stagnation
 template <typename Func>
 void
 LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
@@ -53,49 +50,7 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
 
    double normb = norm_frob(Rhs);
 
-   #if 0
-   int IterThisRound = m*50; // if it takes more than 50 rounds to converge, then we've proably stagnated
-   double tol = Tol;
-   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   iter += IterThisRound;
-
-   while (Ret != 0 && iter < MaxIter)
-   {
-      // Attempt to avoid stagnation by increasing the number of iterations
-      m=m+10;
-      if (Verbose > 1)
-      {
-         std::cerr << "Refinement step, increasing m to " << m << '\n';
-      }
-
-      // iterative refinement step
-#if defined(USE_ITERATIVE_REFINEMENT)
-      MatrixOperator R = Rhs- F(x);
-      MatrixOperator xRefine = R;
-#else
-      MatrixOperator R = Rhs;
-      MatrixOperator xRefine = x;
-#endif
-      IterThisRound = m*50;
-      double tol = Tol;
-      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-
-      iter += IterThisRound;
-#if defined(USE_ITERATIVE_REFINEMENT)
-      x += xRefine;
-#else
-      x = xRefine;
-#endif
-
-      if (Verbose > 1)
-      {
-         double Resid = norm_frob(F(x) - Rhs) / normb;
-         std::cerr << "Residual after refinement step = " << Resid << '\n';
-      }
-   }
-   #else
    int Ret = GmResRefine(x, F, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   #endif
 
    if (Ret != 0)
    {
@@ -103,6 +58,26 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
       PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
    }
 }
+
+template <typename Func>
+void
+LinearSolveOrtho(MatrixOperator& x, MatrixOperator const& OrthoLeft, MatrixOperator const& OrthoRight, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
+{
+   int MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+   int m = 30;     // krylov subspace size
+   int iter = 0;   // total number of iterations performed
+
+   double normb = norm_frob(Rhs);
+
+   int Ret = GmResRefineOrtho(x, OrthoLeft, OrthoRight, F, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+
+   if (Ret != 0)
+   {
+      // failed
+      PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
+   }
+}
+
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
