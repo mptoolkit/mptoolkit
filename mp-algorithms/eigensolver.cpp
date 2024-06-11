@@ -189,55 +189,11 @@ template <typename Func, typename Prec>
 void
 LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k, int& MaxIter, double& Tol, int Verbose = 0)
 {
-   int m = k;     // krylov subspace size
-   int iter = 0;   // total number of iterations performed
-
-   double normb = norm_frob(P(Rhs));
-
-   int IterThisRound = m*500;
-   if (IterThisRound > MaxIter)
-      IterThisRound = MaxIter;
-   double tol = Tol;
-   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, P, Verbose);
-   iter += IterThisRound;
-
-   while (Ret != 0 && iter < MaxIter)
-   {
-      // Attempt to avoid stagnation by increasing the number of iterations
-      m += 10; // avoid stagnation
-      if (Verbose > 1)
-      {
-	 std::cerr << "Refinement step, increasing m to " << m << '\n';
-      }
-
-      //      TRACE("Refinement step")(iter);
-      // iterative refinement step
-      StateComponent R = Rhs- F(x);
-      StateComponent xRefine = R;
-      IterThisRound = m*500;
-      tol = Tol;
-      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, P, Verbose);
-
-      iter += IterThisRound;
-
-      if (Verbose > 1)
-      {
-	 double Resid = norm_frob(F(xRefine) - R) / normb;
-	 std::cerr << "Residual of refined solver = " << Resid << '\n';
-      }
-
-      x += xRefine;
-
-      if (Verbose > 1)
-      {
-	 double Resid = norm_frob(F(x) - Rhs) / normb;
-	 std::cerr << "Residual after refinement step = " << Resid << '\n';
-      }
-   }
-   Tol = tol;
+   int Ret = GmResRefine(x, F, Rhs, k, MaxIter, Tol, P, Verbose);
    if (Ret != 0)
+   {
       Tol = -Tol;
-   MaxIter = iter;
+   }
 }
 
 struct InverseDiagonalPrecondition

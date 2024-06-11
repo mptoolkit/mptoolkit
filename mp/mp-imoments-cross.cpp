@@ -534,7 +534,7 @@ int main(int argc, char** argv)
          LinearAlgebra::Vector<std::complex<double>> Vec = get_transfer_spectrum(Psi1, Psi2, q, WhichEigenvalue+1, &LV, &RV, 1e-14, 0, Verbose);
          if (WhichEigenvalue >= Vec.size())
          {
-            std::cerr << "fatal: transfer matrix is too small.\n";
+            std::cerr << basename(argv[0]) << ": fatal: transfer matrix is too small, cannot calculate eigenvalue " << WhichEigenvalue << ".\n";
             return 1;
          }
          lambda = Vec[WhichEigenvalue];
@@ -552,13 +552,13 @@ int main(int argc, char** argv)
       // Check that the local basis for the wavefunction and hamiltonian are compatible
       if (ExtractLocalBasis(Psi1) != ExtractLocalBasis1(Op))
       {
-         std::cerr << "fatal: operator is defined on a different local basis to the wavefunction.\n";
+         std::cerr  << basename(argv[0]) << ": fatal: operator is defined on a different local basis to the wavefunction.\n";
          return 1;
       }
 
       if (ExtractLocalBasis1(Op) != ExtractLocalBasis2(Op))
       {
-         std::cerr << "fatal: operator has different domain and co-domain.\n";
+         std::cerr << basename(argv[0]) << ": fatal: operator has different domain and co-domain.\n";
          return 1;
       }
 
