@@ -29,6 +29,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                  std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
                  bool NeedFinalMatrix, bool EAOptimization, int Verbose)
 {
+   double TCond = DefaultTCond;
    int Dim = Op.Basis1().size();
    int StartCol = EMatK.size();
    EMatK.resize(Dim);
@@ -142,11 +143,11 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
                C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the final column.
                E[1.0] = DecomposePerpendicularPartsLeft(C[1.0], 1.0, ExpIK*Diag, TransferEVLeft, TransferEVRight,
-                                                        Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                        Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
             }
             else
                E = DecomposePerpendicularPartsLeft(C, ExpIK*Diag, TransferEVLeft, TransferEVRight,
-                                                   Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                   Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
             std::cerr << "Skipping parts perpendicular to the unit matrix for the last column" << std::endl;
@@ -175,6 +176,7 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                   std::complex<double> ExpIK, int Degree, double Tol, double UnityEpsilon,
                   bool NeedFinalMatrix, bool EAOptimization, int Verbose)
 {
+   double TCond = DefaultTCond;
    int Dim = Op.Basis1().size();
    int StartRow = Dim-1-FMatK.size();
    CHECK(StartRow >= -1);
@@ -290,11 +292,11 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
                C[1.0].erase(1);
                // For the EA algorithm, we only need the zero momentum components for the first row.
                F[1.0] = DecomposePerpendicularPartsRight(C[1.0], 1.0, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
-                                                         Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                         Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
             }
             else
                F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*Diag, TransferEVRight, TransferEVLeft,
-                                                    Psi1, Psi2, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                    Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
             std::cerr << "Skipping parts perpendicular to the unit matrix for the last row" << std::endl;
@@ -325,6 +327,8 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
 {
    PRECONDITION(Op.is_string());
 
+   double TCond = DefaultTCond;
+
    // If EMatK is nonempty, we must already have the result, so we can return early.
    if (!EMatK.empty())
       return;
@@ -346,7 +350,7 @@ SolveMPO_EA_Left(std::vector<KMatrixPolyType>& EMatK, std::vector<KMatrixPolyTyp
       std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
    KMatrixPolyType E = DecomposePerpendicularPartsLeft(C, ExpIK*BasicFiniteMPO(Op), TLeft, TRight,
-                                                       Psi1, Psi2, QShift, 1.0, true, Tol, Verbose);
+                                                       Psi1, Psi2, QShift, TCond, true, Tol, Verbose);
 
    // Reinsert the components parallel to the unit matrix (if any).
    for (KComplexPolyType::const_iterator I = EParallel.begin(); I != EParallel.end(); ++I)
@@ -371,6 +375,8 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
 {
    PRECONDITION(Op.is_string());
 
+   double TCond = DefaultTCond;
+
    // If FMatK is nonempty, we must already have the result, so we can return early.
    if (!FMatK.empty())
       return;
@@ -392,7 +398,7 @@ SolveMPO_EA_Right(std::vector<KMatrixPolyType>& FMatK, std::vector<KMatrixPolyTy
       std::cerr << "Decomposing parts perpendicular to the unit matrix" << std::endl;
 
    KMatrixPolyType F = DecomposePerpendicularPartsRight(C, std::conj(ExpIK)*BasicFiniteMPO(Op), TRight, TLeft,
-                                                        Psi1, Psi2, QShift, 1.0, true, Tol, Verbose);
+                                                        Psi1, Psi2, QShift, TCond, true, Tol, Verbose);
 
    // Reinsert the components parallel to the unit matrix (if any).
    for (KComplexPolyType::const_iterator I = FParallel.begin(); I != FParallel.end(); ++I)

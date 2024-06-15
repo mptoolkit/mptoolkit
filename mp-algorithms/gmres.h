@@ -134,6 +134,9 @@ void ApplyPlaneRotation(std::tuple<Real, Scalar> const& R, Scalar &dx, Scalar &d
 // On exit: tol = residual norm
 // iter = number of iterations performed (added to the existing value)
 // return value is 0
+//
+// normb is a scaling factor for the residual norm calculation.  In principle this should be set to
+// the norm of the right hand side, multiplied by the condition number.
 
 template <typename Vector, typename MultiplyFunc, typename Preconditioner>
 int
@@ -339,14 +342,13 @@ GmResRefine(Vector &x, MultiplyFunc MatVecMultiply, Vector const& b,
 
 template <typename Vector, typename MultiplyFunc, typename Preconditioner>
 int
-GmResRefineOrtho(Vector &x, Vector const& OrthoLeft, Vector const& OrthoRight, MultiplyFunc MatVecMultiply, Vector const& b,
-      int m, int& max_iter, double& tol, Preconditioner P, int Verbose = 0)
+GmResRefineOrtho(Vector &x, Vector const& OrthoLeft, Vector const& OrthoRight, MultiplyFunc MatVecMultiply, double cond, Vector const& b, int m, int& max_iter, double& tol, Preconditioner P, int Verbose = 0)
 {
    // Assume the initial vector isn't good, so do one round of GMRES before iterative refinement
    // We can force this simply by setting the initial vector x to zero
    double OriginalTol = tol;
    int Iter = 0;
-   double normb = norm_frob(b);
+   double normb = norm_frob(b) * cond;
 
    x *= 0.0;
    Vector xRefine = x;

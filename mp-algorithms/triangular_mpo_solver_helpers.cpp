@@ -179,7 +179,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                            LinearWavefunction const& Psi1,
                            LinearWavefunction const& Psi2,
                            QuantumNumber const& QShift,
-                           std::complex<double> Scale,
+                           double TCond,
                            bool HasEigenvalue1,
                            double Tol,
                            int Verbose)
@@ -218,6 +218,11 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
       //DEBUG_TRACE(RhsNorm2);
 
+      if (Verbose > 2)
+      {
+         std::cerr << "Orthogonality of perpendicular part, RhsNorm2=" << RhsNorm2 << '\n';
+      }
+
       if (RhsNorm2 > 0.0)
       {
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
@@ -231,8 +236,8 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          }
 
          LinearSolveOrtho(E[m], Rho, Identity, OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, Scale, HasEigenvalue1),
-                     Rhs, Tol, Verbose);
+                     Identity, Rho, HasEigenvalue1),
+                     TCond, Rhs, Tol, Verbose);
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
@@ -242,7 +247,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
             z = inner_prod(E[m], Rho);
             if (Verbose > 2)
             {
-               std::cerr << "Orthogonality of perpendicular part, RhsNorm2=" << RhsNorm2 << ", z=" << norm_frob_sq(z) << '\n';
+               std::cerr << "z=" << norm_frob_sq(z) << '\n';
             }
             if (LinearAlgebra::norm_frob_sq(z) > Tol * RhsNorm2)
             {
@@ -268,7 +273,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                             LinearWavefunction const& Psi1,
                             LinearWavefunction const& Psi2,
                             QuantumNumber const& QShift,
-                            std::complex<double> Scale,
+                            double TCond,
                             bool HasEigenvalue1,
                             double Tol,
                             int Verbose)
@@ -280,7 +285,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
       E[K] = DecomposePerpendicularPartsLeft(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+                  Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
    }
    return E;
 }
@@ -294,7 +299,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose)
@@ -341,8 +346,8 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
          }
 
          LinearSolveOrtho(F[m], Rho, Identity, OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, Scale, HasEigenvalue1),
-                     Rhs, Tol, Verbose);
+                     Identity, Rho, HasEigenvalue1),
+                     TCond, Rhs, Tol, Verbose);
 
          //DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
 
@@ -373,7 +378,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
                             LinearWavefunction const& Psi1,
                             LinearWavefunction const& Psi2,
                             QuantumNumber const& QShift,
-                            std::complex<double> Scale,
+                            double TCond,
                             bool HasEigenvalue1,
                             double Tol,
                             int Verbose)
@@ -385,7 +390,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
       E[K] = DecomposePerpendicularPartsRight(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+                  Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
    }
    return E;
 }

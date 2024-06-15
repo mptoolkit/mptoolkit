@@ -610,19 +610,11 @@ struct OneMinusTransferLeft_Ortho
                               MatrixOperator const& RightUnit, bool Orthogonalize)
       : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
         LeftUnit_(LeftUnit),
-        RightUnit_(RightUnit), Scale_(1.0), Orthogonalize_(Orthogonalize) { }
-
-   OneMinusTransferLeft_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
-                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
-                              MatrixOperator const& LeftUnit,
-                              MatrixOperator const& RightUnit, std::complex<double> Scale, bool Orthogonalize)
-      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
-        LeftUnit_(LeftUnit),
-        RightUnit_(RightUnit), Scale_(Scale), Orthogonalize_(Orthogonalize) { }
+        RightUnit_(RightUnit), Orthogonalize_(Orthogonalize) { }
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      MatrixOperator r = x-delta_shift(inject_left(x, Psi1_, Op_, Psi2_), QShift_)*Scale_;
+      MatrixOperator r = x-delta_shift(inject_left(x, Psi1_, Op_, Psi2_), QShift_);
       if (Orthogonalize_ && r.TransformsAs() == RightUnit_.TransformsAs())
          {
             //DEBUG_TRACE(inner_prod(r, RightUnit_))("this should be small");
@@ -639,7 +631,6 @@ struct OneMinusTransferLeft_Ortho
    LinearWavefunction const& Psi2_;
    MatrixOperator const& LeftUnit_;
    MatrixOperator const& RightUnit_;
-   std::complex<double> Scale_;
    bool Orthogonalize_;
 };
 
@@ -673,19 +664,11 @@ struct OneMinusTransferRight_Ortho
                               MatrixOperator const& Rho, bool Orthogonalize)
       : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
         Identity_(Identity),
-        Rho_(Rho), Scale_(1.0), Orthogonalize_(Orthogonalize) { }
-
-   OneMinusTransferRight_Ortho(LinearWavefunction const& Psi1, QuantumNumber const& QShift,
-                              BasicFiniteMPO const& Op, LinearWavefunction const& Psi2,
-                              MatrixOperator const& Identity,
-                              MatrixOperator const& Rho, std::complex<double> Scale, bool Orthogonalize)
-      : Psi1_(Psi1), QShift_(QShift), Op_(Op), Psi2_(Psi2),
-        Identity_(Identity),
-        Rho_(Rho), Scale_(Scale), Orthogonalize_(Orthogonalize) { }
+        Rho_(Rho), Orthogonalize_(Orthogonalize) { }
 
    MatrixOperator operator()(MatrixOperator const& x) const
    {
-      MatrixOperator r = x-delta_shift(inject_right(x, Psi1_, Op_, Psi2_), adjoint(QShift_))*Scale_;
+      MatrixOperator r = x-delta_shift(inject_right(x, Psi1_, Op_, Psi2_), adjoint(QShift_));
       if (Orthogonalize_ && r.TransformsAs() == Rho_.TransformsAs())
          {
             r -= std::conj(inner_prod(r, Rho_)) * Identity_; // orthogonalize to the identity
@@ -699,7 +682,6 @@ struct OneMinusTransferRight_Ortho
    LinearWavefunction const& Psi2_;
    MatrixOperator const& Identity_;
    MatrixOperator const& Rho_;
-   std::complex<double> Scale_;
    bool Orthogonalize_;
 };
 
