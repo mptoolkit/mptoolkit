@@ -84,7 +84,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
       EMatK.push_back(KMatrixPolyType());
 
    // If the condition number is too big, then the result is numerically zero
-   if (TCond > 1E30)
+   if (TCond > 1E16)
    {
       if (Verbose > 0)
       {
