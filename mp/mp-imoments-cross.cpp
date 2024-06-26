@@ -184,16 +184,28 @@ std::vector<std::complex<double> >
 MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moments,
                    double Epsilon = 1E-15, bool Quiet = false)
 {
-   int const Degree = Moments.back().degree();
+   int Degree = Moments.back().degree();
    int const FirstMoment = Moments.front().degree();
    std::vector<std::complex<double> > Cumulants(Degree+1, 0.0);
 
-   if (FirstMoment == 1)
+   if (FirstMoment == 0)
+   {
+      TRACE("here")(Degree);
+      // This is a special case, where everything is zero
+      for (int n = 0; n < Degree; ++n)
+      {
+         Cumulants[n+1] = 0.0;
+      }
+   }
+   else if (FirstMoment == 1)
    {
       // This is the easy case, we can calculate the n'th cumulant from the n'th moment
       // The complication that we handle is that possibly kappa_1 is zero but
       // kappa_1^2 is non-zero.
-      CHECK_EQUAL(int(Moments.size()), Degree);
+      // There is a corner case where the degree might be smaller than the number of moments; in that case the
+      // higher moments are zero.
+      if (Degree < Moments.size())
+         Degree = Moments.size();
       for (int n = 0; n < Degree; ++n)
       {
          Cumulants[n+1] = Moments[n][1];
@@ -524,27 +536,43 @@ int main(int argc, char** argv)
 
       std::complex<double> lambda;
       MatrixOperator TLeft, TRight;
-      if (false && WhichEigenvalue == 0)
+
+      LinearAlgebra::Vector<MatrixOperator> LV, RV;
+      LinearAlgebra::Vector<std::complex<double>> Vec = get_transfer_spectrum(Psi1, Psi2, q, WhichEigenvalue+2, &LV, &RV, 1e-14, 0, Verbose);
+      if (WhichEigenvalue >= Vec.size())
       {
-         std::tie(lambda, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, q);
+         std::cerr << basename(argv[0]) << ": fatal: transfer matrix is too small, cannot calculate eigenvalue " << WhichEigenvalue << ".\n";
+         return 1;
       }
-      else
-      {
-         LinearAlgebra::Vector<MatrixOperator> LV, RV;
-         LinearAlgebra::Vector<std::complex<double>> Vec = get_transfer_spectrum(Psi1, Psi2, q, WhichEigenvalue+1, &LV, &RV, 1e-14, 0, Verbose);
-         if (WhichEigenvalue >= Vec.size())
-         {
-            std::cerr << basename(argv[0]) << ": fatal: transfer matrix is too small, cannot calculate eigenvalue " << WhichEigenvalue << ".\n";
-            return 1;
-         }
-         lambda = Vec[WhichEigenvalue];
-         TLeft = LV[WhichEigenvalue];
-         TRight = RV[WhichEigenvalue];
-      }
+      lambda = Vec[WhichEigenvalue];
+      TLeft = LV[WhichEigenvalue];
+      TRight = RV[WhichEigenvalue];
 
       if (!Quiet)
       {
          std::cout << "#transfer matrix eigenvalue = " << formatting::format_complex(lambda) << '\n';
+      }
+
+      // Estimate the condition number
+      double TCond = std::numeric_limits<double>::infinity();
+      if (Vec.size() > 1.0)
+      {
+         // find the eigenvalue closest to lambda
+         double Dist = -1.0;
+         for (int i = 0; i < Vec.size(); ++i)
+         {
+            if (i == WhichEigenvalue)
+               continue;
+            if (Dist < 0.0 || std::abs(Vec[i] - lambda) < Dist)
+            {
+               Dist = std::abs(Vec[i] - lambda);
+            }
+         }
+         TCond = 1.0 / Dist;
+      }
+      if (!Quiet)
+      {
+         std::cout << "#condition number estimate = " << TCond << '\n';
       }
 
       TRight = delta_shift(TRight, Psi2.qshift());
@@ -582,7 +610,7 @@ int main(int argc, char** argv)
 
       // first power
       std::vector<KMatrixPolyType> E;
-      SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
+      SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, TCond, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
       if (ShouldShowAllComponents)
       {
@@ -619,13 +647,11 @@ int main(int argc, char** argv)
          E = std::vector<KMatrixPolyType>();
 
          Op = OriginalOp * Op;
-         SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, p < Power-1, Degree*(p+1),
+         SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, TCond, p < Power-1, Degree*(p+1),
                        Tol, UnityEpsilon, Verbose);
          Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
          // Force the degree of the MPO
-         if (Degree != 0)
-            Moments.back()[Degree*(p+1)] += 0.0;
-	 //            Moments.back()[ipow(Degree, p+1)] += 0.0;
+         Moments.back()[std::max(Degree,1)*(p+1)] += 0.0;
          if (CalculateMoments && Verbose <= 0)
             ShowMoments(Moments.back(), ShowRealPart, ShowImagPart,
                         ShowMagnitude, ShowArgument, ShowRadians,

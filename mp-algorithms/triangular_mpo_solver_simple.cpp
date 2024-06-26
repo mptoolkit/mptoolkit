@@ -41,6 +41,8 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
 
+   double TCond = DefaultTCond;
+
    //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
@@ -124,7 +126,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, 1.0, Diag, Identity, Rho,
-                                                Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -158,6 +160,8 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
    CHECK_EQUAL(Identity.Basis2(), Psi.Basis2());
    CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
    CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
+
+   double TCond = DefaultTCond;
 
    //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -233,7 +237,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             F = DecomposePerpendicularPartsRight(C, 1.0, Diag, Identity, Rho,
-                                                 Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                 Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {

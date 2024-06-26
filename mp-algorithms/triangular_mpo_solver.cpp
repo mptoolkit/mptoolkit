@@ -32,6 +32,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               int Degree, double Tol,
               double UnityEpsilon, int Verbose)
 {
+   SolveMPO_Left(EMatK, Psi, QShift, Op, LeftIdentity, RightIdentity, DefaultTCond, NeedFinalMatrix, Degree, Tol, UnityEpsilon, Verbose);
+}
+
+void
+SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
+              LinearWavefunction const& Psi, QuantumNumber const& QShift,
+              BasicTriangularMPO const& Op,
+              //std::vector<MatrixOperator> BoundaryE,
+              MatrixOperator const& LeftIdentity,
+              MatrixOperator const& RightIdentity, double TCond, bool NeedFinalMatrix,
+              int Degree, double Tol,
+              double UnityEpsilon, int Verbose)
+{
    CHECK_EQUAL(RightIdentity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(RightIdentity.Basis2(), Psi.Basis1());
    CHECK_EQUAL(LeftIdentity.Basis1(), Psi.Basis1());
@@ -259,7 +272,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, Diag, UnitMatrixLeft, UnitMatrixRight,
-                                            Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                            Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {

@@ -61,15 +61,16 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
 
 template <typename Func>
 void
-LinearSolveOrtho(MatrixOperator& x, MatrixOperator const& OrthoLeft, MatrixOperator const& OrthoRight, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
+LinearSolveOrtho(MatrixOperator& x, MatrixOperator const& OrthoLeft, MatrixOperator const& OrthoRight, Func F, double Fcond, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
    int MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
    int m = 30;     // krylov subspace size
    int iter = 0;   // total number of iterations performed
 
-   double normb = norm_frob(Rhs);
+   double normb = 1.0; // norm_frob(Rhs);      // this could be norm_frob(Rhs) * condition number of F?
 
-   int Ret = GmResRefineOrtho(x, OrthoLeft, OrthoRight, F, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+
+   int Ret = GmResRefineOrtho(x, OrthoLeft, OrthoRight, F, Fcond, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
 
    if (Ret != 0)
    {
@@ -132,7 +133,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                                LinearWavefunction const& Psi1,
                                LinearWavefunction const& Psi2,
                                QuantumNumber const& QShift,
-                               std::complex<double> Scale,
+                               double TCond,
                                bool HasEigenvalue1,
                                double Tol,
                                int Verbose);
@@ -145,7 +146,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                                 LinearWavefunction const& Psi1,
                                 LinearWavefunction const& Psi2,
                                 QuantumNumber const& QShift,
-                                std::complex<double> Scale,
+                                double TCond,
                                 bool HasEigenvalue1,
                                 double Tol,
                                 int Verbose);
@@ -160,7 +161,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose);
@@ -173,7 +174,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose);
