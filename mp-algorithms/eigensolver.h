@@ -23,20 +23,21 @@
 #include "mps/state_component.h"
 #include "mpo/operator_component.h"
 #include "common/statistics.h"
+#include "common/namedenum.h"
 
 class LocalEigensolver
 {
    public:
-      // FIXME: this could use common/namedenum.h
-      enum class Solver { InvalidSolver, Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
-                             Davidson, DavidsonTarget, DavidsonMaxOverlap,
-                             LastSolver = DavidsonMaxOverlap};
+      struct SolverTypes
+      {
+         enum Enum { Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
+                             Davidson, DavidsonTarget, DavidsonMaxOverlap };
+         static constexpr std::array<char const*, 11> Names = { "lanczos", "arnoldi", "aarnoldi-smallest", "arnoldi-lowest", "shift-invert", "shift-invert-direct", "davidson", "davidson-target", "davidson-max-overlap" };
+         static constexpr Enum Default = Lanczos;
+         static constexpr char const* StaticName = "eigensolver";
+      };
 
-      static Solver SolverFromStr(std::string str);
-
-      static std::string SolverStr(Solver s);
-
-      static std::vector<std::string> EnumerateSolvers();
+      using Solver = NamedEnumeration<SolverTypes>;
 
       LocalEigensolver();
 
@@ -65,9 +66,9 @@ class LocalEigensolver
       int Verbose;
 
       Solver GetSolver() const { return Solver_; }
-      std::string GetSolverStr() const { return SolverStr(Solver_); }
+
       void SetSolver(Solver s);
-      void SetSolver(std::string const& s) { this->SetSolver(SolverFromStr(s)); }
+      void SetSolver(std::string const& s) { this->SetSolver(Solver(s)); }
 
       // For solver-specific parameters, we probably should provide a generic format.
       // Since we only have one solver-specific parameter we just have a special case for now.

@@ -21,7 +21,7 @@
 #include "finitedmrg.h"
 
 FiniteDMRG::FiniteDMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, int Verbose_)
-   : DMRG(Verbose_)
+   : DMRG(Verbose_), LastSweepFidelity(0)
 {
    this->InitializeLeftOrtho(LinearWavefunction(Psi_.GetSymmetryList(), Psi_.base_begin(), Psi_.base_end()), Ham_, Initial_E(Ham_, Psi_.Basis1()), Initial_F(Ham_, Psi_.Basis2()));
 

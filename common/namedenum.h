@@ -26,6 +26,9 @@
 // StaticName  - must be a static constexpr of type char const* that gives a desciption of the enumeration.
 // Names       - must be a static constexpr array of strings, of exactly the same size as Enum.
 //
+// Note that although Names is static constexpr, it must be instantiated in a .cpp file.
+//
+
 // An example:
 // struct MyEnumTraits
 // {
@@ -34,6 +37,8 @@
 //    static constexpr char const* StaticName = "the example enumeration";
 //    static constexpr std::array<char const*, 3> Names = { "some", "enumeration", "elements" };
 // };
+//
+// When constructing a NamedEnumeration from a string, the name is not case sensitive.
 //
 
 #include <array>
@@ -75,7 +80,11 @@ class NamedEnumeration : public Traits
       NamedEnumeration& operator--() { e = static_cast<Enum>(e-1); return *this; }
       const NamedEnumeration& operator*() const { return *this; }
 
-      static std::string ListAvailable();
+      // returns a comma-separated list of the enumeration names
+      static std::string ListAll();
+
+      // returns an array of the enumeration items
+      static std::vector<std::string> EnumerateAll();
 
       std::string Name() const { return Traits::Names[e]; }
 
@@ -84,7 +93,7 @@ class NamedEnumeration : public Traits
 };
 
 template <typename Traits>
-std::string NamedEnumeration<Traits>::ListAvailable()
+std::string NamedEnumeration<Traits>::ListAll()
 {
    std::string Result;
    bool first = true;
@@ -99,19 +108,30 @@ std::string NamedEnumeration<Traits>::ListAvailable()
 }
 
 template <typename Traits>
-NamedEnumeration<Traits>::NamedEnumeration(std::string Name)
+std::vector<std::string> NamedEnumeration<Traits>::EnumerateAll()
 {
-   std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){ return std::tolower(c); });
+   std::vector<std::string> Result;
+   Result.reserve(NamedEnumeration::size());
    for (auto a : NamedEnumeration())
    {
-      if (a.Name() == Name)
+      Result.push_back(a.Name());
+   }
+   return Result;
+}
+
+template <typename Traits>
+NamedEnumeration<Traits>::NamedEnumeration(std::string Name)
+{
+   for (auto a : NamedEnumeration())
+   {
+      if (iequals(a.Name(), Name))
       {
          e = a.e;
          return;
       }
    }
    using namespace std::literals::string_literals;
-   std::string ErrorStr = "Unknown initializer for "s + StaticName + "; choices are " + this->ListAvailable() + '.';
+   std::string ErrorStr = "Unknown initializer for "s + StaticName + "; choices are " + this->ListAll() + '.';
    throw std::runtime_error(ErrorStr);
 }
 

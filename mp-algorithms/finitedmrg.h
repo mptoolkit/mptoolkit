@@ -32,19 +32,25 @@ class FiniteDMRG : public DMRG
       // wavefunction against
       void AddOrthogonalState(FiniteWavefunctionLeft x);
 
-      // get the current wavefunction
+      // get the current wavefunction. This could be called at any time.
       FiniteWavefunctionLeft Wavefunction() const;
 
       virtual void StartSweep();
       virtual void EndSweep();
 
+   protected:
       virtual void ShiftLeft(MatrixOperator const& Lambda);
       virtual void ShiftRight(MatrixOperator const& Lambda);
 
       virtual void ModifyLeftBasis(MatrixOperator const& U);
       virtual void ModifyRightBasis(MatrixOperator const& U);
 
+   public:
       virtual void check_structure() const;
+
+      // Statistics which are valid at the end of the sweep
+      double LastSweepFidelity;      // Overlap of the wavefunction before and after the previous sweep
+
 
       // The wavefunction from the start of the sweep, projected into the basis of C
       StateComponent SweepC;

@@ -41,7 +41,6 @@ DMRG::DMRG(int Verbose_)
    TotalNumIterations(0),
    TotalNumMultiplies(0),
    LastSweepTime(0),
-   LastSweepFidelity(0),
    Verbose(Verbose_)
 {
 }

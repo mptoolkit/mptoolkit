@@ -30,10 +30,23 @@
 
 #include <stdexcept>
 #include <string>
-#include <ctype.h>
+#include <cctype>
 #include <sstream>
 #include <algorithm>
 #include "common/trace.h"
+
+// case-insensitive string comparison
+inline
+bool ichar_equals(char a, char b)
+{
+   return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+}
+
+inline
+bool iequals(std::string const& a, std::string const& b)
+{
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(), ichar_equals);
+}
 
 //
 // RemoveWhiteSpace removes white space at the front and the back of the string, according to isspace()

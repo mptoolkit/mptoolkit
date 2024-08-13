@@ -156,7 +156,7 @@ int main(int argc, char** argv)
           FormatDefault("Number of half-sweeps to perform", NumSweeps).c_str())
          ("Solver,S", prog_opt::value(&Solver),
           FormatDefault("Eigensoler to use ("
-			+ boost::algorithm::join(LocalEigensolver::EnumerateSolvers(), ", ") + ")", Solver).c_str())
+			+ LocalEigensolver::Solver::ListAll() + ")", Solver).c_str())
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("oversample", prog_opt::value(&Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())

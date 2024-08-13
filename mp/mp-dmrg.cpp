@@ -210,11 +210,11 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-          ("pre", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PreExpansionAlgorithm::ListAvailable(), PreExpandAlgo).c_str())
+          ("pre", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PreExpansionAlgorithm::ListAll(), PreExpandAlgo).c_str())
           ("pre-increment", prog_opt::value(&PreExpand.IncrementFactor), FormatDefault("Pre-expansion growth factor for basis size increase", PreExpand.IncrementFactor).c_str())
          ("pre-factor", prog_opt::value(&PreExpand.ExpandFactor), FormatDefault("Pre-expansion factor", PreExpand.ExpandFactor).c_str())
          ("pre-sector", prog_opt::value(&PreExpand.ExpandPerSector), "Pre-expansion number of additional states in each quantum number sector [default 0 for fullsvd, rsvd; default 1 for range, random]")
-         ("post", prog_opt::value(&PostExpandAlgo), FormatDefault("Post-expansion algorithm, choices are " + PostExpansionAlgorithm::ListAvailable(), PostExpandAlgo).c_str())
+         ("post", prog_opt::value(&PostExpandAlgo), FormatDefault("Post-expansion algorithm, choices are " + PostExpansionAlgorithm::ListAll(), PostExpandAlgo).c_str())
          ("post-increment", prog_opt::value(&PostExpand.IncrementFactor), FormatDefault("Post-expansion growth factor for basis size increase", PostExpand.IncrementFactor).c_str())
          ("post-factor", prog_opt::value(&PostExpand.ExpandFactor), FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
          ("post-sector", prog_opt::value(&PostExpand.ExpandPerSector), "Post-expansion number of additional states in each quantum number sector [default 0 for fullsvd, rsvd; default 1 for range, random]")
@@ -232,7 +232,7 @@ int main(int argc, char** argv)
           FormatDefault("Number of half-sweeps to perform", NumSweeps).c_str())
          ("Solver,S", prog_opt::value(&Solver),
           FormatDefault("Eigensoler to use ("
-			+ boost::algorithm::join(LocalEigensolver::EnumerateSolvers(), ", ") + ")", Solver).c_str())
+			+ LocalEigensolver::Solver::ListAll() + ")", Solver).c_str())
          ("orthogonal", prog_opt::value<std::vector<std::string> >(),
           "force the wavefunction to be orthogonal to this state ***NOT YET IMPLEMENTED***")
          ("oversample", prog_opt::value(&Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())
