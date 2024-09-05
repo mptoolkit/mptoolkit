@@ -32,7 +32,7 @@ class LocalEigensolver
       {
          enum Enum { Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
                              Davidson, DavidsonTarget, DavidsonMaxOverlap };
-         static constexpr std::array<char const*, 11> Names = { "lanczos", "arnoldi", "aarnoldi-smallest", "arnoldi-lowest", "shift-invert", "shift-invert-direct", "davidson", "davidson-target", "davidson-max-overlap" };
+         static constexpr std::array<char const*, 9> Names = { "lanczos", "arnoldi", "aarnoldi-smallest", "arnoldi-lowest", "shift-invert", "shift-invert-direct", "davidson", "davidson-target", "davidson-max-overlap" };
          static constexpr Enum Default = Lanczos;
          static constexpr char const* StaticName = "eigensolver";
       };

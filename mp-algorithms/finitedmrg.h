@@ -35,8 +35,8 @@ class FiniteDMRG : public DMRG
       // get the current wavefunction. This could be called at any time.
       FiniteWavefunctionLeft Wavefunction() const;
 
-      virtual void StartSweep();
-      virtual void EndSweep();
+      void StartSweep();
+      void EndSweep();
 
    protected:
       virtual void ShiftLeft(MatrixOperator const& Lambda);

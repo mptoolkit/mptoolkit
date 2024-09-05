@@ -26,7 +26,7 @@
 
 #include "mps/packunpack.h"
 
-constexpr std::array<char const*, 11> LocalEigensolver::SolverTypes::Names;
+constexpr std::array<char const*, 9> LocalEigensolver::SolverTypes::Names;
 
 struct MPSMultiply
 {

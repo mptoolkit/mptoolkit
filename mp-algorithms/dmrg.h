@@ -24,7 +24,7 @@
 // This class is intended to cover standard DMRG and iDMRG, including 2-site, EE, and 3S variants,
 // and includes all of the ingredients except for the actual 'Sweepleft' / 'SweepRight' functions.
 //
-// This is a base class that is used by FiniteDMRG and iDMRG.  It is intended that base classes
+// This is a base class that is used by FiniteDMRG and iDMRG (and IBC?).  It is intended that base classes
 // will want to override some of the member functions, although mostly they are not declared
 // as virtual (there is no need to do this for functions that are not called from the base class).
 // There are some virtual functions that are customization points that are called internally,
@@ -75,16 +75,18 @@ class DMRG
 
       // Initialize the state of the system from a left orthogonalized wavefunction.
       // All sites in Psi_ are assumed to be left-orthogonal except for the right-most site.
+      // E and F are the E/F-matrices at the boundaries of the window.
       void InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F);
 
       // Size of the window
       int size() const { return Psi.size(); }
 
+      // returns the current site nummber, [0,size())
       int Site() const { return Site_; }
 
-      void StartSweep();
+      void StartSweep();      // Reset statistics for the start of a sweep
 
-      void EndSweep();    // statistics for end of sweep
+      void EndSweep();        // Update statistics at the end of a sweep
 
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
@@ -116,6 +118,7 @@ class DMRG
       // Coarse-grain the current site with the site on the left, i.e. 2-site DMRG
       std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& SInfo);
 
+      // Post-expansion
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
 

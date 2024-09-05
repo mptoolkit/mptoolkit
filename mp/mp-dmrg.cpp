@@ -37,8 +37,8 @@
 
 namespace prog_opt = boost::program_options;
 
-bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
-std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
+std::ofstream BenchFile(open_bench_file(getenv_or_default("MP_BENCHFILE", "")));
+bool Bench = BenchFile.good();
 
 bool Flush = false;  // set to true to flush standard output every step
 
