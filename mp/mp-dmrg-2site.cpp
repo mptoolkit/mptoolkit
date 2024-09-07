@@ -37,8 +37,8 @@
 
 namespace prog_opt = boost::program_options;
 
-bool Bench = (getenv_or_default("MP_BENCHFILE", "") != std::string());
-std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::out | std::ios_base::trunc);
+std::ofstream PerStepFile(open_bench_file(getenv_or_default("MP_BENCHFILE", "")));
+bool PerStep = PerStepFile.good();
 
 bool Flush = false;  // set to true to flush standard output every step
 
@@ -60,12 +60,15 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States)
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
       if (Flush)
-         std::cout << std::flush;
-      if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         std::cout.flush();
+      if (PerStep)
+         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
    dmrg.EndSweep();
+
+   if (PerStep)
+      PerStepFile.flush();
    std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
    std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
@@ -88,13 +91,16 @@ void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States)
          << " Tol=" << dmrg.Solver().LastTol()
          << '\n';
       if (Flush)
-         std::cout << std::flush;
+         std::cout.flush();
       SweepTruncation += Info.TruncationError();
-      if (Bench)
-         BenchFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+      if (PerStep)
+         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
    dmrg.EndSweep();
+
+   if (PerStep)
+      PerStepFile.flush();
    std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
    std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
@@ -186,15 +192,15 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
-      BenchFile.precision(getenv_or_default("MP_PRECISION", 14));
+      PerStepFile.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
 
-      if (Bench)
+      if (PerStep)
       {
-         print_preamble(BenchFile, argc, argv);
-         BenchFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #Tol\n";
+         print_preamble(PerStepFile, argc, argv);
+         PerStepFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #Tol\n";
       }
 
       std::cout << "Starting DMRG...\n";

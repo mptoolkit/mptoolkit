@@ -136,8 +136,7 @@ std::string replace_format_specifiers(std::string filename)
       {"%F", "%F"},                   // year-month-date,  equivalent to %Y-%m-%d
       {"%C", "%Y%m%d_%H%M%S"},        // compact timestamp
       {"%z", "%z"},                   // timezone
-      {"%Z", "%Z"},                   // timezone name
-      {"%%", "%%"}                    // literal '%'
+      {"%Z", "%Z"}                    // timezone name
    };
 
    // Replace date/time format specifiers

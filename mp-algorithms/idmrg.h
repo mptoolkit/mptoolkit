@@ -93,6 +93,7 @@
 
 //
 // In this version, we don't bother with pre-expansion.
+// 
 
 
 #if !defined(MPTOOLKIT_MP_ALGORITHMS_IDMRG_H)
