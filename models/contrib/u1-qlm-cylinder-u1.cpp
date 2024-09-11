@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       int y = 4;
       half_int Spin = 0.5;
       bool Bosonic = false;
+      bool Tau = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -63,6 +64,7 @@ int main(int argc, char** argv)
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
+         ("tau", prog_opt::bool_switch(&Tau), "use alternative coeffients for the ladder operators based on the boson ladder operators")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -107,9 +109,29 @@ int main(int argc, char** argv)
 
       LatticeSite FSite = SpinlessFermionU1("N", "P", Bosonic);
       LatticeSite AFSite = SpinlessAntifermionU1("N", "P", Bosonic);
-      LatticeSite SSite = SpinSite(Spin);
-      UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite, SSite);
-      UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite, SSite);
+      LatticeSite SSite1 = SpinSite(Spin);
+      LatticeSite SSite2 = SpinSite(Spin);
+
+      if (Tau)
+      {
+         std::map<half_int, std::string> SpinBasis;
+         for (half_int s = -Spin; s <= Spin; ++s)
+            SpinBasis[s] = boost::lexical_cast<std::string>(s);
+
+         for (half_int s = -Spin; s < Spin; ++s)
+         {
+            int n = (Spin + s).twice();
+            double Coeff = std::sqrt((n + 1) * (n + 2));
+            SSite1["Sp"](SpinBasis[-s], SpinBasis[-s-1]) = Coeff;
+            SSite2["Sp"](SpinBasis[s+1], SpinBasis[s]) = Coeff;
+         }
+
+         SSite1["Sm"] = adjoint(SSite1["Sp"]);
+         SSite2["Sm"] = adjoint(SSite2["Sp"]);
+      }
+
+      UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite1, SSite1);
+      UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite2, SSite2);
       UnitCell Cell1(repeat(join(FCell, AFCell), CellSize/12));
       UnitCell Cell2(repeat(join(AFCell, FCell), CellSize/12));
       UnitCell Cell = join(Cell1, Cell2);
