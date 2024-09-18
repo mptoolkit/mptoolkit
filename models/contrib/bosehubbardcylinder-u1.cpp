@@ -1,10 +1,10 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/contrib/bosehubbardcylinder-u1.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 // Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
@@ -12,7 +12,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -77,6 +77,8 @@ int main(int argc, char** argv)
          ("H_eta"  , "QLM forbidden site potential", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ("H_alpha", "QLM matter site interaction", "x = 0, y even, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
+         ("H_W"    , "QLM gauge site repulsion", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ;
       OpDescriptions.add_functions()
@@ -161,18 +163,25 @@ int main(int argc, char** argv)
       if (x == 0 && y%2 == 0 && QLM)
       {
          // Define QLM potentials.
-         UnitCellMPO H_delta, H_eta, H_alpha;
+         UnitCellMPO H_delta, H_eta, H_alpha, W;
 
          for (int i = 0; i < CellSize/2; ++i)
          {
             H_delta += N(0)[2*i+1] + N(1)[2*i];
             H_eta += N(1)[2*i+1];
             H_alpha += 0.5*N2(0)[2*i];
+            W += N(0)[2*i+1] * N(0)[(2*i-1+y)%y];
+            W += N(0)[2*i+1] * N(1)[2*i];
+            W += N(0)[2*i+1] * N(-1)[2*i];
+            W += N(0)[(2*i-1+y)%y] * N(1)[2*i];
+            W += N(0)[(2*i-1+y)%y] * N(-1)[2*i];
+            W += N(-1)[2*i] * N(1)[2*i];
          }
 
          Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
          Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
          Lattice["H_alpha"] = sum_unit(H_alpha, 2*CellSize);
+         Lattice["H_W"] = sum_unit(W, 2*CellSize);
 
          // Define Gauss' law operators.
          // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.
@@ -181,7 +190,7 @@ int main(int argc, char** argv)
          for (int i = 0; i < CellSize/2; ++i)
          {
             G[i] = N(0)[2*i] + 0.5 * (N2(0)[2*i+1] + N2(0)[(2*i-1+CellSize)%CellSize] + N2(1)[2*i] + N2(-1)[0]) - 2.0 * I(0)[2*i];
-            G[i].set_description("Gauss' law operator for matter site " + std::to_string(2*i));
+            G[i].set_description("Gauss's law operator for matter site " + std::to_string(2*i));
             Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
          }
       }

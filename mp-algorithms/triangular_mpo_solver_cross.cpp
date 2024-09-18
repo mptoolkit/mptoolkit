@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp-algorithms/triangular_mpo_solver.cpp
+// mp-algorithms/triangular_mpo_solver_cross.cpp
 //
-// Copyright (C) 2009-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2009-2022 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -20,11 +20,13 @@
 #include "triangular_mpo_solver.h"
 #include "triangular_mpo_solver_helpers.h"
 
+#include "mp-algorithms/transfer.h"
+
 void
 SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                     LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                     BasicTriangularMPO const& Op, MatrixOperator const& LeftIdentity,
-                    MatrixOperator const& RightIdentity, std::complex<double> lambda, bool NeedFinalMatrix,
+                    MatrixOperator const& RightIdentity, double TCond, bool NeedFinalMatrix,
                     int Degree, double Tol,
                     double UnityEpsilon, int Verbose)
 {
@@ -34,11 +36,6 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
    CHECK_EQUAL(LeftIdentity.Basis2(), Psi2.Basis1());
 
    DEBUG_TRACE(Verbose)(Degree)(Tol);
-
-   // lambda is the leading eigenvalue of the transfer matrix.  We solve the MPO with respect to
-   // <Psi1|Op|Psi2> / <Psi1|Psi2>.  This amounts to dividing through by lambda every time we contract over a unit cell.
-   // Or equivalently, scale everything by Scale ( = 1 / lambda).
-   std::complex<double> Scale = 1.0 / lambda;
 
    int Dim = Op.Basis1().size();       // dimension of the MPO
    EMatK.reserve(Dim);
@@ -86,6 +83,19 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
    while (int(EMatK.size()) < Dim)
       EMatK.push_back(KMatrixPolyType());
 
+   // If the condition number is too big, then the result is numerically zero
+   if (TCond > 1E16)
+   {
+      if (Verbose > 0)
+      {
+         std::cerr << "Condition number is too large, result is identically zero.\n";
+      }
+      // Set the component of the polynomial to the zero matrix, so we can get some sensible output
+      EMatK.back()[1.0] = MatrixPolyType();
+      EMatK.back()[1.0][std::max(Degree,1)] = MatrixOperator(LeftIdentity.Basis1(), LeftIdentity.Basis2(), LeftIdentity.TransformsAs());
+      return;
+   }
+
    // solve recursively column 1 onwards
    for (int Col = StartCol; Col < Dim; ++Col)
    {
@@ -96,7 +106,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       KMatrixPolyType C = inject_left_mask(EMatK, Psi1, QShift, Op.data(), Psi2, mask_column(Op, Col))[Col];
-      ScalePoly(C, Scale);
+      //ScalePoly(C, Scale);
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -160,7 +170,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
             //UnitMatrixLeft *= 1.0 / norm_frob(UnitMatrixLeft);
             //       UnitMatrixLeft *= 2.0; // adding this brings in spurious components
             std::complex<double> EtaL = FindClosestUnitEigenvalue(UnitMatrixLeft,
-                                                                  InjectLeftQShift(Psi1, QShift, Diag, Psi2, Scale),
+                                                                  InjectLeftQShift(Psi1, QShift, Diag, Psi2, 1.0),
                                                                   Tol, Verbose);
             //UnitMatrixLeft *= lnorm;
             EtaL = std::conj(EtaL); // left eigenvalue, so conjugate (see comment at operator_actions.h)
@@ -181,7 +191,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                double ddd = norm_frob(UnitMatrixRight);
                //UnitMatrixRight *= 1.0 / ddd; //norm_frob(UnitMatrixRight);
                std::complex<double> EtaR = FindClosestUnitEigenvalue(UnitMatrixRight,
-                                                                     InjectRightQShift(Psi1, QShift, Diag, Psi2, Scale),
+                                                                     InjectRightQShift(Psi1, QShift, Diag, Psi2, 1.0),
                                                                      Tol, Verbose);
                if (Verbose > 0)
                   std::cerr << "Right eigenvalue is " << EtaR << std::endl;
@@ -257,7 +267,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, Diag, UnitMatrixLeft, UnitMatrixRight,
-                                            Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+                                            Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -271,8 +281,9 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
             {
                // Conj here because this comes from an overlap(x, RightUnitMatrix)
                E[I->first][J->first] += std::conj(J->second) * UnitMatrixLeft;
+               DEBUG_TRACE(inner_prod(UnitMatrixLeft, UnitMatrixRight));
                DEBUG_TRACE(std::conj(J->second));
-               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], RightIdentity));
+               DEBUG_TRACE(I->first)(J->first)(inner_prod(E[I->first][J->first], UnitMatrixRight));
             }
          }
 

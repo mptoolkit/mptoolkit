@@ -662,6 +662,7 @@ LIBARPACK
 BOOST_PROGRAM_OPTIONS_LIB
 BOOST_LDFLAGS
 BOOST_CPPFLAGS
+BLAS_VENDOR
 LAPACK_LIBS
 BLAS_LIBS
 ac_ct_CC
@@ -10174,6 +10175,97 @@ else
         ax_lapack_ok=no
         as_fn_error $? "LAPACK library not found, aborting." "$LINENO" 5
 fi
+
+
+
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking BLAS vendor information" >&5
+printf %s "checking BLAS vendor information... " >&6; }
+save_LIBS="$LIBS"; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+BLAS_VENDOR="generic"
+
+# MKL has the MKL_Get_Version() function
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+namespace conftest {
+  extern "C" int MKL_Get_Version ();
+}
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main (void)
+{
+return conftest::MKL_Get_Version ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  BLAS_VENDOR="MKL"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+# OpenBLAS doesn't have a function to get the version, just a config string
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+namespace conftest {
+  extern "C" int openblas_get_config ();
+}
+#ifdef F77_DUMMY_MAIN
+
+#  ifdef __cplusplus
+     extern "C"
+#  endif
+   int F77_DUMMY_MAIN() { return 1; }
+
+#endif
+int
+main (void)
+{
+return conftest::openblas_get_config ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  BLAS_VENDOR="OpenBLAS"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $BLAS_VENDOR" >&5
+printf "%s\n" "$BLAS_VENDOR" >&6; }
+
+
+printf "%s\n" "#define BLAS_VENDOR \"$BLAS_VENDOR\"" >>confdefs.h
+
+
+if test "x$BLAS_VENDOR" = "xMKL" ; then
+
+printf "%s\n" "#define BLAS_VENDOR_MKL /**/" >>confdefs.h
+
+fi
+
+if test "x$BLAS_VENDOR" = "xOpenBLAS" ; then
+
+printf "%s\n" "#define BLAS_VENDOR_OPENBLAS /**/" >>confdefs.h
+
+fi
+
+
+
 
 
 

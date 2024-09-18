@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mps/state_component.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -871,6 +871,28 @@ OrthogonalizeBasis2(StateComponent& A)
    SingularValueDecomposition(M, U, D, Vh);
    A = ReshapeFromBasis1(U, A.LocalBasis(), A.Basis1());
    return std::make_pair(D, Vh);
+}
+
+MatrixOperator
+OrthogonalizeBasis1_LQ(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis2(A);
+   auto LQ = LQ_Factorize(M);
+   A = ReshapeFromBasis2(LQ.second, A.LocalBasis(), A.Basis2());
+   return LQ.first;
+}
+
+MatrixOperator
+OrthogonalizeBasis2_QR(StateComponent& A)
+{
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   MatrixOperator M = ReshapeBasis1(A);   // M is md x m
+   auto QR = QR_Factorize(M);
+   A = ReshapeFromBasis1(QR.first, A.LocalBasis(), A.Basis1());
+   return QR.second;
 }
 
 std::pair<MatrixOperator, RealDiagonalOperator>

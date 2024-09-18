@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // tensor/tensor.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -524,24 +524,6 @@ MakeIdentityFrom(IrredTensor<T, Basis1T, Basis2T, Structure> const& s)
 // for a scalar operator, get the rank of each quantum number sector, as measured by the
 // structurally non-zero matrix elements. This is only an upper bound for the true rank,
 // which would require some SVD or rank-revealing QR.
-
-inline
-std::map<QuantumNumbers::QuantumNumber, int>
-RankPerSector(VectorBasis const& B1, VectorBasis const& B2)
-{
-   std::map<QuantumNumbers::QuantumNumber, int> Basis1Size, Basis2Size;
-   for (int i = 0; i < B1.size(); ++i)
-      Basis1Size[B1[i]] += B1.dim(i);
-      for (int j = 0; j < B2.size(); ++j)
-      Basis2Size[B2[j]] += B2.dim(j);
-   std::map<QuantumNumbers::QuantumNumber, int> Result;
-   for (auto const& q : Basis1Size)
-   {
-      if (q.second > 0 && Basis2Size[q.first] > 0)
-         Result[q.first] = std::min(q.second, Basis2Size[q.first]);
-   }
-   return Result;
-}
 
 template <typename T, typename Structure>
 std::map<QuantumNumbers::QuantumNumber, int>

@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // common/numerics.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -86,6 +87,7 @@
 #include <functional>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
+#include "common/environment.h"
 
 namespace numerics
 {
@@ -131,7 +133,8 @@ std::complex<T>
 remove_small_imag(std::complex<T> x)
 {
    using std::abs;
-   if (abs(x.imag()) < 30*std::numeric_limits<T>::epsilon() * abs(x.real()))
+   static double const SmallImag = getenv_or_default("MP_SMALL_IMAG", 30.0);
+   if (abs(x.imag()) < SmallImag * std::numeric_limits<T>::epsilon() * abs(x.real()))
       x.imag(0.0);
    return x;
 }
@@ -333,6 +336,25 @@ using ::norm_inf;
 using ::transpose;
 using ::conj;
 using ::herm;
+
+//
+// sfmin
+//
+// from LAPACK function dlamch('s')
+// sfmin is the smallest number such that 1/sfmin does not overflow
+
+template <typename Real>
+Real safmin()
+{
+   Real eps = 0.5 * std::numeric_limits<Real>::epsilon();
+   Real r = std::numeric_limits<Real>::min(); // returns the smallest (non-denormal) number greater than zero
+   Real small = 1.0 / std::numeric_limits<double>::max();
+   //
+   if (small >= r)
+      r = small*(1.0 + eps); // small plus a bit, just to avoid the possibility of rounding causing overflow
+                             // when computing 1/r
+   return r;
+}
 
 //
 // a functor to test whether the euclidean norm is smaller than some number v.

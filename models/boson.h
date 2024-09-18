@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/boson.h
 //
-// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2012-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -38,11 +38,11 @@ void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 inline
 LatticeSite Boson(int MaxN)
 {
-   SymmetryList Symmetry("N:Null");
+   SymmetryList Symmetry("Null:Null");
    QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number
    SiteBasis Basis(Symmetry);
    SiteOperator B, BH, P, R, N, N2, Q, I, U;
-   LatticeSite Site;
+   LatticeSite Site("Boson, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
@@ -69,6 +69,7 @@ LatticeSite Boson(int MaxN)
    Site["N2"] = N2;
    R = I;
    Site["R"] = R;
+   Site["P"] = I;
 
    U = SiteOperator(Basis, QNum, LatticeCommute::Bosonic);
    for (int n = 0; n <= MaxN; ++n)
@@ -86,8 +87,6 @@ LatticeSite Boson(int MaxN)
         + boost::lexical_cast<std::string>(n);
       Site[OpName] = X;
    }
-
-   DEBUG_TRACE(BH)(B)(I)(N)(N2)(U);
 
    return Site;
 }

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/excitation-ansatz.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -157,6 +157,21 @@ HEff::ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const
    }
 
    return BDeque;
+}
+
+std::deque<MatrixOperator>
+HEff::ConstructXDeque(std::deque<StateComponent> const& BDeque) const
+{
+   std::deque<MatrixOperator> XDeque;
+   auto NL = NullLeftDeque.begin();
+   auto B = BDeque.begin();
+   while (NL != NullLeftDeque.end())
+   {
+      XDeque.push_back(scalar_prod(herm(*NL), *B));
+      ++NL, ++B;
+   }
+
+   return XDeque;
 }
 
 std::deque<MatrixOperator>

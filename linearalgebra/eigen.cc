@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // linearalgebra/eigen.cc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -104,6 +104,12 @@ void LQ_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::c
 
 void LQ_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
 void LQ_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void QR_Factorize(int Size1, int Size2, double* A, int ldA, double* Tau);
+void QR_Factorize(int Size1, int Size2, std::complex<double>* A, int ldA, std::complex<double>* Tau);
+
+void QR_Construct(int Size1, int Size2, int k, double* A, int ldA, double* Tau);
+void QR_Construct(int Size1, int Size2, int k, std::complex<double>* A, int ldA, std::complex<double>* Tau);
 
 } // namespace Private
 
@@ -766,7 +772,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
 
       Matrix<Real> Acopy(a);
       Matrix<Real> Ures(m, m);
-      Vector<double> Dres(min_mn);
+      Vector<double> Dres(max_mn);
       Matrix<Real> Vtres(n, n);
 
       Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
@@ -784,7 +790,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       zero_all(d);
       zero_all(vt);
       assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
-      assign(d.diagonal()[LinearAlgebra::range(0, min_mn)], Dres);
+      assign(d.diagonal(), Dres);
       assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
    }
 };
@@ -1208,6 +1214,123 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
       return Q;
    }
 };
+
+//
+// LQ_FactorizeFull
+//
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor, Mi>>
+{
+   typedef Matrix<double> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<double> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<double> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+template <typename M, typename Mi>
+struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<double>, RowMajor, Mi>>
+{
+   typedef Matrix<std::complex<double>> result_type;
+   result_type operator()(M& m) const
+   {
+      int s1 = size1(m);
+      int s2 = size2(m);
+      int sz = std::min(s1, s2);
+      Vector<std::complex<double>> Tau(sz);
+      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+
+      // Convert the product of elementary reflectors into the Q matrix
+      Matrix<std::complex<double>> Q(s2, s2, 0.0);
+      Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
+      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+
+      // Zero the unused parts of m, which now becomes lower-triangular
+      for (int i = 0; i < sz; ++i)
+      {
+         for (int j = i+1; j < s2; ++j)
+         {
+            m(i,j) = 0.0;
+         }
+      }
+      return Q;
+   }
+};
+
+// OrthogonalizeRowsAgainst / OrthogonalizeColsAgainst
+
+template <typename T>
+void
+OrthogonalizeRowsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size2(), Y.size2());
+   CHECK(X.size1() + Y.size1() <= X.size2())("Cannot orthogonalize - rank mismatch")(X.size1())(Y.size1())(X.size2());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y and then
+   // orthogonalize via LQ. Then test how orthogonal X and Y are, and if necessary do another round.
+   Matrix<T> M = X*herm(Y);
+   X = X - M*Y;
+   X = LQ_FactorizeThin(std::move(X)).second;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the row vectors of Y and the
+   // row vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = X*herm(Y);
+   if (amax(M) > eps)
+   {
+      X = X - M*Y;
+      X = LQ_FactorizeThin(std::move(X)).second;
+   }
+}
+
+template <typename T>
+void
+OrthogonalizeColsAgainst(Matrix<T>& X, Matrix<T> const& Y)
+{
+   CHECK_EQUAL(X.size1(), Y.size1());
+   CHECK(X.size2() + Y.size2() <= X.size1())("Cannot orthogonalize - rank mismatch")(X.size2())(Y.size2())(X.size1());
+
+   double constexpr eps = std::numeric_limits<double>::epsilon()*10;
+
+   // We want X to be right orthogonal (orthogonal rows), so the strategy is to remove the projection of Y
+   // to orthogonalize X against Y, and then do a QR decomposition of X.  If X remains orthogonal to Y, when we've finished.
+   // Otherwise, do another iteration.
+   Matrix<T> M = herm(Y)*X;
+   X = X - Y*M;
+   X = QR_FactorizeThin(std::move(X)).first;
+
+   // Test how well the resulting matrix is orthogonal.  M is the matrix of overlaps of the column vectors of Y and the
+   // column vectors of X, so we want the absolute maximum value to be bounded. It is a theorem (DGKS) that
+   // we only need to do this at most one additional time.
+   M = herm(Y)*X;
+   if (amax(M) > eps)
+   {
+      X = X - Y*M;
+      X = QR_FactorizeThin(std::move(X)).first;
+   }
+}
 
 //
 // InvertHPD

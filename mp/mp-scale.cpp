@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-scale.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 
       if (Psi->is<FiniteWavefunctionLeft>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             x = std::exp(x);
          }
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionLeft>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             if (vm.count("unitcell"))
             {
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
       }
       else if (Psi->is<InfiniteWavefunctionRight>())
       {
-         if (vm.count("log"))
+         if (Log)
          {
             if (vm.count("unitcell"))
             {
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
          }
          else
          {
-            if (vm.count("unitcell"))
+            if (Log)
             {
                int u = Psi->get<InfiniteWavefunctionRight>().size();
                x = std::pow(x, double(u) / double(UnitCell));

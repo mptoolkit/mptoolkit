@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mps/truncation.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -399,21 +399,17 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    std::list<EigenInfo> Result;
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
 
-   // first pass: keep at least StatesPerSector states in each quantum number sector.
-   // If the kept state has non-zero weight, then it subtracts from the total number of states
-   // that we keep, otherwise it is a 'bonus' extra state.
-   auto f = States.cbegin();
-
-
-   // second pass: keep the next NumStatesWithWeight in order from heighest weight,
+   // first pass: keep the next NumStatesWithWeight in order from heighest weight,
    // as long as they have non-zero weight.
-   while (NumStates > 0 && f != States.cend()) // && f->Eigenvalue > 0.0)
+   auto f = States.cbegin();
+   while (NumStates > 0 && f != States.cend() && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
    {
       Result.push_back(*f);
       ++f;
       --NumStates;
    }
 
+   // second pass: keep at least StatesPerSector states in each quantum number sector.
    f = States.cbegin();
    while (f != States.cend())
    {

@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/copyright.cpp
 //
-// Copyright (C) 2002-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2002-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -24,6 +25,7 @@
 #endif
 #include "config.h"
 
+#include "common/blas_vendor.h"
 #include <iostream>
 #include <iomanip>
 #include <boost/version.hpp>
@@ -56,25 +58,42 @@
 #define OPENMP_INFO
 #endif
 
+#define STRINGIZE(x) #x
+
 void print_copyright(std::ostream& out)
 {
    out << "Matrix Product Toolkit version " VERSION "\n"
-      "Copyright (C) Ian McCulloch 1999-2023\n"
+      "Copyright (C) Matrix Product Toolkit Developers 1999-2024\n"
       "Compiled on " __DATE__ " at " __TIME__ "\n"
       "Configured using compiler " CONFIG_COMPILER_VENDOR " " CONFIG_COMPILER_VERSION "\n"
       "Compiler flags: " CONFIG_CXXFLAGS "\n"
       OPENMP_INFO
-      "Using Boost version " << (BOOST_VERSION / 100000)
-       << "." << (BOOST_VERSION / 100 % 1000)
-       << "." << (BOOST_VERSION % 100) << "\n"
-       "Post bugs at: " PACKAGE_BUGREPORT "\n"
+      // "Using Boost version " << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << "\n"
+      "BLAS vendor: " << BLAS_Vendor() << "\n"
+      "BLAS version: " << BLAS_Version() << "\n"
+      "Post bugs at: " PACKAGE_BUGREPORT "\n"
       "This program comes with ABSOLUTELY NO WARRANTY; for details run 'mp-info --warranty'.\n"
       "This is free software, and you are welcome to redistribute it under certain conditions;\n"
       "run 'mp-info --copying' for details.\n"
-      "Reseach publications making use of this software should include appropriate citations\n"
+      "Research publications making use of this software should include appropriate citations\n"
       "and/or acknowledgements; run 'mp-info --citations' for details.\n"
-      "Website: https://people.smp.uq.edu.au/IanMcCulloch/mptoolkit/\n"
+      "Website: https://mptoolkit.qusim.net/\n"
       ;
+
+   if (BLAS_Vendor() == "MKL")
+   {
+      std::string v = BLAS_Version();
+      if (v.find("2020.0.4") != std::string::npos)
+      {
+         out << std::flush;
+         std::cerr <<  "\n***********************************************************************************\n"
+                         "*  WARNING   WARNING   WARNING   WARNING   WARNING   WARNING   WARNING   WARNING  *\n"
+                         "*  The MKL version is 2020.0.4, which contains bugs in the SVD. Do not use!       *\n"
+                         "*  WARNING   WARNING   WARNING   WARNING   WARNING   WARNING   WARNING   WARNING  *\n"
+                         "***********************************************************************************\n\n";
+         std::exit(EXIT_FAILURE);
+      }
+   }
 }
 
 void print_warranty(std::ostream& out)
@@ -95,7 +114,7 @@ void print_copying(std::ostream& out)
 {
    out << "This program is distributed according to the terms of the GPLv3.\n"
       "See the file COPYING in the source directory for full license conditions.\n"
-      "Reseach publications making use of this software, including modified versions,\n"
+      "Research publications making use of this software, including modified versions,\n"
       "should include appropriate citations and/or acknowledgements, as described in the\n"
       "file CITATIONS in the source directory, or run 'mp-info --citations'.\n";
 }

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mps/density.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -318,7 +318,8 @@ class SingularDecompositionBase
 
       SingularDecompositionBase();
 
-      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both);
+      void Diagonalize(std::vector<RawDMType> const& M, WhichVectors Which = Both, WhichVectors WhichCalculate = Both);
+
 
    public:
       virtual QuantumNumber Lookup(int Subspace) const = 0;
@@ -356,8 +357,11 @@ class SingularDecomposition<MatrixOperator, MatrixOperator> : public SingularDec
 
       explicit SingularDecomposition(MatrixOperator const& M);
 
-      // Optionally, choose which singular vectors to calculate
+      // Optionally, if we want to construct the full basis for the left or right, we can do that
       SingularDecomposition(MatrixOperator const& M, WhichVectors Which);
+
+      // Optionally, also choose which singular vectors to calculate
+      SingularDecomposition(MatrixOperator const& M, WhichVectors Which, WhichVectors WhichCalculate);
 
       template <typename FwdIter>
       void ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B);

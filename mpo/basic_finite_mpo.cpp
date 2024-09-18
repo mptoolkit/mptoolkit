@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mpo/finite_mpo.cpp
+// mpo/basic_finite_mpo.cpp
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2012-2022 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -839,4 +839,21 @@ log_norm_frob_sq(BasicFiniteMPO const& Op)
 BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op)
 {
    return BasicFiniteMPO(gauge_flip(GenericMPO(Op)));
+}
+
+std::tuple<int,int> FindNonTrivialSupport(BasicFiniteMPO const& Op)
+{
+   BasicFiniteMPO::const_iterator i = Op.begin();
+   BasicFiniteMPO::const_iterator j = Op.end();
+
+   // find the last non-trivial site of the MPO
+   OperatorClassification c;
+   c.Identity_ = true;
+   while (j != i && classify(*(j-1)).is_identity())
+      --j;
+
+   while (i != j && classify(*i).is_identity())
+      ++i;
+
+   return std::make_tuple(i-Op.begin(), j-Op.begin());;
 }

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-ea-create.cpp
 //
@@ -11,7 +11,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -140,13 +140,6 @@ int main(int argc, char** argv)
          PsiRight = InfiniteWavefunctionRight(PsiLeft);
       }
 
-      if (PsiLeft.size() > 1 || PsiRight.size() > 1)
-      {
-         // TODO
-         std::cerr << "fatal: multisite unit cells are not implemented yet." << std::endl;
-         return 1;
-      }
-
       InfiniteLattice Lattice;
       UnitCellMPO Op;
       std::tie(Op, Lattice) = ParseUnitCellOperatorAndLattice(OpStr);
@@ -166,13 +159,15 @@ int main(int argc, char** argv)
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
 
-      WavefunctionSectionLeft PsiWindow(repeat(PsiLeft, Op.size()));
+      WavefunctionSectionLeft PsiWindow(repeat(PsiLeft, std::ceil((double) Op.size() / PsiSize)));
 
-      LinearWavefunction PsiWindowLinear;
+      LinearWavefunction PsiWindowLinearEmpty;
       MatrixOperator Lambda;
 
-      std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
-      PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), Lambda));
+      std::tie(PsiWindowLinearEmpty, Lambda) = get_left_canonical(PsiWindow);
+      PsiWindowLinearEmpty.set_back(prod(PsiWindowLinearEmpty.get_back(), Lambda));
+
+      LinearWavefunction PsiWindowLinear = PsiWindowLinearEmpty;
 
       auto J = Op.MPO().begin();
       for (auto I = PsiWindowLinear.begin(); I != PsiWindowLinear.end(); ++I, ++J)
@@ -187,11 +182,32 @@ int main(int argc, char** argv)
             std::cout << "Normalizing wavefunction..." << std::endl;
 
          std::tie(PsiWindowLinear, Lambda) = get_left_canonical(PsiWindow);
+
+         if (Verbose > 0)
+            std::cout << "Norm = " << norm_frob(Lambda) << std::endl;
+
          Lambda *= 1.0 / norm_frob(Lambda);
          PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), Lambda, Verbose);
       }
 
-      EAWavefunction PsiEA(PsiLeft, std::vector<WavefunctionSectionLeft>(1, PsiWindow), PsiRight,
+      std::vector<WavefunctionSectionLeft> WindowVec(PsiSize);
+      WindowVec[0] = PsiWindow;
+
+      // Fill the rest of WindowVec with empty windows (for multi-site unit cells).
+      auto W = WindowVec.begin();
+      ++W;
+      while (W != WindowVec.end())
+      {
+         PsiWindowLinearEmpty.push_back(PsiWindowLinearEmpty.get_front());
+         PsiWindowLinearEmpty.pop_front();
+
+         MatrixOperator LambdaZero = 0.0 * MatrixOperator::make_identity(PsiWindowLinearEmpty.Basis2());
+         *W = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(PsiWindowLinearEmpty, LambdaZero, 0);
+
+         ++W;
+      }
+
+      EAWavefunction PsiEA(PsiLeft, WindowVec, PsiRight,
                            Op.qn1(), Op.qn2(), 0, 0, std::exp(std::complex<double>(0.0, math_const::pi) * (K * LatticeUCsPerPsiUC)));
 
       if (Streaming)

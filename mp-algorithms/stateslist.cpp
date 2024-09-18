@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/stateslist.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -94,6 +94,13 @@ int sign(int i)
    return int(i>0) - int(i<0);
 }
 
+// The scheme for rounding the number of states to an integer when using notation such as N*F..M.
+// A reasonable choice would be round-nearest.  The CBE paper appears to use round up.
+int round_states(double d)
+{
+   return int(std::ceil(d));
+}
+
 void StatesList::AppendToken(char const* s)
 {
    // Allowed notation:
@@ -163,7 +170,7 @@ void StatesList::AppendToken(char const* s)
          // We have the form InitialStates..FinalStatesxNumSweeps
          for (int i = 0; i < NumSweeps; ++i)
          {
-            I.NumStates = InitialStates + int((FinalStates-InitialStates) * (double(i+1)/NumSweeps) + 0.5);
+            I.NumStates = InitialStates + round_states((FinalStates-InitialStates) * (double(i+1)/NumSweeps));
             Info.push_back(I);
          }
       }
@@ -179,7 +186,7 @@ void StatesList::AppendToken(char const* s)
          // We have the form InitialStates..FinalStates^NumSweeps
          for (int i = 0; i < NumSweeps; ++i)
          {
-            I.NumStates = InitialStates + int(std::pow(double(FinalStates)/InitialStates, double(i+1)/NumSweeps) + 0.5);
+            I.NumStates = InitialStates + round_states(std::pow(double(FinalStates)/InitialStates, double(i+1)/NumSweeps));
             Info.push_back(I);
          }
       }
@@ -298,7 +305,7 @@ void StatesList::AppendToken(char const* s)
          }
          s = p;
          // we have the form InitialStates*Factor..FinalStates
-         I.NumStates = int(InitialStates*Factor + 0.5);
+         I.NumStates = round_states(InitialStates*Factor);
          int n = 1;
          if (FinalStates > InitialStates)
          {
@@ -310,7 +317,7 @@ void StatesList::AppendToken(char const* s)
             {
                Info.push_back(I);
                ++n;
-               I.NumStates = int(InitialStates*std::pow(Factor, n) + 0.5);
+               I.NumStates = round_states(InitialStates*std::pow(Factor, n));
             }
          }
          else if (FinalStates < InitialStates)
@@ -322,7 +329,7 @@ void StatesList::AppendToken(char const* s)
             while (I.NumStates > FinalStates)
             {
                Info.push_back(I);
-               I.NumStates = int(InitialStates*std::pow(Factor, n) + 0.5);
+               I.NumStates = round_states(InitialStates*std::pow(Factor, n));
                ++n;
             }
          }
@@ -365,7 +372,7 @@ void StatesList::AppendToken(char const* s)
          I.NumStates = InitialStates;
          for (int i = 0; i < NumSweeps; ++i)
          {
-            I.NumStates = int(InitialStates*std::pow(Factor,i+1) + 0.5);
+            I.NumStates = round_states(InitialStates*std::pow(Factor,i+1));
             Info.push_back(I);
          }
       }

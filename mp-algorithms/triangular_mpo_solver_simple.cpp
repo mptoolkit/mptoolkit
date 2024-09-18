@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp-algorithms/triangular_mpo_solver.cpp
+// mp-algorithms/triangular_mpo_solver_simple.cpp
 //
-// Copyright (C) 2009-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2009-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -39,6 +40,8 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
    CHECK_EQUAL(Rho.Basis2(), Psi.Basis1());
    CHECK_EQUAL(Identity.Basis1(), Psi.Basis1());
    CHECK_EQUAL(Identity.Basis2(), Psi.Basis1());
+
+   double TCond = DefaultTCond;
 
    //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -76,6 +79,8 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
 
       // Generate the next C matrices, C(n) = sum_{j<Col} Op(j,Col) E_j(n)
       MatrixPolyType C = inject_left_mask(EMat, Psi, QShift, Op.data(), Psi, mask_column(Op, Col))[Col];
+
+      TRACE(C);
 
       // Now do the classification, based on the properties of the diagonal operator
       BasicFiniteMPO Diag = Op(Col, Col);
@@ -121,7 +126,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, 1.0, Diag, Identity, Rho,
-                                                Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
@@ -155,6 +160,8 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
    CHECK_EQUAL(Identity.Basis2(), Psi.Basis2());
    CHECK_EQUAL(Rho.Basis1(), Psi.Basis2());
    CHECK_EQUAL(Rho.Basis2(), Psi.Basis2());
+
+   double TCond = DefaultTCond;
 
    //DEBUG_TRACE(Verbose)(Degree)(Tol);
 
@@ -230,7 +237,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             F = DecomposePerpendicularPartsRight(C, 1.0, Diag, Identity, Rho,
-                                                 Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                                 Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {

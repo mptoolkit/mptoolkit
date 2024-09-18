@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/triangular_mpo_solver.h
 //
-// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2014-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -46,6 +47,14 @@ double const DefaultEigenUnityEpsilon = 1E-12;
 // default tolerance for eigensolver and linear solver.  This is also a bit small in some cases.
 double const DefaultTol = 1E-14;
 
+// To get a proper stopping criteria, the GMRES needs the condition number of (1-T) operator. We can get a good estimate of
+// this condition number of we know the correlation length (i.e. the next leading eigenvalue of T).  We can assume that the
+// smallest eigenvalue of T will be ~ 0, so the largest magnitude eigenvalue of (1-T) will be ~1. So hence the condition number
+// is <= 1 / smallest_evalue_of(1-T), which is 1 / 1-|lambda_1|, which is approximately the correlation length.
+// Note that this is only a bound on the condition number, since lambda_1 may be complex and not near 1.0, even if it has
+// a magnitude near 1.0.
+double const DefaultTCond = 1E5;
+
 // Solve an MPO in the left-handed sense, as x_L * Op = lambda * x_L
 // We currently assume there is only one eigenvalue 1 of the transfer operator.
 // The LeftIdentity and RightIdentity are the right and left eigenmatrices of the
@@ -73,6 +82,15 @@ void
 SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               LinearWavefunction const& Psi, QuantumNumber const& QShift,
               BasicTriangularMPO const& Op, MatrixOperator const& Identity,
+              MatrixOperator const& Rho, double TCond,
+              bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
+              double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
+
+// This version uses a default value for the condition numner
+void
+SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
+              LinearWavefunction const& Psi, QuantumNumber const& QShift,
+              BasicTriangularMPO const& Op, MatrixOperator const& Identity,
               MatrixOperator const& Rho,
               bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
               double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
@@ -85,7 +103,7 @@ SolveMPO_Left_Cross(std::vector<KMatrixPolyType>& EMatK,
                     LinearWavefunction const& Psi1, LinearWavefunction const& Psi2, QuantumNumber const& QShift,
                     BasicTriangularMPO const& Op, MatrixOperator const& Identity,
                     MatrixOperator const& Rho,
-                    std::complex<double> lambda,
+                    double TCond,
                     bool NeedFinalMatrix, int Degree = 0, double Tol = DefaultTol,
                     double EigenUnityEpsilon = DefaultEigenUnityEpsilon, int Verbose = 0);
 
@@ -99,7 +117,7 @@ SolveSimpleMPO_Left(std::vector<MatrixPolyType>& EMat,
                    LinearWavefunction const& Psi, QuantumNumber const& QShift,
                    BasicTriangularMPO const& Op,
                    MatrixOperator const& Identity,
-                   MatrixOperator const& Rho, bool NeedFinalMatrix,
+                   MatrixOperator const& Rho, double TCond, bool NeedFinalMatrix,
                    int Degree, double Tol,
                    double UnityEpsilon, int Verbose);
 
@@ -108,7 +126,7 @@ SolveSimpleMPO_Right(std::vector<MatrixPolyType>& FMat,
                    LinearWavefunction const& Psi, QuantumNumber const& QShift,
                    BasicTriangularMPO const& Op,
                    MatrixOperator const& Identity,
-                   MatrixOperator const& Rho, bool NeedFinalMatrix,
+                   MatrixOperator const& Rho, double TCond, bool NeedFinalMatrix,
                    int Degree, double Tol,
                    double UnityEpsilon, int Verbose);
 

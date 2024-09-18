@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/triangular_mpo_solver.cpp
 //
-// Copyright (C) 2009-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2009-2023 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -28,6 +29,19 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
               //std::vector<MatrixOperator> BoundaryE,
               MatrixOperator const& LeftIdentity,
               MatrixOperator const& RightIdentity, bool NeedFinalMatrix,
+              int Degree, double Tol,
+              double UnityEpsilon, int Verbose)
+{
+   SolveMPO_Left(EMatK, Psi, QShift, Op, LeftIdentity, RightIdentity, DefaultTCond, NeedFinalMatrix, Degree, Tol, UnityEpsilon, Verbose);
+}
+
+void
+SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
+              LinearWavefunction const& Psi, QuantumNumber const& QShift,
+              BasicTriangularMPO const& Op,
+              //std::vector<MatrixOperator> BoundaryE,
+              MatrixOperator const& LeftIdentity,
+              MatrixOperator const& RightIdentity, double TCond, bool NeedFinalMatrix,
               int Degree, double Tol,
               double UnityEpsilon, int Verbose)
 {
@@ -258,7 +272,7 @@ SolveMPO_Left(std::vector<KMatrixPolyType>& EMatK,
             if (Verbose > 0)
                std::cerr << "Decomposing parts perpendicular to the unit matrix\n";
             E = DecomposePerpendicularPartsLeft(C, Diag, UnitMatrixLeft, UnitMatrixRight,
-                                            Psi, Psi, QShift, 1.0, HasEigenvalue1, Tol, Verbose);
+                                            Psi, Psi, QShift, TCond, HasEigenvalue1, Tol, Verbose);
          }
          else if (Verbose > 0)
          {
