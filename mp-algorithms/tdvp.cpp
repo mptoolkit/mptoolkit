@@ -402,6 +402,10 @@ ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
                       int ExpandMinPerSector, int Verbose)
 {
+   // If the MPO dimension across the bond is two, we cannot do any expansion anyway.
+   if (HLeft.Basis2().size() == 2)
+      return;
+
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis1(CRight));
    TruncationInfo Info;
@@ -502,6 +506,10 @@ ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                        StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
                        int ExpandMinPerSector, int Verbose)
 {
+   // If the MPO dimension across the bond is two, we cannot do any expansion anyway.
+   if (HRight.Basis1().size() == 2)
+      return;
+
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis2(CLeft));
    TruncationInfo Info;
