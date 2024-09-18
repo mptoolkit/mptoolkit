@@ -77,11 +77,15 @@ overlap(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& Psi2);
 std::complex<double>
 overlap_conj(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& Psi2);
 
+// calculates <Psi|M|Psi>
+// Always use this in preference to the 3-parameter version if possible, since Psi being orthogonal means that
+// it can trim the calculation to the region of non-trivial support of the MPO.
+std::complex<double>
+expectation(FiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& M, int Verbose = 0);
+
 // calculates <Psi1|M|Psi2>
 std::complex<double>
-expectation(FiniteWavefunctionLeft const& Psi1,
-            BasicFiniteMPO const& M,
-            FiniteWavefunctionLeft const& Psi2);
+expectation(FiniteWavefunctionLeft const& Psi1, BasicFiniteMPO const& M, FiniteWavefunctionLeft const& Psi2, int Verbose = 0);
 
 double norm_2(FiniteWavefunctionLeft const& Psi);
 

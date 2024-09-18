@@ -288,6 +288,12 @@ log_inner_prod(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2);
 
 BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op);
 
+// Find the region of the MPO that has non-trivial suport, returning an index pair (i,j).
+// i is the first site that has non-trivial support, and j is the first site after i that
+// has trivial support.  If i==j then the MPO is the identity. If i != j then the non-trivial
+// sites are the range [i,j)
+std::tuple<int,int> FindNonTrivialSupport(BasicFiniteMPO const& Op);
+
 #include "basic_finite_mpo.cc"
 
 #endif

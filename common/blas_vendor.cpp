@@ -24,9 +24,16 @@
 
 #include "blas_vendor.h"
 
+#include <string>
+#include <cstring>
+
 #if defined(BLAS_VENDOR_MKL)
 
-extern "C" void mkl_get_version_string(char* buf, int len);
+// MKL has two versions of the get_version_string function. The version as exported in the library as
+// mkl_get_version_string is intended to be called from Fortran, and it completely fills the buffer with blank spaces,
+// and doesn't null terminate. The acutal C function is MKL_Get_Version_String, and mkl.h #define's mkl_get_version_string
+// to be MKL_Get_Version_String.  This version doesn't do padding and null-terminates the buffer.
+extern "C" void MKL_Get_Version_String(char* buf, int len);
 
 std::string BLAS_Vendor()
 {
@@ -36,7 +43,7 @@ std::string BLAS_Vendor()
 std::string BLAS_Version()
 {
    char buf[198];
-   mkl_get_version_string(buf, 198);
+   MKL_Get_Version_String(buf, 198);
    return std::string(buf);
 }
 
