@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // lattice/infinitelattice.h
 //
-// Copyright (C) 2014-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2014-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -198,32 +199,41 @@ BasicTriangularMPO make_zero(SiteListType const& SiteList);
 // The Op must have a size() that is a multiple of SiteListTypeSize, which must itself be an
 // integer multiple of SiteListType.size().
 // The aux basis for JW is assumed to be compatible with Op -- that is, JW.qn2() == Op.qn1()
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& JW, BasicFiniteMPO const& Op, int UnitCellSize);
-
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
-BasicTriangularMPO sum_unit(SiteListType const& SiteList, BasicFiniteMPO const& Op, LatticeCommute Com);
+BasicTriangularMPO sum_unit(BasicFiniteMPO const& JW, BasicFiniteMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_unit(UnitCellMPO const& Op);
 
+BasicTriangularMPO make_triangular(UnitCellMPO const& Op);
+
 inline
-ProductMPO prod_unit(UnitCellMPO const& Op_)
+ProductMPO prod_unit_left_to_right(UnitCellMPO const& Op, int UnitCellSize)
 {
-   return prod_unit_left_to_right(Op_.MPO(), Op_.GetSiteList()->size());
+   CHECK(UnitCellSize % Op.coarse_grain_factor() == 0);
+   return prod_unit_left_to_right(Op.MPO(), UnitCellSize / Op.coarse_grain_factor());
 }
 
 inline
-ProductMPO prod_unit(UnitCellMPO const& Op_, int UnitCellSize)
+ProductMPO prod_unit_right_to_left(UnitCellMPO const& Op, int UnitCellSize)
 {
-   return prod_unit_left_to_right(Op_.MPO(), UnitCellSize);
+   CHECK(UnitCellSize % Op.coarse_grain_factor() == 0);
+   return prod_unit_right_to_left(Op.MPO(), UnitCellSize / Op.coarse_grain_factor());
+}
+
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op)
+{
+   return prod_unit_left_to_right(Op, Op.GetSiteList()->size());
+}
+
+inline
+ProductMPO prod_unit(UnitCellMPO const& Op, int UnitCellSize)
+{
+   return prod_unit_left_to_right(Op, UnitCellSize);
 }
 
 // Variant of sum_unit where we add the kink operator (generally will be unitary) to the left hand side
-BasicTriangularMPO sum_kink(SiteListType const& SiteList, BasicFiniteMPO const& Kink,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
@@ -231,9 +241,6 @@ BasicTriangularMPO sum_kink(UnitCellMPO const& Kink, UnitCellMPO const& Op);
 // sum_k
 // Consruct an operator at finite momentum.  This is a special case of sum_kink where the kink operator is
 // e^{ik} times the identity.
-BasicTriangularMPO sum_k(SiteListType const& SiteList, std::complex<double> const& k,
-                       BasicFiniteMPO const& Op, LatticeCommute Com, int UnitCellSize);
-
 BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op, int UnitCellSize);
 
 BasicTriangularMPO sum_k(std::complex<double> const& k, UnitCellMPO const& Op);

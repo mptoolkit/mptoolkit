@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mps/density.cc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -166,13 +166,12 @@ ConstructMatrices(FwdIter first, FwdIter last,
    this->ConstructOrthoMatrices(LinearMapping, A, C, B);
 }
 
+// CMatSVD
+
 template <typename FwdIter>
-void
+std::tuple<VectorBasis, std::vector<std::set<int>>, std::vector<int>>
 SingularDecomposition<MatrixOperator, MatrixOperator>::
-ConstructMatrices(FwdIter first, FwdIter last,
-                       MatrixOperator& A,
-                       RealDiagonalOperator& C,
-                       MatrixOperator& B)
+ConstructMapping(FwdIter first, FwdIter last)
 {
    // make a pass over the eigenvalue list and get the linear indices of the
    // states to keep for each quantum number
@@ -182,6 +181,54 @@ ConstructMatrices(FwdIter first, FwdIter last,
    {
       LinearMapping[Iter->Subspace].insert(Iter->Index);
    }
+   // Construct the truncated basis
+   VectorBasis NewBasis(B1.GetSymmetryList());
+   std::vector<int> NewSubspace(NumQ, -1); // maps the q to the new label
+   for (int q = 0; q < NumQ; ++q)
+   {
+      if (LinearMapping[q].size() > 0)
+      {
+         NewSubspace[q] = NewBasis.size();
+         NewBasis.push_back(UsedQuantumNumbers[q], LinearMapping[q].size());
+      }
+   }
+   return std::make_tuple(NewBasis, LinearMapping, NewSubspace);
+}
 
-   this->ConstructOrthoMatrices(LinearMapping, A, C, B);
+template <typename FwdIter>
+void
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructMatrices(FwdIter first, FwdIter last, MatrixOperator& A, RealDiagonalOperator& C, MatrixOperator& B)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   A = this->DoConstructLeftVectors(Mapping);
+   C = this->DoConstructSingularValues(Mapping);
+   B = this->DoConstructRightVectors(Mapping);
+}
+
+template <typename FwdIter>
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructLeftVectors(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructLeftVectors(Mapping);
+}
+
+template <typename FwdIter>
+MatrixOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructRightVectors(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructRightVectors(Mapping);
+}
+
+template <typename FwdIter>
+RealDiagonalOperator
+SingularDecomposition<MatrixOperator, MatrixOperator>::
+ConstructSingularValues(FwdIter first, FwdIter last)
+{
+   auto Mapping = this->ConstructMapping(first, last);
+   return this->DoConstructSingularValues(Mapping);
 }

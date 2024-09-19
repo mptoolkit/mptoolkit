@@ -1,18 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-ibc-apply.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
-// Copyright (C) 2021 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2015-2020 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2021-2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -188,8 +188,8 @@ int main(int argc, char** argv)
          SitesRight = std::max(Op.size()+Op.offset() - Psi.window_size()-Psi.window_offset(), 0);
 
          // Ensure that the window starts and ends at the operator unit cell boundaries.
-         SitesLeft += (PsiLeft.size() - Psi.window_left_sites()) % Op.unit_cell_size();
-         SitesRight += (PsiRight.size() - Psi.window_right_sites()) % Op.unit_cell_size();
+         SitesLeft += (PsiLeft.size() - Psi.window_left_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor());
+         SitesRight += (PsiRight.size() - Psi.window_right_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor());
 
          // The new window offset.
          NewOffset = Psi.window_offset() - SitesLeft;

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/dmrg.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -21,45 +21,32 @@
 #define MPTOOLKIT_MP_ALGORITHMS_DMRG_H
 
 #include "common/leftrightstack.h"
-#include "common/conflist.h"
 #include "mp-algorithms/eigensolver.h"
 #include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
-#include <boost/shared_ptr.hpp>
-#include <fstream>
-
-struct MixInfo
-{
-   double MixFactor;
-   double RandomMixFactor;
-};
+#include "mp-algorithms/expansion.h"
 
 class DMRG
 {
    public:
-      typedef left_right_stack<StateComponent> OperatorStackType;
+      explicit DMRG(int Verbose_);
 
-      DMRG() {}
+      // Initialize the state of the system from a left orthogonalized wavefunction.
+      // All sites in Psi_ are assumed to be left-orthogonal except for the right-most site.
+      void InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F);
 
-      DMRG(FiniteWavefunctionLeft const& Psi_, BasicTriangularMPO const& Ham_, int Verbose_);
+      // Size of the window
+      int size() const { return Psi.size(); }
 
-      // Adds x to the 'orthogonal set', that we explicitly orthogonalize the
-      // wavefunction against
-      void AddOrthogonalState(FiniteWavefunctionLeft x);
+      int Site() const { return Site_; }
 
-      void StartSweep(bool IncrementSweepNumber = true, double Broad = 0);
+      virtual void StartSweep();
 
       void EndSweep();    // statistics for end of sweep
 
       void StartIteration();  // prepare statistics for start of iteration
       void EndIteration();    // statistics for end of iteration
-
-      void CreateLogFiles(std::string const& BasePath, ConfList const& Conf);
-      void RestoreLogFiles(std::string const& BasePath, ConfList const& Conf);
-
-      //   int LeftSize() const { return Psi.LeftSize(); }
-      //   int RightSize() const { return Psi.RightSize(); }
 
       LocalEigensolver& Solver() { return Solver_; }
 
@@ -76,84 +63,87 @@ class DMRG
       // wavefunction (set to psi by StartSweep())
       double FidelityLoss() const;
 
+      // returns the dimension of the Basis1() of the active site
+      int Basis1TotalDimension() const { return C->Basis1().total_dimension(); }
+
+      // returns the dimension of the Basis2() of the active site
+      int Basis2TotalDimension() const { return C->Basis2().total_dimension(); }
+
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 
-      void PrepareConvergenceTest();
-      bool IsConverged() const;
+      // Coarse-grain the current site with the site on the right, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainRight(StatesInfo const& SInfo);
 
-      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo);
-      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo);
+      // Coarse-grain the current site with the site on the left, i.e. 2-site DMRG
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& SInfo);
 
-      void debug_check_structure() const;
+      TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
+      TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
 
-      OperatorStackType HamMatrices;
+      // The old 3S algorithm
+      TruncationInfo TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor);
+      TruncationInfo TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor);
+
+      // Pre-expansion: expand the environment basis to that it contains at least StatesWanted states, if possible.
+      // Returns the actual environment size.
+      int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
+      int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
+
+      virtual void check_structure() const;
+      virtual void debug_check_structure() const;
+
+      // internal use only
+      virtual void ShiftRight(MatrixOperator const& Lambda);
+      virtual void ShiftLeft(MatrixOperator const& Lambda);
+
+      // Modify the left and right basis of *C
+      virtual void ModifyLeftBasis(MatrixOperator const& U);
+      virtual void ModifyRightBasis(MatrixOperator const& U);
+
+      left_right_stack<StateComponent> HamMatrices;
       LinearWavefunction Psi;
-      int Site;                          // Site is the index of the iterator C
       LinearWavefunction::iterator C;
+      int Site_;                          // Site is the index of the iterator C
       BasicTriangularMPO Hamiltonian;
       BasicTriangularMPO::const_iterator H;
-      int LeftStop;                      // the site numbers where we stop iterations
-      int RightStop;
+      LocalEigensolver Solver_;
 
-      //      std::vector<CenterWavefunction> Ortho;              // set of wavefunctions that we want to be
-      //      left_right_stack<MatrixOperator> PsiOrthoProjector;  // orthogonal to
-
-      boost::optional<double> LastOverlap;
-      bool IsPsiConverged;
-      bool IsConvergedValid;
-      KeepListType KeepList;
+      // Basis expansion
+      PreExpansionAlgorithm PreExpansionAlgo;
+      PostExpansionAlgorithm PostExpansionAlgo;
+      OversamplingInfo Oversampling;
+      bool ProjectTwoSiteTangent;
 
       // some global statistics
-      int TotalSweepNumber;          // this is incremented every sweep
-      int TotalSweepRecNumber;       // this is incremented conditionally
-      int TotalNumIterations;
-      int TotalNumMultiplies;
+      int TotalNumSweeps;            // this is incremented every sweep
+      int TotalNumIterations;        // total number of times the local eigensolver is called
+      int TotalNumMultiplies;        // total number of multiplies used by the local eigensolver
 
-      // some statistics, for current sweep
-      int SweepNumIterations;
+      // Statistics which are valid at the end of the sweep
+      double LastSweepTime;          // Elapsed time for the previous sweep
+      double LastSweepFidelity;      // Overlap of the wavefunction before and after the previous sweep
+
+      // some statistics for current sweep
+      int SweepNumIterations;        // number of iterations in the sweep; normally equal to the number of sites
       int SweepSumStates;            // sum of IterationNumStates
-      int SweepMaxStates;
+      int SweepMaxStates;            // Maximum number of states across the sweep
       int SweepNumMultiplies;        // number of mat-vec multiplies this sweep
-      double SweepEnergy;            // lowest energy seen this sweep
-      double SweepTruncation;        // cumulative truncation error this sweep
-      double SweepEntropy;           // maximum entropy this sweep
+      double SweepMinEnergy;         // lowest energy (real part) seen this sweep
+      double SweepTotalTruncation;   // cumulative truncation error this sweep
+      double SweepMaxEntropy;        // maximum entropy this sweep
       double SweepStartTime;         // wall time at the start of the sweep
-      double SweepTruncatedEnergy;   // sum of (E_0 - E_truncated) over the sweep
-      double SweepEnergyError;       // standard error of the energy at each iteration
-      double SweepLastMixFactor;     // the last used mix factor, for the .sweep log file
+      std::vector<std::complex<double>> SweepEnergyEachIteration;  // energy of each iteration on the current sweep
+      double SweepEnergyVariance;    // variance of the energy across the sweep
 
-      // some statistics, for current iteration
+      // some statistics for current iteration
       int IterationNumMultiplies;
       int IterationNumStates;
       std::complex<double> IterationEnergy;
       double IterationTruncation;
       double IterationEntropy;
-      std::complex<double> IterationEnergyBeforeTrunc;
-      std::vector<std::complex<double>> IterationEnergyVec;
 
-      // Log files are not serialized, but initialized by CreateLogFiles or
-      // RestoreLogFiles
-      boost::shared_ptr<std::ofstream> EnergyLog, DiagLog, SweepLog, CpuLog, DensityLog;
-
-      // Following items are not persistent, but loaded from the configuration
-
-      // for convergence, we require 2 conditions:
-      // Overlap < ConvergenceOverlapTruncationScale * SweepTruncation
-      // and OverlapDifference < ConvergenceOverlapDifferenceOverlapScale * Overlap
-      double ConvergenceOverlapTruncationScale;
-      double ConvergenceOverlapDifferenceOverlapScale;
-      double ConvergenceSweepTruncMin;
-      double ConvergenceOverlapMin;
-      bool NormalizeWavefunction; // should we normalize the wavefunction after each truncation?
-      bool MixUseEnvironment;
-      bool UseDGKS;  // use DGKS correction in the lanczos for orthogonal states
-      bool DoUpdateKeepList; // set to true to use the KeepList to ensure quantum number subspaces are represented
-      LocalEigensolver Solver_;
       int Verbose;
-
-      MixInfo    MixingInfo;
-      StateComponent PsiPrevC;
 };
 
 PStream::opstream& operator<<(PStream::opstream& out, DMRG const& d);

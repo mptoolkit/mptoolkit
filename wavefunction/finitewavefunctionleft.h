@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // wavefunction/finitewavefunctionleft.h
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2017 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -77,11 +77,15 @@ overlap(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& Psi2);
 std::complex<double>
 overlap_conj(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& Psi2);
 
+// calculates <Psi|M|Psi>
+// Always use this in preference to the 3-parameter version if possible, since Psi being orthogonal means that
+// it can trim the calculation to the region of non-trivial support of the MPO.
+std::complex<double>
+expectation(FiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& M, int Verbose = 0);
+
 // calculates <Psi1|M|Psi2>
 std::complex<double>
-expectation(FiniteWavefunctionLeft const& Psi1,
-            BasicFiniteMPO const& M,
-            FiniteWavefunctionLeft const& Psi2);
+expectation(FiniteWavefunctionLeft const& Psi1, BasicFiniteMPO const& M, FiniteWavefunctionLeft const& Psi2, int Verbose = 0);
 
 double norm_2(FiniteWavefunctionLeft const& Psi);
 

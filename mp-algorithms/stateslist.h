@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/stateslist.h
 //
-// Copyright (C) 2001-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2001-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -60,6 +60,7 @@ struct StateParams
    bool Test;
    bool Save;
    bool Variance;
+   bool ZeroEnv;
 
    // Named constructor to continue a sequence of StateParams.
    // Currently this just copies the NumStates and sets everything else false

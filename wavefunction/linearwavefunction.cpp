@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // wavefunction/linearwavefunction.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2012-2023 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -444,7 +445,7 @@ left_orthogonalize(MatrixOperator M, LinearWavefunction& Psi, int Verbose)
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(M, *Pi);
-      M = TruncateBasis2(x);
+      M = Multiply(TruncateBasis2(x));
       *Pi = x;
       ++Pi; ++n;
    }
@@ -468,7 +469,7 @@ right_orthogonalize(LinearWavefunction& Psi, MatrixOperator M, int Verbose)
       if (Verbose > 0)
          std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent x = prod(*Pi, M);
-      M = TruncateBasis1(x);
+      M = Multiply(TruncateBasis1(x));
       *Pi = x;
    }
    return M;

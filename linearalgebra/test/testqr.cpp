@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // linearalgebra/test/testqr.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -31,10 +31,21 @@ typedef std::complex<double> complex;
 
 void Test(int m, int n)
 {
-   Matrix<std::complex<double> > H = random_matrix<std::complex<double> >(m, n);
-   Matrix<std::complex<double> > R(H);
-   Matrix<std::complex<double> > Q = QR_Factorize(R);
-   CHECK_CLOSE(H,Q*R)(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
+   {
+      Matrix<std::complex<double>> H = random_matrix<std::complex<double>>(m, n);
+      Matrix<std::complex<double>> R(H);
+      //TRACE(H);
+      Matrix<std::complex<double>> Q = QR_FactorizeFull(R);
+      CHECK_CLOSE(H,Matrix<complex>(Q*R))(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
+   }
+
+   {
+      Matrix<double> H = random_matrix<double>(m, n);
+      Matrix<double> R(H);
+      //TRACE(H);
+      Matrix<double> Q = QR_FactorizeFull(R);
+      CHECK_CLOSE(H,Matrix<double>(Q*R))(Q)(R)(conj(Q)*R)(herm(Q)*R)(trans(Q)*R);
+   }
 }
 
 int main()

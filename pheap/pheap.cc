@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // pheap/pheap.cc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -358,11 +358,14 @@ bool PHeapObject::SubLock()
 {
    TRACE_PHEAP_X("PHeapObject::SubLock()")(*this);
    bool Result = false;
-   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to
-   // enter DoLockCountZero()
+   ObjectMutex.lock(); // we have to grab the lock here because it isn't safe for two threads to enter DoLockCountZero()
    if (--LockCount == 0)
-      Result = DoLockCountZero();
+   {
+      Result = this->DoLockCountZero();
+   }
    ObjectMutex.unlock();
+   if (Result)
+      delete this;
    return Result;
 }
 

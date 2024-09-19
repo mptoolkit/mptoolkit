@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-ibc-splice.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 
       prog_opt::variables_map vm;
       prog_opt::store(prog_opt::command_line_parser(argc, argv).
-                      options(opt).run(), vm);
+                      options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
       if (vm.count("help") || vm.count("psi-right") == 0 || vm.count("output") == 0)

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/excitation-ansatz.h
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -64,8 +64,11 @@ class HEff
       // calculate the expectation value of Ty.
       std::complex<double> Ty(std::deque<MatrixOperator> const& XDeque);
 
-      // Construct the B-matrices corresponding to the input X-matrices.
+      // Construct the B tensors corresponding to the X matrices.
       std::deque<StateComponent> ConstructBDeque(std::deque<MatrixOperator> const& XDeque) const;
+
+      // Construct the X matrices corresponding to the full B tensors (assuming they obey the left gauge fixing condition).
+      std::deque<MatrixOperator> ConstructXDeque(std::deque<StateComponent> const& BDeque) const;
 
       // Generate a random initial state for a solver.
       // (This function is currently unused.)

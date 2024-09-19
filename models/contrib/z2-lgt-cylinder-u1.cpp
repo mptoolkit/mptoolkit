@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/contrib/z2-lgt-cylinder-u1.cpp
 //
-// Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          //(",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str()) TODO: twisted boundaries
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
-         //("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str()) // This should only be 0.5.
+         //("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str()) // This should only ever be 0.5.
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
@@ -112,9 +112,9 @@ int main(int argc, char** argv)
          {
             tx += Z(0)[i+1] * dot(CH(0)[i], C(1)[i])           + Z(0)[i+1] * dot(CH(1)[i],           C(0)[i]);
             ty += Z(0)[i+2] * dot(CH(0)[i], C(0)[(i+3)%(3*y)]) + Z(0)[i+2] * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
-            J += X(0)[i+1] * X(1)[i+2] * X(0)[(i+4)%(3*y)] * X(0)[i+2];
-            x_field += X(1)[i+1] + X(0)[i+2];
             m += N(0)[i];
+            J += X(0)[i+1] * X(1)[i+2] * X(0)[(i+4)%(3*y)] * X(0)[i+2];
+            x_field += X(0)[i+1] + X(0)[i+2];
          }
       }
       // TODO

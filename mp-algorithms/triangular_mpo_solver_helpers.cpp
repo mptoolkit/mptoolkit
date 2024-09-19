@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp-algorithms/triangular_mpo_solver.cpp
+// mp-algorithms/triangular_mpo_solver_helpers.cpp
 //
-// Copyright (C) 2009-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2009-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -64,6 +65,7 @@ FindParallelParts(MatrixPolyType& C,
    {
       // Orthogonalize against the identity
       std::complex<double> Overlap = inner_prod(I->second, Rho);
+      DEBUG_TRACE(Overlap);
       I->second -= std::conj(Overlap)*Identity;
 
       // **comparison** we always want to add here to get the degree of the polynomial correct.
@@ -132,7 +134,7 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
 {
    KComplexPolyType EParallel;
    // diagonal element is the identity, up to a unitary factor
-   //DEBUG_TRACE("Unit diagonal element")(Factor);
+   DEBUG_TRACE("Unit diagonal element")(Factor);
 
    // decompose C into components parallel and perpendicular to the identity
    // The only part we have to care about is a component with the same momentum as our unit operator
@@ -144,9 +146,9 @@ DecomposeParallelPartsWithMomentum(KMatrixPolyType& C,
       // Is this the same momentum as our unit operator?
       if (norm_frob(K - Factor) < UnityEpsilon*10)
       {
-         //DEBUG_TRACE("Component at equal momenta")(K);
+         DEBUG_TRACE("Component at equal momenta")(K);
          // same momenta, these components diverge
-         //DEBUG_TRACE(CParallel);
+         DEBUG_TRACE(CParallel);
          for (int m = CParallel.degree(); m >= 0; --m)
          {
             EParallel[Factor] = UpdateParallelParts(CParallel, Factor);
@@ -177,7 +179,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                            LinearWavefunction const& Psi1,
                            LinearWavefunction const& Psi2,
                            QuantumNumber const& QShift,
-                           std::complex<double> Scale,
+                           double TCond,
                            bool HasEigenvalue1,
                            double Tol,
                            int Verbose)
@@ -193,6 +195,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
 
       //DEBUG_TRACE("degree")(m);
       MatrixOperator Rhs = std::conj(K) * C[m];
+
       for (int k = m+1; k <= E.degree(); ++k)
       {
          // avoid accessing E[k] if it doesn't exist, to avoid adding a null term
@@ -206,6 +209,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       {
          //DEBUG_TRACE(inner_prod(Rhs, Rho))("should be small");
          Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
+         Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
          //DEBUG_TRACE(inner_prod(Rhs, Rho))("should be zero");
          //DEBUG_TRACE(inner_prod(Rhs, Identity));
       }
@@ -214,7 +218,12 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
       //DEBUG_TRACE(RhsNorm2);
 
-      //if (RhsNorm2 > 1E-22)
+      if (Verbose > 2)
+      {
+         std::cerr << "Orthogonality of perpendicular part, RhsNorm2=" << RhsNorm2 << '\n';
+      }
+
+      if (RhsNorm2 > 0.0)
       {
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          E[m] = std::sqrt(RhsNorm2) *
@@ -226,22 +235,31 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
             //DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
          }
 
-         LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, Scale, HasEigenvalue1),
-                     Rhs, Tol, Verbose);
+         LinearSolveOrtho(E[m], Rho, Identity, OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
+                     Identity, Rho, HasEigenvalue1),
+                     TCond, Rhs, Tol, Verbose);
 
          // do another orthogonalization -- this should be unncessary but for the paranoid...
          if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
          {
             std::complex<double> z = inner_prod(E[m], Rho);
-            //DEBUG_TRACE(z);
-            if (LinearAlgebra::norm_frob_sq(z) > 1E-10)
+            E[m] -= std::conj(z) * Identity;
+            z = inner_prod(E[m], Rho);
+            if (Verbose > 2)
             {
-               WARNING("Possible numerical instability in triangular MPO solver")(z);
+               std::cerr << "z=" << norm_frob_sq(z) << '\n';
+            }
+            if (LinearAlgebra::norm_frob_sq(z) > Tol * RhsNorm2)
+            {
+               WARNING("Possible numerical instability in triangular MPO solver")(z)(RhsNorm2);
             };
             E[m] -= std::conj(z) * Identity;
             //DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
          }
+      }
+      else
+      {
+         E[m] = MatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
       }
    }
    return E;
@@ -255,7 +273,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                             LinearWavefunction const& Psi1,
                             LinearWavefunction const& Psi2,
                             QuantumNumber const& QShift,
-                            std::complex<double> Scale,
+                            double TCond,
                             bool HasEigenvalue1,
                             double Tol,
                             int Verbose)
@@ -267,7 +285,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
       E[K] = DecomposePerpendicularPartsLeft(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+                  Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
    }
    return E;
 }
@@ -281,7 +299,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose)
@@ -309,13 +327,14 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
       if (HasEigenvalue1 && Rhs.TransformsAs() == Identity.TransformsAs())
       {
          Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
+         Rhs -= std::conj(inner_prod(Rhs, Rho)) * Identity;
       }
 
       double RhsNorm2 = norm_frob_sq(Rhs);
       RhsNorm2 = RhsNorm2 / (Rhs.Basis1().total_degree()*Rhs.Basis2().total_degree());
       //DEBUG_TRACE(RhsNorm2);
 
-      //if (RhsNorm2 > 1E-22)
+      if (RhsNorm2 > 0.0)
       {
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          F[m] = std::sqrt(RhsNorm2) *
@@ -326,9 +345,9 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
             F[m] -= std::conj(inner_prod(F[m], Rho)) * Identity;
          }
 
-         LinearSolve(F[m], OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, Scale, HasEigenvalue1),
-                     Rhs, Tol, Verbose);
+         LinearSolveOrtho(F[m], Rho, Identity, OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
+                     Identity, Rho, HasEigenvalue1),
+                     TCond, Rhs, Tol, Verbose);
 
          //DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
 
@@ -343,6 +362,10 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
             F[m] -= std::conj(z) * Identity;
          }
       }
+      else
+      {
+         F[m] = MatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
+      }
    }
    return F;
 }
@@ -355,7 +378,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
                             LinearWavefunction const& Psi1,
                             LinearWavefunction const& Psi2,
                             QuantumNumber const& QShift,
-                            std::complex<double> Scale,
+                            double TCond,
                             bool HasEigenvalue1,
                             double Tol,
                             int Verbose)
@@ -367,7 +390,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
    {
       std::complex<double> K = I->first;  // the momentum (complex phase)
       E[K] = DecomposePerpendicularPartsRight(I->second, I->first, Diag, Identity, Rho,
-                  Psi1, Psi2, QShift, Scale, HasEigenvalue1, Tol, Verbose);
+                  Psi1, Psi2, QShift, TCond, HasEigenvalue1, Tol, Verbose);
    }
    return E;
 }

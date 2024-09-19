@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-excitation-ansatz.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -51,10 +51,12 @@ int main(int argc, char** argv)
       int Rotate = 0;
       std::string String;
       std::string OutputPrefix;
+      std::string InitFilename;
       int OutputDigits = -1;
       bool Random = false;
       bool Streaming = false;
       bool NoStreaming = false;
+      bool Real = false;
 
       EASettings Settings;
 
@@ -85,8 +87,10 @@ int main(int argc, char** argv)
           FormatDefault("Epsilon value for testing eigenvalues near unity", Settings.UnityEpsilon).c_str())
          ("seed", prog_opt::value<unsigned long>(), "Random number generator seed")
          ("random", prog_opt::bool_switch(&Random), "Use a random initial state for each momentum (otherwise, use the previous result as an initial guess)")
+         ("init", prog_opt::value(&InitFilename), "Use this EAWavefunction as an initial guess")
          ("streaming", prog_opt::bool_switch(&Streaming), "Store the left and right strips by reference to the input files")
          ("no-streaming", prog_opt::bool_switch(&NoStreaming), "Store the left and right strips into the output file [default]")
+         ("real", prog_opt::bool_switch(&Real), "Only show the real component of the excitation energies")
          ("quiet", prog_opt_ext::accum_value(&Quiet), "Hide column headings, use twice to hide momentum")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -282,6 +286,32 @@ int main(int argc, char** argv)
 
       std::vector<std::complex<double>> Guess;
 
+      // If an initial guess is specified, use that.
+      if (vm.count("init"))
+      {
+         pvalue_ptr<MPWavefunction> InitPtr =  pheap::ImportHeap(InitFilename);
+         EAWavefunction PsiInit = InitPtr->get<EAWavefunction>();
+
+         PRECONDITION(PsiInit.window_size() == 1);
+
+         std::deque<StateComponent> BDeque;
+
+         // Extract the windows.
+         for (WavefunctionSectionLeft Window : PsiInit.window_vec())
+         {
+            LinearWavefunction PsiLinear;
+            MatrixOperator U;
+            std::tie(PsiLinear, U) = get_left_canonical(Window);
+            BDeque.push_back(PsiLinear.get_back()*U);
+         }
+
+         // Convert to a form usable by ARPACK.
+         PackHEff PackH = PackHEff(&H);
+
+         Guess = std::vector<std::complex<double>>(PackH.size());
+         PackH.pack(H.ConstructXDeque(BDeque), Guess.data());
+      }
+
       // Calculate the excitation spectrum for each k desired.
       for (double const k : KList)
       {
@@ -316,7 +346,10 @@ int main(int argc, char** argv)
                std::cout << std::setw(20) << std::arg(H.Ty(XDeque))/math_const::pi << "  "
                          << std::setw(20) << std::abs(H.Ty(XDeque)) << "  ";
             }
-            std::cout << std::setw(20) << std::real(*E) + Settings.Alpha << std::endl;
+            if (Real)
+               std::cout << std::setw(20) << std::real(*E + Settings.Alpha) << std::endl;
+            else
+               std::cout << std::setw(50) << formatting::format_complex(remove_small_imag(*E + Settings.Alpha)) << std::endl;
 
             // Save wavefunction.
             if (OutputPrefix != "")

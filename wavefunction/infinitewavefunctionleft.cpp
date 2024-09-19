@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // wavefunction/infinitewavefunctionleft.cpp
 //
-// Copyright (C) 2015-2023 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2012-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -389,11 +390,11 @@ left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::Quantum
    MatrixOperator U = U0;
    RealDiagonalOperator D = D0;
    X = herm(U0) * (D*U);
-   // Do a sequence of SVD's to orthogonalize Psi
+   // Do a sequence of SVD's to orthogonalize Psi, and remove zero singular values
    for (auto& A : Psi)
    {
       A = X*A;
-      std::tie(D, U) = OrthogonalizeBasis2(A);
+      std::tie(D, U) = TruncateBasis2(A);
       X = D*U;
    }
    // Incorporate the final unitaries.  This ensures that the final basis doesn't change.
@@ -542,8 +543,10 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    // 10. Gauge fix the left side with U_L^\dagger
    // 11. We now have a left-orthogonal MPS, so we can ConstructFromLeftOrthogonal
 
-   CHECK_EQUAL(GuessRho.Basis1(), Psi.Basis2());
-   CHECK_EQUAL(GuessRho.Basis2(), Psi.Basis2());
+   if (GuessRho.Basis1() != Psi.Basis2() || GuessRho.Basis2() != Psi.Basis2())
+   {
+      GuessRho = MatrixOperator::make_identity(Psi.Basis2());
+   }
 
    std::complex<double> EValue;
    MatrixOperator Y;
@@ -591,6 +594,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    MatrixOperator U;
    RealDiagonalOperator D;
    std::tie(D, U) = DiagonalizeHermitian(std::move(Y)); // Now Y = U^\dagger D U
+   // FIXME: we probably should remove zero singular values from D here, if there are any
 
    Psi.set_front(delta_shift(U, QShift) * Psi.get_front());
    Psi.set_back(Psi.get_back() * herm(U));
@@ -601,7 +605,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
 RealDiagonalOperator
 gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const& QShift, double tol, int Verbose)
 {
-   return gauge_fix_left_orthogonal(Psi, QShift, MatrixOperator::make_identity(Psi.Basis1()), tol, Verbose);
+   return gauge_fix_left_orthogonal(Psi, QShift, MatrixOperator::make_identity(Psi.Basis2()), tol, Verbose);
 }
 
 void
@@ -835,6 +839,11 @@ void InfiniteWavefunctionLeft::scale_log(std::complex<double> x)
       *s.mutate() *= std::exp(std::complex<double>(0,x.imag()));
       *this->base_begin_() = s;
    }
+}
+
+void InfiniteWavefunctionLeft::normalize()
+{
+   LogAmplitude = 0;
 }
 
 InfiniteWavefunctionLeft& operator*=(InfiniteWavefunctionLeft& psi, std::complex<double> x)

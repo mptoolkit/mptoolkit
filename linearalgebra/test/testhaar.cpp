@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // linearalgebra/test/testhaar.cpp
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -28,7 +28,8 @@ Matrix<std::complex<double> > random_unitary(size_type Size)
 {
    Matrix<std::complex<double> > M = nrandom_matrix<std::complex<double> >(Size, Size);
    Matrix<std::complex<double> > R = M;
-   Matrix<std::complex<double> > Q = QR_Factorize(R);
+   Matrix<std::complex<double> > Q = QR_FactorizeFull(R);
+   return Q;
    Matrix<std::complex<double> > Lambda(Size, Size, 0.0);
    for (int i = 0; i < Size; ++i)
    {

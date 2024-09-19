@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // tensor/tensor.cc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -195,7 +195,7 @@ template <typename T, typename B1, typename B2, typename S>
 std::ostream& operator<<(std::ostream& out, IrredTensor<T, B1, B2, S> const& Op)
 {
    return out << "Operator transforms with symmetry " << Op.GetSymmetryList()
-              << " as " << Op.TransformsAs() << ":\n" << Op.data();
+              << " as " << Op.TransformsAs() << ":\nBasis 1 is: " << Op.Basis1() << "\nBasis2 is: " << Op.Basis2() << "\n" << Op.data();
 }
 
 template <typename T, typename B1, typename B2, typename S>

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // misc/heisenberg-energy.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -39,44 +39,49 @@
 #include <iostream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include <fmt/core.h>
+#include <quadmath.h>
 
 using namespace std;
 
+long double Pi = M_PIq;
+
 // Bethe quantum numbers
-double Ir(int N, int r)
+long double Ir(int N, int r)
 {
    DEBUG_CHECK(r >= 0 && r < N);
-   return -0.25*N + 0.5 + r;
+   return -0.25q*N + 0.5q + r;
 }
 
-double phi(double z)
+long double phi(long double z)
 {
-   return 2 * atan(z);
+   return 2.0q * atan(z);
 }
 
 // iterative scheme
 
-void Iterate(int N, std::vector<double>& New_z, std::vector<double> const& z)
+void Iterate(int N, std::vector<long double>& New_z, std::vector<long double> const& z)
 {
    int const rMax = z.size();
    for (int i = 0; i < rMax; ++i)
    {
-      double Sum = 0.0;
+      long double Sum = 0.0q;
       for (int j = 0; j < rMax; ++j)
       {
          if (j != i)
          {
-            Sum += phi((z[i] - z[j])/2);
+            Sum += phi((z[i] - z[j])/2.0q);
          }
       }
-      New_z[i] = tan((math_const::pi * Ir(N,i) + 0.5*Sum) / N);
+      long double d = (Pi * Ir(N,i) + 0.5q*Sum) / N;
+      New_z[i] = tan(d);
    }
 }
 
 // magnon energy
-double epsilon(double z)
+long double epsilon(long double z)
 {
-   return -2.0 / (1 + z*z);
+   return -2.0q / (1.0q + z*z);
 }
 
 int main(int argc, char** argv)
@@ -88,7 +93,7 @@ int main(int argc, char** argv)
       return 1;
    }
 
-   double const Tol = 1E-15;
+   long double const Tol = 1E-15;
 
    int const N = boost::lexical_cast<int>(argv[1]);
 
@@ -97,12 +102,13 @@ int main(int argc, char** argv)
 
    int r = N/2;   // for the groundstate, we have N/2 spinons
 
-   std::vector<double> z(r, 0.0);
-   std::vector<double> zn(r, 0.0);
+   long double zero = 0.0q;
+   std::vector<long double> z(r, zero);
+   std::vector<long double> zn(r, zero);
 
    bool Converged = false;
-   double OldEnergy = 0.0;
-   double Energy = 0.0;
+   long double OldEnergy = 0.0;
+   long double Energy = 0.0;
    while (!Converged)
    {
 
@@ -121,11 +127,13 @@ int main(int argc, char** argv)
          //      cout << i << ' ' << Ir(N,i) << ' ' << z[i] << '\n';
          Energy += epsilon(z[i]);
       }
+      std::cout << fmt::format("Energy is {}\n", double(Energy));
       Converged = (std::abs(Energy-OldEnergy) / std::abs(Energy) < Tol);
    }
 
-   cout.precision(16);
+   cout.precision(32);
+
    cout << "Converged in " << TotalIter << " iterations.\n";
-   cout << "Total energy is " << (Energy + N*0.25) << '\n';
-   cout << "Energy per site is " << ((Energy/N)+0.25) << endl;
+   std::cout << fmt::format("Total energy is {}\n", double(Energy + N*0.25));
+   std::cout << fmt::format("Energy per site is {}\n", double(Energy/N + 0.25));
 }

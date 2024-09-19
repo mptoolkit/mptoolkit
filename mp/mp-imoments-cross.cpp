@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp/mp-imoments.cpp
+// mp/mp-imoments-cross.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -129,31 +129,53 @@ int ipow(int x, int p)
 }
 
 void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
-                   bool Quiet, bool ShowRealPart, bool ShowImagPart,
+                   bool OneLine, bool Quiet, bool ShowRealPart, bool ShowImagPart,
                    bool ShowMagnitude, bool ShowArgument, bool ShowRadians,
                    double ScaleFactor)
 {
+   std::cout << std::left;
    if (!Quiet)
    {
-      std::cout << "#cumulant ";
-      if (ShowRealPart)
-         std::cout << "#real                   ";
-      if (ShowImagPart)
-         std::cout << "#imag                   ";
-      if (ShowMagnitude)
-         std::cout << "#magnitude              ";
-      if (ShowArgument)
-         std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      if (OneLine)
+      {
+         for (int i = 0; i < Cumulants.size(); ++i)
+         {
+               std::string Suffix = "_" + std::to_string(i);
+            if (ShowRealPart)
+               std::cout << std::setw(24) << std::string("#real" + Suffix);
+            if (ShowImagPart)
+               std::cout << std::setw(24) << std::string("#imag" + Suffix);
+            if (ShowMagnitude)
+               std::cout << std::setw(24) << std::string("#magnitude" + Suffix);
+            if (ShowArgument)
+               std::cout << std::setw(24) << std::string("#argument" + Suffix + (ShowRadians ? "(rad)" : "(deg)"));
+            }
+      }
+      else
+      {
+         std::cout << "#cumulant ";
+         if (ShowRealPart)
+            std::cout << "#real                   ";
+         if (ShowImagPart)
+            std::cout << "#imag                   ";
+         if (ShowMagnitude)
+            std::cout << "#magnitude              ";
+         if (ShowArgument)
+            std::cout << "#argument" << (ShowRadians ? "(rad)" : "(deg)") << "          ";
+      }
       std::cout << '\n';
    }
-   std::cout << std::left;
-   for (unsigned n = 1; n < Cumulants.size(); ++n)
+   for (unsigned n = 0; n < Cumulants.size(); ++n)
    {
-      std::cout << std::setw(9) << n << ' ';
+      if (!OneLine)
+         std::cout << std::setw(9) << n << ' ';
       PrintFormat(Cumulants[n]*ScaleFactor, ShowRealPart,
                   ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians);
-      std::cout << '\n';
+      if (!OneLine)
+         std::cout << '\n';
    }
+   if (OneLine)
+      std::cout << '\n';
 }
 
 // given an array of moment polynomials (ordered by degree, and in multiples of the
@@ -162,16 +184,28 @@ std::vector<std::complex<double> >
 MomentsToCumulants(std::vector<Polynomial<std::complex<double> > > const& Moments,
                    double Epsilon = 1E-15, bool Quiet = false)
 {
-   int const Degree = Moments.back().degree();
+   int Degree = Moments.back().degree();
    int const FirstMoment = Moments.front().degree();
    std::vector<std::complex<double> > Cumulants(Degree+1, 0.0);
 
-   if (FirstMoment == 1)
+   if (FirstMoment == 0)
+   {
+      TRACE("here")(Degree);
+      // This is a special case, where everything is zero
+      for (int n = 0; n < Degree; ++n)
+      {
+         Cumulants[n+1] = 0.0;
+      }
+   }
+   else if (FirstMoment == 1)
    {
       // This is the easy case, we can calculate the n'th cumulant from the n'th moment
       // The complication that we handle is that possibly kappa_1 is zero but
       // kappa_1^2 is non-zero.
-      CHECK_EQUAL(int(Moments.size()), Degree);
+      // There is a corner case where the degree might be smaller than the number of moments; in that case the
+      // higher moments are zero.
+      if (Degree < Moments.size())
+         Degree = Moments.size();
       for (int n = 0; n < Degree; ++n)
       {
          Cumulants[n+1] = Moments[n][1];
@@ -269,6 +303,7 @@ int main(int argc, char** argv)
    std::string Psi2Str;
 
    int Power = 1;
+   int WhichEigenvalue = 0; // which eigenvalue of the transfer operator
    int Verbose = 0;
    int UnitCellSize = 0;
    int Degree = 0;
@@ -286,9 +321,10 @@ int main(int argc, char** argv)
    bool CalculateMoments = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
-   double Tol = 1E-15;
+   double Tol = 1E-10;
    bool ShouldShowAllComponents = false;
    std::string Sector;
+   bool OneLine = false;
 
    try
    {
@@ -298,6 +334,7 @@ int main(int argc, char** argv)
          ("quantumnumber,q", prog_opt::value(&Sector), "quantum number sector of the transfer matrix")
          ("power", prog_opt::value(&Power),
           FormatDefault("Calculate expectation value of operator to this power", Power).c_str())
+         ("num,n", prog_opt::value(&WhichEigenvalue), FormatDefault("eigenvalue of the transfer operator to use; n=0 is the leading eigenvalue", WhichEigenvalue).c_str())
          ("moments", prog_opt::bool_switch(&CalculateMoments),
           "calculate the moments [default, unless --cumulants is specified]")
          ("cumulants,t", prog_opt::bool_switch(&CalculateCumulants),
@@ -321,6 +358,7 @@ int main(int argc, char** argv)
          ("degree,d", prog_opt::value(&Degree),
           "force setting the degree of the MPO")
          ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("oneline", prog_opt::bool_switch(&OneLine), "Show all output on one line (currently only works with --cumulants)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
          ("reflect", prog_opt::bool_switch(&Reflect),
@@ -333,8 +371,8 @@ int main(int argc, char** argv)
           FormatDefault("Epsilon value for testing eigenvalues near unity", UnityEpsilon).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose),
           "extra debug output (can be used more than once)")
-	 ("showall", prog_opt::bool_switch(&ShouldShowAllComponents), "show all columns of the fixed-point "
-	  "solutions (mostly for debugging)")
+	      ("showall", prog_opt::bool_switch(&ShouldShowAllComponents), "show all columns of the fixed-point "
+          "solutions (mostly for debugging)")
          ;
 
       prog_opt::options_description hidden("Hidden options");
@@ -357,7 +395,13 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") > 0 || vm.count("psi2") == 0)
+      if (vm.count("psi2") == 0)
+      {
+         // assume only 2 positional arguments are both wavefunctions
+         Psi2Str = OpStr;
+         OpStr = "";
+      }
+      if (vm.count("help") > 0 || Psi2Str.empty())
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi1> <operator> <psi2>\n";
@@ -431,29 +475,36 @@ int main(int argc, char** argv)
 
       // Since the operator is a positional argument we need to include it.  But allow it to be empty, and
       // that will take it to be the Psi2 Hamiltonian.  If that is empty, look at the psi1 Hamiltonian.
+      // If there is no Hamiltonian attribute, then look for an EvolutionHamiltonian.
       if (OpStr.empty())
       {
          OpStr = Psi2Ptr->Attributes()["Hamiltonian"].get_or_default(std::string());
-         if (OpStr.empty())
-         {
-            OpStr = Psi1Ptr->Attributes()["Hamiltonian"].get_or_default(std::string());
-         }
-         else
-         {
-            if (Verbose > 1)
-               std::cerr << "Taking operator from psi2 Hamiltonian attribute.\n";
-         }
-         if (OpStr.empty())
-         {
-            std::cerr <<  basename(argv[0]) << ": fatal: no operator specified, and wavefunction "
-               "attribute Hamiltonian does not exist or is empty.\n";
-            return 1;
-         }
-         else
-         {
-            if (Verbose > 1)
-               std::cerr << "Taking operator from psi1 Hamiltonian attribute.\n";
-         }
+         if (!OpStr.empty() && Verbose > 1)
+            std::cerr << "Taking operator from psi2 Hamiltonian attribute.\n";
+      }
+      if (OpStr.empty())
+      {
+         OpStr = Psi1Ptr->Attributes()["Hamiltonian"].get_or_default(std::string());
+         if (!OpStr.empty() && Verbose > 1)
+            std::cerr << "Taking operator from psi1 Hamiltonian attribute.\n";
+      }
+      if (OpStr.empty())
+      {
+         OpStr = Psi2Ptr->Attributes()["EvolutionHamiltonian"].get_or_default(std::string());
+         if (!OpStr.empty() && Verbose > 1)
+            std::cerr << "Taking operator from psi2 EvolutionHamiltonian attribute.\n";
+      }
+      if (OpStr.empty())
+      {
+         OpStr = Psi1Ptr->Attributes()["EvolutionHamiltonian"].get_or_default(std::string());
+         if (!OpStr.empty() && Verbose > 1)
+            std::cerr << "Taking operator from psi1 EvolutionHamiltonian attribute.\n";
+      }
+      if (OpStr.empty())
+      {
+         std::cerr <<  basename(argv[0]) << ": fatal: no operator specified, and wavefunction "
+            "attribute Hamiltonian and EvolutionHamiltonian does not exist or is empty.\n";
+         return 1;
       }
 
       BasicTriangularMPO Op;
@@ -480,24 +531,62 @@ int main(int argc, char** argv)
          std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
          std::cout << "#quantities are calculated per unit cell size of " << UnitCellSize
                    << (UnitCellSize == 1 ? " site\n" : " sites\n");
+         std::cout << "#quantum number sector is " << q << '\n';
       }
 
       std::complex<double> lambda;
       MatrixOperator TLeft, TRight;
-      std::tie(lambda, TLeft, TRight) = get_transfer_eigenpair(Psi1, Psi2, q);
+
+      LinearAlgebra::Vector<MatrixOperator> LV, RV;
+      LinearAlgebra::Vector<std::complex<double>> Vec = get_transfer_spectrum(Psi1, Psi2, q, WhichEigenvalue+2, &LV, &RV, 1e-14, 0, Verbose);
+      if (WhichEigenvalue >= Vec.size())
+      {
+         std::cerr << basename(argv[0]) << ": fatal: transfer matrix is too small, cannot calculate eigenvalue " << WhichEigenvalue << ".\n";
+         return 1;
+      }
+      lambda = Vec[WhichEigenvalue];
+      TLeft = LV[WhichEigenvalue];
+      TRight = RV[WhichEigenvalue];
+
+      if (!Quiet)
+      {
+         std::cout << "#transfer matrix eigenvalue = " << formatting::format_complex(lambda) << '\n';
+      }
+
+      // Estimate the condition number
+      double TCond = std::numeric_limits<double>::infinity();
+      if (Vec.size() > 1.0)
+      {
+         // find the eigenvalue closest to lambda
+         double Dist = -1.0;
+         for (int i = 0; i < Vec.size(); ++i)
+         {
+            if (i == WhichEigenvalue)
+               continue;
+            if (Dist < 0.0 || std::abs(Vec[i] - lambda) < Dist)
+            {
+               Dist = std::abs(Vec[i] - lambda);
+            }
+         }
+         TCond = 1.0 / Dist;
+      }
+      if (!Quiet)
+      {
+         std::cout << "#condition number estimate = " << TCond << '\n';
+      }
 
       TRight = delta_shift(TRight, Psi2.qshift());
 
       // Check that the local basis for the wavefunction and hamiltonian are compatible
       if (ExtractLocalBasis(Psi1) != ExtractLocalBasis1(Op))
       {
-         std::cerr << "fatal: operator is defined on a different local basis to the wavefunction.\n";
+         std::cerr  << basename(argv[0]) << ": fatal: operator is defined on a different local basis to the wavefunction.\n";
          return 1;
       }
 
       if (ExtractLocalBasis1(Op) != ExtractLocalBasis2(Op))
       {
-         std::cerr << "fatal: operator has different domain and co-domain.\n";
+         std::cerr << basename(argv[0]) << ": fatal: operator has different domain and co-domain.\n";
          return 1;
       }
 
@@ -508,9 +597,20 @@ int main(int argc, char** argv)
       LinearWavefunction Phi1 = get_left_canonical(Psi1).first;
       LinearWavefunction Phi2 = get_left_canonical(Psi2).first;
 
+      // This does the equivalent.  Probably would have been easier to implement it this way in the first place,
+      // but maybe more general to have lambda as an explicit argument?
+      auto lambda0 = std::pow(lambda, UnitCellSize / Psi1.size());
+      double LogAmplitude = Psi1.log_amplitude()*(UnitCellSize/Psi1.size()) + Psi2.log_amplitude()*(UnitCellSize/Psi2.size());
+      if (!Quiet)
+      {
+         std::cout << "#log amplitude = " << LogAmplitude << '\n';
+      }
+      Phi2 *= (1.0 / lambda);
+      lambda = 1.0;
+
       // first power
       std::vector<KMatrixPolyType> E;
-      SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
+      SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, TCond, Power > 1, Degree, Tol, UnityEpsilon, Verbose);
       Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
       if (ShouldShowAllComponents)
       {
@@ -547,13 +647,11 @@ int main(int argc, char** argv)
          E = std::vector<KMatrixPolyType>();
 
          Op = OriginalOp * Op;
-         SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, lambda, p < Power-1, Degree*(p+1),
+         SolveMPO_Left_Cross(E, Phi1, Phi2, Psi1.qshift(), Op, TLeft, TRight, TCond, p < Power-1, Degree*(p+1),
                        Tol, UnityEpsilon, Verbose);
          Moments.push_back(ExtractOverlap(E.back()[1.0], TRight));
          // Force the degree of the MPO
-         if (Degree != 0)
-            Moments.back()[Degree*(p+1)] += 0.0;
-	 //            Moments.back()[ipow(Degree, p+1)] += 0.0;
+         Moments.back()[std::max(Degree,1)*(p+1)] += 0.0;
          if (CalculateMoments && Verbose <= 0)
             ShowMoments(Moments.back(), ShowRealPart, ShowImagPart,
                         ShowMagnitude, ShowArgument, ShowRadians,
@@ -580,8 +678,13 @@ int main(int argc, char** argv)
          if (CalculateMoments)
             std::cout << '\n';
 
-         std::vector<std::complex<double> > Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
-         ShowCumulants(Cumulants, Quiet, ShowRealPart,
+         std::vector<std::complex<double>> Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
+         // the 0th cumulant is the log of the transfer matrix evalue.  This is because
+         // the cumulants come from the generating function
+         // F(t) = 1/N log <LHS|exp(tX)|RHS> for the operator X, so the 0th order cumulant is
+         // log <LHS|RHS> = log lambda
+         Cumulants[0] = std::log(lambda0) + LogAmplitude;
+         ShowCumulants(Cumulants, OneLine, Quiet, ShowRealPart,
                        ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
                        ScaleFactor);
       }

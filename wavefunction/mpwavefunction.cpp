@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // wavefunction/mpwavefunction.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2023 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -38,29 +39,39 @@
 // AttributeList
 //
 // Version 4:
-// boost::variant<InfiniteWavefunctionLeft>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft>
 //
 // Version 5:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction>
 //
 // Version 6:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
 //
 // Version 7:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
 //
 // Version 8:
-// boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
+// Psi
 // AttributeList
 // HistoryLog
+// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
+//
+// For future versions, it is possible to *add* entries to the WavefunctionTypes variant freely, without increasing the
+// overall version number.  Technically this was possible since version 3, but prior to version 8 the streaming code didn't allow
+// old wavefunction types saved with a newer version number.  We now only check that the current version of the toolkit understands
+// the actual type contained in the Psi variant.
 
 PStream::VersionTag MPWavefunction::VersionT(8);
 
@@ -111,39 +122,21 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
 
    Psi.Version_ = Version;
 
-   if (Version <= 4)
+   if (Version <= 8)
    {
-      boost::variant<InfiniteWavefunctionLeft> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 5)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 6)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 7)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight> x;
-      in >> x;
-      Psi.Psi_ = x;
-   }
-   else if (Version == 8)
-   {
-      boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction> x;
-      in >> x;
-      Psi.Psi_ = x;
+      int which = in.read<int>();
+      if (which >= PStream::variant_size<WavefunctionTypes>::value)
+      {
+         std::cerr << "error loading wavefunction: this wavefunction type (" << which << ") is not recognized.\n"
+            "This probably means this version of the toolkit is too old.\n";
+         std::exit(1);
+      }
+      PStream::load_variant(in, which, Psi.Psi_);
    }
    else
    {
-      PANIC("Version of MPWavefunction is newer than this sofware!");
+      std::cerr << "error loading wavefunction: this version of the toolkit is too old to load this wavefunction type.\n";
+      std::exit(1);
    }
 
    in >> Psi.Attr_;

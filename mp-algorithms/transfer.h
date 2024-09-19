@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/transfer.h
 //
-// Copyright (C) 2015-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -130,13 +131,44 @@ get_transfer_unit_eigenpair(LinearWavefunction const& Psi1, LinearWavefunction c
 
 // get the entire spectrum up to NumEigen eigenvalues.  If LeftVectors or RightVectors is not null, then
 // also calculate the left/right eigenvectors.  These are returned in the Basis1() / Basis2() respectively.
+// No attempt is made to normalize the eigenvectors.
 LinearAlgebra::Vector<std::complex<double>>
-get_spectrum_string(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+get_transfer_spectrum(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+                    QuantumNumber const& QShift,
                     ProductMPO const& StringOp,
-                    int NumEigen, double tol = 1e-10,
-                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+                    int NumEigen,
                     LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
-                    int ncv = 0, bool Sort = false, int Verbose = 0);
+                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+                    double tol = 1e-14, int ncv = 0, int Verbose = 0);
+
+LinearAlgebra::Vector<std::complex<double>>
+get_transfer_spectrum(LinearWavefunction const& Psi1, LinearWavefunction const& Psi2,
+             QuantumNumber const& QShift,
+             int NumEigen,
+             LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
+             LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+             double tol = 1e-14, int ncv = 0, int Verbose = 0);
+
+LinearAlgebra::Vector<std::complex<double>>
+get_transfer_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift,
+                    ProductMPO const& StringOp,
+                    int NumEigen,
+                    LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
+                    LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+                    double tol = 1e-14, int ncv = 0, int Verbose = 0);
+
+LinearAlgebra::Vector<std::complex<double>>
+get_transfer_spectrum(LinearWavefunction const& Psi, QuantumNumber const& QShift, int NumEigen,
+             LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
+             LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+             double tol = 1e-14, int ncv = 0, int Verbose = 0);
+
+LinearAlgebra::Vector<std::complex<double>>
+get_transfer_spectrum(InfiniteWavefunctionLeft const& Psi1, InfiniteWavefunctionLeft const& Psi2,
+           QuantumNumber const& q, int NumEigen,
+           LinearAlgebra::Vector<MatrixOperator>* LeftVectors = nullptr,
+           LinearAlgebra::Vector<MatrixOperator>* RightVectors = nullptr,
+           double tol = 1e-14, int ncv = 0, int Verbose = 0);
 
 // Match left and right eigenvectors to the correct complex eigenvalues.
 // This works by finding a pairing of numerically identical eigenvalues,

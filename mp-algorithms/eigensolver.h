@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/eigensolver.h
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -27,6 +27,7 @@
 class LocalEigensolver
 {
    public:
+      // FIXME: this could use common/namedenum.h
       enum class Solver { InvalidSolver, Lanczos, Arnoldi, ArnoldiSmallest, ArnoldiLowest, ShiftInvert, ShiftInvertDirect,
                              Davidson, DavidsonTarget, DavidsonMaxOverlap,
                              LastSolver = DavidsonMaxOverlap};
@@ -82,7 +83,7 @@ class LocalEigensolver
       // void SetSolverParameter(std::string const& s);
 
       // information on the state of the solver
-      bool is_complex() const { return Solver_ == Solver::Arnoldi; }
+      bool is_complex() const { return Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiLowest; }
 
       std::complex<double> LastEnergy() const { return LastEnergy_; }
       double LastEnergyReal() const { return LastEnergy_.real(); }

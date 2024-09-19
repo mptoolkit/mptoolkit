@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // common/environment.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -51,6 +51,12 @@ std::string cmdline(int argc, char** argv)
 // expands components of the form ${XXX} as the corresponding environment string
 std::string ExpandEnvironment(std::string const& s);
 
+inline
+bool env_exists(std::string const& str)
+{
+   return getenv(str.c_str()) != nullptr;
+}
+
 // getenv_or_default
 // Get an environment string, or if the environment string is not defined, return the specified Default value
 template <typename T>
@@ -74,6 +80,14 @@ T getenv_or_default(std::string const& str, T const& Default)
    }
 
    return Default;
+}
+
+inline
+char const*
+getenv_or_default(std::string const& str, char const* Default)
+{
+   char const* Str = getenv(str.c_str());
+   return Str ? Str : Default;
 }
 
 #endif

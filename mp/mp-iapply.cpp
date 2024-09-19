@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-iapply.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2015-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -137,16 +138,18 @@ int main(int argc, char** argv)
          (*I) = aux_tensor_prod(*MI, *I);
       }
 
+      QuantumNumber QShift = delta_shift(Psi.qshift(), StringOp.qshift());
+
       if (AssumeOrthogonal)
       {
          RealDiagonalOperator Lambda = Psi.lambda_r();
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, Psi.qshift(), Lambda, Psi.log_amplitude(), Verbose);
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::ConstructFromOrthogonal(PsiL, QShift, Lambda, Psi.log_amplitude(), Verbose);
       }
       else
       {
          RealDiagonalOperator Lambda = Psi.lambda_r();
          MatrixOperator Rho = Lambda*Lambda;
-         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, Psi.qshift(), Rho, Psi.log_amplitude(), Verbose);
+         PsiPtr.mutate()->Wavefunction() = InfiniteWavefunctionLeft::Construct(PsiL, QShift, Rho, Psi.log_amplitude(), Verbose);
       }
 
       PsiPtr.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));

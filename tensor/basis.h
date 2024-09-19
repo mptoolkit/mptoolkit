@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // tensor/basis.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -197,6 +198,17 @@ QuantumNumbersInBasis(BasisList const& b)
    return std::set<QuantumNumbers::QuantumNumber>(b.begin(), b.end());
 }
 
+// Get a map of the dimension of the basis per quantum number sector
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+DimensionPerSector(BasisList const& b)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < b.size(); ++i)
+      ++Result[b[i]];
+   return Result;
+}
+
 // construct a mapping from the components with a particular quantum number,
 // onto successive integers
 std::map<int, int>
@@ -345,6 +357,63 @@ QuantumNumbersInBasis(VectorBasis const& b)
 {
    return std::set<QuantumNumbers::QuantumNumber>(b.Basis().begin(), b.Basis().end());
 }
+
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+DimensionPerSector(VectorBasis const& b)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < b.size(); ++i)
+      Result[b[i]] += b.dim(i);
+   return Result;
+}
+
+// Given some opearator over basis (B1,B2), return the rank of each quantum number sector, as the
+// map from each quantum number -> minimum of the dimension of that sector in B1 and B2.
+// There is also a version that uses a TensorOperator, defined in tensor.h, that also looks at the
+// structure of the tensor.
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+RankPerSector(VectorBasis const& B1, VectorBasis const& B2)
+{
+   std::map<QuantumNumbers::QuantumNumber, int> Basis1Size, Basis2Size;
+   for (int i = 0; i < B1.size(); ++i)
+      Basis1Size[B1[i]] += B1.dim(i);
+   for (int j = 0; j < B2.size(); ++j)
+      Basis2Size[B2[j]] += B2.dim(j);
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (auto const& q : Basis1Size)
+   {
+      if (q.second > 0 && Basis2Size[q.first] > 0)
+         Result[q.first] = std::min(q.second, Basis2Size[q.first]);
+   }
+   return Result;
+}
+
+// Returns the dimension of the quantum number sectors in B1, but with sectors that don't exist in B2
+// removed.
+inline
+std::map<QuantumNumbers::QuantumNumber, int>
+CullMissingSectors(VectorBasis const& B1, VectorBasis const& B2)
+{
+   std::set<QuantumNumbers::QuantumNumber> QuantumNumbersInB2 = QuantumNumbersInBasis(B2);
+   std::map<QuantumNumbers::QuantumNumber, int> Result;
+   for (int i = 0; i < B1.size(); ++i)
+   {
+      if (QuantumNumbersInB2.count(B1[i]) > 0)
+         Result[B1[i]] += B1.dim(i);
+   }
+   return Result;
+}
+
+// Given two vector bases B1 and B2, construct a third basis that for each quantum number q that is in
+// B1 and B2, has dimension equal to min(d1,d2), where d1,d2 are the dimensions of the q sector in B1 and B2
+// respectively.  The second and third components of the tuple are arrays of size B1.size() and B2.size() respectively,
+// which contain the index into the new basis of the corresponding sector of B1 and B2, or -1 if the new basis
+// doesn't contain this sector.
+// B1 abd B2 must be regular.
+std::tuple<VectorBasis, std::vector<int>, std::vector<int>>
+MakeMinimalBasis(VectorBasis const& B1, VectorBasis const& B2);
 
 VectorBasis RenameSymmetry(VectorBasis const& BL, SymmetryList const& NewSL);
 

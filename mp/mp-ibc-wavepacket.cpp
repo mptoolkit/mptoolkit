@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-ibc-wavepacket.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -280,6 +280,7 @@ int main(int argc, char** argv)
       double KYCenter = 0.0;
       int InputDigits = -1;
       double Tol = 1e-5;
+      int LambdaMax = 0;
       std::string LeftBoundaryFilename;
       std::string RightBoundaryFilename;
       StatesInfo SInfo;
@@ -301,6 +302,7 @@ int main(int argc, char** argv)
          ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance for the wavepacket weight outside the window", Tol).c_str())
+         ("lambdamax", prog_opt::value(&LambdaMax), "Maximum allowed window size of the output wavefunction [default 2*pi/kstep]")
          ("min-states", prog_opt::value(&SInfo.MinStates),
           FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
          ("max-states", prog_opt::value<int>(&SInfo.MaxStates),
@@ -522,8 +524,13 @@ int main(int argc, char** argv)
          // The number of Fourier modes in our momentum space (note that this does
          // not match KNum since we may have missing parts of the spectrum).
          int N = std::round(2.0/KList.get_step()/LatticeUCsPerPsiUC);
+
          if (std::abs(N*KList.get_step()/2.0 * LatticeUCsPerPsiUC - 1.0) > 0.0)
             std::cerr << "WARNING: Number of Fourier modes " << 2.0/KList.get_step()/LatticeUCsPerPsiUC << " is noninteger! Trying N=" << N << std::endl;
+
+         // Set LambdaMax if unspecified.
+         if (LambdaMax == 0)
+            LambdaMax = N/2;
 
          int NY;
          if (vm.count("kynum"))
@@ -549,7 +556,7 @@ int main(int argc, char** argv)
          int Lambda = 1;
          int LambdaY = 1;
          bool Finished = false;
-         while (Lambda < N/2 && !Finished)
+         while (Lambda < LambdaMax && !Finished)
          {
             LambdaY = 1;
             // Only try values of LambdaY up to the current value of Lambda.
@@ -587,7 +594,7 @@ int main(int argc, char** argv)
             return 1;
          }
 
-         if (Verbose > 2)
+         if (Verbose > 3)
          {
             // Print the F vector before convolution.
             std::cout << "Printing F before convolution..." << std::endl;
@@ -636,7 +643,7 @@ int main(int argc, char** argv)
             }
          }
 
-         if (Verbose > 2)
+         if (Verbose > 3)
          {
             // Print the F vector after convolution.
             std::cout << "Printing F after convolution..." << std::endl;
@@ -654,7 +661,7 @@ int main(int argc, char** argv)
             }
          }
 
-         if (Verbose > 1)
+         if (Verbose > 2)
          {
             std::vector<std::vector<StateComponent>> WPVecFull = CalculateWPVec(BVec, ExpIKVec, FVec, N/2);
             // Print the norm of the B-matrices in WPVec for each unit cell.
@@ -673,15 +680,15 @@ int main(int argc, char** argv)
          // Calculate the new value of Lambda post-convolution.
          int LambdaNew;
          LinearAlgebra::Vector<std::complex<double>> FVector(FVec.begin(), FVec.end());
-         for (LambdaNew = Lambda; LambdaNew < N/2; ++LambdaNew)
+         for (LambdaNew = Lambda; LambdaNew < LambdaMax; ++LambdaNew)
          {
             LinearAlgebra::Matrix<std::complex<double>> NLambdaMat
                = CalculateNLambda(BBVec, ExpIKVec, N, LambdaNew, LambdaY, LatticeUCSize);
             double Error = std::real(inner_prod(FVector, NLambdaMat * FVector));
 
-            if (Verbose > 2)
-               std::cout << "LambdaNew = " << LambdaNew
-                         << ", Error = " << Error << std::endl;
+            if (Verbose > 1)
+               std::cout << "LambdaNew=" << LambdaNew
+                         << ", Error=" << Error << std::endl;
 
             if (Error < Tol)
                break;
@@ -743,7 +750,7 @@ int main(int argc, char** argv)
 
       PsiWindowLinear.set_back(prod(PsiWindowLinear.get_back(), LambdaWindow));
 
-      truncate_left_orthogonal(PsiWindowLinear, SInfo, Verbose-1);
+      truncate_left_orthogonal(PsiWindowLinear, SInfo, Verbose-2);
 
       PsiWindow = WavefunctionSectionLeft::ConstructFromLeftOrthogonal(std::move(PsiWindowLinear), I, Verbose-1);
 

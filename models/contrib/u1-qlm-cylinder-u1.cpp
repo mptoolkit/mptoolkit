@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // models/contrib/u1-qlm-cylinder-u1.cpp
 //
-// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       int y = 4;
       half_int Spin = 0.5;
       bool Bosonic = false;
+      bool Tau = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -63,6 +64,7 @@ int main(int argc, char** argv)
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
+         ("tau", prog_opt::bool_switch(&Tau), "use alternative coeffients for the ladder operators based on the boson ladder operators")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -83,6 +85,7 @@ int main(int argc, char** argv)
          ("H_m"  , "fermion mass")
          ("H_g"  , "gauge coupling")
          ("H_J"  , "plaquette interactions")
+         ("H_lambda"   , "Rokhsar-Kivelson coupling")
          ("H_flux"     , "electric flux")
          ("H_stag_flux", "staggered electric flux")
          ;
@@ -106,9 +109,29 @@ int main(int argc, char** argv)
 
       LatticeSite FSite = SpinlessFermionU1("N", "P", Bosonic);
       LatticeSite AFSite = SpinlessAntifermionU1("N", "P", Bosonic);
-      LatticeSite SSite = SpinSite(Spin);
-      UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite, SSite);
-      UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite, SSite);
+      LatticeSite SSite1 = SpinSite(Spin);
+      LatticeSite SSite2 = SpinSite(Spin);
+
+      if (Tau)
+      {
+         std::map<half_int, std::string> SpinBasis;
+         for (half_int s = -Spin; s <= Spin; ++s)
+            SpinBasis[s] = boost::lexical_cast<std::string>(s);
+
+         for (half_int s = -Spin; s < Spin; ++s)
+         {
+            int n = (Spin + s).twice();
+            double Coeff = std::sqrt((n + 1) * (n + 2));
+            SSite1["Sp"](SpinBasis[-s], SpinBasis[-s-1]) = Coeff;
+            SSite2["Sp"](SpinBasis[s+1], SpinBasis[s]) = Coeff;
+         }
+
+         SSite1["Sm"] = adjoint(SSite1["Sp"]);
+         SSite2["Sm"] = adjoint(SSite2["Sp"]);
+      }
+
+      UnitCell FCell(FSite.GetSymmetryList(), FSite, SSite1, SSite1);
+      UnitCell AFCell(AFSite.GetSymmetryList(), AFSite, SSite2, SSite2);
       UnitCell Cell1(repeat(join(FCell, AFCell), CellSize/12));
       UnitCell Cell2(repeat(join(AFCell, FCell), CellSize/12));
       UnitCell Cell = join(Cell1, Cell2);
@@ -116,7 +139,7 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), N(Cell, "N"), I(Cell, "I"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO tx, ty, m, g, J, flux, stag_flux;
+      UnitCellMPO tx, ty, m, g, J, lambda, flux, stag_flux;
       // the XY configuration is special
       if (x == 0)
       {
@@ -131,6 +154,10 @@ int main(int argc, char** argv)
             J += Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2];
             J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
             J += Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y];
+            lambda += (Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2] +  Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2])
+                    * (Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2] +  Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2]);
+            lambda += (Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y] + Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y])
+                    * (Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y] + Sm(0)[i+1+3*y] * Sm(1)[i+2] * Sp(0)[(i+4)%(3*y)+3*y] * Sp(0)[i+2+3*y]);
             flux += Sz(0)[i+1] + Sz(0)[i+2] + Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y];
             g += Sz(0)[i+1]*Sz(0)[i+1] + Sz(0)[i+2]*Sz(0)[i+2] + Sz(0)[i+1+3*y]*Sz(0)[i+1+3*y] + Sz(0)[i+2+3*y]*Sz(0)[i+2+3*y];
          }
@@ -162,6 +189,7 @@ int main(int argc, char** argv)
       Lattice["H_m"] = sum_unit(m);
       Lattice["H_g"] = sum_unit(g);
       Lattice["H_J"] = sum_unit(J);
+      Lattice["H_lambda"] = sum_unit(lambda);
       Lattice["H_flux"] = sum_unit(flux);
       Lattice["H_stag_flux"] = sum_unit(stag_flux);
 

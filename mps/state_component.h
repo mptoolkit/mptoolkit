@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mps/state_component.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -23,6 +24,7 @@
 #if !defined(MPSTATE_H_SDHCKJHKJLRHGIURHYULUHR)
 #define MPSTATE_H_SDHCKJHKJLRHGIURHYULUHR
 
+#include "truncation.h"
 #include "tensor/tensor.h"
 #include "tensor/reducible.h"
 #include "tensor/tensorsum.h"
@@ -649,6 +651,8 @@ StateComponent tensor_row_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B2);
 
+StateComponent tensor_row_sum(StateComponent const& A, StateComponent const& B);
+
 // Constructs a StateComponent that represents the sum of A and B,
 // at the right boundary of the matrix product state.
 // Precondition: A.Basis2() == B.Basis2()
@@ -657,6 +661,8 @@ StateComponent tensor_row_sum(StateComponent const& A,
 StateComponent tensor_col_sum(StateComponent const& A,
                                 StateComponent const& B,
                                 SumBasis<VectorBasis> const& B1);
+
+StateComponent tensor_col_sum(StateComponent const& A, StateComponent const& B);
 
 // Returns the diagonal components of the operator F given by
 // F(x) = operator_prod(A, x, herm(B))
@@ -695,11 +701,11 @@ StateComponent CoerceSymmetryList(StateComponent const& Op, SymmetryList const& 
 enum Normalization { Intensive, Extensive };
 
 // Expands the Basis1 of A so that it is dm dimensional and orthogonalized, such that
-// A = Result' * A', and Result' is a m x dm matrix
+// A = Result' * A', A' is a dm x d x m, and Result' is a m x dm matrix
 MatrixOperator ExpandBasis1(StateComponent& A);
 
 // Expands the Basis2 of A so that it is dm dimensional and orthogonalized, such that
-// A = A' * Result', and Result' is a dm x m matrix
+// A = A' * Result', A' is m x d x dm, and Result' is a dm x m matrix
 MatrixOperator ExpandBasis2(StateComponent& A);
 
 // Expand the basis, but incorporate only those matrix elements that are actually used in
@@ -714,11 +720,12 @@ StateComponent NullSpace1(StateComponent A);
 StateComponent NullSpace2(StateComponent A);
 
 // Reshape A-matrix into (dm)x(m) matrix
-// The reshaped basis is a regular basis.
+// This function can replace ExpandBasis2() in most cases.
 MatrixOperator ReshapeBasis1(StateComponent const& A);
 StateComponent ReshapeFromBasis1(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B1);
 
 // Reshape A-matrix into (m)x(dm) matrix
+// This function can replace ExpandBasis2() in most cases.
 MatrixOperator ReshapeBasis2(StateComponent const& A);
 StateComponent ReshapeFromBasis2(MatrixOperator const& X, BasisList const& LB, VectorBasis const& B2);
 
@@ -729,17 +736,51 @@ StateComponent RegularizeBasis12(Regularizer const& R1, StateComponent const& M,
 
 // Shortcut function, when we just want to regularize an operator and we don't care what the Regularizer is
 MatrixOperator Regularize(MatrixOperator const& M);
+StateComponent RegularizeBasis1(StateComponent const& M);
+StateComponent RegularizeBasis2(StateComponent const& M);
 
 // We could also unregularize a StateComponent, but so far we don't need it
 
-// left-orthogonalizes an MPS
-// basically equivalent to ExpandBasis2() followed by an SVD
+// right-orthogonalizes an MPS, A -> U * D * A'
+// where U is square unitary, D is positive diagonal.
+std::pair<MatrixOperator, RealDiagonalOperator>
+OrthogonalizeBasis1(StateComponent& A);
+
+// left-orthogonalizes an MPS, A -> A' * D * Vh
+// where D is positive diagonal, Vh is square unitary
 std::pair<RealDiagonalOperator, MatrixOperator>
 OrthogonalizeBasis2(StateComponent& A);
 
-// right-orthogonalizes an MPS
+// right-orthogonalizes an MPS, A -> L * A', using an LQ decomposition.
+MatrixOperator
+OrthogonalizeBasis1_LQ(StateComponent& A);
+
+// left-orthogonalizes an MPS, A -> A' * R, using a QR decomposition
+MatrixOperator
+OrthogonalizeBasis2_QR(StateComponent& A);
+
+// Similar to OrthogonalizeBasis1, but truncates the singular value matrix D according to the given StatesInfo.
+// The default-constructed StatesInfo removes zero singular values.
 std::pair<MatrixOperator, RealDiagonalOperator>
-OrthogonalizeBasis1(StateComponent& A);
+TruncateBasis1(StateComponent& A, StatesInfo const& States = StatesInfo());
+
+// Similar to OrthogonalizeBasis2, but truncates the singular value matrix D according to the given StatesInfo.
+// The default-constructed StatesInfo removes zero singular values.
+std::pair<RealDiagonalOperator, MatrixOperator>
+TruncateBasis2(StateComponent& A, StatesInfo const& States = StatesInfo());
+
+// Helper function to combine the output matrices from an Orthogonalize or Truncate call
+inline
+MatrixOperator Multiply(std::pair<MatrixOperator, RealDiagonalOperator> const& M)
+{
+   return M.first * M.second;
+}
+
+inline
+MatrixOperator Multiply(std::pair<RealDiagonalOperator, MatrixOperator> const& M)
+{
+   return M.first * M.second;
+}
 
 // experimental ExpandBasis1 variant that returns a SimpleStateComponent
 std::pair<MatrixOperator, SimpleStateComponent>
@@ -816,6 +857,7 @@ StateComponent tensor_accumulate(FwdIter first, FwdIter last,
 
 // utility functions to generate random matrices.
 // Typically used to initialize iterative eigensolvers etc
+// This makes a Gaussian random matrix
 MatrixOperator MakeRandomMatrixOperator(VectorBasis const& B1, VectorBasis const& B2,
                                         QuantumNumber q);
 

@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // tensor/basis.cc
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2023 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -44,9 +45,9 @@ PStream::ipstream& operator>>(PStream::ipstream& in, BasisList& B)
 
 template <typename FwdIter>
 BasisList::BasisList(FwdIter first, FwdIter last)
-   : S_(first == last ? QuantumNumbers::SymmetryList() : first->GetSymmetryList()), Q_(first, last)
+   : S_(first->GetSymmetryList()), Q_(first, last)
 {
-   DEBUG_CHECK(first != last)("The list must be non-empty");
+   CHECK(first != last)("The list must be non-empty - use the 3-parameter constructor instead.");
 }
 
 template <typename FwdIter>
@@ -54,6 +55,7 @@ BasisList::BasisList(QuantumNumbers::SymmetryList const& S, FwdIter first, FwdIt
    : S_(S), Q_(first, last)
 {
 }
+
 inline
 BasisList adjoint(BasisList const& b)
 {

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/eigensolver.cpp
 //
-// Copyright (C) 2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2016-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -189,55 +189,11 @@ template <typename Func, typename Prec>
 void
 LinearSolve(StateComponent& x, Func F, Prec P, StateComponent const& Rhs, int k, int& MaxIter, double& Tol, int Verbose = 0)
 {
-   int m = k;     // krylov subspace size
-   int iter = 0;   // total number of iterations performed
-
-   double normb = norm_frob(P(Rhs));
-
-   int IterThisRound = m*500;
-   if (IterThisRound > MaxIter)
-      IterThisRound = MaxIter;
-   double tol = Tol;
-   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, P, Verbose);
-   iter += IterThisRound;
-
-   while (Ret != 0 && iter < MaxIter)
-   {
-      // Attempt to avoid stagnation by increasing the number of iterations
-      m += 10; // avoid stagnation
-      if (Verbose > 1)
-      {
-	 std::cerr << "Refinement step, increasing m to " << m << '\n';
-      }
-
-      //      TRACE("Refinement step")(iter);
-      // iterative refinement step
-      StateComponent R = Rhs- F(x);
-      StateComponent xRefine = R;
-      IterThisRound = m*500;
-      tol = Tol;
-      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, P, Verbose);
-
-      iter += IterThisRound;
-
-      if (Verbose > 1)
-      {
-	 double Resid = norm_frob(F(xRefine) - R) / normb;
-	 std::cerr << "Residual of refined solver = " << Resid << '\n';
-      }
-
-      x += xRefine;
-
-      if (Verbose > 1)
-      {
-	 double Resid = norm_frob(F(x) - Rhs) / normb;
-	 std::cerr << "Residual after refinement step = " << Resid << '\n';
-      }
-   }
-   Tol = tol;
+   int Ret = GmResRefine(x, F, Rhs, k, MaxIter, Tol, P, Verbose);
    if (Ret != 0)
+   {
       Tol = -Tol;
-   MaxIter = iter;
+   }
 }
 
 struct InverseDiagonalPrecondition
@@ -304,7 +260,30 @@ LocalEigensolver::Solve(StateComponent& C,
 
    StateComponent ROld = C;
 
-   if (EvolveDelta == 0.0)
+   if (norm_frob(C) == 0.0)
+   {
+      if (Verbose > 0)
+      {
+         std::cerr << "eigensolver: initial guess vector is zero, making a new random initial state.\n";
+      }
+      C = MakeRandomStateComponent(C.LocalBasis(), C.Basis1(), C.Basis2());
+   }
+
+   if (EvolveDelta != 0.0)
+   {
+      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
+      LastEnergy_ = inner_prod(ROld, C);
+
+      // We have no way of knowing a priori whether to expect the energy to be real or complex
+      if (std::abs(LastEnergy_.imag()) < 1e-14*std::abs(LastEnergy_.real()))
+         LastEnergy_ = LastEnergy_.real();
+
+      C = ROld - EvolveDelta * C; // imaginary time evolution step
+      C *= 1.0 / norm_frob(C);    // normalize
+      LastIter_ = 1;
+      LastTol_ = 0.0;
+   }
+   else
    {
       LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
       LastTol_ = std::max(LastTol_, MinTol);
@@ -318,84 +297,83 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       if (Solver_ == Solver::Lanczos)
       {
-	 LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-			       LastIter_, LastTol_, MinIter, Verbose-1);
+         LastEnergy_ = Lanczos(C, MPSMultiply(LeftBlockHam, H, RightBlockHam), LastIter_, LastTol_, MinIter, Verbose-1);
       }
       else if (Solver_ == Solver::Arnoldi || Solver_ == Solver::ArnoldiSmallest)
       {
-	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-					      LastIter_, LastTol_,
-					      LinearSolvers::SmallestMagnitude,
-					      true, Verbose-1);
+         LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+         			      LastIter_, LastTol_,
+         			      LinearSolvers::SmallestMagnitude,
+         			      true, Verbose-1);
       }
       else if (Solver_ == Solver::ArnoldiLowest)
       {
-	 LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
-					      LastIter_, LastTol_,
-					      LinearSolvers::SmallestAlgebraicReal,
-					      true, Verbose-1);
+         LastEnergy_ = LinearSolvers::Arnoldi(C, MPSMultiply(LeftBlockHam, H, RightBlockHam),
+         		      LastIter_, LastTol_,
+         		      LinearSolvers::SmallestAlgebraicReal,
+         		      true, Verbose-1);
       }
       else if (Solver_ == Solver::ShiftInvert)
       {
-	 StateComponent RHS = C;
-	 if (UsePreconditioning)
-	 {
-	    if (Verbose > 2)
-	    {
-	       std::cerr << "Using diagonal preconditioning\n";
-	    }
-	    StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
+         StateComponent RHS = C;
+         if (UsePreconditioning)
+         {
+            if (Verbose > 2)
+            {
+               std::cerr << "Using diagonal preconditioning\n";
+            }
+            StateComponent D = operator_prod_inner_diagonal(H, LeftBlockHam, herm(RightBlockHam));
 
-#if !defined(NDEBUG)
-	    // debug check the diagonal
-	    LinearAlgebra::Matrix<std::complex<double>> HMat = ConstructSuperOperator(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), D);
-	    PackStateComponent Pack(D);
-   	    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
-	    Pack.pack(D, v.data());
-	    LinearAlgebra::Vector<double> Diag = real(v);
-	    for (int i = 0; i < size(Diag); ++i)
-	    {
-	       if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
-	       {
-		  PANIC(i)(Diag[i])(HMat(i,i));
-	       }
-	    }
-#endif
+            #if !defined(NDEBUG)
+            // debug check the diagonal
+            LinearAlgebra::Matrix<std::complex<double>> HMat = ConstructSuperOperator(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), D);
+            PackStateComponent Pack(D);
+             LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
+            Pack.pack(D, v.data());
+            LinearAlgebra::Vector<double> Diag = real(v);
+            for (int i = 0; i < size(Diag); ++i)
+            {
+               if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
+               {
+                  PANIC(i)(Diag[i])(HMat(i,i));
+               }
+            }
+            #endif
 
-	    //	    TRACE(D);
-	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-			InverseDiagonalPrecondition(D, ShiftInvertEnergy),
-			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
-	    //TRACE(C);
-	 }
-	 else
-	 {
-	    LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
-			LinearAlgebra::Identity<StateComponent>(),
-			RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
-	 }
+            //	    TRACE(D);
+            LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+            InverseDiagonalPrecondition(D, ShiftInvertEnergy),
+            RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+            //TRACE(C);
+         }
+         else
+         {
+          LinearSolve(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy),
+         	LinearAlgebra::Identity<StateComponent>(),
+         	RHS, SubspaceSize, LastIter_, LastTol_, Verbose-1);
+         }
 
-	 // normalization
-	 double CNorm = norm_frob(C);
-	 //TRACE(CNorm);
-	 // Adjust tol by CNorm to give a more realistic estimate
-	 //LastTol_ /= CNorm;
-	 C *= 1.0 / CNorm;
-	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+         // normalization
+         double CNorm = norm_frob(C);
+         //TRACE(CNorm);
+         // Adjust tol by CNorm to give a more realistic estimate
+         //LastTol_ /= CNorm;
+         C *= 1.0 / CNorm;
+         LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
       }
       else if (Solver_ == Solver::ShiftInvertDirect)
       {
-	 StateComponent RHS = C;
-	 //TRACE(ShiftInvertEnergy);
-	 LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
-	 LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);
-	 // normalization
-	 double CNorm = norm_frob(C);
-	 //TRACE(CNorm);
-	 // Adjust tol by CNorm to give a more realistic estimate
-	 //LastTol_ /= CNorm;
-	 C *= 1.0 / CNorm;
-	 LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
+         StateComponent RHS = C;
+         //TRACE(ShiftInvertEnergy);
+         LinearSolveDirect(C, MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy), RHS, Verbose-1);
+         LastTol_ = norm_frob(MPSMultiplyShift(LeftBlockHam, H, RightBlockHam, ShiftInvertEnergy)(C) - RHS);
+         // normalization
+         double CNorm = norm_frob(C);
+         //TRACE(CNorm);
+         // Adjust tol by CNorm to give a more realistic estimate
+         //LastTol_ /= CNorm;
+         C *= 1.0 / CNorm;
+         LastEnergy_ = inner_prod(C, MPSMultiply(LeftBlockHam, H, RightBlockHam)(C));
       }
       else if (Solver_ == Solver::DavidsonTarget)
       {
@@ -414,17 +392,8 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       else
       {
-	 PANIC("Unsupported solver")(SolverStr(Solver_));
+         PANIC("Unsupported solver")(SolverStr(Solver_));
       }
-   }
-   else
-   {
-      C = operator_prod_inner(H, LeftBlockHam, ROld, herm(RightBlockHam));
-      LastEnergy_ = inner_prod(ROld, C).real();
-      C = ROld - EvolveDelta * C; // imaginary time evolution step
-      C *= 1.0 / norm_frob(C);    // normalize
-      LastIter_ = 1;
-      LastTol_ = 0.0;
    }
 
    LastFidelityLoss_ = std::max(1.0 - norm_frob(inner_prod(ROld, C)), 0.0);

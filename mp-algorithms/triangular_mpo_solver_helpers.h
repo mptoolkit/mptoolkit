@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/triangular_mpo_solver_helpers.h
 //
-// Copyright (C) 2009-2022 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2009-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -39,59 +40,17 @@ LinearSolve(Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose =
    return Guess;
 }
 
-//#define USE_ITERATIVE_REFINEMENT
-// iterative refinement doesn't appear to add anything useful here, but increasing the
-// krylov length has a useful effect to avoid stagnation
 template <typename Func>
 void
 LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
 {
-   int const MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+   int MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
    int m = 30;     // krylov subspace size
    int iter = 0;   // total number of iterations performed
 
    double normb = norm_frob(Rhs);
 
-   int IterThisRound = m*50; // if it takes more than 50 rounds to converge, then we've proably stagnated
-   double tol = Tol;
-   int Ret = GmRes(x, F, normb, Rhs, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-   iter += IterThisRound;
-
-   while (Ret != 0 && iter < MaxIter)
-   {
-      // Attempt to avoid stagnation by increasing the number of iterations
-      m=m+10;
-      if (Verbose > 1)
-      {
-         std::cerr << "Refinement step, increasing m to " << m << '\n';
-      }
-
-      //      TRACE("Refinement step")(iter);
-      // iterative refinement step
-#if defined(USE_ITERATIVE_REFINEMENT)
-      MatrixOperator R = Rhs- F(x);
-      MatrixOperator xRefine = R;
-#else
-      MatrixOperator R = Rhs;
-      MatrixOperator xRefine = x;
-#endif
-      IterThisRound = m*50;
-      double tol = Tol;
-      Ret = GmRes(xRefine, F, normb, R, m, IterThisRound, tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
-
-      iter += IterThisRound;
-#if defined(USE_ITERATIVE_REFINEMENT)
-      x += xRefine;
-#else
-      x = xRefine;
-#endif
-
-      if (Verbose > 1)
-      {
-         double Resid = norm_frob(F(x) - Rhs) / normb;
-         std::cerr << "Residual after refinement step = " << Resid << '\n';
-      }
-   }
+   int Ret = GmResRefine(x, F, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
 
    if (Ret != 0)
    {
@@ -99,6 +58,27 @@ LinearSolve(MatrixOperator& x, Func F, MatrixOperator const& Rhs, double Tol = 1
       PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
    }
 }
+
+template <typename Func>
+void
+LinearSolveOrtho(MatrixOperator& x, MatrixOperator const& OrthoLeft, MatrixOperator const& OrthoRight, Func F, double Fcond, MatrixOperator const& Rhs, double Tol = 1E-14, int Verbose = 0)
+{
+   int MaxIter = getenv_or_default("MP_GMRES_MAXITER", 10000);
+   int m = 30;     // krylov subspace size
+   int iter = 0;   // total number of iterations performed
+
+   double normb = 1.0; // norm_frob(Rhs);      // this could be norm_frob(Rhs) * condition number of F?
+
+
+   int Ret = GmResRefineOrtho(x, OrthoLeft, OrthoRight, F, Fcond, Rhs, m, MaxIter, Tol, LinearAlgebra::Identity<MatrixOperator>(), Verbose);
+
+   if (Ret != 0)
+   {
+      // failed
+      PANIC("Linear solver failed to converge after max_iter iterations")(MaxIter);
+   }
+}
+
 
 // Calculate the (complex) eigenvalue that is closest to 1.0
 // using Arnoldi.
@@ -153,7 +133,7 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
                                LinearWavefunction const& Psi1,
                                LinearWavefunction const& Psi2,
                                QuantumNumber const& QShift,
-                               std::complex<double> Scale,
+                               double TCond,
                                bool HasEigenvalue1,
                                double Tol,
                                int Verbose);
@@ -166,7 +146,7 @@ DecomposePerpendicularPartsLeft(KMatrixPolyType const& C,
                                 LinearWavefunction const& Psi1,
                                 LinearWavefunction const& Psi2,
                                 QuantumNumber const& QShift,
-                                std::complex<double> Scale,
+                                double TCond,
                                 bool HasEigenvalue1,
                                 double Tol,
                                 int Verbose);
@@ -181,7 +161,7 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose);
@@ -194,7 +174,7 @@ DecomposePerpendicularPartsRight(KMatrixPolyType const& C,
                                  LinearWavefunction const& Psi1,
                                  LinearWavefunction const& Psi2,
                                  QuantumNumber const& QShift,
-                                 std::complex<double> Scale,
+                                 double TCond,
                                  bool HasEigenvalue1,
                                  double Tol,
                                  int Verbose);

@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mpo/basic_finite_mpo.h
 //
-// Copyright (C) 2013-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2013-2022 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -287,6 +287,12 @@ std::pair<std::complex<double>, double>
 log_inner_prod(BasicFiniteMPO const& Op1, BasicFiniteMPO const& Op2);
 
 BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op);
+
+// Find the region of the MPO that has non-trivial suport, returning an index pair (i,j).
+// i is the first site that has non-trivial support, and j is the first site after i that
+// has trivial support.  If i==j then the MPO is the identity. If i != j then the non-trivial
+// sites are the range [i,j)
+std::tuple<int,int> FindNonTrivialSupport(BasicFiniteMPO const& Op);
 
 #include "basic_finite_mpo.cc"
 

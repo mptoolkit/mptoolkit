@@ -1,17 +1,18 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp/mp-expectation.cpp
 //
-// Copyright (C) 2004-2020 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2021 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2021-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -118,7 +119,14 @@ int main(int argc, char** argv)
 
       pvalue_ptr<MPWavefunction> PsiPtr;
       // if we are calculating a mixed expectation value, then we need two wavefunctions so
-      // allocate a temporary heap.  Otherwise we can use one heap in read-only mode
+      // allocate a temporary heap.  Otherwise we can use one heap in read-only mode.
+      // This isn't ideal since it needs to copy the entire wavefunction into the temporary heap, but the
+      // alternative would result in the second wavefunction being stored entirely in memory, which is even worse:
+      // if the wavefunctions are small then copying the wavefunctions into the temporary pheap will be fast anyway,
+      // and if the wavefunctions are big then we might not have enough memory to even store them.  But there is quite a big
+      // gap in the middle where the wavefunctions might be a few gigabytes, which would fit in memory, but takes time
+      // (and disk space!) to copy into temporary heap.
+      // FIXME: The best solution would be the ability to have multiple pheap's open in read-only mode.
       if (vm.count("psi2"))
       {
          mp_pheap::InitializeTempPHeap();
@@ -175,23 +183,28 @@ int main(int argc, char** argv)
       else if (PsiPtr->is<FiniteWavefunctionLeft>())
       {
          FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
-         FiniteWavefunctionLeft Psi2;
-         if (vm.count("psi2"))
-         {
-            pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::ImportHeap(Psi2Str);
-            if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
-            {
-               std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
-               return 1;
-            }
-            Psi2 = Psi2Ptr->get<FiniteWavefunctionLeft>();
-         }
-         else
-            Psi2 = Psi;
-
          Op.ExtendToCoverUnitCell(Psi.size());
 
-         x = expectation(Psi, Op.MPO(), Psi2);
+         if (vm.count("psi2"))
+         {
+            pvalue_handle<MPWavefunction> Psi2Handle = pheap::ImportHeap(Psi2Str);
+            if (Psi2Handle == PsiPtr)                   // it is possible that they refer to the same objects
+               x = expectation(Psi, Op.MPO(), Verbose);
+            else
+            {
+               pvalue_ptr<MPWavefunction> Psi2Ptr = Psi2Handle.load();
+               if (!Psi2Ptr->is<FiniteWavefunctionLeft>())
+               {
+                  std::cerr << "mp-expectation: fatal: cannot calculate a mixed expectation value between different types!\n";
+                  return 1;
+               }
+               x = expectation(Psi, Op.MPO(), Psi2Ptr->get<FiniteWavefunctionLeft>(), Verbose);
+            }
+         }
+         else
+         {
+            x = expectation(Psi, Op.MPO(), Verbose);
+         }
       }
       else if (PsiPtr->is<IBCWavefunction>())
       {

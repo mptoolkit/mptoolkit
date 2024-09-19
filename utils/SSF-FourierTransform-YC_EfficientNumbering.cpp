@@ -1,3 +1,22 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
+//
+// utils/SSF-FourierTransform-YC_EfficientNumbering.cpp
+//
+// Copyright (C) 2016 Seyed Saadatmand <s.saadatmand@uq.edu.au>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Research publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
 // -*- C++ -*- $Id: SSF-FourierTransform-YC_EfficientNumbering.cpp 1490 2015-05-19 09:15:06Z seyed $
 // Authors: Ian P. McCulloch and Seyed N. Saadatmand
 // Contact: s.saadatmand@uq.edu.au

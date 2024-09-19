@@ -1,17 +1,17 @@
 // -*- C++ -*-
 //----------------------------------------------------------------------------
-// Matrix Product Toolkit http://physics.uq.edu.au/people/ianmcc/mptoolkit/
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
 // mp-algorithms/lanczos.h
 //
-// Copyright (C) 2004-2016 Ian McCulloch <ianmcc@physics.uq.edu.au>
+// Copyright (C) 2004-2024 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Reseach publications making use of this software should include
+// Research publications making use of this software should include
 // appropriate citations and acknowledgements as described in
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
@@ -63,6 +63,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
    VectorType w = Guess;
 
    double Beta = norm_frob(w);
+   CHECK(Beta > 0.0);
    CHECK(!std::isnan(Beta));
    // double OrigBeta = Beta;      // original norm, not used
    w *= 1.0 / Beta;
@@ -70,8 +71,15 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
    w = MatVecMultiply(v[0]);
    Hv.push_back(w);
-   SubH(0,0) = real(inner_prod(v[0], w));
-   w -= SubH(0,0) * v[0];
+   auto x = inner_prod(v[0], w);
+   SubH(0,0) = real(x);
+   w -= x * v[0];
+
+   // iterative refinement; shouldn't be necessary but it certainly is, for MPS vectors
+   x = inner_prod(v[0], w);
+   SubH(0,0) += real(x);
+   w -= x * v[0];
+
 
    Beta = norm_frob(w);
    if (Beta < LanczosBetaTol)
@@ -100,10 +108,13 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
       w = MatVecMultiply(v[i]);
       Hv.push_back(w);
       w -= Beta*v[i-1];
-      SubH(i,i) = real(inner_prod(v[i], w));
-      w -= SubH(i,i) * v[i];
+      w -= inner_prod(v[i-1], w) * v[i-1]; // iterative refinement
+      x = inner_prod(v[i], w);
+      SubH(i,i) = real(x);
+      w -= x * v[i];
+      x = inner_prod(v[i], w); // iterative refinement
+      SubH(i,i) += real(x);
       Beta = norm_frob(w);
-
 
       if (Beta < LanczosBetaTol)
       {
@@ -124,6 +135,42 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          Guess = y;
          return Theta;
       }
+
+      //TRACE(norm_frob(inner_prod(v[0],v[i])));
+
+      // Detect loss of orthogonality, throw away the last calculated vector
+      if (norm_frob(inner_prod(v[0],v[i])) > 1E-10)
+      {
+         Iterations = i+1;
+         LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i),
+                                                LinearAlgebra::range(0,i));
+         LinearAlgebra::Vector<double> EValues = DiagonalizeHermitian(M);
+         double Theta = EValues[0];    // smallest eigenvalue
+         double SpectralDiameter = EValues[i-1] - EValues[0];  // largest - smallest
+         VectorType y = M(0,0) * v[0];
+         for (int j = 1; j < i; ++j)
+            y += M(0,j) * v[j];
+         // residual = H*y - Theta*y
+         VectorType r = (-Theta) * y;
+         for (int j = 0; j <i; ++j)
+            r += M(0,j) * Hv[j];
+         double ResidNorm = norm_frob(r);
+         Tol = ResidNorm / (SpectralDiameter == 0 ? 1.0 : SpectralDiameter);
+         Guess = y;
+         if (Verbose > 0)
+            std::cerr << "lanczos: early return, loss of orthogonalization, Overlap=" << norm_frob(inner_prod(v[0],v[i]))
+            << ", ResidNorm=" << ResidNorm << ", Beta=" << Beta << ", SpectralDiameter=" << SpectralDiameter
+            << ", iterations=" << (i+1) << '\n';
+         // for (int m = 0; m <= i; ++m)
+         // {
+         //    for (int n = m; n <= i; ++n)
+         //    {
+         //       std::cerr << "Krylov vectors <" << m << "|" << n << "> = " << inner_prod(v[m], v[n]) << '\n';
+         //    }
+         // }
+         return Theta;
+      }
+
 
       // solution of the tridiagonal subproblem
       LinearAlgebra::Matrix<double> M = SubH(LinearAlgebra::range(0,i+1),
@@ -152,7 +199,7 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       // residual = H*y - Theta*y
       VectorType r = (-Theta) * y;
-      for (int j = 0; j < i; ++j)
+      for (int j = 0; j <=i; ++j)
          r += M(0,j) * Hv[j];
 
       double ResidNorm = norm_frob(r);
@@ -161,12 +208,18 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
          //if (ResidNorm < Tol && i+1 >= MinIter)
       {
          if (Verbose > 0)
+         {
+            // Calculate the exact residual norm
+            VectorType Hy = MatVecMultiply(y);
+            VectorType Resid = Theta*y - Hy;
             std::cerr << "lanczos: early return, residual norm below threshold, ResidNorm="
-                      << ResidNorm << ", SpectralDiameter=" << SpectralDiameter
-                      << ", iterations=" << (i+1) << '\n';
+                      << ResidNorm << ", Beta=" << Beta << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << ", ExactResidual=" << norm_frob(Resid) << '\n';
+         }
          Iterations = i+1;
          Tol = ResidNorm / SpectralDiameter;
          Guess = y;
+
          return Theta;
       }
       else if (Verbose > 2)
@@ -178,6 +231,15 @@ double Lanczos(VectorType& Guess, MultiplyFunctor MatVecMultiply, int& Iteration
 
       if (i == Iterations-1) // finished?
       {
+         if (Verbose > 1)
+         {
+            VectorType Hy = MatVecMultiply(y);
+            VectorType Resid = Theta*y - Hy;
+            std::cerr << "lanczos: normal return. ResidNorm="
+                      << ResidNorm << ", Beta=" << Beta << ", SpectralDiameter=" << SpectralDiameter
+                      << ", iterations=" << (i+1) << ", ExactResidual=" << norm_frob(Resid) << '\n';
+
+         }
          Guess = y;
          Tol = -ResidNorm / SpectralDiameter;
          return Theta;
