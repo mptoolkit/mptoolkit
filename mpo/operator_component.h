@@ -389,6 +389,17 @@ tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, Args cons
 // ( C D )
 
 inline
+OperatorComponent tensor_join(std::initializer_list<std::initializer_list<OperatorComponent>> const& lists)
+{
+   OperatorComponent result;
+   for (auto const& i : lists)
+   {
+      result = tensor_col_sum(result, tensor_row_sum(i));
+   }
+   return result;
+}
+
+inline
 OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list)
 {
    return tensor_row_sum(list);
@@ -585,6 +596,11 @@ operator*(std::complex<double> x, OperatorComponent const& Op)
 
 OperatorComponent
 conj(OperatorComponent const& x);
+
+// Exponential function
+// This is only well-defined for an OperatorComponent if it is 1x1 and scalar
+OperatorComponent
+exp(OperatorComponent const& x);
 
 // This grouping treats A as a bra, and herm(B) as a ket
 
