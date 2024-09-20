@@ -23,9 +23,7 @@
 std::string const FiniteWavefunctionLeft::Type = "FiniteWavefunctionLeft";
 
 FiniteWavefunctionLeft
-FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
-						     std::complex<double> a,
-						     int Verbose)
+FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi, std::complex<double> a, int Verbose)
 {
    CHECK(Psi.Basis2().is_vacuum());
    CHECK(Psi.Basis1().size() == 1);
@@ -35,7 +33,7 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
 
    FiniteWavefunctionLeft Result;
    RealDiagonalOperator D(Psi.Basis1());
-   double Norm = norm_frob(a);
+   double Norm = norm_frob(a);  // lambda_l() matrix is the norm; the phase gets incorporated later
    D(0,0) = LinearAlgebra::DiagonalMatrix<double>(1,1, Norm);
 
    Result.push_back_lambda(D);
@@ -47,7 +45,7 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi,
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
    {
       if (Verbose > 1)
-	 std::cout << "orthogonalizing site " << n << std::endl;
+         std::cout << "orthogonalizing site " << n << std::endl;
       StateComponent A = prod(M, *I);
       M = ExpandBasis2(A);
       SingularValueDecomposition(M, U, D, Vh);
