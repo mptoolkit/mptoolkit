@@ -40,16 +40,15 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi, std
    Result.setBasis1(D.Basis1());
 
    MatrixOperator M = D;
-   MatrixOperator U, Vh;
+   MatrixOperator Vh;
    int n = 0;
    for (LinearWavefunction::const_iterator I = Psi.begin(); I != Psi.end(); ++I, ++n)
    {
       if (Verbose > 1)
          std::cout << "orthogonalizing site " << n << std::endl;
-      StateComponent A = prod(M, *I);
-      M = ExpandBasis2(A);
-      SingularValueDecomposition(M, U, D, Vh);
-      Result.push_back(prod(A, U));
+      StateComponent A = M * (*I);
+      std::tie(D, Vh) = OrthogonalizeBasis2(A);
+      Result.push_back(A);
       Result.push_back_lambda(D);
       M = D*Vh;
       ++n;
@@ -67,8 +66,7 @@ FiniteWavefunctionLeft::ConstructFromRightOrthogonal(LinearWavefunction Psi, std
 }
 
 FiniteWavefunctionLeft
-FiniteWavefunctionLeft::Construct(LinearWavefunction Psi,
-				  int Verbose)
+FiniteWavefunctionLeft::Construct(LinearWavefunction Psi, int Verbose)
 {
    CHECK(Psi.Basis2().is_vacuum());
    CHECK(Psi.Basis1().size() == 1);
