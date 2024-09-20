@@ -322,14 +322,27 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
 // Precondition: A.Basis1() == B.Basis1()
 // The resulting state has Result'[s] = (A[s], B[s])  (row-wise concatenation)
 OperatorComponent
-tensor_row_sum(OperatorComponent const& A,
-               OperatorComponent const& B,
-               SumBasis<BasisList> const& B2);
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B, SumBasis<BasisList> const& B2);
 
+// Version that constructs the SumBasis implicitly
 OperatorComponent
-tensor_row_sum(OperatorComponent const& A,
-               OperatorComponent const& B);
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B);
 
+// Degenerate case when there is only one component to sum
+inline
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A)
+{
+   return A;
+}
+
+template <typename... Args>
+inline
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B, Args const&... args)
+{
+   return tensor_row_sum(tensor_row_sum(A,B), args...);
+}
 
 // Constructs a MPOpComponent that represents the sum of A and B,
 // at the right boundary of the matrix product state.
@@ -337,13 +350,51 @@ tensor_row_sum(OperatorComponent const& A,
 // The resulting state has Result'[s] = ( A[s] )
 //                                      ( B[s] )  (column-wise concatenation)
 OperatorComponent
-tensor_col_sum(OperatorComponent const& A,
-               OperatorComponent const& B,
-               SumBasis<BasisList> const& B1);
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, SumBasis<BasisList> const& B1);
 
+// Version that constructs the SumBasis implicitly
 OperatorComponent
-tensor_col_sum(OperatorComponent const& A,
-               OperatorComponent const& B);
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B);
+
+inline
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A)
+{
+   return A;
+}
+
+template <typename... Args>
+inline
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, Args const&... args)
+{
+   return tensor_col_sum(tensor_col_sum(A,B), args...);
+}
+
+// Join OperatorComponent's as a 2D array.
+// tensor_join({A,B}, {C,D}) is equivalent to tensor_col_sum(tensor_row_sum(A,B), tensor_row_sum(C,D))
+// and produces the enlarged MPO element
+// ( A B )
+// ( C D )
+
+inline
+OperatorComponent
+tensor_join(std::initializer_list<OperatorComponent> const& list)
+{
+   OperatorComponent result;
+   for (auto const& i : list)
+   {
+      result = tensor_row_sum(result, i);
+   }
+   return result;
+}
+
+template<typename... Lists>
+OperatorComponent
+tensor_join(std::initializer_list<OperatorComponent> const& list1, Lists const&... lists)
+{
+   return tensor_col_sum(tensor_join(list1), tensor_join(lists...));
+}
 
 // Multiplies the component by a SimpleOperator acting on the auxiliary space
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op, double Tol = 1e-14);

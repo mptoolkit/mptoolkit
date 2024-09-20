@@ -242,6 +242,7 @@ int main(int argc, char** argv)
       EvolutionMPO.back() = project_columns(EvolutionMPO.back(), {0});
 
       LinearWavefunction PsiL = LinearWavefunction::FromContainer(Psi.begin(), Psi.end());
+      std::complex<double> Amplitude = trace(Psi.lambda_l());
 
       if (SaveEvery == 0)
          SaveEvery = N;
@@ -262,12 +263,15 @@ int main(int argc, char** argv)
                    << std::endl;
 
          MatrixOperator M = left_orthogonalize(PsiL, Verbose);
-         truncate_left_orthogonal(PsiL, SInfo, Verbose);
+         Amplitude *= trace(M);
+         if (Normalize)
+            Amplitude *= 1.0 / std::abs(Amplitude);
 
-         FiniteWavefunctionLeft PsiSave = FiniteWavefunctionLeft::ConstructFromRightOrthogonal(PsiL, Normalize ? 1.0 : trace(M), Verbose);
+         truncate_left_orthogonal(PsiL, SInfo, Verbose);
 
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
+            FiniteWavefunctionLeft PsiSave = FiniteWavefunctionLeft::ConstructFromRightOrthogonal(PsiL, Amplitude, Verbose);
             MPWavefunction Wavefunction;
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
