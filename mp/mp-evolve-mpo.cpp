@@ -85,8 +85,8 @@ OptimalFirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> T
       OperatorComponent D = project_columns(project_rows(I, {0}), {(int) I.Basis2().size()-1});
 
       // Calculate the four blocks of the optimal first-order evolution MPO.
-      //OperatorComponent WTopLeft = exp(Tau*D);
-      OperatorComponent WTopLeft = Ident + Tau * D + 0.5*Tau*Tau * aux_tensor_prod(D, D);
+      OperatorComponent WTopLeft = exp(Tau*D);
+      //OperatorComponent WTopLeft = Ident + Tau * D + 0.5*Tau*Tau * aux_tensor_prod(D, D);
       OperatorComponent WBotLeft = Tau * B + 0.5*Tau*Tau * (aux_tensor_prod(B, D) + aux_tensor_prod(D, B));
       OperatorComponent WTopRight = C + 0.5*Tau * (aux_tensor_prod(C, D) + aux_tensor_prod(D, C));
       OperatorComponent WBotRight = A + 0.5*Tau * (aux_tensor_prod(A, D) + aux_tensor_prod(D, A)
