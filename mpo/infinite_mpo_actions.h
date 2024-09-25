@@ -831,6 +831,35 @@ struct coarse_grain_element<InfiniteMPOElement> : boost::static_visitor<Infinite
    int N;
 };
 
+template <>
+struct aexp_mpo<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+{
+   aexp_mpo(std::string s) : Scheme(s) { if (Scheme.empty()) Scheme = "default"; }
+
+   InfiniteMPOElement operator()(complex c) const
+   {
+      return std::exp(c);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&) const
+   {
+      return complex(1.0);
+   }
+
+   InfiniteMPOElement operator()(ProductMPO const&) const
+   {
+      throw ParserError("Cannot construct the exponential of a ProductMPO!");
+      return complex(0.0);
+   }
+
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x) const
+   {
+      return aexp(x, Scheme);
+   }
+
+   std::string Scheme;
+};
+
 } // namespace Parser
 
 #endif

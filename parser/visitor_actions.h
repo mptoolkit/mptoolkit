@@ -754,6 +754,25 @@ struct coarse_grain_element : boost::static_visitor<element_type>
    int N;
 };
 
+template <typename element_type>
+struct aexp_mpo : boost::static_visitor<element_type>
+{
+   aexp_mpo(std::string s) : Scheme(s) { if (Scheme.empty()) Scheme = "default"; }
+
+   element_type operator()(complex c) const
+   {
+      return std::exp(c);
+   }
+
+   template <typename T>
+   element_type operator()(T const& x) const
+   {
+      return aexp(x, Scheme);
+   }
+
+   std::string Scheme;
+};
+
 } // namespace Parser
 
 #endif

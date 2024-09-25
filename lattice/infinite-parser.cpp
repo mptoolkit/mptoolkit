@@ -551,6 +551,25 @@ struct push_sum_partial3
    Function::ArgumentList const& Args;
 };
 
+struct push_aexp
+{
+   push_aexp(InfiniteLattice const& Lattice_, std::stack<ElementType>& eval_, std::stack<std::string>& IdentifierStack_)
+      : Lattice(Lattice_), eval(eval_), IdentifierStack(IdentifierStack_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      std::string Scheme = IdentifierStack.top();
+      IdentifierStack.pop();
+      ElementType Op = eval.top();
+      eval.pop();
+
+      eval.push(boost::apply_visitor(aexp_mpo<ElementType>(Scheme), Op));
+   }
+
+   InfiniteLattice const& Lattice;
+   std::stack<ElementType>& eval;
+   std::stack<std::string>& IdentifierStack;
+};
 
 struct push_coarse_grain
 {
@@ -789,6 +808,16 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                                             //                                            self.Args,
                                             self.eval)];
 
+         aexp_scheme = (eps_p(str_p("scheme") >> '=')
+                     >> ((str_p("scheme") >> '=' >> identifier[push_identifier(self.IdentifierStack)] >> ',')))
+           | eps_p[push_identifier(self.IdentifierStack)];
+
+         aexp_expression = str_p("aexp")
+            >> '('
+            >> aexp_scheme
+            >> expression[push_aexp(self.Lattice, self.eval, self.IdentifierStack)]
+            >> ')';
+
          operator_expression =
                 identifier[push_identifier(self.IdentifierStack)]
                 [push_operator(self.Lattice, self.IdentifierStack, self.eval)];
@@ -827,6 +856,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   coarse_grain_expression
             |   sum_string_inner_expression
             |   sum_string_dot_expression
+            |   aexp_expression
             |   filegrid_expression
             |   commutator_bracket
             |   '(' >> expression >> ')'
@@ -873,7 +903,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
          sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression,
-         filegrid_expression;
+         filegrid_expression, aexp_scheme, aexp_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };
