@@ -436,8 +436,8 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
          auto AdditionalStates = TruncateExtraStates(DMPivot, ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
          Info.ExtraStates_ = AdditionalStates.size();
          // make the list of m+k states
-         std::list<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
-         KeptStates.splice(KeptStates.end(), AdditionalStates);
+         std::vector<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
+         KeptStates.insert(KeptStates.end(), AdditionalStates.begin(), AdditionalStates.end());
          // Construct the new kept states
          MatrixOperator QExpand = ExpandDM.ConstructRightVectors(KeptStates.begin(), KeptStates.end());
          R = ReshapeFromBasis2(QExpand, C.LocalBasis(), C.Basis2());
@@ -631,8 +631,8 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
          auto AdditionalStates = TruncateExtraStates(DMPivot, ExpandDM.end(), ExtraStates, ExtraStatesPerSector, false);
          Info.ExtraStates_ = AdditionalStates.size();
          // make the list of m+k states
-         std::list<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
-         KeptStates.splice(KeptStates.end(), AdditionalStates);
+         std::vector<EigenInfo> KeptStates(ExpandDM.begin(), DMPivot);
+         KeptStates.insert(KeptStates.end(), AdditionalStates.begin(), AdditionalStates.end());
          // Construct the new kept states
          MatrixOperator QExpand = ExpandDM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end());
          L = ReshapeFromBasis1(QExpand, C.LocalBasis(), C.Basis1());
