@@ -411,7 +411,7 @@ TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSec
    // at this point, we have reached NumStates states in Result, OR we've hit the end of the list and f == last, OR all remaining
    // eigenvalues are zero.
 
-   // second part: ensire that we keep at least StatesPerSector states in each quantum number sector, but only keep
+   // second part: ensure that we keep at least StatesPerSector states in each quantum number sector, but only keep
    // zero eigenvalues if StatesPerSectorAllowZeroWeight is true
    while (f != last)
    {

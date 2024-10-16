@@ -147,7 +147,7 @@ void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& 
       dmrg.EndIteration();
    }
    dmrg.EndSweep();
-   
+
    if (PerStep)
       PerStepFile.flush();
    std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
       PreExpand.ExpandPerSector = 0;
 
       PostExpand.IncrementFactor = 1.0;
-      PostExpand.ExpandFactor = 0.05;
+      PostExpand.ExpandFactor = 0.1;
       PostExpand.ExpandPerSector = 0;
 
       std::cout.precision(14);
