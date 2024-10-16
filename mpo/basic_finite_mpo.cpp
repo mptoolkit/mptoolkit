@@ -840,3 +840,20 @@ BasicFiniteMPO gauge_flip(BasicFiniteMPO const& Op)
 {
    return BasicFiniteMPO(gauge_flip(GenericMPO(Op)));
 }
+
+std::tuple<int,int> FindNonTrivialSupport(BasicFiniteMPO const& Op)
+{
+   BasicFiniteMPO::const_iterator i = Op.begin();
+   BasicFiniteMPO::const_iterator j = Op.end();
+
+   // find the last non-trivial site of the MPO
+   OperatorClassification c;
+   c.Identity_ = true;
+   while (j != i && classify(*(j-1)).is_identity())
+      --j;
+
+   while (i != j && classify(*i).is_identity())
+      ++i;
+
+   return std::make_tuple(i-Op.begin(), j-Op.begin());;
+}

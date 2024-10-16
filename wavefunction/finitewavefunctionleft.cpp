@@ -159,20 +159,64 @@ overlap_conj(FiniteWavefunctionLeft const& Psi1, FiniteWavefunctionLeft const& P
 }
 
 std::complex<double>
+expectation(FiniteWavefunctionLeft const& Psi, BasicFiniteMPO const& M, int Verbose)
+{
+	if (Psi.empty())
+      return 0.0;
+   CHECK(M.is_irreducible());
+   CHECK_EQUAL(Psi.size(), M.size());
+
+	int m,n;
+	std::tie(m,n) = FindNonTrivialSupport(M);
+	if (Verbose > 0)
+	{
+		std::cerr << "non-trivial support is [" << m << "," << n << ")\n";
+	}
+
+	auto I = Psi.begin()+m;
+	auto Iend = Psi.begin()+n;
+	auto MI = M.begin()+m;
+
+	if (Verbose > 1)
+		std::cerr << "contracting";
+	StateComponent E(MI->Basis1(), I->Basis1(), I->Basis1());
+	E[0] = MatrixOperator::make_identity(I->Basis1());
+	while (I != Iend)
+	{
+		E = contract_from_left(*MI, herm(*I), std::move(E), *I);
+		++I;
+		++MI;
+		if (Verbose > 1)
+			std::cerr << '.';
+	}
+
+	auto lambda = Psi.lambda(n);
+
+	if (Verbose > 1)
+		std::cerr << "done\n";
+
+	return trace(E[0] * (lambda*lambda)); // FIXME: inner_prod would be better here, but doesn't currently exist between dense and diagonal operators
+}
+
+std::complex<double>
 expectation(FiniteWavefunctionLeft const& Psi1,
             BasicFiniteMPO const& M,
-            FiniteWavefunctionLeft const& Psi2)
+            FiniteWavefunctionLeft const& Psi2, int Verbose)
 {
    if (Psi1.empty() || Psi2.empty())
       return 0.0;
    CHECK_EQUAL(Psi1.size(), Psi2.size());
    CHECK(M.is_irreducible());
    CHECK_EQUAL(Psi1.size(), M.size());
-   if (Psi1.TransformsAs() != Psi2.TransformsAs())
-      return 0.0;
+
+	if (Verbose > 1)
+		std::cerr << "contracting";
 
    StateComponent E(M.Basis1(), Psi1.Basis1(), Psi2.Basis1());
-   E[0] = scalar_prod(herm(Psi1.lambda_l()), Psi2.lambda_l());
+	E[0] = MatrixOperator(Psi1.Basis1(), Psi2.Basis1(), M.TransformsAs());
+	E[0](0,0) = LinearAlgebra::Matrix<double>(1,1, 1.0);
+   E[0] = Psi1.lambda_l() * E[0] * Psi2.lambda_l();
+
    FiniteWavefunctionLeft::const_mps_iterator I1 = Psi1.begin(), I2 = Psi2.begin();
    BasicFiniteMPO::const_iterator I = M.begin();
    while (I1 != Psi1.end())
@@ -181,7 +225,13 @@ expectation(FiniteWavefunctionLeft const& Psi1,
       ++I1;
       ++I2;
       ++I;
+		if (Verbose > 1)
+			std::cerr << '.';
    }
+
+	if (Verbose > 1)
+		std::cerr << "done\n";
+
    return trace(E[0]);
 }
 

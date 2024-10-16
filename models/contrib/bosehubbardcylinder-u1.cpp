@@ -37,6 +37,7 @@ int main(int argc, char** argv)
       int x = 0;
       int y = 4;
       bool QLM = false;
+      half_int QLMSpin = 0.5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -45,8 +46,8 @@ int main(int argc, char** argv)
           FormatDefault("maximum number of bosons per site", MaxN).c_str())
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
-         ("qlm", prog_opt::bool_switch(&QLM),
-          "include terms for the mapping of the 2D QLM")
+         ("qlm", prog_opt::bool_switch(&QLM), "include terms for the mapping of the 2D QLM")
+         ("qlm-spin", prog_opt::value(&QLMSpin), "value of the spin sites for the QLM [default 1/2]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -77,6 +78,8 @@ int main(int argc, char** argv)
          ("H_eta"  , "QLM forbidden site potential", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ("H_alpha", "QLM matter site interaction", "x = 0, y even, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
+         ("H_W"    , "QLM gauge site repulsion", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ;
       OpDescriptions.add_functions()
@@ -161,18 +164,25 @@ int main(int argc, char** argv)
       if (x == 0 && y%2 == 0 && QLM)
       {
          // Define QLM potentials.
-         UnitCellMPO H_delta, H_eta, H_alpha;
+         UnitCellMPO H_delta, H_eta, H_alpha, W;
 
          for (int i = 0; i < CellSize/2; ++i)
          {
             H_delta += N(0)[2*i+1] + N(1)[2*i];
             H_eta += N(1)[2*i+1];
             H_alpha += 0.5*N2(0)[2*i];
+            W += N(0)[2*i+1] * N(0)[(2*i-1+y)%y];
+            W += N(0)[2*i+1] * N(1)[2*i];
+            W += N(0)[2*i+1] * N(-1)[2*i];
+            W += N(0)[(2*i-1+y)%y] * N(1)[2*i];
+            W += N(0)[(2*i-1+y)%y] * N(-1)[2*i];
+            W += N(-1)[2*i] * N(1)[2*i];
          }
 
          Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
          Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
          Lattice["H_alpha"] = sum_unit(H_alpha, 2*CellSize);
+         Lattice["H_W"] = sum_unit(W, 2*CellSize);
 
          // Define Gauss' law operators.
          // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.
@@ -180,8 +190,8 @@ int main(int argc, char** argv)
 
          for (int i = 0; i < CellSize/2; ++i)
          {
-            G[i] = N(0)[2*i] + 0.5 * (N2(0)[2*i+1] + N2(0)[(2*i-1+CellSize)%CellSize] + N2(1)[2*i] + N2(-1)[0]) - 2.0 * I(0)[2*i];
-            G[i].set_description("Gauss' law operator for matter site " + std::to_string(2*i));
+            G[i] = N(0)[2*i] + 0.5 * (N(0)[2*i+1] + N(0)[(2*i-1+CellSize)%CellSize] + N(1)[2*i] + N(-1)[0]) - 4.0 * QLMSpin * I(0)[2*i];
+            G[i].set_description("Gauss's law operator for matter site " + std::to_string(2*i));
             Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
          }
       }

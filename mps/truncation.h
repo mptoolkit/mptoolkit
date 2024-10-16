@@ -379,47 +379,46 @@ TruncateFixTruncationError(FwdIter first, FwdIter last,
       : TruncateFixTruncationErrorAbsolute(first, last, States, Info);
 }
 
-// Intended for finding optimal states to keep in an expanded environment.
-// We keep, if possible, at least StatesPerSector states in each distinct quantum number
-// sector.  Normally we want this to be small, typically 1 state should suffice.
-// We do this even if the weight of the state is zero.
-// Secondly, we attempt to keep at least NumStates number of states, ideally states that have
-// non-zero weight, which means that we might end up keeping more than NumStates states if
-// some of the states that we added in StatesPerSector had zero weight.
-// We keep at least NumStates states, even if some have zero weight; the implementation
-// of the SVD ensures that these are unbiased random states.
+// TruncateExtraStates - intended for finding optimal states to keep in an expanded environment.
+// Keep at least NumStates states, with at least StatesPerSector states in each quantum number sector.
+// StatesPerSector would normally be small, typically 0 or 1.
+// If AllowZeroWeight is false, then never keep eigenvalues <= 0, even if we don't reach NumStates or
+// StatesPerSector.
+// Generally speaking, for pre-expansion it is harmless to keep eigenvalues that have a zero eigenvalue here,
+// and it is possible that they can end up with non-zero weight in the wavefunction.
+// Note that the implementation of the SVD returns random vectors for states that have a structurally zero singular value.
+// On the other hand, for post-expansion states that have zero weight have no overlap with the
+// system reduced density matrix, and therefore there is no point keeping them (i.e. they are not reachable by applying operators
+// from the system MPO to the kept states).
 template <typename FwdIter>
-std::list<EigenInfo>
-TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool StatesPerSectorAllowZeroWeight)
+std::vector<EigenInfo>
+TruncateExtraStates(FwdIter first, FwdIter last, int NumStates, int StatesPerSector, bool AllowZeroWeight)
 {
-   // We need to copy the EigenInfo, because we need to do two passes over it, and
-   // possibly remove some elements on the first pass.
-   std::list<EigenInfo> States(first, last);
+   std::vector<EigenInfo> Result;
+   Result.reserve(NumStates);
 
-   std::list<EigenInfo> Result;
    std::map<QuantumNumbers::QuantumNumber, int> KeptStatesPerSector;
-
-   // first pass: keep the next NumStatesWithWeight in order from heighest weight,
+   // first part: keep the next NumStatesWithWeight in order from heighest weight,
    // as long as they have non-zero weight.
-   auto f = States.cbegin();
-   while (NumStates > 0 && f != States.cend() && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
+   auto f = first;
+   while (NumStates > 0 && f != last && (AllowZeroWeight || f->Eigenvalue > 0.0))
    {
       Result.push_back(*f);
-      ++f;
       --NumStates;
+      ++KeptStatesPerSector[f->Q];
+      ++f;
    }
+   // at this point, we have reached NumStates states in Result, OR we've hit the end of the list and f == last, OR all remaining
+   // eigenvalues are zero.
 
-   // second pass: keep at least StatesPerSector states in each quantum number sector.
-   f = States.cbegin();
-   while (f != States.cend())
+   // second part: ensire that we keep at least StatesPerSector states in each quantum number sector, but only keep
+   // zero eigenvalues if StatesPerSectorAllowZeroWeight is true
+   while (f != last)
    {
-      if (KeptStatesPerSector[f->Q] < StatesPerSector && (StatesPerSectorAllowZeroWeight || f->Eigenvalue > 0.0))
+      if (KeptStatesPerSector[f->Q] < StatesPerSector && (AllowZeroWeight || f->Eigenvalue > 0.0))
       {
          Result.push_back(*f);
-         if (f->Eigenvalue > 0.0)
-            --NumStates;
          ++KeptStatesPerSector[f->Q];
-         f = States.erase(f);
       }
       ++f;
    }

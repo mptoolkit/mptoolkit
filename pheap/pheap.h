@@ -37,6 +37,7 @@
 #include "pheapstream.h"  // TODO: we shouldn't really need this, only for ::Write() function
 #include <list>
 #include <typeinfo>
+#include <algorithm>
 
 #if defined(PHEAP_TRACE_DETAILED)
 #define TRACE_PHEAP(Msg) TRACE(Msg)
