@@ -457,26 +457,54 @@ void print_structure(BasicTriangularMPO const& Op, std::ostream& out, double Uni
 
 BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, double x)
 {
+   auto x_sqrt = std::sqrt(std::abs(x));
+   auto x_rem = (x_sqrt == 0.0 ? 0.0 : x / x_sqrt);
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      int k_last = Op[i].Basis2().size()-1;
+
+      // The first row, excluding element 0 (normally the identity), and the last element
+      for (int k = 1; k < k_last; ++k)
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+         if (iterate_at(Op[i].data(), 0, k))
+            set_element(Op[i].data(), 0, k, get_element(Op[i].data(),0,k) * x_rem);
       }
+      // The last column, excluding row 0 and the last row
+      for (int j = 1; j < Op[i].Basis1().size()-1; ++j)
+      {
+         if (iterate_at(Op[i].data(), j, k_last))
+            set_element(Op[i].data(), j, k_last, get_element(Op[i].data(),j,k_last) * x_sqrt);
+      }
+      // The top right entry
+      if (iterate_at(Op[i].data(), 0, k_last))
+         set_element(Op[i].data(), 0, k_last, get_element(Op[i].data(),0,k_last) * x);
    }
    return Op;
 }
 
 BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, std::complex<double> x)
 {
+   auto x_sqrt = std::sqrt(std::abs(x));
+   auto x_rem = (x_sqrt == 0.0 ? 0.0 : x / x_sqrt);
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      int k_last = Op[i].Basis2().size()-1;
+
+      // The first row, excluding element 0 (normally the identity), and the last element
+      for (int k = 1; k < k_last; ++k)
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+         if (iterate_at(Op[i].data(), 0, k))
+            set_element(Op[i].data(), 0, k, get_element(Op[i].data(),0,k) * x_rem);
       }
+      // The last column, excluding row 0 and the last row
+      for (int j = 1; j < Op[i].Basis1().size()-1; ++j)
+      {
+         if (iterate_at(Op[i].data(), j, k_last))
+            set_element(Op[i].data(), j, k_last, get_element(Op[i].data(),j,k_last) * x_sqrt);
+      }
+      // The top right entry
+      if (iterate_at(Op[i].data(), 0, k_last))
+         set_element(Op[i].data(), 0, k_last, get_element(Op[i].data(),0,k_last) * x);
    }
    return Op;
 }
@@ -1342,81 +1370,4 @@ MakeIdentityUnitCell(std::vector<BasisList> const& Sites)
       Result.push_back(SimpleOperator::make_identity(Sites[i]));
    }
    return Result;
-}
-
-ProductMPO aexp_first(BasicTriangularMPO const& HamMPO, std::complex<double> Tau = 1.0)
-{
-   std::deque<OperatorComponent> Result;
-
-   for (auto const& I : HamMPO)
-   {
-      BasisList Basis1(I.Basis1().begin(), I.Basis1().end()-1);
-      BasisList Basis2(I.Basis2().begin(), I.Basis2().end()-1);
-      OperatorComponent W(I.LocalBasis1(), I.LocalBasis2(), Basis1, Basis2);
-
-      for (int i = 0; i < Basis1.size(); ++i)
-      {
-         W(i, 0) = I(i, 0) + Tau * I(i, I.size2()-1);
-
-         for (int j = 1; j < Basis2.size(); ++j)
-            W(i, j) = I(i, j);
-      }
-
-      Result.push_back(W);
-   }
-
-   return ProductMPO(GenericMPO(Result.begin(), Result.end()));
-}
-
-ProductMPO aexp_firstopt(BasicTriangularMPO const& HamMPO, std::complex<double> Tau = 1.0)
-{
-   std::deque<OperatorComponent> Result;
-
-   for (auto const& I : HamMPO)
-   {
-      // Get the indices for the middle rows and columns.
-      std::set<int> MidRows, MidCols;
-      for (int i = 1; i < I.Basis1().size()-1; ++i)
-         MidRows.insert(i);
-      for (int j = 1; j < I.Basis2().size()-1; ++j)
-         MidCols.insert(j);
-
-      // Get the Identity, A, B, C and D blocks:
-      // (I C D)
-      // (0 A B)
-      // (0 0 I)
-      OperatorComponent Ident = project_columns(project_rows(I, {0}), {0});
-      OperatorComponent A = project_columns(project_rows(I, MidRows), MidCols);
-      OperatorComponent B = project_columns(project_rows(I, MidRows), {(int) I.Basis2().size()-1});
-      OperatorComponent C = project_columns(project_rows(I, {0}), MidCols);
-      OperatorComponent D = project_columns(project_rows(I, {0}), {(int) I.Basis2().size()-1});
-
-      // Calculate the four blocks of the optimal first-order evolution MPO.
-      OperatorComponent WTopLeft = exp(Tau*D);
-      //OperatorComponent WTopLeft = Ident + Tau * D + 0.5*Tau*Tau * aux_tensor_prod(D, D);
-      OperatorComponent WBotLeft = Tau * B + 0.5*Tau*Tau * (aux_tensor_prod(B, D) + aux_tensor_prod(D, B));
-      OperatorComponent WTopRight = C + 0.5*Tau * (aux_tensor_prod(C, D) + aux_tensor_prod(D, C));
-      OperatorComponent WBotRight = A + 0.5*Tau * (aux_tensor_prod(A, D) + aux_tensor_prod(D, A)
-                                                 + aux_tensor_prod(B, C) + aux_tensor_prod(C, B));
-
-      // Construct the evolution MPO.
-      OperatorComponent W = tensor_join(
-         {{WTopLeft, WTopRight},
-          {WBotLeft, WBotRight}}
-      );
-
-      Result.push_back(W);
-   }
-
-   return ProductMPO(GenericMPO(Result.begin(), Result.end()));
-}
-
-ProductMPO aexp(BasicTriangularMPO const& x, std::string const& Scheme)
-{
-   if (Scheme == "default" || Scheme == "firstopt")
-      return aexp_firstopt(x);
-   else if (Scheme == "first")
-      return aexp_first(x);
-
-   PANIC("Unknown aexp() scheme");
 }

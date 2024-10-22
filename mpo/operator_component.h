@@ -107,6 +107,7 @@ class OperatorComponent
       size_type size1() const { return Basis1_.size(); }
       size_type size2() const { return Basis2_.size(); }
 
+      // is_null() is true if the component has no elements. This doesn't mean that the basis is empty!
       bool is_null() const { return is_zero(Data_); }
 
       const_inner_iterator iterate_at(int i, int j) const
@@ -347,11 +348,14 @@ tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B, Args cons
 inline
 OperatorComponent tensor_row_sum(std::initializer_list<OperatorComponent> const& list)
 {
-    OperatorComponent result;
-    for (auto const& i : list)
-    {
-        result = tensor_row_sum(result, i);  // Use the existing tensor_row_sum for pairwise sum
-    }
+   if (list.size() == 0)
+      return OperatorComponent();
+
+   auto iter = list.begin();
+   OperatorComponent result = *iter++;
+   while (iter != list.end())
+      result = tensor_row_sum(result, *iter++);
+
     return result;
 }
 
@@ -391,11 +395,14 @@ tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, Args cons
 inline
 OperatorComponent tensor_join(std::initializer_list<std::initializer_list<OperatorComponent>> const& lists)
 {
-   OperatorComponent result;
-   for (auto const& i : lists)
-   {
-      result = tensor_col_sum(result, tensor_row_sum(i));
-   }
+   if (lists.size() == 0)
+      return OperatorComponent();
+
+   auto iter = lists.begin();
+   OperatorComponent result = tensor_row_sum(*iter++);
+   while (iter != lists.end())
+      result = tensor_col_sum(result, tensor_row_sum(*iter++));
+
    return result;
 }
 

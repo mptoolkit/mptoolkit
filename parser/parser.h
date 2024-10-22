@@ -642,7 +642,7 @@ template <typename element_type>
 struct push_value
 {
    push_value(std::stack<element_type >& eval_)
-    : eval(eval_) {}
+    : eval(eval_) { }
 
    void operator()(double n) const
    {

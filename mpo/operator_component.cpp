@@ -316,10 +316,6 @@ OperatorComponent
 tensor_row_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
-   if (A.is_null())
-      return B;
-   if (B.is_null())
-      return A;
    return tensor_row_sum(A, B, SumBasis<BasisList>(A.Basis2(), B.Basis2()));
 }
 
@@ -359,10 +355,6 @@ tensor_col_sum(OperatorComponent const& A,
    tensor_col_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
-   if (A.is_null())
-      return B;
-   if (B.is_null())
-      return A;
    return tensor_col_sum(A, B, SumBasis<BasisList>(A.Basis1(), B.Basis1()));
 }
 

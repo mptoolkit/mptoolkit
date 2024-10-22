@@ -216,9 +216,6 @@ StateComponent Initial_F(BasicTriangularMPO const& m);
 StateComponent Initial_E(BasicTriangularMPO const& m, VectorBasis const& B);
 StateComponent Initial_F(BasicTriangularMPO const& m, VectorBasis const& B);
 
-// MPO exponential
-ProductMPO aexp(BasicTriangularMPO const& x, std::string const& Scheme = "default");
-
 // Split an MPO into local operators.
 // Result'[i] is a vector of 1x1 MPO's that have support starting from site i
 // the length of the MPO is the number of sites where the operator is supported.

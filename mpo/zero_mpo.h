@@ -44,6 +44,13 @@ PStream::ipstream& operator>>(PStream::ipstream& in, ZeroMPO&)
 }
 
 inline
+std::ostream& operator<<(std::ostream& out, ZeroMPO const&)
+{
+   out << "ZeroMPO";
+   return out;
+}
+
+inline
 ZeroMPO pow(ZeroMPO, int)
 {
    return ZeroMPO();

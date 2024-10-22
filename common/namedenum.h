@@ -22,7 +22,7 @@
 //
 // To use, define a class or struct that has 4 members:
 // Enum        - must be an enumeration type
-// Default     - a constexpr value of type Enum, that is the value of a default-constructed NamedEnumeration
+// Default     - a constexpr value of type Enum; used as the value of a default-constructed NamedEnumeration
 // StaticName  - must be a static constexpr of type char const* that gives a desciption of the enumeration.
 // Names       - must be a static constexpr array of strings, of exactly the same size as Enum.
 //
@@ -35,10 +35,18 @@
 //    static constexpr std::array<char const*, 3> Names = { "some", "enumeration", "elements" };
 // };
 //
+// using MyNamedEnum = NamedEnumeration<MyEnumTraits>;
+//
+// Note that in C++14, there must be an initializer for the Names array somewhere, eg
+// constexpr std::array<char const*, 3> MyEnumTraits::Names;
+// (Maybe this isn't required in C++17?)
+//
 
 #include <array>
 #include <string>
 #include <exception>
+#include <algorithm>
+#include <stdexcept>
 
 #if !defined(MPTOOLKIT_COMMON_NAMEDENUM_H)
 #define MPTOOLKIT_COMMON_NAMEDENUM_H
@@ -59,6 +67,7 @@ class NamedEnumeration : public Traits
 
       NamedEnumeration(Enum a) : e(a) {}
 
+      // conversion from string.  Empty string is treated as equivalent to the default
       explicit NamedEnumeration(std::string Name);
 
       // Enable iteration (including range-based for loop) over the available algorithms
@@ -101,6 +110,11 @@ std::string NamedEnumeration<Traits>::ListAvailable()
 template <typename Traits>
 NamedEnumeration<Traits>::NamedEnumeration(std::string Name)
 {
+   if (Name.empty())
+   {
+      e = DEFAULT;
+      return;
+   }
    std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){ return std::tolower(c); });
    for (auto a : NamedEnumeration())
    {

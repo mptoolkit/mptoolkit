@@ -27,82 +27,12 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
 #include "mp/copyright.h"
-#include "mpo/basic_triangular_mpo.h"
+#include "mpo/expmpo.h"
 #include "parser/number-parser.h"
 #include "tensor/tensor_eigen.h"
 #include "wavefunction/mpwavefunction.h"
 
 namespace prog_opt = boost::program_options;
-
-ProductMPO
-FirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
-{
-   std::deque<OperatorComponent> Result;
-
-   for (auto const& I : HamMPO)
-   {
-      BasisList Basis1(I.Basis1().begin(), I.Basis1().end()-1);
-      BasisList Basis2(I.Basis2().begin(), I.Basis2().end()-1);
-      OperatorComponent W(I.LocalBasis1(), I.LocalBasis2(), Basis1, Basis2);
-
-      for (int i = 0; i < Basis1.size(); ++i)
-      {
-         W(i, 0) = I(i, 0) + Tau * I(i, I.size2()-1);
-
-         for (int j = 1; j < Basis2.size(); ++j)
-            W(i, j) = I(i, j);
-      }
-
-      Result.push_back(W);
-   }
-
-   return ProductMPO(GenericMPO(Result.begin(), Result.end()));
-}
-
-// Calculate the optimal first-order evolution MPO from the Appendix in arXiv:2302.14181.
-ProductMPO
-OptimalFirstOrderEvolutionMPO(BasicTriangularMPO& HamMPO, std::complex<double> Tau)
-{
-   std::deque<OperatorComponent> Result;
-
-   for (auto const& I : HamMPO)
-   {
-      // Get the indices for the middle rows and columns.
-      std::set<int> MidRows, MidCols;
-      for (int i = 1; i < I.Basis1().size()-1; ++i)
-         MidRows.insert(i);
-      for (int j = 1; j < I.Basis2().size()-1; ++j)
-         MidCols.insert(j);
-
-      // Get the Identity, A, B, C and D blocks:
-      // (I C D)
-      // (0 A B)
-      // (0 0 I)
-      OperatorComponent Ident = project_columns(project_rows(I, {0}), {0});
-      OperatorComponent A = project_columns(project_rows(I, MidRows), MidCols);
-      OperatorComponent B = project_columns(project_rows(I, MidRows), {(int) I.Basis2().size()-1});
-      OperatorComponent C = project_columns(project_rows(I, {0}), MidCols);
-      OperatorComponent D = project_columns(project_rows(I, {0}), {(int) I.Basis2().size()-1});
-
-      // Calculate the four blocks of the optimal first-order evolution MPO.
-      OperatorComponent WTopLeft = exp(Tau*D);
-      //OperatorComponent WTopLeft = Ident + Tau * D + 0.5*Tau*Tau * aux_tensor_prod(D, D);
-      OperatorComponent WBotLeft = Tau * B + 0.5*Tau*Tau * (aux_tensor_prod(B, D) + aux_tensor_prod(D, B));
-      OperatorComponent WTopRight = C + 0.5*Tau * (aux_tensor_prod(C, D) + aux_tensor_prod(D, C));
-      OperatorComponent WBotRight = A + 0.5*Tau * (aux_tensor_prod(A, D) + aux_tensor_prod(D, A)
-                                                 + aux_tensor_prod(B, C) + aux_tensor_prod(C, B));
-
-      // Construct the evolution MPO.
-      OperatorComponent W = tensor_join(
-         {{WTopLeft, WTopRight},
-          {WBotLeft, WBotRight}}
-      );
-
-      Result.push_back(W);
-   }
-
-   return ProductMPO(GenericMPO(Result.begin(), Result.end()));
-}
 
 int main(int argc, char** argv)
 {
@@ -112,6 +42,7 @@ int main(int argc, char** argv)
       std::string InputFile;
       std::string OutputPrefix;
       std::string TimestepStr;
+      std::string Scheme = "1";
       int N = 1;
       int SaveEvery = 1;
       int Verbose = 0;
@@ -123,23 +54,20 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "Show this help message")
-         ("Hamiltonian,H", prog_opt::value(&HamStr),
-          "Operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
+         ("Hamiltonian,H", prog_opt::value(&HamStr), "Operator to use for the Hamiltonian (wavefunction attribute \"EvolutionHamiltonian\")")
          ("wavefunction,w", prog_opt::value(&InputFile), "Input wavefunction (required)")
-	 ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
-	 ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
-	 ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
-	 ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
-         ("min-states", prog_opt::value(&SInfo.MinStates),
-          FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
-         ("max-states", prog_opt::value<int>(&SInfo.MaxStates),
-          FormatDefault("Maximum number of states to keep", SInfo.MaxStates).c_str())
-         ("trunc,r", prog_opt::value<double>(&SInfo.TruncationCutoff),
-          FormatDefault("Truncation error cutoff", SInfo.TruncationCutoff).c_str())
+         ("output,o", prog_opt::value(&OutputPrefix), "Prefix for saving output files")
+         ("timestep,t", prog_opt::value(&TimestepStr), "Timestep (required)")
+         ("num-timesteps,n", prog_opt::value(&N), FormatDefault("Number of timesteps to calculate", N).c_str())
+         ("save-timesteps,s", prog_opt::value(&SaveEvery), "Save the wavefunction every s timesteps")
+         ("min-states", prog_opt::value(&SInfo.MinStates), FormatDefault("Minimum number of states to keep", SInfo.MinStates).c_str())
+         ("max-states", prog_opt::value<int>(&SInfo.MaxStates), FormatDefault("Maximum number of states to keep", SInfo.MaxStates).c_str())
+         ("trunc,r", prog_opt::value<double>(&SInfo.TruncationCutoff), FormatDefault("Truncation error cutoff", SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&SInfo.EigenvalueCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", SInfo.EigenvalueCutoff).c_str())
          ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default true if timestep is real]")
          ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction")
+         ("scheme,S", prog_opt::value(&Scheme), FormatDefault("Scheme for the MPO exponential (" + ExpMpoScheme::ListAvailable() + ")", Scheme).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -237,7 +165,7 @@ int main(int argc, char** argv)
       }
 
       //ProductMPO EvolutionMPO = FirstOrderEvolutionMPO(HamMPO, std::complex<double>(0.0, -1.0) * Timestep);
-      ProductMPO EvolutionMPO = OptimalFirstOrderEvolutionMPO(HamMPO, std::complex<double>(0.0, -1.0) * Timestep);
+      ProductMPO EvolutionMPO = expmpo(std::complex<double>(0.0, -1.0) * Timestep * HamMPO, ExpMpoScheme(Scheme));
 
       // Make the first and last MPO elements a row and column matrix, respectively.
       EvolutionMPO.front() = project_rows(EvolutionMPO.front(), {0});

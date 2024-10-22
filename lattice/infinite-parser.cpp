@@ -551,9 +551,9 @@ struct push_sum_partial3
    Function::ArgumentList const& Args;
 };
 
-struct push_aexp
+struct push_expmpo
 {
-   push_aexp(InfiniteLattice const& Lattice_, std::stack<ElementType>& eval_, std::stack<std::string>& IdentifierStack_)
+   push_expmpo(InfiniteLattice const& Lattice_, std::stack<ElementType>& eval_, std::stack<std::string>& IdentifierStack_)
       : Lattice(Lattice_), eval(eval_), IdentifierStack(IdentifierStack_) {}
 
    void operator()(char const* Start, char const* End) const
@@ -563,7 +563,7 @@ struct push_aexp
       ElementType Op = eval.top();
       eval.pop();
 
-      eval.push(boost::apply_visitor(aexp_mpo<ElementType>(Scheme), Op));
+      eval.push(boost::apply_visitor(expmpo_element<ElementType>(ExpMpoScheme(Scheme)), Op));
    }
 
    InfiniteLattice const& Lattice;
@@ -684,6 +684,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          // and similarly for a filename; pretend its an identifier.
          filename = lexeme_d[*(anychar_p - chset<>(","))]
             [push_identifier(self.IdentifierStack)];
+
+         astring = lexeme_d[*(alnum_p | '_')];
 
          named_parameter = eps_p(identifier >> '=')
             >> identifier[push_identifier(self.IdentifierStack)]
@@ -808,15 +810,15 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
                                             //                                            self.Args,
                                             self.eval)];
 
-         aexp_scheme = (eps_p(str_p("scheme") >> '=')
-                     >> ((str_p("scheme") >> '=' >> identifier[push_identifier(self.IdentifierStack)] >> ',')))
+         expmpo_scheme = (eps_p(str_p("scheme") >> '=')
+                     >> ((str_p("scheme") >> '=' >> astring[push_identifier(self.IdentifierStack)] >> ',')))
            | eps_p[push_identifier(self.IdentifierStack)];
 
-         aexp_expression = str_p("aexp")
+         expmpo_expression = str_p("expmpo")
             >> '('
-            >> aexp_scheme
-            >> expression[push_aexp(self.Lattice, self.eval, self.IdentifierStack)]
-            >> ')';
+            >> expmpo_scheme
+            >> (expression
+               >> ')')[push_expmpo(self.Lattice, self.eval, self.IdentifierStack)];
 
          operator_expression =
                 identifier[push_identifier(self.IdentifierStack)]
@@ -842,8 +844,6 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   real
             |   unary_function
             |   binary_function
-            |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
-            |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]]
             |   prod_expression
             |   string_expression
             |   prod_unit_expression
@@ -856,7 +856,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   coarse_grain_expression
             |   sum_string_inner_expression
             |   sum_string_dot_expression
-            |   aexp_expression
+            |   expmpo_expression
             |   filegrid_expression
             |   commutator_bracket
             |   '(' >> expression >> ')'
@@ -864,6 +864,8 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
             |   ('+' >> factor)
             |   function_expression
             |   operator_expression
+            |   keyword_d[constants_p[push_value<ElementType>(self.eval)]]
+            |   keyword_d[self.Arguments[push_value<ElementType>(self.eval)]];
             ;
 
          // power operator, next precedence, operates to the right
@@ -899,11 +901,11 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          binary_function, bracket_expr, quantumnumber, prod_expression, sq_bracket_expr,
          operator_expression, operator_bracket_sq, operator_sq_bracket, operator_bracket, operator_sq,
          parameter, named_parameter, parameter_list, expression_string, bracket_expression,
-         sum_unit_expression, sum_kink_expression, sum_k_expression, filename,
+         sum_unit_expression, sum_kink_expression, sum_k_expression, filename, astring,
          identifier, pow_term, commutator_bracket, num_cells, num_cells_no_comma, function_expression,
          string_expression, prod_unit_expression, prod_unit_r_expression, trans_right_expression,
          sum_string_inner_expression, sum_string_dot_expression, sum_partial_expression, coarse_grain_expression,
-         filegrid_expression, aexp_scheme, aexp_expression;
+         filegrid_expression, expmpo_scheme, expmpo_expression;
 
       rule<ScannerT> const& start() const { return expression; }
    };
@@ -987,7 +989,7 @@ ParseInfiniteOperator(InfiniteLattice const& Lattice, std::string const& Str,
 
    CHECK(UnaryFuncStack.empty());
    CHECK(BinaryFuncStack.empty());
-   CHECK(IdentStack.empty());
+   CHECK(IdentStack.empty())(IdentStack.top());
    CHECK(ParamStack.empty());
    CHECK(!ElemStack.empty());
    ElementType Result = ElemStack.top();

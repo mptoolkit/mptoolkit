@@ -30,6 +30,7 @@
 #include <boost/math/special_functions/round.hpp>
 #include "common/numerics.h"
 #include "common/formatting.h"
+#include "mpo/expmpo.h"
 
 namespace Parser
 {
@@ -755,9 +756,9 @@ struct coarse_grain_element : boost::static_visitor<element_type>
 };
 
 template <typename element_type>
-struct aexp_mpo : boost::static_visitor<element_type>
+struct expmpo_element : boost::static_visitor<element_type>
 {
-   aexp_mpo(std::string s) : Scheme(s) { if (Scheme.empty()) Scheme = "default"; }
+   expmpo_element(ExpMpoScheme s) : Scheme(s) {}
 
    element_type operator()(complex c) const
    {
@@ -767,10 +768,10 @@ struct aexp_mpo : boost::static_visitor<element_type>
    template <typename T>
    element_type operator()(T const& x) const
    {
-      return aexp(x, Scheme);
+      return expmpo(x, Scheme);
    }
 
-   std::string Scheme;
+   ExpMpoScheme Scheme;
 };
 
 } // namespace Parser
