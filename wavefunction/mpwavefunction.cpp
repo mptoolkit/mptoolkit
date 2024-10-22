@@ -101,7 +101,6 @@ operator>>(PStream::ipstream& in, MPWavefunction& Psi)
 
 void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
 {
-   DEBUG_TRACE("Reading MPWavefunction")(Version);
    if (Version == 1)
    {
       InfiniteWavefunctionLeft x;

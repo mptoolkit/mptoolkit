@@ -34,6 +34,8 @@
 #include "basic_finite_mpo.h"
 #include <ostream>
 
+class ProductMPO;
+
 class BasicTriangularMPO
 {
    private:

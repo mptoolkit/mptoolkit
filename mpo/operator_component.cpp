@@ -21,6 +21,7 @@
 #include "tensor/tensorproduct.h"
 #include "linearalgebra/eigen.h"
 #include "tensor/regularize.h"
+#include "tensor/tensor_exponential.h"
 #include "linearalgebra/matrix_utility.h"
 #include <tuple>
 
@@ -315,10 +316,6 @@ OperatorComponent
 tensor_row_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
-   if (A.is_null())
-      return B;
-   if (B.is_null())
-      return A;
    return tensor_row_sum(A, B, SumBasis<BasisList>(A.Basis2(), B.Basis2()));
 }
 
@@ -358,10 +355,6 @@ tensor_col_sum(OperatorComponent const& A,
    tensor_col_sum(OperatorComponent const& A,
                OperatorComponent const& B)
 {
-   if (A.is_null())
-      return B;
-   if (B.is_null())
-      return A;
    return tensor_col_sum(A, B, SumBasis<BasisList>(A.Basis1(), B.Basis1()));
 }
 
@@ -2270,6 +2263,21 @@ flip_conj(OperatorComponent const& x)
          Result(J.index1(), J.index2()) = flip_conj(*J);
       }
    }
+   return Result;
+}
+
+OperatorComponent
+exp(OperatorComponent const& x)
+{
+   CHECK(x.Basis1().size() == 1);
+   CHECK(x.Basis2().size() == 1);
+   CHECK_EQUAL(x.LocalBasis1(), x.LocalBasis2());
+   CHECK(is_pure_scalar(x(0,0)));
+   CHECK_EQUAL(x.Basis1(), x.Basis2());
+   // The fact that x is pure scalar *almost* implies that x.Basis1() == x.Basis2().
+   // But a zero operator also counts as scalar, but could have different quantum numbers, so we need this additional check.
+   OperatorComponent Result(x.LocalBasis1(), x.LocalBasis2(), x.Basis1(), x.Basis2());
+   Result(0,0) = exp(scalar(x(0,0)));
    return Result;
 }
 

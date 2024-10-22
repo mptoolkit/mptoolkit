@@ -19,6 +19,7 @@
 
 #include "basic_triangular_mpo.h"
 #include "common/statistics.h"
+#include "product_mpo.h"
 
 enum class OptimizationChoice { Delinearize, Deparallelize, QR, None };
 
@@ -456,26 +457,54 @@ void print_structure(BasicTriangularMPO const& Op, std::ostream& out, double Uni
 
 BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, double x)
 {
+   auto x_sqrt = std::sqrt(std::abs(x));
+   auto x_rem = (x_sqrt == 0.0 ? 0.0 : x / x_sqrt);
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      int k_last = Op[i].Basis2().size()-1;
+
+      // The first row, excluding element 0 (normally the identity), and the last element
+      for (int k = 1; k < k_last; ++k)
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+         if (iterate_at(Op[i].data(), 0, k))
+            set_element(Op[i].data(), 0, k, get_element(Op[i].data(),0,k) * x_rem);
       }
+      // The last column, excluding row 0 and the last row
+      for (int j = 1; j < Op[i].Basis1().size()-1; ++j)
+      {
+         if (iterate_at(Op[i].data(), j, k_last))
+            set_element(Op[i].data(), j, k_last, get_element(Op[i].data(),j,k_last) * x_sqrt);
+      }
+      // The top right entry
+      if (iterate_at(Op[i].data(), 0, k_last))
+         set_element(Op[i].data(), 0, k_last, get_element(Op[i].data(),0,k_last) * x);
    }
    return Op;
 }
 
 BasicTriangularMPO& operator*=(BasicTriangularMPO& Op, std::complex<double> x)
 {
+   auto x_sqrt = std::sqrt(std::abs(x));
+   auto x_rem = (x_sqrt == 0.0 ? 0.0 : x / x_sqrt);
    for (int i = 0; i < Op.size(); ++i)
    {
-      for (unsigned j = 1; j < Op[i].Basis2().size(); ++j)
+      int k_last = Op[i].Basis2().size()-1;
+
+      // The first row, excluding element 0 (normally the identity), and the last element
+      for (int k = 1; k < k_last; ++k)
       {
-         if (iterate_at(Op[i].data(), 0, j))
-            set_element(Op[i].data(), 0, j, get_element(Op[i].data(),0,j) * x);
+         if (iterate_at(Op[i].data(), 0, k))
+            set_element(Op[i].data(), 0, k, get_element(Op[i].data(),0,k) * x_rem);
       }
+      // The last column, excluding row 0 and the last row
+      for (int j = 1; j < Op[i].Basis1().size()-1; ++j)
+      {
+         if (iterate_at(Op[i].data(), j, k_last))
+            set_element(Op[i].data(), j, k_last, get_element(Op[i].data(),j,k_last) * x_sqrt);
+      }
+      // The top right entry
+      if (iterate_at(Op[i].data(), 0, k_last))
+         set_element(Op[i].data(), 0, k_last, get_element(Op[i].data(),0,k_last) * x);
    }
    return Op;
 }

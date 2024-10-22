@@ -69,12 +69,12 @@ struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
 
    InfiniteMPOElement operator()(ProductMPO const&) const
    {
-      throw ParserError("exp() is not implemented for ProductMPO's!");
+      throw ParserError("exp() is not implemented for ProductMPOs!");
    }
 
    InfiniteMPOElement operator()(BasicTriangularMPO const&) const
    {
-      throw ParserError("exp() is not implemented for BasicTriangularMPO's!");
+      throw ParserError("exp() is not implemented for BasicTriangularMPOs, use expmpo() instead!");
    }
 };
 
@@ -829,6 +829,35 @@ struct coarse_grain_element<InfiniteMPOElement> : boost::static_visitor<Infinite
    }
 
    int N;
+};
+
+template <>
+struct expmpo_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+{
+   expmpo_element(ExpMpoScheme s) : Scheme(s) {}
+
+   InfiniteMPOElement operator()(complex c) const
+   {
+      return std::exp(c);
+   }
+
+   InfiniteMPOElement operator()(ZeroMPO const&) const
+   {
+      return complex(1.0);
+   }
+
+   InfiniteMPOElement operator()(ProductMPO const&) const
+   {
+      throw ParserError("Cannot construct the exponential of a ProductMPO!");
+      return complex(0.0);
+   }
+
+   InfiniteMPOElement operator()(BasicTriangularMPO const& x) const
+   {
+      return expmpo(x, Scheme);
+   }
+
+   ExpMpoScheme Scheme;
 };
 
 } // namespace Parser

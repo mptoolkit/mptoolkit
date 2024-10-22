@@ -101,12 +101,13 @@ class OperatorComponent
       // returns the top-left entry, equivalent to operator()(0,0)
       value_type top_left() const;
 
-      // returns the bottom-right entry, equivalent to operator()(size1()-1,size2()-2)
+      // returns the bottom-right entry, equivalent to operator()(size1()-1,size2()-1)
       value_type bottom_right() const;
 
       size_type size1() const { return Basis1_.size(); }
       size_type size2() const { return Basis2_.size(); }
 
+      // is_null() is true if the component has no elements. This doesn't mean that the basis is empty!
       bool is_null() const { return is_zero(Data_); }
 
       const_inner_iterator iterate_at(int i, int j) const
@@ -322,14 +323,41 @@ tensor_sum(OperatorComponent const& A, OperatorComponent const& B,
 // Precondition: A.Basis1() == B.Basis1()
 // The resulting state has Result'[s] = (A[s], B[s])  (row-wise concatenation)
 OperatorComponent
-tensor_row_sum(OperatorComponent const& A,
-               OperatorComponent const& B,
-               SumBasis<BasisList> const& B2);
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B, SumBasis<BasisList> const& B2);
 
+// Version that constructs the SumBasis implicitly
 OperatorComponent
-tensor_row_sum(OperatorComponent const& A,
-               OperatorComponent const& B);
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B);
 
+// Degenerate case when there is only one component to sum
+inline
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A)
+{
+   return A;
+}
+
+template <typename... Args>
+inline
+OperatorComponent
+tensor_row_sum(OperatorComponent const& A, OperatorComponent const& B, Args const&... args)
+{
+   return tensor_row_sum(tensor_row_sum(A,B), args...);
+}
+// Overload for initializer lists
+inline
+OperatorComponent tensor_row_sum(std::initializer_list<OperatorComponent> const& list)
+{
+   if (list.size() == 0)
+      return OperatorComponent();
+
+   auto iter = list.begin();
+   OperatorComponent result = *iter++;
+   while (iter != list.end())
+      result = tensor_row_sum(result, *iter++);
+
+    return result;
+}
 
 // Constructs a MPOpComponent that represents the sum of A and B,
 // at the right boundary of the matrix product state.
@@ -337,13 +365,120 @@ tensor_row_sum(OperatorComponent const& A,
 // The resulting state has Result'[s] = ( A[s] )
 //                                      ( B[s] )  (column-wise concatenation)
 OperatorComponent
-tensor_col_sum(OperatorComponent const& A,
-               OperatorComponent const& B,
-               SumBasis<BasisList> const& B1);
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, SumBasis<BasisList> const& B1);
 
+// Version that constructs the SumBasis implicitly
 OperatorComponent
-tensor_col_sum(OperatorComponent const& A,
-               OperatorComponent const& B);
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B);
+
+inline
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A)
+{
+   return A;
+}
+
+template <typename... Args>
+inline
+OperatorComponent
+tensor_col_sum(OperatorComponent const& A, OperatorComponent const& B, Args const&... args)
+{
+   return tensor_col_sum(tensor_col_sum(A,B), args...);
+}
+
+// Join OperatorComponent's as a 2D array.
+// tensor_join({A,B}, {C,D}) is equivalent to tensor_col_sum(tensor_row_sum(A,B), tensor_row_sum(C,D))
+// and produces the enlarged MPO element
+// ( A B )
+// ( C D )
+
+inline
+OperatorComponent tensor_join(std::initializer_list<std::initializer_list<OperatorComponent>> const& lists)
+{
+   if (lists.size() == 0)
+      return OperatorComponent();
+
+   auto iter = lists.begin();
+   OperatorComponent result = tensor_row_sum(*iter++);
+   while (iter != lists.end())
+      result = tensor_col_sum(result, tensor_row_sum(*iter++));
+
+   return result;
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list)
+{
+   return tensor_row_sum(list);
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+                              std::initializer_list<OperatorComponent> const& list2)
+{
+   return tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2));
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+                              std::initializer_list<OperatorComponent> const& list2,
+                              std::initializer_list<OperatorComponent> const& list3)
+{
+   return tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2), tensor_row_sum(list3));
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+                              std::initializer_list<OperatorComponent> const& list2,
+                              std::initializer_list<OperatorComponent> const& list3,
+                              std::initializer_list<OperatorComponent> const& list4)
+{
+   return tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2), tensor_row_sum(list3), tensor_row_sum(list4));
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+                              std::initializer_list<OperatorComponent> const& list2,
+                              std::initializer_list<OperatorComponent> const& list3,
+                              std::initializer_list<OperatorComponent> const& list4,
+                              std::initializer_list<OperatorComponent> const& list5)
+{
+   return tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2), tensor_row_sum(list3), tensor_row_sum(list4),
+                         tensor_row_sum(list5));
+}
+
+inline
+OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+                              std::initializer_list<OperatorComponent> const& list2,
+                              std::initializer_list<OperatorComponent> const& list3,
+                              std::initializer_list<OperatorComponent> const& list4,
+                              std::initializer_list<OperatorComponent> const& list5,
+                              std::initializer_list<OperatorComponent> const& list6)
+{
+   return tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2), tensor_row_sum(list3), tensor_row_sum(list4),
+                         tensor_row_sum(list5), tensor_row_sum(list6));
+}
+
+// Recursive variadic version that handles multiple lists
+
+// C++17 version (untested, probably doesn't work. C++ seems to be unable to deduce a brace initializer list in a variadic template)
+// template <typename... Lists>
+// OperatorComponent tensor_join(std::initializer_list<OperatorComponent> const& list1,
+//                               std::initializer_list<OperatorComponent> const& list2,
+//                               Lists... rest)
+// {
+//    // First, join the first two lists row-wise and then column-wise
+//    OperatorComponent intermediate = tensor_col_sum(tensor_row_sum(list1), tensor_row_sum(list2));
+//    // If there are more lists to process, recursively call tensor_join on the remaining lists
+//    if constexpr (sizeof...(rest) > 0)
+//    {
+//       return tensor_join({intermediate}, rest...);  // Process the rest recursively
+//    }
+//    else
+//    {
+//       return intermediate;  // Base case: no more lists
+//    }
+// }
 
 // Multiplies the component by a SimpleOperator acting on the auxiliary space
 OperatorComponent prod(OperatorComponent const& A, SimpleOperator const& Op, double Tol = 1e-14);
@@ -468,6 +603,11 @@ operator*(std::complex<double> x, OperatorComponent const& Op)
 
 OperatorComponent
 conj(OperatorComponent const& x);
+
+// Exponential function
+// This is only well-defined for an OperatorComponent if it is 1x1 and scalar
+OperatorComponent
+exp(OperatorComponent const& x);
 
 // This grouping treats A as a bra, and herm(B) as a ket
 
