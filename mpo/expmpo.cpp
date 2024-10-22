@@ -72,7 +72,7 @@ OperatorComponent DysonSeries(OperatorComponent const& D, int Order, std::initia
    }
 
    OperatorComponent Result = SumPerms(v);
-   for (int n = 1; n < Order; ++n)
+   for (int n = 1; n <= Order; ++n)
    {
       v.push_back(&D);
       Result += SumPerms(v);
