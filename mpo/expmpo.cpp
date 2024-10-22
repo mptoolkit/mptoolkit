@@ -44,6 +44,9 @@ OperatorComponent AuxTensorProdArray(std::vector<OperatorComponent const*> const
 
 // (1/number_of_permutations) permutations of aux_tensor_prod() of a vector of pointers to OperatorComponent.
 // We use pointers so that duplicates can be identified
+// This implements the operation {x[0] x[1] ... x[n]}, which is the sum of all permutations of x,
+// divided by the number of permutations. We can take advantade of duplicates to reduce the number
+// of permutations that we need.
 OperatorComponent SumPerms(std::vector<OperatorComponent const*> x)
 {
    std::sort(x.begin(), x.end());
@@ -60,8 +63,8 @@ OperatorComponent SumPerms(std::vector<OperatorComponent const*> x)
 
 // Constructs the sum of tensor products of all permutations of a list of operators, including D up to Order times.
 // This corresponds to the series expansion
-// DysonSeries(D, {X}) = X + (DX+XD)/2 + (D^2X + DXD + XD^2)/3 + ....
-// DysonSeries(D, {X,Y}) = (XY + YX)/2 + (DXY + DYX + XDY + YDX + XYD + YXD) /6 + ....
+// DysonSeries(D, {X}) = X + {DX}/2! + {DDX}/3! + {DDDX}/4! + ....
+// DysonSeries(D, {X,Y}) = {XY} + {DXY}/2! + {DDXY}/3! + ....
 OperatorComponent DysonSeries(OperatorComponent const& D, int Order, std::initializer_list<OperatorComponent> list)
 {
    std::vector<OperatorComponent const*> v;
