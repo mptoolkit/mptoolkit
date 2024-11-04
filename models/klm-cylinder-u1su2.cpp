@@ -60,12 +60,17 @@ int main(int argc, char** argv)
          ("H_tx"   , "nearest neighbor hopping in the x direction")
          ("H_ty"   , "nearest neighbor hopping in the y direction")
          ("H_t"    , "H_tx + H_ty")
-         ("H_Jx"   , "nearest-neighbor spin-spin interaction in the x direction")
-         ("H_Jy"   , "nearest-neighbor spin-spin interaction in the y direction")
+         ("H_tss"  , "Shastry-Sutherland diagonal hopping (doubles size of unit cell)")
+         ("H_Jy"   , "nearest-neighbor f-spin-spin interaction in the y direction")
+         ("H_Jx"   , "nearest-neighbor f-spin-spin interaction in the x direction")
          ("H_J"    , "H_Jx + H_Jy")
+         ("H_Jss"  , "Shastry-Sutherland diagonal f-spin-spin interaction (doubles size of unit cell)")
          ("H_U"    , "on-site Coulomb interaction")
          ("H_K"    , "Kondo coupling")
          ("T_Y"    , "Translation by 1 site in the Y direction")
+         ("Sstag"  , "Staggered spin vector (-1)^{x+y} S(x,y)")
+         ("Scstag" , "Staggered c-spin vector (-1)^{x+y} Sc(x,y)")
+         ("Sfstag" , "Staggered f-spin vector (-1)^{x+y} Sf(x,y)")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -91,51 +96,89 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
 
       // A short-cut to refer to an operator defined within our unit cell
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), ScSf(Cell, "ScSf"), Sf(Cell, "Sf"), Pdouble(Cell, "Pdouble"), I(Cell, "I");
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), ScSf(Cell, "ScSf"), S(Cell, "S"), Sc(Cell, "Sc"), Sf(Cell, "Sf"), Pdouble(Cell, "Pdouble"), I(Cell, "I");
 
       // Since the MPO's are a bit complicated, we assemble the terms on a single unit cell and then sum them
-      UnitCellMPO tx, ty, Jx, Jy, U, K;
+      // Jd and Ja are the diagonal and anti-diagonals
+      UnitCellMPO tx, ty, Jx, Jy, U, K, Jd, Ja, td, ta, Sstag, Scstag, Sfstag;
 
       // The xy configuration is special
       if (x == 0)
       {
          for (int i = 0; i < y; ++i)
          {
-            tx += dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
-            ty += dot(CH(0)[i], C(0)[(i+1)%y]) + dot(C(0)[i], CH(0)[(i+1)%y]);
+            tx -= dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
+            ty -= dot(CH(0)[i], C(0)[(i+1)%y]) + dot(C(0)[i], CH(0)[(i+1)%y]);
             Jx += inner(Sf(0)[i], Sf(1)[i]);
             Jy += inner(Sf(0)[i], Sf(0)[(i+1)%y]);
             U += Pdouble(0)[i];
             K += ScSf(0)[i];
+            if (i%2 == 0)
+            {
+               Sstag += S(0)[i];
+               Scstag += Sc(0)[i];
+               Sfstag += Sf(0)[i];
+               Jd += inner(Sf(0)[i], Sf(1)[(i+1)%y]);
+               td -= dot(CH(0)[i], C(1)[(i+1)%y]) + dot(C(0)[i], CH(1)[(i+1)%y]);
+            }
+            else
+            {
+               Sstag -= S(0)[i];
+               Scstag -= Sc(0)[i];
+               Sfstag -= Sf(0)[i];
+               Ja += inner(Sf(0)[i], Sf(-1)[(i+1)%y]);
+               ta -= dot(CH(0)[i], C(-1)[(i+1)%y]) + dot(C(0)[i], CH(-1)[(i+1)%y]);
+            }
          }
       }
       else
       {
          for (int i = 0; i < x-1; ++i)
          {
-            tx += dot(CH(0)[i], C(0)[i+1]) + dot(C(0)[i], CH(0)[i+1]);
+            tx -= dot(CH(0)[i], C(0)[i+1]) + dot(C(0)[i], CH(0)[i+1]);
             Jx += inner(Sf(0)[i], Sf(0)[i+1]);
          }
-         tx += dot(CH(0)[x-1], C(y+1)[0]) + dot(C(0)[x-1], CH(y+1)[0]);
+         tx -= dot(CH(0)[x-1], C(y+1)[0]) + dot(C(0)[x-1], CH(y+1)[0]);
          Jx += inner(Sf(0)[x-1], Sf(y+1)[0]);
          for (int i = 0; i < x; ++i)
          {
-            ty += dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
+            ty -= dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
             Jy += inner(Sf(0)[i], Sf(1)[i]);
             U += Pdouble(0)[i];
             K += ScSf(0)[i];
+            if (i%2 == 0)
+            {
+               Sstag += S(0)[i];
+               Scstag += Sc(0)[i];
+               Sfstag += Sf(0)[i];
+               Jd += inner(Sf(0)[i], Sf(1)[(i+1)%y]);
+               td -= dot(CH(0)[i], C(1)[(i+1)%y]) + dot(C(0)[i], CH(1)[(i+1)%y]);
+            }
+            else
+            {
+               Sstag -= S(0)[i];
+               Scstag -= Sc(0)[i];
+               Sfstag -= Sf(0)[i];
+               Ja += inner(Sf(0)[i], Sf(-1)[(i+1)%y]);
+               ta -= dot(CH(0)[i], C(-1)[(i+1)%y]) + dot(C(0)[i], CH(-1)[(i+1)%y]);
+            }
          }
       }
 
       // Define operators that have support over the infinite lattice
-      Lattice["H_tx"] = -sum_unit(tx);
-      Lattice["H_ty"] = -sum_unit(ty);
+      Lattice["H_tx"] = sum_unit(tx);
+      Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"]  = Lattice["H_tx"] + Lattice["H_ty"];
       Lattice["H_Jx"] =  sum_unit(Jx);
       Lattice["H_Jy"] =  sum_unit(Jy);
+      Lattice["H_tss"] = sum_unit(td+ta, CellSize*2);
       Lattice["H_J"]  = Lattice["H_Jx"] + Lattice["H_Jy"];
       Lattice["H_U"]  =  sum_unit(U);
       Lattice["H_K"]  =  sum_unit(K);
+      Lattice["H_Jss"] = sum_unit(Jd+Ja, CellSize*2);
+      Lattice["Sstag"] = sum_unit(Sstag - translate(Sstag, CellSize), CellSize*2);
+      Lattice["Scstag"] = sum_unit(Scstag - translate(Scstag, CellSize), CellSize*2);
+      Lattice["Sfstag"] = sum_unit(Sfstag - translate(Sfstag, CellSize), CellSize*2);
 
       // Translation operators.
       if (x == 0)

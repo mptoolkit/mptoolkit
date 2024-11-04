@@ -79,6 +79,9 @@ int main(int argc, char** argv)
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), S(Cell, "S"), BH(Cell, "BH"), B(Cell, "B"),
                        Pdouble(Cell, "Pdouble"), Hu(Cell, "Hu"), N(Cell, "N"), I(Cell, "I");
 
+      // FIXME: the hopping term should have a negative sign.
+      // This is not important for a bipartite lattice, but will make a difference
+      // if a NNN hopping term is included.
       Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + adjoint(dot(CH(0)[0], C(1)[0])));
       Lattice["H_U"]  =  sum_unit(Pdouble(0)[0]);
       Lattice["H_Us"] =  sum_unit(Hu(0)[0]);
