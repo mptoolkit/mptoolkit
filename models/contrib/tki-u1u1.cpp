@@ -95,6 +95,9 @@ int main(int argc, char** argv)
       Pi_p(0) = pHup(0)*pdown(0);
       Pi_m(0) = pHdown(0)*pup(0);
 
+      // FIXME: the hopping term should have a negative sign.
+      // This is not important for a bipartite lattice, but will make a difference
+      // if a NNN hopping term is included.
       Lattice["H_t"] = sum_unit(CHup(0)[0]*Cup(1)[0] - Cup(0)[0]*CHup(1)[0]
                                 + CHdown(0)[0]*Cdown(1)[0] - Cdown(0)[0]*CHdown(1)[0]);
       Lattice["H_J1"] = sum_unit(Sz(0)[1]*Sz(1)[1] + 0.5*(Sp(0)[1]*Sm(1)[1] + Sm(0)[1]*Sp(1)[1]));
