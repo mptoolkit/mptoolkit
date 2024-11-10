@@ -161,6 +161,9 @@ int main(int argc, char** argv)
          Us += Hu(0)[i] + Hu(0)[i+1] + Hu(0)[i+2];
       }
 
+      // FIXME: the hopping term should have a negative sign.
+      // This is not important for a bipartite lattice, but will make a difference
+      // if a NNN hopping term is included.
       Lattice["H_tx"] = sum_unit(tx);
       Lattice["H_ty"] = sum_unit(ty);
       Lattice["H_t"] = sum_unit(tx+ty);
@@ -186,7 +189,7 @@ int main(int argc, char** argv)
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!" << std::endl; 
+      std::cerr << "Unknown exception!" << std::endl;
       return 1;
    }
 }
