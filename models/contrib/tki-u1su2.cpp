@@ -85,6 +85,9 @@ int main(int argc, char** argv)
 
     Pi(0) = outer(pH(0), p(0));
 
+    // FIXME: the hopping term should have a negative sign.
+    // This is not important for a bipartite lattice, but will make a difference
+    // if a NNN hopping term is included.
     Lattice["H_t"]  = sum_unit(dot(CH(0)[0], C(1)[0]) + dot(C(0)[0], CH(1)[0]));
     Lattice["H_J1"] = sum_unit(inner(S(0)[1], S(1)[1]));
     Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));

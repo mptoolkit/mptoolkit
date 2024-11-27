@@ -37,6 +37,7 @@ int main(int argc, char** argv)
       int x = 0;
       int y = 4;
       bool QLM = false;
+      half_int QLMSpin = 0.5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -45,8 +46,8 @@ int main(int argc, char** argv)
           FormatDefault("maximum number of bosons per site", MaxN).c_str())
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
-         ("qlm", prog_opt::bool_switch(&QLM),
-          "include terms for the mapping of the 2D QLM")
+         ("qlm", prog_opt::bool_switch(&QLM), "include terms for the mapping of the 2D QLM")
+         ("qlm-spin", prog_opt::value(&QLMSpin), "value of the spin sites for the QLM [default 1/2]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -189,7 +190,7 @@ int main(int argc, char** argv)
 
          for (int i = 0; i < CellSize/2; ++i)
          {
-            G[i] = N(0)[2*i] + 0.5 * (N2(0)[2*i+1] + N2(0)[(2*i-1+CellSize)%CellSize] + N2(1)[2*i] + N2(-1)[0]) - 2.0 * I(0)[2*i];
+            G[i] = N(0)[2*i] + 0.5 * (N(0)[2*i+1] + N(0)[(2*i-1+CellSize)%CellSize] + N(1)[2*i] + N(-1)[0]) - 4.0 * QLMSpin * I(0)[2*i];
             G[i].set_description("Gauss's law operator for matter site " + std::to_string(2*i));
             Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
          }
