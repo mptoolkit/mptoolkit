@@ -631,40 +631,64 @@ iTDVP::ExpandBondsLeft()
 void
 iTDVP::ExpandLeft()
 {
-   auto CNext = C;
+   int StatesOld = CCenter.Basis1().total_dimension();
+   int ExtraStates = (int) std::ceil(PreExpandFactor * StatesOld);
+
+   auto L = C;
    // Shift to the end of the unit cell if we are at the beginning.
-   if (CNext == Psi.begin())
-      CNext = Psi.end();
-   --CNext;
+   if (L == Psi.begin())
+      L = Psi.end();
+   --L;
 
-   auto HNext = H;
-   if (HNext == HamMPO.begin())
-      HNext = HamMPO.end();
-   --HNext;
+   auto HL = H;
+   if (HL == HamMPO.begin())
+      HL = HamMPO.end();
+   --HL;
 
-   StateComponent CExpand = *CNext;
+   StateComponent LShift = *L;
    if (Site == LeftStop)
-      CExpand = delta_shift(CExpand, QShift);
+      LShift = delta_shift(LShift, QShift);
+
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis1(CCenter));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+
+   LShift = LShift * U;
+   CCenter = (D*Vh) * CCenter;
+
+   // Pre-expansion.
+   StateComponent LExpand = PreExpandBasis1(LShift, CCenter, HamLOld.back(), *HL, *H, HamROld.front(), PreExpansionAlgo,
+                                            ExtraStates, PreExpandPerSector, Oversampling, ProjectTwoSiteTangent);
+
+   StateComponent LNew = tensor_row_sum(LShift, LExpand);
+   OrthogonalizeBasis2_QR(LNew);
+
+   CCenter = scalar_prod(herm(LNew), LShift) * CCenter;
+
+   int StatesNew = CCenter.Basis1().total_dimension();
+   MaxStates = std::max(MaxStates, StatesNew);
 
    if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site << " ";
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << StatesNew
+                << '\n';
+   }
 
-   ExpandLeftEnvironment(CExpand, CCenter, HamLOld.back(), HamROld.front(), *HNext, *H,
-                         SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
-
-   int TotalStates = CExpand.Basis2().total_dimension();
-   MaxStates = std::max(MaxStates, TotalStates);
-
-   // Save copy of center site and left-orthogonalize.
+   // Save copy of centre site and left-orthogonalize.
    *C = CCenter;
-   MatrixOperator Vh;
    std::tie(std::ignore, Vh) = OrthogonalizeBasis2(*C);
    *C = *C * Vh;
 
-   // Right-orthogonalize current site.
-   MatrixOperator U;
-   RealDiagonalOperator D;
+   // Right-orthogonalize centre site.
    std::tie(U, D) = OrthogonalizeBasis1(CCenter);
    CCenter = U * CCenter;
 
@@ -672,7 +696,7 @@ iTDVP::ExpandLeft()
    HamROld.push_front(contract_from_right(herm(*H), CCenter, HamROld.front(), herm(CCenter)));
 
    // Calculate updated E matrix with added states.
-   HamL.push_front(contract_from_left(*HNext, herm(CExpand), HamLOld.back(), CExpand));
+   HamL.push_front(contract_from_left(*HL, herm(LNew), HamLOld.back(), LNew));
 
    if (Site == RightStop)
       HamLOld.front() = delta_shift(HamL.front(), QShift);
@@ -681,7 +705,7 @@ iTDVP::ExpandLeft()
 
    if (Site == LeftStop)
    {
-      *CNext = delta_shift(CExpand, adjoint(QShift));
+      *L = delta_shift(LNew, adjoint(QShift));
 
       // Save the block Hamiltonian.
       BlockHamR = HamROld.front();
@@ -692,10 +716,10 @@ iTDVP::ExpandLeft()
    }
    else
    {
-      *CNext = CExpand;
+      *L = LNew;
 
       // Move the orthgonality center.
-      CCenter = prod(CExpand, U*D*herm(U));
+      CCenter = prod(LNew, U*D*herm(U));
    }
 }
 
@@ -734,40 +758,64 @@ iTDVP::ExpandBondsRight()
 void
 iTDVP::ExpandRight()
 {
-   auto CNext = C;
-   ++CNext;
+   int StatesOld = CCenter.Basis2().total_dimension();
+   int ExtraStates = (int) std::ceil(PreExpandFactor * StatesOld);
+
+   auto R = C;
+   ++R;
    // Shift to the beginning of the unit cell if we are at the end.
-   if (CNext == Psi.end())
-      CNext = Psi.begin();
+   if (R == Psi.end())
+      R = Psi.begin();
 
-   auto HNext = H;
-   ++HNext;
-   if (HNext == HamMPO.end())
-      HNext = HamMPO.begin();
+   auto HR = H;
+   ++HR;
+   if (HR == HamMPO.end())
+      HR = HamMPO.begin();
 
-   StateComponent CExpand = *CNext;
+   StateComponent RShift  = *R;
    if (Site == RightStop)
-      CExpand = delta_shift(CExpand, adjoint(QShift));
+      RShift = delta_shift(RShift, adjoint(QShift));
+
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis2(CCenter));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+
+   CCenter = CCenter * (U*D);
+   RShift = Vh * RShift;
+
+   // Pre-expansion.
+   StateComponent RExpand = PreExpandBasis2(CCenter, RShift, HamLOld.back(), *H, *HR, HamROld.front(), PreExpansionAlgo,
+                                            ExtraStates, PreExpandPerSector, Oversampling, ProjectTwoSiteTangent);
+
+   StateComponent RNew = tensor_col_sum(RShift, RExpand);
+   OrthogonalizeBasis1_LQ(RNew);
+
+   CCenter = CCenter * scalar_prod(RShift, herm(RNew));
+
+   int StatesNew = CCenter.Basis2().total_dimension();
+   MaxStates = std::max(MaxStates, StatesNew);
 
    if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site << " ";
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << StatesNew
+                << '\n';
+   }
 
-   ExpandRightEnvironment(CCenter, CExpand, HamLOld.back(), HamROld.front(), *H, *HNext,
-                          SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
-
-   int TotalStates = CExpand.Basis1().total_dimension();
-   MaxStates = std::max(MaxStates, TotalStates);
-
-   // Save copy of current site and right-orthogonalize.
+   // Save copy of centre site and right-orthogonalize.
    *C = CCenter;
-   MatrixOperator U;
    std::tie(U, std::ignore) = OrthogonalizeBasis1(*C);
    *C = U * (*C);
 
-   // Left-orthogonalize current site.
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
+   // Left-orthogonalize centre site.
    std::tie(D, Vh) = OrthogonalizeBasis2(CCenter);
    CCenter = CCenter * Vh;
 
@@ -775,7 +823,7 @@ iTDVP::ExpandRight()
    HamLOld.push_back(contract_from_left(*H, herm(CCenter), HamLOld.back(), CCenter));
 
    // Calculate updated F matrix with added states.
-   HamR.push_back(contract_from_right(herm(*HNext), CExpand, HamROld.front(), herm(CExpand)));
+   HamR.push_back(contract_from_right(herm(*HR), RNew, HamROld.front(), herm(RNew)));
 
    if (Site == LeftStop)
       HamROld.back() = delta_shift(HamR.back(), adjoint(QShift));
@@ -784,7 +832,7 @@ iTDVP::ExpandRight()
 
    if (Site == RightStop)
    {
-      *CNext = delta_shift(CExpand, QShift);
+      *R = delta_shift(RNew, QShift);
 
       // Save the block Hamiltonian.
       BlockHamL = HamLOld.back();
@@ -795,10 +843,10 @@ iTDVP::ExpandRight()
    }
    else
    {
-      *CNext = CExpand;
+      *R = RNew;
 
       // Move the orthgonality center.
-      CCenter = prod(herm(Vh)*(D*Vh), CExpand);
+      CCenter = prod(herm(Vh)*(D*Vh), RNew);
    }
 }
 

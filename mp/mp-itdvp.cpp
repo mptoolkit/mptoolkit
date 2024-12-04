@@ -44,7 +44,7 @@ int main(int argc, char** argv)
       std::string TimestepStr;
       int N = 1;
       int SaveEvery = 1;
-      bool Expand = false;
+      bool Expand = true;
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
@@ -52,11 +52,17 @@ int main(int argc, char** argv)
       std::string TimeVar = "t";
       bool Normalize = false;
       bool NoNormalize = false;
+      std::string PreExpandAlgo = "rsvd";
 
       iTDVPSettings Settings;
+
+      // Truncation defaults
       Settings.SInfo.MinStates = 1;
       Settings.SInfo.TruncationCutoff = 0;
       Settings.SInfo.EigenvalueCutoff = 1e-16;
+
+      // Oversampling defaults
+      Settings.Oversampling = OversamplingInfo(10, 1.0, 1);
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -82,12 +88,12 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", Settings.SInfo.TruncationCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&Settings.SInfo.EigenvalueCutoff),
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
-         ("expand-factor", prog_opt::value(&Settings.ExpandFactor),
-          FormatDefault("Environment expansion factor of added states", Settings.ExpandFactor).c_str())
-         ("expand-min-states", prog_opt::value(&Settings.ExpandMinStates),
-          FormatDefault("Environment expansion minimum number of added states", Settings.ExpandMinStates).c_str())
-         ("expand-min-per-sector", prog_opt::value(&Settings.ExpandMinPerSector),
-          FormatDefault("Environment expansion minimum number of added states per quantum number sector", Settings.ExpandMinPerSector).c_str())
+         ("pre", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PreExpansionAlgorithm::ListAvailable(), PreExpandAlgo).c_str())
+         ("pre-factor", prog_opt::value(&Settings.PreExpandFactor), FormatDefault("Pre-expansion factor", Settings.PreExpandFactor).c_str())
+         ("pre-sector", prog_opt::value(&Settings.PreExpandPerSector), "Pre-expansion number of additional states in each quantum number sector [default 0 for fullsvd, rsvd; default 1 for range, random]")
+         ("twositetangent", prog_opt::bool_switch(&Settings.ProjectTwoSiteTangent), "Project onto the two-site tangent space during pre-expansion")
+         ("oversample", prog_opt::value(&Settings.Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Settings.Oversampling.Scale).c_str())
+         ("oversample-min", prog_opt::value(&Settings.Oversampling.Add), FormatDefault("For random SVD, minimum amount of oversampling", Settings.Oversampling.Add).c_str())
          ("lambdatol,l", prog_opt::value(&Settings.LambdaTol),
           FormatDefault("Tolerance for the squared Frobenius norm of the difference of LambdaR for succesive sweeps", Settings.LambdaTol).c_str())
          ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),
@@ -149,6 +155,27 @@ int main(int argc, char** argv)
       {
          std::cerr << "fatal: Invalid composition" << std::endl;
          return 1;
+      }
+
+      if (Magnus != "2" && Magnus != "4")
+      {
+         std::cerr << "fatal: Invalid Magnus scheme." << std::endl;
+         return 1;
+      }
+
+      Settings.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
+
+      // Defaults for the pre-expansion per sector
+      if (!vm.count("pre-sector"))
+      {
+         if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::SVD || Settings.PreExpansionAlgo == PreExpansionAlgorithm::RSVD)
+         {
+            Settings.PreExpandPerSector = 0;
+         }
+         else if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::RangeFinding || Settings.PreExpansionAlgo == PreExpansionAlgorithm::Random)
+         {
+            Settings.PreExpandPerSector = 1;
+         }
       }
 
       // Open the wavefunction.
@@ -223,9 +250,9 @@ int main(int argc, char** argv)
       std::cout << "Maximum number of sweeps: " << Settings.MaxSweeps << std::endl;
       std::cout << "Error tolerance for LambdaR: " << Settings.LambdaTol << std::endl;
 
-      // Turn on bond expansion if trunc or eigen-cutoff have been specified.
-      if (vm.count("trunc") || vm.count("eigen-cutoff"))
-         Expand = true;
+      // Turn off bond expansion if we specify no pre-expansion.
+      if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion)
+         Expand = false;
 
       // We cannot handle bond expansion for single-site unit cells at the moment.
       if (Psi.size() == 1 && Expand)

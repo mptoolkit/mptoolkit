@@ -138,8 +138,9 @@ Hamiltonian::set_size(int Size_)
 TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
    : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
      Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
-     SInfo(Settings_.SInfo), ExpandFactor(Settings_.ExpandFactor),
-     ExpandMinStates(Settings_.ExpandMinStates), ExpandMinPerSector(Settings_.ExpandMinPerSector),
+     SInfo(Settings_.SInfo), Oversampling(Settings_.Oversampling),
+     PreExpansionAlgo(Settings_.PreExpansionAlgo), PreExpandFactor(Settings_.PreExpandFactor),
+     PreExpandPerSector(Settings_.PreExpandPerSector), ProjectTwoSiteTangent(Settings_.ProjectTwoSiteTangent),
      Epsilon(Settings_.Epsilon), Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
 {
 }
@@ -286,367 +287,106 @@ TDVP::IterateRight(std::complex<double> Tau)
    HamR.pop_front();
 }
 
-// ***
-// Borrowed from mp-algorithms.dmrg
-// ***
-
-// Calculate how to determine ExtraStates among the available states, with relative weights given by the Weights array.
-// To do this, we start from the total weight of the available sectors, and stretch that interval w[j] to be length ExtraStates.
-// (we can cap ExtraStates at the total number of available states in sectors with non-zero weight, so ExtraStates is actually
-// achievable. We can also remove sectors that have zero weight from the Avail array.)
-// Then the number of states we keep of the j'th sector, k[j] is k[j] = round(sum(k<=j) w[k] - k[j-1]) (with k[-1] = 0).
-// If any of the k[j] > Avail[j], then pin k[j] = Avail[j], remove sector j from the Avail array, and repeat the distribution.
-// We avoid creating subspaces that have zero dimension. In principle this is harmless, although inefficient, but
-// MKL doesn't behave properly when multiplying 0-size matrices.
-std::map<QuantumNumbers::QuantumNumber, int>
-DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<QuantumNumbers::QuantumNumber, int> const& Avail, int ExtraStates, int ExtraStatesPerSector, int CapExtraStatesPerSector = 0)
-{
-   std::map<QuantumNumbers::QuantumNumber, int> Result;
-
-   // Determine the total count of available states in sectors that have non-zero weight, and their total weight
-   int TotalWeight = 0;
-   int TotalAvail = 0;
-   for (auto const& a : Avail)
-   {
-      if (Weights[a.first] > 0)
-      {
-         TotalWeight += Weights[a.first];
-         TotalAvail += a.second;
-      }
-   }
-   ExtraStates = std::min(ExtraStates, TotalAvail); // cap ExtraStates, if it is more than the states available
-
-   // Fill the Result array with the interval length of the Weights, stretched to length ExtraStates
-   bool Valid = false;
-   while (!Valid)
-   {
-      Valid = true;
-      int StatesKeptSoFar = 0;
-      int WeightSum = 0;
-      int TotalWeightThisRound = TotalWeight;
-      int StatesWantedThisRound = ExtraStates;
-      for (auto const& a : Avail)
-      {
-         if (Weights[a.first] > 0)
-         {
-            WeightSum += Weights[a.first];
-            int NumToAdd = int(std::round((double(WeightSum) / TotalWeightThisRound) * StatesWantedThisRound)) - StatesKeptSoFar;
-            if (NumToAdd > 0)
-            {
-               Result[a.first] = NumToAdd;
-               StatesKeptSoFar += Result[a.first];
-
-               // if we've exceed the possible allocation, then peg the number of states at the maximum and
-               // remove this sector from consideration in the next pass
-               if (NumToAdd > a.second)
-               {
-                  Result[a.first] = a.second;
-                  ExtraStates -= a.second;
-                  TotalWeight -= Weights[a.first];
-                  Weights[a.first] = 0;
-                  Valid = false;
-               }
-            }
-         }
-      }
-      DEBUG_CHECK_EQUAL(StatesKeptSoFar, StatesWantedThisRound);
-   }
-
-   if (ExtraStatesPerSector > 0)
-   {
-      // If we don't have a cap on the number of states per sector to add, then just go through the list and add them
-      if (CapExtraStatesPerSector == 0)
-      {
-         // Final pass: add ExtraStatesPerSector to states that don't already have them
-         for (auto a : Avail)
-         {
-            if (Result[a.first] < ExtraStatesPerSector && Result[a.first] < a.second)
-               Result[a.first] = std::min(a.second, ExtraStatesPerSector);
-         }
-      }
-      else
-      {
-         // If we have a cap on the number, we need to select states to keep at random.
-         // Firstly assemble a list of all available sectors, including multiple times if ExtraStatesPerSector > 1
-         std::vector<QuantumNumbers::QuantumNumber> ToAdd;
-         for (auto a : Avail)
-         {
-            int AddedThisSector = Result.count(a.first) == 0 ? 0 : Result[a.first];
-            if (AddedThisSector < ExtraStatesPerSector && AddedThisSector < a.second)
-            {
-               for (int i = 0; i < std::min(a.second, ExtraStatesPerSector) - AddedThisSector; ++i)
-               {
-                  ToAdd.push_back(a.first);
-               }
-            }
-         }
-         // randomize the order of the sectors
-         randutil::random_stream stream;
-         stream.seed();
-         std::shuffle(ToAdd.begin(), ToAdd.end(), stream.u_rand);
-         // Now add states up to the cap
-         for (auto a = ToAdd.begin(); a != ToAdd.end() && CapExtraStatesPerSector > 0; ++a)
-         {
-            ++Result[*a];
-            --CapExtraStatesPerSector;
-         }
-      }
-   }
-   return Result;
-}
-
-void
-ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
-                      StateComponent const& E, StateComponent const& F,
-                      OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
-                      int ExpandMinPerSector, int Verbose)
-{
-   // If the MPO dimension across the bond is two, we cannot do any expansion anyway.
-   if (HLeft.Basis2().size() == 2)
-      return;
-
-   // Perform truncation before expansion.
-   CMatSVD SVD(ExpandBasis1(CRight));
-   TruncationInfo Info;
-   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
-
-   if (Verbose > 0)
-      std::cout << "StatesOld=" << CLeft.Basis2().total_dimension()
-                << " StatesTrunc=" << Info.KeptStates();
-
-   CRight = prod(D*Vh, CRight);
-   CLeft = prod(CLeft, U);
-
-   // Calculate left null space of left site.
-   StateComponent NLeft = NullSpace2(CLeft);
-
-   // Perform SVD to right-orthogonalize the right site and extract singular value matrix.
-   StateComponent CRightOrtho = CRight;
-   MatrixOperator URight;
-   RealDiagonalOperator DRight;
-   std::tie(URight, DRight) = OrthogonalizeBasis1(CRightOrtho);
-
-   // Project out the first and last columns of HLeft.
-   SimpleOperator Projector(HLeft.Basis2(), BasisList(HLeft.Basis2().begin()+1, HLeft.Basis2().end()-1));
-   for (int i = 0; i < Projector.Basis2().size(); ++i)
-      Projector(i+1, i) = 1.0;
-
-   StateComponent X = contract_from_left(HLeft*Projector, herm(NLeft), E, CLeft*URight*DRight);
-   StateComponent FRight = contract_from_right(herm(herm(Projector)*HRight), CRightOrtho, F, herm(CRight));
-
-   // Multiply each element of X by a prefactor depending on the corresponding element of F.
-   for (int i = 0; i < X.size(); ++i)
-   {
-      // We add an epsilon term to the prefactor to avoid the corner case where
-      // the prefactor is zero for all elements, and any possible new states
-      // are ignored.
-      double Prefactor = norm_frob(FRight[i]) + PrefactorEpsilon;
-      X[i] *= Prefactor;
-   }
-
-   MatrixOperator XExpand = ExpandBasis1(X);
-
-   // Randomized SVD.
-   std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(XExpand);
-   std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(CLeft.Basis2());
-   std::map<QuantumNumbers::QuantumNumber, int> Weights;
-   for (auto n : NumAvailablePerSector)
-   {
-      // Set the relative weight to the number of kept states in this sector.
-      // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
-      // with respect to the density matrix mixing.
-      if (n.second > 0)
-         Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
-   }
-
-   // Target number of extra states.
-   int ExtraStates = std::max((int) std::ceil(ExpandFactor * CLeft.Basis2().total_dimension()), ExpandMinStates);
-
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExpandMinPerSector*2);
-
-   VectorBasis ExtraBasis(CLeft.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
-
-   MatrixOperator M = MakeRandomMatrixOperator(XExpand.Basis2(), ExtraBasis);
-   MatrixOperator A = XExpand*M;
-   auto QR = QR_Factorize(A);
-   XExpand = herm(QR.first) * XExpand;
-
-   // Take the truncated SVD of X.
-   CMatSVD SVDEx(XExpand);
-   auto ExpandedStates = TruncateExtraStates(SVDEx.begin(), SVDEx.end(), ExtraStates, ExpandMinPerSector, false);
-
-   MatrixOperator UEx, VhEx;
-   RealDiagonalOperator DEx;
-   SVDEx.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), UEx, DEx, VhEx);
-
-   // Construct new basis.
-   SumBasis<VectorBasis> NewBasis(CLeft.Basis2(), UEx.Basis2());
-   // Regularize the new basis.
-   Regularizer R(NewBasis);
-
-   // Add the new states to CLeft, and add zeros to CRight.
-   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, prod(NLeft, QR.first * UEx), NewBasis), R);
-
-   StateComponent Z = StateComponent(CRight.LocalBasis(), VhEx.Basis1(), CRight.Basis2());
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, Z, NewBasis));
-
-   if (Verbose > 0)
-      std::cout << " StatesNew=" << CLeft.Basis2().total_dimension() << std::endl;
-}
-
-void
-ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
-                       StateComponent const& E, StateComponent const& F,
-                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                       StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
-                       int ExpandMinPerSector, int Verbose)
-{
-   // If the MPO dimension across the bond is two, we cannot do any expansion anyway.
-   if (HRight.Basis1().size() == 2)
-      return;
-
-   // Perform truncation before expansion.
-   CMatSVD SVD(ExpandBasis2(CLeft));
-   TruncationInfo Info;
-   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
-
-   MatrixOperator U, Vh;
-   RealDiagonalOperator D;
-   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
-
-   if (Verbose > 0)
-      std::cout << "StatesOld=" << CRight.Basis1().total_dimension()
-                << " StatesTrunc=" << Info.KeptStates();
-
-   CRight = prod(Vh, CRight);
-   CLeft = prod(CLeft, U*D);
-
-   // Calculate right null space of right site.
-   StateComponent NRight = NullSpace1(CRight);
-
-   // Perform SVD to left-orthogonalize the left site and extract singular value matrix.
-   StateComponent CLeftOrtho = CLeft;
-   MatrixOperator VhLeft;
-   RealDiagonalOperator DLeft;
-   std::tie(DLeft, VhLeft) = OrthogonalizeBasis2(CLeftOrtho);
-
-   // Project out the first and last columns of HRight.
-   SimpleOperator Projector(BasisList(HRight.Basis1().begin()+1, HRight.Basis1().end()-1), HRight.Basis1());
-   for (int i = 0; i < Projector.Basis1().size(); ++i)
-      Projector(i, i+1) = 1.0;
-
-   StateComponent X = contract_from_right(herm(Projector*HRight), NRight, F, herm(DLeft*VhLeft*CRight));
-   StateComponent ELeft = contract_from_left(HLeft*herm(Projector), herm(CLeftOrtho), E, CLeft);
-
-   // Multiply each element of X by a prefactor depending on the corresponding element of E.
-   for (int i = 0; i < X.size(); ++i)
-   {
-      // We add an epsilon term to the prefactor to avoid the corner case where
-      // the prefactor is zero for all elements, and any possible new states
-      // are ignored.
-      double Prefactor = norm_frob(ELeft[i]) + PrefactorEpsilon;
-      X[i] *= Prefactor;
-   }
-
-   MatrixOperator XExpand = ExpandBasis1(X);
-
-   // Randomized SVD.
-   std::map<QuantumNumbers::QuantumNumber, int> NumAvailablePerSector = RankPerSector(XExpand);
-   std::map<QuantumNumbers::QuantumNumber, int> KeptStateDimension = DimensionPerSector(CLeft.Basis2());
-   std::map<QuantumNumbers::QuantumNumber, int> Weights;
-   for (auto n : NumAvailablePerSector)
-   {
-      // Set the relative weight to the number of kept states in this sector.
-      // Clamp this at a minimum of 1 state, since a state only appears in X if it has non-zero contribution
-      // with respect to the density matrix mixing.
-      if (n.second > 0)
-         Weights[n.first] = std::max(KeptStateDimension[n.first], 1);
-   }
-
-   // Target number of extra states.
-   int ExtraStates = std::max((int) std::ceil(ExpandFactor * CLeft.Basis2().total_dimension()), ExpandMinStates);
-
-   auto NumExtraPerSector = DistributeStates(Weights, NumAvailablePerSector, ExtraStates*2, ExpandMinPerSector*2);
-
-   VectorBasis ExtraBasis(CLeft.GetSymmetryList(), NumExtraPerSector.begin(), NumExtraPerSector.end());
-
-   MatrixOperator M = MakeRandomMatrixOperator(XExpand.Basis2(), ExtraBasis);
-   MatrixOperator A = XExpand*M;
-   auto QR = QR_Factorize(A);
-   XExpand = herm(QR.first) * XExpand;
-
-   // Take the truncated SVD of X.
-   CMatSVD SVDEx(XExpand);
-   auto ExpandedStates = TruncateExtraStates(SVDEx.begin(), SVDEx.end(), ExtraStates, ExpandMinPerSector, false);
-
-   MatrixOperator UEx, VhEx;
-   RealDiagonalOperator DEx;
-   SVDEx.ConstructMatrices(ExpandedStates.begin(), ExpandedStates.end(), UEx, DEx, VhEx);
-
-   // Construct new basis.
-   SumBasis<VectorBasis> NewBasis(CRight.Basis1(), UEx.Basis2());
-   // Regularize the new basis.
-   Regularizer R(NewBasis);
-
-   // Add the new states to CRight, and add zeros to CLeft.
-   CRight = RegularizeBasis1(R, tensor_col_sum(CRight, prod(herm(QR.first * UEx), NRight), NewBasis));
-
-   StateComponent Z = StateComponent(CLeft.LocalBasis(), CLeft.Basis1(), VhEx.Basis1());
-   CLeft = RegularizeBasis2(tensor_row_sum(CLeft, Z, NewBasis), R);
-
-   if (Verbose > 0)
-      std::cout << " StatesNew=" << CRight.Basis1().total_dimension() << std::endl;
-}
-
 void
 TDVP::ExpandLeft()
 {
-   auto CNext = C;
-   --CNext;
-   auto HNext = H;
-   --HNext;
+   int StatesOld = C->Basis1().total_dimension();
+   int ExtraStates = (int) std::ceil(PreExpandFactor * StatesOld);
+
+   auto L = C;
+   --L;
+   auto HL = H;
+   --HL;
 
    HamL.pop_back();
 
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis1(*C));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+
+   *L = (*L) * U;
+   *C = (D*Vh) * (*C);
+
+   // Pre-expansion.
+   StateComponent LExpand = PreExpandBasis1(*L, *C, HamL.back(), *HL, *H, HamR.front(), PreExpansionAlgo,
+                                            ExtraStates, PreExpandPerSector, Oversampling, ProjectTwoSiteTangent);
+
+   StateComponent LNew = tensor_row_sum(*L, LExpand);
+   OrthogonalizeBasis2_QR(LNew);
+
+   HamL.push_back(contract_from_left(*HL, herm(LNew), HamL.back(), LNew));
+
+   *C = scalar_prod(herm(LNew), *L) * (*C);
+   *L = LNew;
+
+   int StatesNew = C->Basis1().total_dimension();
+   MaxStates = std::max(MaxStates, StatesNew);
+
    if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site << " ";
-
-   ExpandLeftEnvironment(*CNext, *C, HamL.back(), HamR.front(), *HNext, *H,
-                         SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
-
-   MaxStates = std::max(MaxStates, C->Basis1().total_dimension());
-
-   // Update the effective Hamiltonian.
-   HamL.push_back(contract_from_left(*HNext, herm(*CNext), HamL.back(), *CNext));
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << StatesNew
+                << '\n';
+   }
 }
 
 void
 TDVP::ExpandRight()
 {
-   auto CNext = C;
-   ++CNext;
-   auto HNext = H;
-   ++HNext;
+   int StatesOld = C->Basis2().total_dimension();
+   int ExtraStates = (int) std::ceil(PreExpandFactor * StatesOld);
+
+   auto R = C;
+   ++R;
+   auto HR = H;
+   ++HR;
 
    HamR.pop_front();
 
+   // Perform truncation before expansion.
+   CMatSVD SVD(ExpandBasis2(*C));
+   TruncationInfo Info;
+   auto Cutoff = TruncateFixTruncationErrorRelative(SVD.begin(), SVD.end(), SInfo, Info);
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SVD.ConstructMatrices(SVD.begin(), Cutoff, U, D, Vh);
+
+   *C = (*C) * (U*D);
+   *R = Vh * (*R);
+
+   // Pre-expansion.
+   StateComponent RExpand = PreExpandBasis2(*C, *R, HamL.back(), *H, *HR, HamR.front(), PreExpansionAlgo,
+                                            ExtraStates, PreExpandPerSector, Oversampling, ProjectTwoSiteTangent);
+
+   StateComponent RNew = tensor_col_sum(*R, RExpand);
+   OrthogonalizeBasis1_LQ(RNew);
+
+   HamR.push_front(contract_from_right(herm(*HR), RNew, HamR.front(), herm(RNew)));
+
+   *C = (*C) * scalar_prod(*R, herm(RNew));
+   *R = RNew;
+
+   int StatesNew = C->Basis2().total_dimension();
+   MaxStates = std::max(MaxStates, StatesNew);
+
    if (Verbose > 1)
+   {
       std::cout << "Timestep=" << TStep
-                << " Site=" << Site << " ";
-
-   ExpandRightEnvironment(*C, *CNext, HamL.back(), HamR.front(), *H, *HNext,
-                          SInfo, ExpandFactor, ExpandMinStates, ExpandMinPerSector, Verbose-1);
-
-   MaxStates = std::max(MaxStates, C->Basis2().total_dimension());
-
-   // Update the effective Hamiltonian.
-   HamR.push_front(contract_from_right(herm(*HNext), *CNext, HamR.front(), herm(*CNext)));
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << StatesNew
+                << '\n';
+   }
 }
 
 void

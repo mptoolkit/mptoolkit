@@ -25,6 +25,7 @@
 #include "mpo/basic_triangular_mpo.h"
 #include "lattice/infinitelattice.h"
 #include "tdvp-compositions.h"
+#include "expansion.h"
 
 // Class to handle time-dependent Hamiltonian operators.
 class Hamiltonian
@@ -61,10 +62,15 @@ struct TDVPSettings
    Composition Comp;
    int MaxIter = 10;
    double ErrTol = 1e-16;
+
    StatesInfo SInfo;
-   double ExpandFactor = 0.1;
-   int ExpandMinStates = 2;
-   int ExpandMinPerSector = 1;
+
+   OversamplingInfo Oversampling;
+   PreExpansionAlgorithm PreExpansionAlgo;
+   double PreExpandFactor = 0.1;
+   int PreExpandPerSector = 1;
+   bool ProjectTwoSiteTangent = false;
+
    bool Epsilon = false;
    bool Normalize = true;
    int Verbose = 0;
@@ -155,9 +161,11 @@ class TDVP
       int MaxIter;
       double ErrTol;
       StatesInfo SInfo;
-      double ExpandFactor;
-      int ExpandMinStates;
-      int ExpandMinPerSector;
+      OversamplingInfo Oversampling;
+      PreExpansionAlgorithm PreExpansionAlgo;
+      double PreExpandFactor;
+      int PreExpandPerSector;
+      bool ProjectTwoSiteTangent;
       bool Epsilon;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
