@@ -55,6 +55,7 @@ int main(int argc, char** argv)
       std::string Magnus = "2";
       std::string TimeVar = "t";
       std::string PreExpandAlgo = "rsvd";
+      std::string PostExpandAlgo = "rsvd";
 
       int EvolutionWindowLeft = 0;
       int EvolutionWindowRight = 0;
@@ -97,7 +98,10 @@ int main(int argc, char** argv)
           FormatDefault("Eigenvalue cutoff threshold", Settings.SInfo.EigenvalueCutoff).c_str())
          ("pre", prog_opt::value(&PreExpandAlgo), FormatDefault("Pre-expansion algorithm, choices are " + PreExpansionAlgorithm::ListAvailable(), PreExpandAlgo).c_str())
          ("pre-factor", prog_opt::value(&Settings.PreExpandFactor), FormatDefault("Pre-expansion factor", Settings.PreExpandFactor).c_str())
-         ("pre-sector", prog_opt::value(&Settings.PreExpandPerSector), "Pre-expansion number of additional states in each quantum number sector [default 0 for fullsvd, rsvd; default 1 for range, random]")
+         ("pre-sector", prog_opt::value(&Settings.PreExpandPerSector), "Pre-expansion number of additional states in each quantum number sector [default 1 for fullsvd, rsvd; default 0 for range, random]")
+         ("post", prog_opt::value(&PostExpandAlgo), FormatDefault("Post-expansion algorithm, choices are " + PostExpansionAlgorithm::ListAvailable(), PostExpandAlgo).c_str())
+         ("post-factor", prog_opt::value(&Settings.PostExpandFactor), FormatDefault("Post-expansion factor", Settings.PostExpandFactor).c_str())
+         ("post-sector", prog_opt::value(&Settings.PostExpandPerSector), "Post-expansion number of additional states in each quantum number sector [default 1 for fullsvd, rsvd; default 0 for range, random]")
          ("twositetangent", prog_opt::bool_switch(&Settings.ProjectTwoSiteTangent), "Project onto the two-site tangent space during pre-expansion")
          ("oversample", prog_opt::value(&Settings.Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Settings.Oversampling.Scale).c_str())
          ("oversample-min", prog_opt::value(&Settings.Oversampling.Add), FormatDefault("For random SVD, minimum amount of oversampling", Settings.Oversampling.Add).c_str())
@@ -163,17 +167,29 @@ int main(int argc, char** argv)
       }
 
       Settings.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
+      Settings.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
 
-      // Defaults for the pre-expansion per sector
+      // Defaults for the pre- and post-expansion per sector
       if (!vm.count("pre-sector"))
       {
          if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::SVD || Settings.PreExpansionAlgo == PreExpansionAlgorithm::RSVD)
          {
-            Settings.PreExpandPerSector = 0;
+            Settings.PreExpandPerSector = 1;
          }
          else if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::RangeFinding || Settings.PreExpansionAlgo == PreExpansionAlgorithm::Random)
          {
-            Settings.PreExpandPerSector = 1;
+            Settings.PreExpandPerSector = 0;
+         }
+      }
+      if (!vm.count("post-sector"))
+      {
+         if (Settings.PostExpansionAlgo == PostExpansionAlgorithm::SVD || Settings.PostExpansionAlgo == PostExpansionAlgorithm::RSVD)
+         {
+            Settings.PostExpandPerSector = 1;
+         }
+         else if (Settings.PostExpansionAlgo == PostExpansionAlgorithm::RangeFinding || Settings.PostExpansionAlgo == PostExpansionAlgorithm::Random)
+         {
+            Settings.PostExpandPerSector = 0;
          }
       }
 

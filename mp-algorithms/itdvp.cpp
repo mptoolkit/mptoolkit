@@ -48,7 +48,7 @@ struct HEff2
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDVPSettings Settings_)
    : TDVP(Ham_, Settings_),
      GMRESTol(Settings_.GMRESTol), MaxSweeps(Settings_.MaxSweeps),
-     LambdaTol(Settings_.LambdaTol), NEps(Settings_.NEps)
+     FidTol(Settings_.FidTol), NEps(Settings_.NEps)
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
@@ -61,7 +61,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 
    if (PsiCanonical.size() != UnitCellSize)
    {
-      std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << std::endl;
+      std::cout << "Warning: Extending wavefunction unit cell to " << UnitCellSize << " sites." << '\n';
       PsiCanonical = repeat(PsiCanonical, UnitCellSize / PsiCanonical.size());
       Ham.set_size(UnitCellSize);
       std::complex<double> dt = Comp.Beta.back()*Timestep;
@@ -74,7 +74,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
 
    if (Verbose > 0)
-      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
+      std::cout << "Constructing Hamiltonian block operators..." << '\n';
 
    H = HamMPO.begin();
 
@@ -88,7 +88,7 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    for (auto const& I : Psi)
    {
       if (Verbose > 1)
-         std::cout << "Site " << (HamL.size()) << std::endl;
+         std::cout << "Site " << (HamL.size()) << '\n';
       HamL.push_back(contract_from_left(*H, herm(I), HamL.back(), I));
       MaxStates = std::max(MaxStates, (I).Basis2().total_dimension());
       ++H;
@@ -129,6 +129,7 @@ iTDVP::OrthogonalizeLeftmostSite()
 {
    E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
 
+#if 0
    // Right-orthogonalize current site.
    MatrixOperator U;
    RealDiagonalOperator D;
@@ -139,6 +140,34 @@ iTDVP::OrthogonalizeLeftmostSite()
    *C = prod(U, *C);
    LambdaR = (U*D)*herm(U);
    LambdaR = delta_shift(LambdaR, adjoint(QShift));
+#else
+   // Truncate and post-expand.
+   int StatesOld = C->Basis1().total_dimension();
+   int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
+
+   TruncationInfo Info;
+   MatrixOperator X = TruncateExpandBasis1(*C, HamL.back(), *H, HamR.front(), PostExpansionAlgo,
+                                           SInfo, ExtraStates, PostExpandPerSector, Info, Oversampling);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << C->Basis1().total_dimension()
+                << '\n';
+   }
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecompositionKeepBasis2(X, U, D, Vh);
+
+   *C = Vh * (*C);
+   UBoundaryPrev = UBoundary;
+   UBoundary = delta_shift(U, adjoint(QShift));
+   LambdaR = delta_shift(U*D, adjoint(QShift));
+#endif
 
    // Update right block Hamiltonian.
    BlockHamR = contract_from_right(herm(*H), *C, HamR.front(), herm(*C));
@@ -151,6 +180,7 @@ iTDVP::OrthogonalizeRightmostSite()
 {
    E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 
+#if 0
    // Left-orthogonalize current site.
    MatrixOperator Vh;
    RealDiagonalOperator D;
@@ -161,6 +191,34 @@ iTDVP::OrthogonalizeRightmostSite()
    *C = prod(*C, Vh);
    LambdaR = herm(Vh)*(D*Vh);
    LambdaR = delta_shift(LambdaR, QShift);
+#else
+   // Truncate and post-expand.
+   int StatesOld = C->Basis2().total_dimension();
+   int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
+
+   TruncationInfo Info;
+   MatrixOperator X = TruncateExpandBasis2(*C, HamL.back(), *H, HamR.front(), PostExpansionAlgo,
+                                           SInfo, ExtraStates, PostExpandPerSector, Info, Oversampling);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << C->Basis2().total_dimension()
+                << '\n';
+   }
+
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+   SingularValueDecompositionKeepBasis1(X, U, D, Vh);
+
+   *C = (*C) * U;
+   UBoundaryPrev = UBoundary;
+   UBoundary = delta_shift(Vh, QShift);
+   LambdaR = delta_shift(D*Vh, QShift);
+#endif
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
@@ -182,7 +240,7 @@ iTDVP::EvolveLambdaRRight(std::complex<double> Tau)
                 << " Site=" << Site
                 << " LambdaR Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 }
 
@@ -200,7 +258,7 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
                 << " Site=" << Site
                 << " LambdaR Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 }
 
@@ -209,18 +267,22 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 {
    int Sweep = 0;
    double FidelityLoss = 1.0;
-   double LambdaRDiff = 1.0;
 
    PsiOld = Psi;
    LambdaROld = LambdaR;
    HamLOld = HamL;
    double LogAmplitudeOld = LogAmplitude;
 
+   LinearWavefunction PsiPrev;
+   MatrixOperator LambdaRPrev;
+
+   UBoundary = MatrixOperator::make_identity(Psi.get_back().Basis2());
+
    do {
       ++Sweep;
 
-      LinearWavefunction PsiPrev = Psi;
-      MatrixOperator LambdaRPrev = LambdaR;
+      PsiPrev = Psi;
+      LambdaRPrev = LambdaR;
 
       Psi = PsiOld;
       C = Psi.end();
@@ -248,7 +310,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
          // Calculate the fidelity loss compared to the previous sweep.
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
          Rho = delta_shift(Rho, QShift);
-         Rho = inject_left(Rho, Psi, PsiPrev);
+         Rho = inject_left(Rho, PsiPrev, Psi);
 
          MatrixOperator U, Vh;
          RealDiagonalOperator D;
@@ -256,15 +318,12 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
          FidelityLoss = 1.0 - trace(D);
 
-         LambdaRDiff = norm_frob_sq(LambdaR - LambdaRPrev);
-
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepL=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
-                      << " LambdaRDiff=" << LambdaRDiff
-                      << std::endl;
+                      << '\n';
          }
       }
       else
@@ -273,16 +332,21 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepL=" << Sweep
-                      << std::endl;
+                      << '\n';
          }
       }
    }
-   while (LambdaRDiff > LambdaTol && Sweep < MaxSweeps);
+   while (FidelityLoss > FidTol && Sweep < MaxSweeps);
 
    if (Sweep == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
+      std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
-   LambdaR = delta_shift(LambdaR, QShift);
+   Psi.set_back(Psi.get_back() * InvertDiagonal(herm(UBoundaryPrev) * LambdaRPrev) * herm(UBoundaryPrev) * LambdaR);
+
+   BlockHamL = herm(UBoundary) * BlockHamL * UBoundary;
+   HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
+
+   LambdaR = delta_shift(herm(UBoundary) * LambdaR, QShift);
 }
 
 void
@@ -290,18 +354,22 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 {
    int Sweep = 0;
    double FidelityLoss = 1.0;
-   double LambdaRDiff = 1.0;
 
    PsiOld = Psi;
    LambdaROld = LambdaR;
    HamROld = HamR;
    double LogAmplitudeOld = LogAmplitude;
 
+   LinearWavefunction PsiPrev;
+   MatrixOperator LambdaRPrev;
+
+   UBoundary = MatrixOperator::make_identity(Psi.get_front().Basis1());
+
    do {
       ++Sweep;
 
-      LinearWavefunction PsiPrev = Psi;
-      MatrixOperator LambdaRPrev = LambdaR;
+      PsiPrev = Psi;
+      LambdaRPrev = LambdaR;
 
       Psi = PsiOld;
       C = Psi.begin();
@@ -335,15 +403,12 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
          FidelityLoss = 1.0 - trace(D);
 
-         LambdaRDiff = norm_frob_sq(LambdaR - LambdaRPrev);
-
          if (Verbose > 0)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepR=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
-                      << " LambdaRDiff=" << LambdaRDiff
-                      << std::endl;
+                      << '\n';
          }
       }
       else
@@ -352,16 +417,21 @@ iTDVP::EvolveRight(std::complex<double> Tau)
          {
             std::cout << "Timestep=" << TStep
                       << " SweepR=" << Sweep
-                      << std::endl;
+                      << '\n';
          }
       }
    }
-   while (LambdaRDiff > LambdaTol && Sweep < MaxSweeps);
+   while (FidelityLoss > FidTol && Sweep < MaxSweeps);
 
    if (Sweep == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, LambdaRDiff=" << LambdaRDiff << std::endl;
+      std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
-   LambdaR = delta_shift(LambdaR, adjoint(QShift));
+   Psi.set_front(LambdaR * herm(UBoundaryPrev) * InvertDiagonal(LambdaRPrev * herm(UBoundaryPrev)) * Psi.get_front());
+
+   BlockHamR = UBoundary * BlockHamR * herm(UBoundary);
+   HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
+
+   LambdaR = delta_shift(LambdaR * herm(UBoundary), adjoint(QShift));
 }
 
 void
@@ -480,7 +550,7 @@ iTDVP::CalculateEps()
                    << " Site=" << Site
                    << " Eps1Sq=" << Eps1Sq
                    << " Eps2Sq=" << Eps2Sq
-                   << std::endl;
+                   << '\n';
       }
    }
 
@@ -520,7 +590,7 @@ iTDVP::CalculateEps()
                 << " Site=" << LeftStop
                 << " Eps1Sq=" << Eps1Sq
                 << " Eps2Sq=" << Eps2Sq
-                << std::endl;
+                << '\n';
    }
 
    if (NEps > 2)
@@ -582,7 +652,7 @@ iTDVP::CalculateEpsN(std::deque<StateComponent> X, std::deque<StateComponent> Y)
       }
 
       if (Verbose > 1)
-         std::cout << std::endl;
+         std::cout << '\n';
 
       --C, --H, --Xi, --Yi, --Site;
    }
@@ -649,6 +719,7 @@ iTDVP::ExpandLeft()
    if (Site == LeftStop)
       LShift = delta_shift(LShift, QShift);
 
+#if 0
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis1(CCenter));
    TruncationInfo Info;
@@ -660,6 +731,10 @@ iTDVP::ExpandLeft()
 
    LShift = LShift * U;
    CCenter = (D*Vh) * CCenter;
+#else
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+#endif
 
    // Pre-expansion.
    StateComponent LExpand = PreExpandBasis1(LShift, CCenter, HamLOld.back(), *HL, *H, HamROld.front(), PreExpansionAlgo,
@@ -678,7 +753,7 @@ iTDVP::ExpandLeft()
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
-                << " StatesTrunc=" << Info.KeptStates()
+                //<< " StatesTrunc=" << Info.KeptStates()
                 << " StatesNew=" << StatesNew
                 << '\n';
    }
@@ -776,6 +851,7 @@ iTDVP::ExpandRight()
    if (Site == RightStop)
       RShift = delta_shift(RShift, adjoint(QShift));
 
+#if 0
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis2(CCenter));
    TruncationInfo Info;
@@ -787,6 +863,10 @@ iTDVP::ExpandRight()
 
    CCenter = CCenter * (U*D);
    RShift = Vh * RShift;
+#else
+   MatrixOperator U, Vh;
+   RealDiagonalOperator D;
+#endif
 
    // Pre-expansion.
    StateComponent RExpand = PreExpandBasis2(CCenter, RShift, HamLOld.back(), *H, *HR, HamROld.front(), PreExpansionAlgo,
@@ -805,7 +885,7 @@ iTDVP::ExpandRight()
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
-                << " StatesTrunc=" << Info.KeptStates()
+                //<< " StatesTrunc=" << Info.KeptStates()
                 << " StatesNew=" << StatesNew
                 << '\n';
    }
@@ -861,7 +941,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    --H;
 
    if (Verbose > 1)
-      std::cout << "Recalculating Hamiltonian environments (left)..." << std::endl;
+      std::cout << "Recalculating Hamiltonian environments (left)..." << '\n';
 
    MatrixOperator Rho = scalar_prod(herm(LambdaR), LambdaR);
    Rho = delta_shift(Rho, QShift);
@@ -890,7 +970,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    while (SiteLocal < RightStop)
    {
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
+         std::cout << "Site " << SiteLocal << '\n';
       HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
       ++HLocal, ++CLocal, ++SiteLocal;
    }
@@ -906,7 +986,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    H = HamMPO.begin();
 
    if (Verbose > 1)
-      std::cout << "Recalculating Hamiltonian environments (right)..." << std::endl;
+      std::cout << "Recalculating Hamiltonian environments (right)..." << '\n';
 
    MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
    RhoOld = delta_shift(RhoOld, QShift);
@@ -936,7 +1016,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    {
       --HLocal, --CLocal, --SiteLocal;
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
+         std::cout << "Site " << SiteLocal << '\n';
       HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
    }
 }

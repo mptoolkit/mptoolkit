@@ -129,7 +129,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
    WindowRightSites = Psi_.window_right_sites();
 
    if (Verbose > 0)
-      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
+      std::cout << "Constructing Hamiltonian block operators..." << '\n';
 
    // Set left/right Hamiltonian sizes to match the unit cell sizes.
    HamiltonianLeft = Ham();
@@ -149,7 +149,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
                                                               GMRESTol, Verbose-1);
 
    if (Verbose > 0)
-      std::cout << "Left energy = " << LeftEnergy << std::endl;
+      std::cout << "Left energy = " << LeftEnergy << '\n';
 
    // Remove a spurious contribution from the "bond energy", which is the
    // energy contribution from the terms in the Hamiltonian which cross the
@@ -168,7 +168,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
                                                 delta_shift(BlockHamLR, PsiLeft.qshift()));
 
    if (Verbose > 0)
-      std::cout << "Bond energy = " << BondEnergy << std::endl;
+      std::cout << "Bond energy = " << BondEnergy << '\n';
 
    BlockHamL.back() -= BondEnergy * BlockHamL.front();
 
@@ -193,7 +193,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
    std::complex<double> RightEnergy = SolveHamiltonianMPO_Right(BlockHamR, PsiRight, HamiltonianRight,
                                                                 GMRESTol, Verbose-1);
    if (Verbose > 0)
-      std::cout << "Right energy = " << RightEnergy << std::endl;
+      std::cout << "Right energy = " << RightEnergy << '\n';
 
    BlockHamR = delta_shift(BlockHamR, RightQShift);
 
@@ -257,7 +257,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
       HamiltonianWindow = BasicTriangularMPO();
 
       if (Verbose > 1)
-         std::cout << "Initial window size = 0, adding site to window..." << std::endl;
+         std::cout << "Initial window size = 0, adding site to window..." << '\n';
 
       this->ExpandWindowRight();
       if (LeftStop == RightStop + 1)
@@ -292,7 +292,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
       while (C != Psi.end())
       {
          if (Verbose > 1)
-            std::cout << "Site " << Site << std::endl;
+            std::cout << "Site " << Site << '\n';
          HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
          MaxStates = std::max(MaxStates, (*C).Basis2().total_dimension());
          ++H, ++C, ++Site;
@@ -595,7 +595,7 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossLeft=" << FidLoss
-                   << ", expanding window..." << std::endl;
+                   << ", expanding window..." << '\n';
 
       this->ExpandEvolutionWindowLeft();
 
@@ -621,7 +621,7 @@ IBC_TDVP::SweepLeftEW(std::complex<double> Tau, bool Expand)
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossLeft=" << FidLoss << std::endl;
+      std::cout << "FidelityLossLeft=" << FidLoss << '\n';
 }
 
 void
@@ -651,7 +651,7 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossRight=" << FidLoss
-                   << ", expanding window..." << std::endl;
+                   << ", expanding window..." << '\n';
 
       this->ExpandEvolutionWindowRight();
 
@@ -677,7 +677,7 @@ IBC_TDVP::SweepRightEW(std::complex<double> Tau, bool Expand)
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss << '\n';
 }
 
 void
@@ -707,7 +707,7 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
    {
       if (Verbose > 0)
          std::cout << "FidelityLossRight=" << FidLoss
-                   << ", expanding window..." << std::endl;
+                   << ", expanding window..." << '\n';
 
       this->ExpandEvolutionWindowRight();
 
@@ -735,7 +735,7 @@ IBC_TDVP::SweepRightFinalEW(std::complex<double> Tau, bool Expand)
    }
 
    if (Verbose > 0)
-      std::cout << "FidelityLossRight=" << FidLoss << std::endl;
+      std::cout << "FidelityLossRight=" << FidLoss << '\n';
 }
 
 void

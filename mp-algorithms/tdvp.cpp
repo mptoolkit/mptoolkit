@@ -85,7 +85,7 @@ Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
    catch (Parser::ParserError& e)
    {
       if (Verbose > 1)
-         std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent." << std::endl;
+         std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent." << '\n';
       TimeDependent = true;
    }
    catch (...)
@@ -137,10 +137,11 @@ Hamiltonian::set_size(int Size_)
 
 TDVP::TDVP(Hamiltonian const& Ham_, TDVPSettings const& Settings_)
    : Ham(Ham_), InitialTime(Settings_.InitialTime), Timestep(Settings_.Timestep),
-     Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol),
-     SInfo(Settings_.SInfo), Oversampling(Settings_.Oversampling),
+     Comp(Settings_.Comp), MaxIter(Settings_.MaxIter), ErrTol(Settings_.ErrTol), SInfo(Settings_.SInfo),
      PreExpansionAlgo(Settings_.PreExpansionAlgo), PreExpandFactor(Settings_.PreExpandFactor),
-     PreExpandPerSector(Settings_.PreExpandPerSector), ProjectTwoSiteTangent(Settings_.ProjectTwoSiteTangent),
+     PreExpandPerSector(Settings_.PreExpandPerSector), PostExpansionAlgo(Settings_.PostExpansionAlgo),
+     PostExpandFactor(Settings_.PostExpandFactor), PostExpandPerSector(Settings_.PostExpandPerSector),
+     ProjectTwoSiteTangent(Settings_.ProjectTwoSiteTangent), Oversampling(Settings_.Oversampling),
      Epsilon(Settings_.Epsilon), Normalize(Settings_.Normalize), Verbose(Settings_.Verbose)
 {
 }
@@ -154,13 +155,13 @@ TDVP::TDVP(FiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, TDVPSett
    HamMPO = Ham(Time-dt, dt);
 
    if (Verbose > 0)
-      std::cout << "Constructing Hamiltonian block operators..." << std::endl;
+      std::cout << "Constructing Hamiltonian block operators..." << '\n';
    H = HamMPO.begin();
    HamL.push_back(Initial_E(HamMPO, Psi_.Basis1()));
    for (FiniteWavefunctionLeft::const_mps_iterator I = Psi_.begin(); I != Psi_.end(); ++I)
    {
       if (Verbose > 1)
-         std::cout << "Site " << (HamL.size()) << std::endl;
+         std::cout << "Site " << (HamL.size()) << '\n';
       HamL.push_back(contract_from_left(*H, herm(*I), HamL.back(), *I));
       Psi.push_back(*I);
       MaxStates = std::max(MaxStates, I->Basis2().total_dimension());
@@ -207,18 +208,40 @@ TDVP::EvolveCurrentSite(std::complex<double> Tau)
                 << " Site=" << Site
                 << " C Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 }
 
 void
 TDVP::IterateLeft(std::complex<double> Tau)
 {
+#if 0
    // Perform SVD to right-orthogonalize current site.
    MatrixOperator U;
    RealDiagonalOperator D;
 
    std::tie(U, D) = OrthogonalizeBasis1(*C);
+
+   MatrixOperator X = U*D;
+#else
+   // Truncate and post-expand.
+   int StatesOld = C->Basis1().total_dimension();
+   int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
+
+   TruncationInfo Info;
+   MatrixOperator X = TruncateExpandBasis1(*C, HamL.back(), *H, HamR.front(), PostExpansionAlgo,
+                                           SInfo, ExtraStates, PostExpandPerSector, Info, Oversampling);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << C->Basis1().total_dimension()
+                << '\n';
+   }
+#endif
 
    // Update the effective Hamiltonian.
    HamR.push_front(contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
@@ -226,9 +249,7 @@ TDVP::IterateLeft(std::complex<double> Tau)
    // Evolve the UD term backwards in time.
    int Iter = MaxIter;
    double Err = ErrTol;
-   MatrixOperator UD = U*D;
-
-   UD = LanczosExponential(UD, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
+   X = LanczosExponential(X, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -236,7 +257,7 @@ TDVP::IterateLeft(std::complex<double> Tau)
                 << " Site=" << Site
                 << " UD Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 
    // Move to the next site.
@@ -244,7 +265,7 @@ TDVP::IterateLeft(std::complex<double> Tau)
    --H;
    --C;
 
-   *C = prod(*C, UD);
+   *C = prod(*C, X);
 
    HamL.pop_back();
 }
@@ -252,11 +273,33 @@ TDVP::IterateLeft(std::complex<double> Tau)
 void
 TDVP::IterateRight(std::complex<double> Tau)
 {
+#if 0
    // Perform SVD to left-orthogonalize current site.
    MatrixOperator Vh;
    RealDiagonalOperator D;
 
    std::tie(D, Vh) = OrthogonalizeBasis2(*C);
+
+   MatrixOperator X = D*Vh;
+#else
+   // Truncate and post-expand.
+   int StatesOld = C->Basis2().total_dimension();
+   int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
+
+   TruncationInfo Info;
+   MatrixOperator X = TruncateExpandBasis2(*C, HamL.back(), *H, HamR.front(), PostExpansionAlgo,
+                                           SInfo, ExtraStates, PostExpandPerSector, Info, Oversampling);
+
+   if (Verbose > 1)
+   {
+      std::cout << "Timestep=" << TStep
+                << " Site=" << Site
+                << " StatesOld=" << StatesOld
+                << " StatesTrunc=" << Info.KeptStates()
+                << " StatesNew=" << C->Basis2().total_dimension()
+                << '\n';
+   }
+#endif
 
    // Update the effective Hamiltonian.
    HamL.push_back(contract_from_left(*H, herm(*C), HamL.back(), *C));
@@ -264,9 +307,7 @@ TDVP::IterateRight(std::complex<double> Tau)
    // Evolve the DVh term backwards in time.
    int Iter = MaxIter;
    double Err = ErrTol;
-   MatrixOperator DVh = D*Vh;
-
-   DVh = LanczosExponential(DVh, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
+   X = LanczosExponential(X, HEff2(HamL.back(), HamR.front()), Iter, I*Tau, Err, LogAmplitude);
 
    if (Verbose > 1)
    {
@@ -274,7 +315,7 @@ TDVP::IterateRight(std::complex<double> Tau)
                 << " Site=" << Site
                 << " DVh Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 
    // Move to the next site.
@@ -282,7 +323,7 @@ TDVP::IterateRight(std::complex<double> Tau)
    ++H;
    ++C;
 
-   *C = prod(DVh, *C);
+   *C = prod(X, *C);
 
    HamR.pop_front();
 }
@@ -300,6 +341,7 @@ TDVP::ExpandLeft()
 
    HamL.pop_back();
 
+#if 0
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis1(*C));
    TruncationInfo Info;
@@ -311,6 +353,7 @@ TDVP::ExpandLeft()
 
    *L = (*L) * U;
    *C = (D*Vh) * (*C);
+#endif
 
    // Pre-expansion.
    StateComponent LExpand = PreExpandBasis1(*L, *C, HamL.back(), *HL, *H, HamR.front(), PreExpansionAlgo,
@@ -332,7 +375,7 @@ TDVP::ExpandLeft()
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
-                << " StatesTrunc=" << Info.KeptStates()
+                //<< " StatesTrunc=" << Info.KeptStates()
                 << " StatesNew=" << StatesNew
                 << '\n';
    }
@@ -351,6 +394,7 @@ TDVP::ExpandRight()
 
    HamR.pop_front();
 
+#if 0
    // Perform truncation before expansion.
    CMatSVD SVD(ExpandBasis2(*C));
    TruncationInfo Info;
@@ -362,6 +406,7 @@ TDVP::ExpandRight()
 
    *C = (*C) * (U*D);
    *R = Vh * (*R);
+#endif
 
    // Pre-expansion.
    StateComponent RExpand = PreExpandBasis2(*C, *R, HamL.back(), *H, *HR, HamR.front(), PreExpansionAlgo,
@@ -383,7 +428,7 @@ TDVP::ExpandRight()
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
-                << " StatesTrunc=" << Info.KeptStates()
+                //<< " StatesTrunc=" << Info.KeptStates()
                 << " StatesNew=" << StatesNew
                 << '\n';
    }
@@ -434,7 +479,7 @@ TDVP::CalculateEps1()
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
                 << " Eps1Sq=" << Eps1Sq
-                << std::endl;
+                << '\n';
    }
 }
 
@@ -471,7 +516,7 @@ TDVP::CalculateEps12()
                 << " Site=" << Site
                 << " Eps1Sq=" << Eps1Sq
                 << " Eps2Sq=" << Eps2Sq
-                << std::endl;
+                << '\n';
    }
 }
 
@@ -575,7 +620,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
                 << " Err=" << Err
                 << " States=" << Info.KeptStates()
 		<< " TruncErr=" << Info.TruncationError()
-                << std::endl;
+                << '\n';
    }
 
    TruncErrSum += Info.TruncationError();
@@ -595,7 +640,7 @@ TDVP::IterateLeft2(std::complex<double> Tau)
                 << " Site=" << Site
                 << " C Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 }
 
@@ -635,7 +680,7 @@ TDVP::EvolveLeftmostSite2(std::complex<double> Tau)
                 << " Err=" << Err
                 << " States=" << Info.KeptStates()
 		<< " TruncErr=" << Info.TruncationError()
-                << std::endl;
+                << '\n';
    }
 
    MaxStates = Info.KeptStates();
@@ -660,7 +705,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
                 << " Site=" << Site
                 << " C Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 
    // Form two-site centre block.
@@ -698,7 +743,7 @@ TDVP::IterateRight2(std::complex<double> Tau)
                 << " Err=" << Err
                 << " States=" << Info.KeptStates()
 		<< " TruncErr=" << Info.TruncationError()
-                << std::endl;
+                << '\n';
    }
 
    MaxStates = std::max(MaxStates, Info.KeptStates());
@@ -797,7 +842,7 @@ TDVP::CalculateEps()
       std::cout << "Timestep=" << TStep
                 << " Site=" << SiteLocal
                 << " Eps1Sq=" << Eps1Sq
-                << std::endl;
+                << '\n';
    }
 
    while (SiteLocal > LeftStop)
@@ -839,7 +884,7 @@ TDVP::CalculateEps()
                    << " Site=" << SiteLocal
                    << " Eps1Sq=" << Eps1Sq
                    << " Eps2Sq=" << Eps2Sq
-                   << std::endl;
+                   << '\n';
       }
    }
 }
@@ -855,7 +900,7 @@ TDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    --H;
 
    if (Verbose > 1)
-      std::cout << "Recalculating left Hamiltonian environment..." << std::endl;
+      std::cout << "Recalculating left Hamiltonian environment..." << '\n';
 
    HamL = std::deque<StateComponent>();
    HamL.push_back(Initial_E(HamMPO, Psi.Basis1()));
@@ -867,7 +912,7 @@ TDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    while (SiteLocal < RightStop)
    {
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
+         std::cout << "Site " << SiteLocal << '\n';
       HamL.push_back(contract_from_left(*HLocal, herm(*CLocal), HamL.back(), *CLocal));
       ++HLocal, ++CLocal, ++SiteLocal;
    }
@@ -883,7 +928,7 @@ TDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    H = HamMPO.begin();
 
    if (Verbose > 1)
-      std::cout << "Recalculating right Hamiltonian environment..." << std::endl;
+      std::cout << "Recalculating right Hamiltonian environment..." << '\n';
 
    HamR = std::deque<StateComponent>();
    HamR.push_front(Initial_F(HamMPO, Psi.Basis2()));
@@ -896,7 +941,7 @@ TDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    {
       --HLocal, --CLocal, --SiteLocal;
       if (Verbose > 1)
-         std::cout << "Site " << SiteLocal << std::endl;
+         std::cout << "Site " << SiteLocal << '\n';
       HamR.push_front(contract_from_right(herm(*HLocal), *CLocal, HamR.front(), herm(*CLocal)));
    }
 }

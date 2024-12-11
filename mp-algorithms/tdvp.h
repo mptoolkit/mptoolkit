@@ -65,11 +65,16 @@ struct TDVPSettings
 
    StatesInfo SInfo;
 
-   OversamplingInfo Oversampling;
    PreExpansionAlgorithm PreExpansionAlgo;
    double PreExpandFactor = 0.1;
    int PreExpandPerSector = 1;
+
+   PostExpansionAlgorithm PostExpansionAlgo;
+   double PostExpandFactor = 0.1;
+   int PostExpandPerSector = 1;
+
    bool ProjectTwoSiteTangent = false;
+   OversamplingInfo Oversampling;
 
    bool Epsilon = false;
    bool Normalize = true;
@@ -94,14 +99,12 @@ class TDVP
       // Evolve the current site.
       virtual void EvolveCurrentSite(std::complex<double> Tau);
 
-      // Move the orthogonality center left/right, evolving the lambda matrix
-      // backwards in time.
+      // Move the orthogonality center left/right, truncating and
+      // post-expanding, and then evolve the lambda matrix backwards in time.
       virtual void IterateLeft(std::complex<double> Tau);
       virtual void IterateRight(std::complex<double> Tau);
 
-      // Expand the dimension of the left/right environment of the current site using
-      // the projection of H|Psi> onto the subspace of orthogonal two-site
-      // variations.
+      // Pre-expand the left/right environment of the current site.
       void ExpandLeft();
       void ExpandRight();
 
@@ -160,12 +163,20 @@ class TDVP
       Composition Comp;                  // The symmetric composition scheme used to perform a timestep.
       int MaxIter;
       double ErrTol;
+
       StatesInfo SInfo;
-      OversamplingInfo Oversampling;
+
       PreExpansionAlgorithm PreExpansionAlgo;
       double PreExpandFactor;
       int PreExpandPerSector;
+
+      PostExpansionAlgorithm PostExpansionAlgo;
+      double PostExpandFactor;
+      int PostExpandPerSector;
+
+      OversamplingInfo Oversampling;
       bool ProjectTwoSiteTangent;
+
       bool Epsilon;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;

@@ -26,7 +26,7 @@
 struct iTDVPSettings : TDVPSettings
 {
    double GMRESTol = 1e-13;
-   double LambdaTol = 1e-16;
+   double FidTol = 1e-16;
    int MaxSweeps = 10;
    int NEps = 2;
 };
@@ -41,9 +41,9 @@ class iTDVP : public TDVP
       // Return the current wavefunction in left-canonical form.
       InfiniteWavefunctionLeft Wavefunction() const;
 
-      // Orthogonalize the leftmost/rightmost site in the unit cell, ensuring
-      // that the left and right bases of LambdaR are the same, and calculate
-      // the left/right block Hamiltonian.
+      // Orthogonalize the leftmost/rightmost site in the unit cell, performing
+      // truncation and post-expansion, and updating the left/right block
+      // Hamiltonian.
       void OrthogonalizeLeftmostSite();
       void OrthogonalizeRightmostSite();
 
@@ -51,7 +51,7 @@ class iTDVP : public TDVP
       void EvolveLambdaRRight(std::complex<double> Tau);
       void EvolveLambdaRLeft(std::complex<double> Tau);
 
-      // Evolve the chain by sweeping left/right until the LambdaTol or
+      // Evolve the chain by sweeping left/right until the FidTol or
       // MaxSweeps is reached.
       void EvolveLeft(std::complex<double> Tau);
       void EvolveRight(std::complex<double> Tau);
@@ -65,13 +65,13 @@ class iTDVP : public TDVP
       // Calculate the error measures epsilon_3 to epsilon_NEps.
       void CalculateEpsN(std::deque<StateComponent> X, std::deque<StateComponent> Y);
 
-      // Truncate then expand the left/right environment of the current site.
+      // Pre-expand the left/right environment of the current site.
       void ExpandLeft();
       void ExpandRight();
 
-      // Sweep the unit cell from right to left, truncating and expanding the left environments of each site.
+      // Sweep the unit cell from right to left, pre-expanding the left environments of each site.
       void ExpandBondsLeft();
-      // Sweep the unit cell from left to right, truncating expanding the right environments of each site.
+      // Sweep the unit cell from left to right, pre-expanding the right environments of each site.
       void ExpandBondsRight();
 
       // Update the Hamiltonian if time-dependent, recalculating the left/right
@@ -85,11 +85,12 @@ class iTDVP : public TDVP
       LinearWavefunction PsiOld;
       MatrixOperator LambdaR;
       MatrixOperator LambdaROld;
+      MatrixOperator UBoundary, UBoundaryPrev;
       std::deque<StateComponent> HamLOld, HamROld;
       StateComponent CCenter;
 
       double GMRESTol;
-      double LambdaTol;
+      double FidTol;
       int MaxSweeps;
       int NEps;
 

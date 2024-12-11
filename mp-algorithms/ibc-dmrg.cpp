@@ -77,7 +77,7 @@ IBC_DMRG::EvolveCurrentSite(std::complex<double> Tau)
                 << " Energy=" << Energy
                 << " C Iter=" << Iter
                 << " Err=" << Err
-                << std::endl;
+                << '\n';
    }
 }
 
