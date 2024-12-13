@@ -129,19 +129,6 @@ iTDVP::OrthogonalizeLeftmostSite()
 {
    E = inner_prod(HamL.back(), contract_from_right(herm(*H), *C, HamR.front(), herm(*C)));
 
-#if 0
-   // Right-orthogonalize current site.
-   MatrixOperator U;
-   RealDiagonalOperator D;
-
-   std::tie(U, D) = OrthogonalizeBasis1(*C);
-
-   // Ensure that the left and right bases of LambdaR are the same.
-   *C = prod(U, *C);
-   LambdaR = (U*D)*herm(U);
-   LambdaR = delta_shift(LambdaR, adjoint(QShift));
-#else
-   // Truncate and post-expand.
    int StatesOld = C->Basis1().total_dimension();
    int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
 
@@ -159,15 +146,18 @@ iTDVP::OrthogonalizeLeftmostSite()
                 << '\n';
    }
 
+   // Calculate SVD of X matrix.
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis2(X, U, D, Vh);
 
+   // Incorporate Vh into C.
    *C = Vh * (*C);
+   // Save U for this and previous sweep.
    UBoundaryPrev = UBoundary;
    UBoundary = delta_shift(U, adjoint(QShift));
+   // Incorporate U into Lambda.
    LambdaR = delta_shift(U*D, adjoint(QShift));
-#endif
 
    // Update right block Hamiltonian.
    BlockHamR = contract_from_right(herm(*H), *C, HamR.front(), herm(*C));
@@ -180,18 +170,6 @@ iTDVP::OrthogonalizeRightmostSite()
 {
    E = inner_prod(contract_from_left(*H, herm(*C), HamL.back(), *C), HamR.front());
 
-#if 0
-   // Left-orthogonalize current site.
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
-
-   std::tie(D, Vh) = OrthogonalizeBasis2(*C);
-
-   // Ensure that the left and right bases of LambdaR are the same.
-   *C = prod(*C, Vh);
-   LambdaR = herm(Vh)*(D*Vh);
-   LambdaR = delta_shift(LambdaR, QShift);
-#else
    // Truncate and post-expand.
    int StatesOld = C->Basis2().total_dimension();
    int ExtraStates = (int) std::ceil(PostExpandFactor * StatesOld);
@@ -210,15 +188,18 @@ iTDVP::OrthogonalizeRightmostSite()
                 << '\n';
    }
 
+   // Calculate SVD of X matrix.
    MatrixOperator U, Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis1(X, U, D, Vh);
 
+   // Incorporate U into C.
    *C = (*C) * U;
+   // Save U for this and previous sweep.
    UBoundaryPrev = UBoundary;
    UBoundary = delta_shift(Vh, QShift);
+   // Incorporate Vh into Lambda.
    LambdaR = delta_shift(D*Vh, QShift);
-#endif
 
    // Update left block Hamiltonian.
    BlockHamL = contract_from_left(*H, herm(*C), HamL.back(), *C);
@@ -238,7 +219,7 @@ iTDVP::EvolveLambdaRRight(std::complex<double> Tau)
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
-                << " LambdaR Iter=" << Iter
+                << " X Iter=" << Iter
                 << " Err=" << Err
                 << '\n';
    }
@@ -256,7 +237,7 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
    {
       std::cout << "Timestep=" << TStep
                 << " Site=" << Site
-                << " LambdaR Iter=" << Iter
+                << " X Iter=" << Iter
                 << " Err=" << Err
                 << '\n';
    }
@@ -268,22 +249,27 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
    int Sweep = 0;
    double FidelityLoss = 1.0;
 
+   // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
    HamLOld = HamL;
    double LogAmplitudeOld = LogAmplitude;
 
+   // We keep track of the unit cell and Lambda matrix of the previous sweep.
    LinearWavefunction PsiPrev;
    MatrixOperator LambdaRPrev;
 
+   // Initialize boundary transformation matrix to identity.
    UBoundary = MatrixOperator::make_identity(Psi.get_back().Basis2());
 
    do {
       ++Sweep;
 
+      // Save previous unit cell.
       PsiPrev = Psi;
       LambdaRPrev = LambdaR;
 
+      // Reset unit cell.
       Psi = PsiOld;
       C = Psi.end();
       --C;
@@ -294,6 +280,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
       HamL = HamLOld;
       HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
 
+      // Only need to back-evolve LambdaR after first sweep.
       if (Sweep > 1)
          this->EvolveLambdaRRight(Tau);
 
@@ -307,7 +294,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
       if (Sweep > 1)
       {
-         // Calculate the fidelity loss compared to the previous sweep.
+         // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
          MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
          Rho = delta_shift(Rho, QShift);
          Rho = inject_left(Rho, PsiPrev, Psi);
@@ -341,12 +328,17 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
    if (Sweep == MaxSweeps)
       std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
-   Psi.set_back(Psi.get_back() * InvertDiagonal(herm(UBoundaryPrev) * LambdaRPrev) * herm(UBoundaryPrev) * LambdaR);
+   // Update right boundary to match left boundary by multiplying
+   // (LambdaRPrev)^-1 LambdaR. (We left-multiply LambdaRPrev by
+   // herm(UBoundaryPrev) to make it diagonal before inverting, then
+   // right-multiply herm(UBoundaryPrev) back on afterwards.)
+   Psi.set_back(Psi.get_back() * (InvertDiagonal(herm(UBoundaryPrev) * LambdaRPrev) * herm(UBoundaryPrev) * LambdaR));
 
+   // Make LambdaR diagonal by left-multiplying herm(UBoundary).
+   LambdaR = delta_shift(herm(UBoundary) * LambdaR, QShift);
+   // Update HamL accordingly.
    BlockHamL = herm(UBoundary) * BlockHamL * UBoundary;
    HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
-
-   LambdaR = delta_shift(herm(UBoundary) * LambdaR, QShift);
 }
 
 void
@@ -355,22 +347,27 @@ iTDVP::EvolveRight(std::complex<double> Tau)
    int Sweep = 0;
    double FidelityLoss = 1.0;
 
+   // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
    HamROld = HamR;
    double LogAmplitudeOld = LogAmplitude;
 
+   // We keep track of the unit cell and Lambda matrix of the previous sweep.
    LinearWavefunction PsiPrev;
    MatrixOperator LambdaRPrev;
 
+   // Initialize boundary transformation matrix to identity.
    UBoundary = MatrixOperator::make_identity(Psi.get_front().Basis1());
 
    do {
       ++Sweep;
 
+      // Save previous unit cell.
       PsiPrev = Psi;
       LambdaRPrev = LambdaR;
 
+      // Reset unit cell.
       Psi = PsiOld;
       C = Psi.begin();
       H = HamMPO.begin();
@@ -379,6 +376,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
       HamL = std::deque<StateComponent>(1, delta_shift(BlockHamL, QShift));
       HamR = HamROld;
 
+      // Only need to back-evolve LambdaR after first sweep.
       if (Sweep > 1)
          this->EvolveLambdaRLeft(Tau);
 
@@ -392,7 +390,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
       if (Sweep > 1)
       {
-         // Calculate the fidelity loss compared to the previous sweep.
+         // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
          MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
          Rho = delta_shift(Rho, adjoint(QShift));
          Rho = inject_right(Rho, Psi, PsiPrev);
@@ -426,12 +424,15 @@ iTDVP::EvolveRight(std::complex<double> Tau)
    if (Sweep == MaxSweeps)
       std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
-   Psi.set_front(LambdaR * herm(UBoundaryPrev) * InvertDiagonal(LambdaRPrev * herm(UBoundaryPrev)) * Psi.get_front());
+   // Update left boundary to match right boundary by multiplying
+   // LambdaR (LambdaRPrev)^-1 (see above note).
+   Psi.set_front((LambdaR * herm(UBoundaryPrev) * InvertDiagonal(LambdaRPrev * herm(UBoundaryPrev))) * Psi.get_front());
 
+   // Make LambdaR diagonal by right-multiplying herm(UBoundary).
+   LambdaR = delta_shift(LambdaR * herm(UBoundary), adjoint(QShift));
+   // Update HamR accordingly.
    BlockHamR = UBoundary * BlockHamR * herm(UBoundary);
    HamR = std::deque<StateComponent>(1, delta_shift(BlockHamR, adjoint(QShift)));
-
-   LambdaR = delta_shift(LambdaR * herm(UBoundary), adjoint(QShift));
 }
 
 void
