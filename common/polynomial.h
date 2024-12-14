@@ -95,7 +95,21 @@ class Polynomial
       const_iterator begin() const { return data_.begin(); }
       const_iterator end() const { return data_.end(); }
 
+      // Remove the element of degree n
       void erase(int n) { data_.erase(n); }
+
+      template <typename F>
+      void erase_if(F f)
+      {
+         auto i = data_.begin();
+         while (i != data_.end())
+         {
+            if (f(*i))
+               i = data_.erase(i);
+            else
+               ++i;
+         }
+      }
 
       std::map<int, coefficient_type> data_;
 };
@@ -215,6 +229,30 @@ operator<<(std::ostream& out, Polynomial<CF> const& x)
    return out;
 }
 
+// Pretty-print a polynomial in the form
+// a0 + a1*v + a2*v^2 + a3*v^3 + ...
+template <typename CF>
+void print(std::ostream& out, Polynomial<CF> const& x, std::string const& v)
+{
+   if (x.empty())
+      out << CF{};
+
+   bool First = true;
+   for (typename Polynomial<CF>::const_iterator I = x.begin(); I != x.end(); ++I)
+   {
+      if (!First)
+         out << " + ";
+
+      out << I->second;
+      if (I->first == 1)
+         out << '*' << v;
+      else if (I->first > 1)
+         out << '*' << v << '^' << I->first;
+
+      First = false;
+   }
+}
+
 template <typename CF>
 Polynomial<CF>&
 operator+=(Polynomial<CF>& Poly, Polynomial<CF> const& x)
@@ -286,6 +324,29 @@ operator*(Scalar x, Polynomial<CF> Poly)
       m.second = x * m.second;
    }
    return Poly;
+}
+
+template <typename CF>
+Polynomial<CF>
+operator*(Polynomial<CF> const& x, Polynomial<CF> const& y)
+{
+   Polynomial<CF> Result;
+   for (auto const& xx : x)
+   {
+      for (auto const& yy : y)
+      {
+         Result[xx.first+yy.first] = xx.second*yy.second;
+      }
+   }
+   return Result;
+}
+
+template <typename CF>
+Polynomial<CF>&
+operator*=(Polynomial<CF>& x, Polynomial<CF> const& y)
+{
+   x = (x*y);
+   return x;
 }
 
 #endif
