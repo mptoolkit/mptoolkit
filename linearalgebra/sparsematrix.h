@@ -56,6 +56,10 @@ class SparseMatrix<T, RowMajor, InnerType, OuterType>
       SparseMatrix(SparseMatrix const& x)
          : InnerSize_(x.inner_size()), Data_(x.Data_) {}
 
+      SparseMatrix(SparseMatrix&&) = default;
+      SparseMatrix& operator=(SparseMatrix&&) = default;
+      SparseMatrix& operator=(SparseMatrix const&) = default;
+
       template <typename U>
       SparseMatrix(U const& x, typename boost::enable_if<is_matrix<U> >::type* dummy = 0);
 
