@@ -694,7 +694,7 @@ struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
          expression_string = lexeme_d[+((anychar_p - chset<>("()[]{},"))
                                         | (ch_p('(') >> bracket_expression >> ch_p(')'))
                                         | (ch_p('{') >> bracket_expression >> ch_p('}'))
-                                        | (ch_p('[]') >> bracket_expression >> ch_p(']')) )];
+                                        | (ch_p('[') >> bracket_expression >> ch_p(']')) )];
 
          num_cells = (eps_p((str_p("cells") | str_p("sites")) >> '=')
                       >> ((str_p("cells") >> '=' >> expression >> ',')
