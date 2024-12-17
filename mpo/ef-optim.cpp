@@ -22,6 +22,9 @@
 
 #include "mpo/operator_component.h"
 
+#include "common/environment.h"
+#include <fstream>
+
 // note: we could parallelize the construction of the G and H indices over jP
 
 typedef std::complex<double> NumberType;
@@ -159,6 +162,81 @@ OuterIndex::Evaluate(StateComponent const& B, JMatrixRefList const& J) const
 
 #endif
 
+bool DoLogElement = false;
+
+std::map<std::tuple<int,int,int>, int> ResultMap, AMap, BMap, CMap;
+std::vector<std::pair<int,int>> ResultSize, ASize, BSize, CSize;
+std::map<std::tuple<int,int,int,int>, std::complex<double>> F;
+
+void StartLogElement()
+{
+   ResultMap.clear();
+   ResultSize.clear();
+   AMap.clear();
+   ASize.clear();
+   BMap.clear();
+   BSize.clear();
+   CMap.clear();
+   CSize.clear();
+   F.clear();
+}
+
+int AddToMap(std::map<std::tuple<int,int,int>, int>& Map, std::tuple<int,int,int> x, std::vector<std::pair<int,int>>& SizeMap, int n, int m)
+{
+   auto i = Map.find(x);
+   if (i == Map.end())
+   {
+      int r = Map.size();
+      Map[x] = r;
+      SizeMap.push_back({n,m});
+      return r;
+   }
+   return i->second;
+}
+
+void LogElement(std::complex<double> Factor, std::tuple<int,int,int> R, std::tuple<int,int,int> A, std::tuple<int,int,int> B, std::tuple<int,int,int> C, int S1, int S2, int S3, int S4)
+{
+   int Ri = AddToMap(ResultMap, R, ResultSize, S1, S4);
+   int Ai = AddToMap(AMap, A, ASize, S1, S2);
+   int Bi = AddToMap(BMap, B, BSize, S2, S3);
+   int Ci = AddToMap(CMap, C, CSize, S3, S4);
+   F[{Ri,Ai,Bi,Ci}] = Factor;
+}
+
+std::ofstream ElementFile(getenv_or_default("MP_ELEMENTFLE", ""), std::ios::trunc | std::ios::out);
+
+void ShowVec(std::ostream& out, std::vector<std::pair<int,int>> const& v)
+{
+   int i = 0;
+   for (auto const& x : v)
+   {
+      out << (i++) << ' ' << x.first << ' ' << x.second << '\n';
+   }
+}
+
+void FinishLogElement()
+{
+   ElementFile << "\nRSize:\n";
+   ShowVec(ElementFile, ResultSize);
+
+   ElementFile << "\nASize:\n";
+   ShowVec(ElementFile, ASize);
+
+   ElementFile << "\nBSize:\n";
+   ShowVec(ElementFile, BSize);
+
+   ElementFile << "\nCSize:\n";
+   ShowVec(ElementFile, CSize);
+
+   ElementFile << "\nF:\n";
+   for (auto const& x : F)
+   {
+      ElementFile << std::get<0>(x.first) << ' ' << std::get<1>(x.first) << ' ' << std::get<2>(x.first) << ' ' << std::get<3>(x.first) << ' '
+         << x.second.real() << '\n';
+   }
+   ElementFile << std::endl;
+}
+
 // Result[s'](i',i) = M(s',s)[a',a] E[a'](i',j') B[s](j',j) herm(F[a](i,j))
 StateComponent
 operator_prod_inner(OperatorComponent const& M,
@@ -172,6 +250,8 @@ operator_prod_inner(OperatorComponent const& M,
 
    DEBUG_PRECONDITION_EQUAL(B.Basis2(), F.base().Basis2());
    DEBUG_PRECONDITION_EQUAL(E.Basis2(), B.Basis1());
+
+   StartLogElement();
 
    // firstly, assemble the required H matrix descriptors
    //   JMatrixRefList JList;
@@ -268,6 +348,9 @@ operator_prod_inner(OperatorComponent const& M,
                                  {
                                     Result[sP](iP, i) += Coeff * (*S) * (*EjP) * (*BjP) * herm(*J);
                                  }
+                                 if (DoLogElement)
+                                    LogElement(Coeff*(*S), {sP, iP, i}, {aP, iP, jP}, {s, jP, j}, {a, i, j}, (*EjP).size1(), (*EjP).size2(),
+                                       (*BjP).size2(), (*J).size1());
                               }
                            }
                         }
@@ -280,6 +363,8 @@ operator_prod_inner(OperatorComponent const& M,
          }
       }
    }
+   if (DoLogElement)
+      FinishLogElement();
 
 #if 0
    // do the evaluations

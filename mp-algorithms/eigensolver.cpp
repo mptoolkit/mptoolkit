@@ -26,6 +26,10 @@
 
 #include "mps/packunpack.h"
 
+extern bool DoLogElement;
+
+bool DoLogThisTime = false;
+
 struct MPSMultiply
 {
    MPSMultiply(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_)
@@ -36,6 +40,12 @@ struct MPSMultiply
    StateComponent operator()(StateComponent const& Psi) const
    {
       StateComponent R = operator_prod_inner(H, E, Psi, herm(F));
+      if (DoLogThisTime) {
+         DoLogElement = true;
+         DoLogThisTime = false;
+      }
+      else
+         DoLogElement = false;
       return R;
    }
 
@@ -257,6 +267,8 @@ LocalEigensolver::Solve(StateComponent& C,
    DEBUG_CHECK_EQUAL(LeftBlockHam.LocalBasis(), H.Basis1());
    DEBUG_CHECK_EQUAL(RightBlockHam.LocalBasis(), H.Basis2());
    DEBUG_CHECK_EQUAL(C.LocalBasis(), H.LocalBasis2());
+
+   DoLogThisTime = true;
 
    StateComponent ROld = C;
 
