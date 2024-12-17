@@ -128,23 +128,32 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("timestep") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]" << std::endl;
-         std::cerr << desc << std::endl;
-         std::cerr << "Available compositions:" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]\n";
+         std::cerr << desc << '\n';
+         std::cerr << "Available compositions:\n";
          for (auto const& c : Compositions)
-            std::cerr << c.first << " : " << c.second.Description << std::endl;
+         {
+            std::cerr << c.first << " : ";
+            if (Verbose > 0)
+               // Print the full composition.
+               std::cerr << c.second;
+            else
+               std::cerr << c.second.Description;
+            std::cerr << '\n';
+         }
+         std::cerr << std::flush;
          return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      std::cout << "Starting IBC TDVP..." << std::endl;
-      std::cout << "Hamiltonian: " << HamStr << std::endl;
+      std::cout << "Starting IBC TDVP...\n";
+      std::cout << "Hamiltonian: " << HamStr << '\n';
       if (!HamStrWindow.empty())
-         std::cout << "Window operator: " << HamStrWindow << std::endl;
-      std::cout << "Wavefunction: " << InputFile << std::endl;
-      std::cout << "Composition: " << CompositionStr << std::endl;
+         std::cout << "Window operator: " << HamStrWindow << '\n';
+      std::cout << "Wavefunction: " << InputFile << '\n';
+      std::cout << "Composition: " << CompositionStr << '\n';
 
       Settings.Verbose = Verbose;
 
@@ -192,6 +201,22 @@ int main(int argc, char** argv)
             Settings.PostExpandPerSector = 0;
          }
       }
+
+      // Print expansion info.
+      std::cout << "Pre-expansion algorithm: " << Settings.PreExpansionAlgo.Name();
+      if (Settings.PreExpansionAlgo != PreExpansionAlgorithm::NoExpansion)
+      {
+         std::cout << " with expansion factor " << Settings.PreExpandFactor
+                   << " and per sector " << Settings.PreExpandPerSector;
+      }
+      std::cout << '\n';
+      std::cout << "Post-expansion algorithm: " << Settings.PostExpansionAlgo.Name();
+      if (Settings.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion)
+      {
+         std::cout << " with expansion factor " << Settings.PostExpandFactor
+                   << " and per sector " << Settings.PostExpandPerSector;
+      }
+      std::cout << '\n';
 
       // Open the wavefunction.
       mp_pheap::InitializeTempPHeap();
@@ -269,15 +294,15 @@ int main(int argc, char** argv)
       Settings.EvolutionWindowLeft = EvolutionWindowLeft;
       Settings.EvolutionWindowRight = EvolutionWindowRight;
 
-      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
-      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
+      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << '\n';
+      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << '\n';
 
       // Turn off bond expansion if we specify no pre-expansion.
       if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion)
          Expand = false;
 
       if (Expand || TwoSite)
-         std::cout << Settings.SInfo << std::endl;
+         std::cout << Settings.SInfo << '\n';
 
       IBC_TDVP tdvp(Psi, Ham, Settings);
 
@@ -297,7 +322,7 @@ int main(int argc, char** argv)
       if (Settings.Epsilon)
          std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
                    << " Eps2SqSum=" << tdvp.Eps2SqSum;
-      std::cout << std::endl;
+      std::cout << '\n';
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
@@ -317,7 +342,7 @@ int main(int argc, char** argv)
          if (Settings.Epsilon)
             std::cout << " Eps1SqSum=" << tdvp.Eps1SqSum
                       << " Eps2SqSum=" << tdvp.Eps2SqSum;
-         std::cout << std::endl;
+         std::cout << '\n';
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)

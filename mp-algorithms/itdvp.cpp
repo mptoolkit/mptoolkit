@@ -47,8 +47,7 @@ struct HEff2
 
 iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDVPSettings Settings_)
    : TDVP(Ham_, Settings_),
-     GMRESTol(Settings_.GMRESTol), MaxSweeps(Settings_.MaxSweeps),
-     FidTol(Settings_.FidTol), NEps(Settings_.NEps)
+     GMRESTol(Settings_.GMRESTol), EvolutionSweeps(Settings_.EvolutionSweeps), NEps(Settings_.NEps)
 {
    // Initialize Psi and Ham.
    Time = InitialTime;
@@ -246,9 +245,6 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveLeft(std::complex<double> Tau)
 {
-   int Sweep = 0;
-   double FidelityLoss = 1.0;
-
    // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
@@ -262,9 +258,7 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
    // Initialize boundary transformation matrix to identity.
    UBoundary = MatrixOperator::make_identity(Psi.get_back().Basis2());
 
-   do {
-      ++Sweep;
-
+   for (int Sweep = 1; Sweep <= EvolutionSweeps; ++Sweep) {
       // Save previous unit cell.
       PsiPrev = Psi;
       LambdaRPrev = LambdaR;
@@ -292,30 +286,27 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
       this->OrthogonalizeLeftmostSite();
 
-      if (Sweep > 1)
+      if (Verbose > 0)
       {
-         // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
-         MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
-         Rho = delta_shift(Rho, QShift);
-         Rho = inject_left(Rho, PsiPrev, Psi);
-
-         MatrixOperator U, Vh;
-         RealDiagonalOperator D;
-         SingularValueDecomposition(Rho, U, D, Vh);
-
-         FidelityLoss = 1.0 - trace(D);
-
-         if (Verbose > 0)
+         if (Sweep > 1)
          {
+            // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
+            MatrixOperator Rho = scalar_prod(herm(LambdaRPrev), LambdaR);
+            Rho = delta_shift(Rho, QShift);
+            Rho = inject_left(Rho, PsiPrev, Psi);
+
+            MatrixOperator U, Vh;
+            RealDiagonalOperator D;
+            SingularValueDecomposition(Rho, U, D, Vh);
+
+            double FidelityLoss = 1.0 - trace(D);
+
             std::cout << "Timestep=" << TStep
                       << " SweepL=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
                       << '\n';
          }
-      }
-      else
-      {
-         if (Verbose > 0)
+         else
          {
             std::cout << "Timestep=" << TStep
                       << " SweepL=" << Sweep
@@ -323,10 +314,6 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
          }
       }
    }
-   while (FidelityLoss > FidTol && Sweep < MaxSweeps);
-
-   if (Sweep == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
    // Update right boundary to match left boundary by multiplying
    // (LambdaRPrev)^-1 LambdaR. (We left-multiply LambdaRPrev by
@@ -344,9 +331,6 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveRight(std::complex<double> Tau)
 {
-   int Sweep = 0;
-   double FidelityLoss = 1.0;
-
    // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
@@ -360,9 +344,7 @@ iTDVP::EvolveRight(std::complex<double> Tau)
    // Initialize boundary transformation matrix to identity.
    UBoundary = MatrixOperator::make_identity(Psi.get_front().Basis1());
 
-   do {
-      ++Sweep;
-
+   for (int Sweep = 1; Sweep <= EvolutionSweeps; ++Sweep) {
       // Save previous unit cell.
       PsiPrev = Psi;
       LambdaRPrev = LambdaR;
@@ -388,30 +370,27 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 
       this->OrthogonalizeRightmostSite();
 
-      if (Sweep > 1)
+      if (Verbose > 0)
       {
-         // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
-         MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
-         Rho = delta_shift(Rho, adjoint(QShift));
-         Rho = inject_right(Rho, Psi, PsiPrev);
-
-         MatrixOperator U, Vh;
-         RealDiagonalOperator D;
-         SingularValueDecomposition(Rho, U, D, Vh);
-
-         FidelityLoss = 1.0 - trace(D);
-
-         if (Verbose > 0)
+         if (Sweep > 1)
          {
+            // Calculate the fidelity loss compared to the previous sweep (incorporating the full unit cells).
+            MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaRPrev));
+            Rho = delta_shift(Rho, adjoint(QShift));
+            Rho = inject_right(Rho, Psi, PsiPrev);
+
+            MatrixOperator U, Vh;
+            RealDiagonalOperator D;
+            SingularValueDecomposition(Rho, U, D, Vh);
+
+            double FidelityLoss = 1.0 - trace(D);
+
             std::cout << "Timestep=" << TStep
                       << " SweepR=" << Sweep
                       << " FidelityLoss=" << FidelityLoss
                       << '\n';
          }
-      }
-      else
-      {
-         if (Verbose > 0)
+         else
          {
             std::cout << "Timestep=" << TStep
                       << " SweepR=" << Sweep
@@ -419,10 +398,6 @@ iTDVP::EvolveRight(std::complex<double> Tau)
          }
       }
    }
-   while (FidelityLoss > FidTol && Sweep < MaxSweeps);
-
-   if (Sweep == MaxSweeps)
-      std::cout << "WARNING: MaxSweeps reached, FidelityLoss=" << FidelityLoss << '\n';
 
    // Update left boundary to match right boundary by multiplying
    // LambdaR (LambdaRPrev)^-1 (see above note).

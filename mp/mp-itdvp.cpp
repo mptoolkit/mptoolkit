@@ -98,10 +98,8 @@ int main(int argc, char** argv)
          ("twositetangent", prog_opt::bool_switch(&Settings.ProjectTwoSiteTangent), "Project onto the two-site tangent space during pre-expansion")
          ("oversample", prog_opt::value(&Settings.Oversampling.Scale), FormatDefault("For random SVD, oversample by this factor", Settings.Oversampling.Scale).c_str())
          ("oversample-min", prog_opt::value(&Settings.Oversampling.Add), FormatDefault("For random SVD, minimum amount of oversampling", Settings.Oversampling.Add).c_str())
-         ("fidtol,f", prog_opt::value(&Settings.FidTol),
-          FormatDefault("Tolerance for the fidelity between sweeps", Settings.FidTol).c_str())
-         ("max-sweeps", prog_opt::value(&Settings.MaxSweeps),
-          FormatDefault("Maximum number of sweeps", Settings.MaxSweeps).c_str())
+         ("evolution-sweeps", prog_opt::value(&Settings.EvolutionSweeps),
+          FormatDefault("Number of evolution sweeps", Settings.EvolutionSweeps).c_str())
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("neps,N", prog_opt::value(&Settings.NEps), "Calculate EpsNSqSum up to N = NEps >= 3")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
@@ -123,9 +121,9 @@ int main(int argc, char** argv)
       if (vm.count("help") || vm.count("wavefunction") == 0 || vm.count("timestep") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
-         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]" << std::endl;
-         std::cerr << desc << std::endl;
-         std::cerr << "Available compositions:" << std::endl;
+         std::cerr << "usage: " << basename(argv[0]) << " -w <input-psi> -t <timestep> [options]\n";
+         std::cerr << desc << '\n';
+         std::cerr << "Available compositions:\n";
          for (auto const& c : Compositions)
          {
             std::cerr << c.first << " : ";
@@ -134,18 +132,19 @@ int main(int argc, char** argv)
                std::cerr << c.second;
             else
                std::cerr << c.second.Description;
-            std::cerr << std::endl;
+            std::cerr << '\n';
          }
+         std::cerr << std::flush;
          return 1;
       }
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
-      std::cout << "Starting iTDVP..." << std::endl;
-      std::cout << "Hamiltonian: " << HamStr << std::endl;
-      std::cout << "Wavefunction: " << InputFile << std::endl;
-      std::cout << "Composition: " << CompositionStr << std::endl;
+      std::cout << "Starting iTDVP...\n";
+      std::cout << "Hamiltonian: " << HamStr << '\n';
+      std::cout << "Wavefunction: " << InputFile << '\n';
+      std::cout << "Composition: " << CompositionStr << '\n';
 
       Settings.Verbose = Verbose;
 
@@ -194,6 +193,22 @@ int main(int argc, char** argv)
          }
       }
 
+      // Print expansion info.
+      std::cout << "Pre-expansion algorithm: " << Settings.PreExpansionAlgo.Name();
+      if (Settings.PreExpansionAlgo != PreExpansionAlgorithm::NoExpansion)
+      {
+         std::cout << " with expansion factor " << Settings.PreExpandFactor
+                   << " and per sector " << Settings.PreExpandPerSector;
+      }
+      std::cout << '\n';
+      std::cout << "Post-expansion algorithm: " << Settings.PostExpansionAlgo.Name();
+      if (Settings.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion)
+      {
+         std::cout << " with expansion factor " << Settings.PostExpandFactor
+                   << " and per sector " << Settings.PostExpandPerSector;
+      }
+      std::cout << '\n';
+
       // Open the wavefunction.
       mp_pheap::InitializeTempPHeap();
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::ImportHeap(InputFile);
@@ -230,9 +245,9 @@ int main(int argc, char** argv)
       Settings.Normalize = Normalize;
 
       if (Normalize)
-         std::cout << "Normalizing wavefunction." << std::endl;
+         std::cout << "Normalizing wavefunction\n";
       else
-         std::cout << "Not normalizing wavefunction." << std::endl;
+         std::cout << "Not normalizing wavefunction\n";
 
       OutputDigits = std::max(formatting::digits(Timestep), formatting::digits(InitialTime));
 
@@ -260,11 +275,8 @@ int main(int argc, char** argv)
 
       Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar, Verbose);
 
-      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << std::endl;
-      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << std::endl;
-
-      std::cout << "Maximum number of sweeps: " << Settings.MaxSweeps << std::endl;
-      std::cout << "Error tolerance for fidelity between sweeps: " << Settings.FidTol << std::endl;
+      std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << '\n';
+      std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << '\n';
 
       // Turn off bond expansion if we specify no pre-expansion.
       if (Settings.PreExpansionAlgo == PreExpansionAlgorithm::NoExpansion)
@@ -278,7 +290,7 @@ int main(int argc, char** argv)
       }
 
       if (Expand)
-         std::cout << Settings.SInfo << std::endl;
+         std::cout << Settings.SInfo << '\n';
 
       // Make sure calculation of Eps2Sq is turned on if we are calculating EpsNSq for N > 2.
       if (Settings.NEps > 2)
@@ -304,7 +316,7 @@ int main(int argc, char** argv)
          for (int i = 0; i < Settings.NEps-2; ++i)
             std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
       }
-      std::cout << std::endl;
+      std::cout << '\n';
 
       for (int tstep = 1; tstep <= N; ++tstep)
       {
@@ -321,7 +333,7 @@ int main(int argc, char** argv)
             for (int i = 0; i < Settings.NEps-2; ++i)
                std::cout << " Eps" << i+3 << "SqSum=" << itdvp.EpsNSqSum[i];
          }
-         std::cout << std::endl;
+         std::cout << '\n';
 
          // Save the wavefunction.
          if ((tstep % SaveEvery) == 0 || tstep == N)

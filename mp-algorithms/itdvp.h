@@ -26,8 +26,7 @@
 struct iTDVPSettings : TDVPSettings
 {
    double GMRESTol = 1e-13;
-   double FidTol = 1e-16;
-   int MaxSweeps = 10;
+   int EvolutionSweeps = 2;
    int NEps = 2;
 };
 
@@ -90,8 +89,7 @@ class iTDVP : public TDVP
       StateComponent CCenter;
 
       double GMRESTol;
-      double FidTol;
-      int MaxSweeps;
+      int EvolutionSweeps;
       int NEps;
 
       // Error measures epsilon_3^2 to epsilon_NEps^2.
