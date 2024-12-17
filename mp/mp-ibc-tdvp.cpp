@@ -206,17 +206,18 @@ int main(int argc, char** argv)
       std::cout << "Pre-expansion algorithm: " << Settings.PreExpansionAlgo.Name();
       if (Settings.PreExpansionAlgo != PreExpansionAlgorithm::NoExpansion)
       {
-         std::cout << " with expansion factor " << Settings.PreExpandFactor
-                   << " and per sector " << Settings.PreExpandPerSector;
+         std::cout << " with expansion factor: " << Settings.PreExpandFactor
+                   << " per sector: " << Settings.PreExpandPerSector;
       }
       std::cout << '\n';
       std::cout << "Post-expansion algorithm: " << Settings.PostExpansionAlgo.Name();
       if (Settings.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion)
       {
-         std::cout << " with expansion factor " << Settings.PostExpandFactor
-                   << " and per sector " << Settings.PostExpandPerSector;
+         std::cout << " with expansion factor: " << Settings.PostExpandFactor
+                   << " per sector: " << Settings.PostExpandPerSector;
       }
       std::cout << '\n';
+      std::cout << Settings.Oversampling;
 
       // Open the wavefunction.
       mp_pheap::InitializeTempPHeap();
