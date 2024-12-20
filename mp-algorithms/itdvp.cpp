@@ -141,7 +141,7 @@ iTDVP::OrthogonalizeLeftmostSite()
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
                 << " StatesTrunc=" << Info.KeptStates()
-                << " StatesNew=" << C->Basis1().total_dimension()
+                << " StatesPostExp=" << C->Basis1().total_dimension()
                 << '\n';
    }
 
@@ -183,7 +183,7 @@ iTDVP::OrthogonalizeRightmostSite()
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
                 << " StatesTrunc=" << Info.KeptStates()
-                << " StatesNew=" << C->Basis2().total_dimension()
+                << " StatesPostExp=" << C->Basis2().total_dimension()
                 << '\n';
    }
 
@@ -730,7 +730,7 @@ iTDVP::ExpandLeft()
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
                 //<< " StatesTrunc=" << Info.KeptStates()
-                << " StatesNew=" << StatesNew
+                << " StatesPreExp=" << StatesNew
                 << '\n';
    }
 
@@ -862,7 +862,7 @@ iTDVP::ExpandRight()
                 << " Site=" << Site
                 << " StatesOld=" << StatesOld
                 //<< " StatesTrunc=" << Info.KeptStates()
-                << " StatesNew=" << StatesNew
+                << " StatesPreExp=" << StatesNew
                 << '\n';
    }
 
