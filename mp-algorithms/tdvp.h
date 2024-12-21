@@ -25,6 +25,7 @@
 #include "mpo/basic_triangular_mpo.h"
 #include "lattice/infinitelattice.h"
 #include "tdvp-compositions.h"
+#include "expansion.h"
 
 // Class to handle time-dependent Hamiltonian operators.
 class Hamiltonian
@@ -34,19 +35,16 @@ class Hamiltonian
 
       // If Size == 0, do not rescale Hamiltonian size.
       Hamiltonian(std::string HamStr, int Size = 0,
-                  std::string Magnus = "2", std::string TimeVar = "t");
+                  std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
 
-      // Get then Hamiltonian MPO to evolve from t to t + dt.
+      // Get the Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
 
       void set_size(int Size_);
 
-      bool is_time_dependent() const
-      {
-         return TimeDependent;
-      }
+      bool is_time_dependent() const { return TimeDependent; }
 
-   private:
+   protected:
       InfiniteLattice Lattice;
       std::string HamOperator;
       int Size;
@@ -54,6 +52,7 @@ class Hamiltonian
       std::string TimeVar;
       bool TimeDependent;
       BasicTriangularMPO HamMPO;
+      int Verbose;
 };
 
 struct TDVPSettings
@@ -63,7 +62,20 @@ struct TDVPSettings
    Composition Comp;
    int MaxIter = 10;
    double ErrTol = 1e-16;
+
    StatesInfo SInfo;
+
+   PreExpansionAlgorithm PreExpansionAlgo;
+   double PreExpandFactor = 0.1;
+   int PreExpandPerSector = 1;
+
+   PostExpansionAlgorithm PostExpansionAlgo;
+   double PostExpandFactor = 0.1;
+   int PostExpandPerSector = 1;
+
+   bool ProjectTwoSiteTangent = false;
+   OversamplingInfo Oversampling;
+
    bool Epsilon = false;
    bool Normalize = true;
    int Verbose = 0;
@@ -85,16 +97,14 @@ class TDVP
       std::complex<double> Energy() const;
 
       // Evolve the current site.
-      void EvolveCurrentSite(std::complex<double> Tau);
+      virtual void EvolveCurrentSite(std::complex<double> Tau);
 
-      // Move the orthogonality center left/right, evolving the lambda matrix
-      // backwards in time.
-      void IterateLeft(std::complex<double> Tau);
-      void IterateRight(std::complex<double> Tau);
+      // Move the orthogonality center left/right, truncating and
+      // post-expanding, and then evolve the lambda matrix backwards in time.
+      virtual void IterateLeft(std::complex<double> Tau);
+      virtual void IterateRight(std::complex<double> Tau);
 
-      // Expand the dimension of the left/right environment of the current site using
-      // the projection of H|Psi> onto the subspace of orthogonal two-site
-      // variations.
+      // Pre-expand the left/right environment of the current site.
       void ExpandLeft();
       void ExpandRight();
 
@@ -153,7 +163,20 @@ class TDVP
       Composition Comp;                  // The symmetric composition scheme used to perform a timestep.
       int MaxIter;
       double ErrTol;
+
       StatesInfo SInfo;
+
+      PreExpansionAlgorithm PreExpansionAlgo;
+      double PreExpandFactor;
+      int PreExpandPerSector;
+
+      PostExpansionAlgorithm PostExpansionAlgo;
+      double PostExpandFactor;
+      int PostExpandPerSector;
+
+      OversamplingInfo Oversampling;
+      bool ProjectTwoSiteTangent;
+
       bool Epsilon;
       bool Normalize; // Only used for iTDVP at the moment.
       int Verbose;
@@ -176,20 +199,22 @@ class TDVP
       double LogAmplitude = 0.0;
 };
 
-// Expand the left environment of CRight by adding extra states to CLeft.
+// Truncate then expand the left environment of CRight by adding extra states to CLeft.
 // Assumes CRight is the current orthogonality center.
-std::pair<TruncationInfo, VectorBasis>
+void
 ExpandLeftEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                      int ExpandMinPerSector, int Verbose);
 
-// Expand the right environment of CLeft by adding extra states to CRight.
+// Truncate then expand the right environment of CLeft by adding extra states to CRight.
 // Assumes CLeft is the current orthogonality center.
-std::pair<TruncationInfo, VectorBasis>
+void
 ExpandRightEnvironment(StateComponent& CLeft, StateComponent& CRight,
                       StateComponent const& E, StateComponent const& F,
                       OperatorComponent const& HLeft, OperatorComponent const& HRight,
-                      StatesInfo SInfo);
+                      StatesInfo SInfo, double ExpandFactor, int ExpandMinStates,
+                      int ExpandMinPerSector, int Verbose);
 
 #endif

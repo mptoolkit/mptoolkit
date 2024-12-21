@@ -226,7 +226,7 @@ tools = mp-idmrg-s3e mp-ioverlap \
         mp-expectation mp-overlap mp-scale mp-matrix mp-tebd mp-apply mp-normalize \
         mp-tdvp mp-itdvp mp-iexpectation-cross mp-imoments-cross mp-right-canonicalize mp-left-canonicalize \
         mp-construct mp-change-lattice mp-ibc-create mp-ibc-tdvp mp-ibc-apply mp-ibc-overlap mp-ibc-correlation \
-        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice \
+        mp-excitation-ansatz mp-ibc-wavepacket mp-ibc-splice mp-ibc-dmrg \
         mp-ea-moments mp-ea-create mp-ea-extend mp-ea-change-k mp-ea-dmrg
 
 experimental-tools = mp-iprint mp-iproject mp-idmrg mp-iupdate mp-aux-project mp-ibc-dmrg mp-fluctuation
@@ -504,7 +504,7 @@ mp-misc = make-vb-state make-vb-su2
 
 mp-simple-marshall-qmc : random_wavefunc.o
 
-mp-tdvp : tdvp.o ef-optim.o number-parser.o tdvp-compositions.o
+mp-tdvp : tdvp.o ef-optim.o number-parser.o tdvp-compositions.o expansion.o
 
 # infinite tools
 
@@ -547,8 +547,9 @@ mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o
 mp-idivide :
 
-mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
-mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
+mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
+mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
+mp-ibc-dmrg : ibc-dmrg.o ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
 mp-matrix : write-matrix.o
 mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
 
