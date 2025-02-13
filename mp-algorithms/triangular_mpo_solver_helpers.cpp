@@ -228,20 +228,17 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          E[m] = std::sqrt(RhsNorm2) *
             MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
-         // Orthogonalize the initial guess -- this is important for the numerical stability
          if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
+            // Orthogonalize the initial guess -- this is important for the numerical stability
             E[m] -= std::conj(inner_prod(E[m], Rho)) * Identity;
             //DEBUG_TRACE("should be zero")(inner_prod(E[m], Rho));
-         }
 
-         LinearSolveOrtho(E[m], Rho, Identity, OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, HasEigenvalue1),
-                     TCond, Rhs, Tol, Verbose);
+            LinearSolveOrtho(E[m], Rho, Identity, OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
+                             Identity, Rho, HasEigenvalue1),
+                             TCond, Rhs, Tol, Verbose);
 
-         // do another orthogonalization -- this should be unncessary but for the paranoid...
-         if (HasEigenvalue1 && E[m].TransformsAs() == Rho.TransformsAs())
-         {
+            // do another orthogonalization -- this should be unncessary but for the paranoid...
             std::complex<double> z = inner_prod(E[m], Rho);
             E[m] -= std::conj(z) * Identity;
             z = inner_prod(E[m], Rho);
@@ -255,6 +252,12 @@ DecomposePerpendicularPartsLeft(MatrixPolyType const& C, std::complex<double> K,
             };
             E[m] -= std::conj(z) * Identity;
             //DEBUG_TRACE(inner_prod(E[m], Rho))("should be zero");
+         }
+         else
+         {
+            LinearSolve(E[m], OneMinusTransferLeft_Ortho(Psi1, QShift, K*Diag, Psi2,
+                        Identity, Rho, HasEigenvalue1),
+                        Rhs, Tol, Verbose);
          }
       }
       else
@@ -339,27 +342,36 @@ DecomposePerpendicularPartsRight(MatrixPolyType const& C, std::complex<double> K
          // Initial guess vector -- scale it by the norm of Rhs, improves the stability
          F[m] = std::sqrt(RhsNorm2) *
             MakeRandomMatrixOperator(Rhs.Basis1(), Rhs.Basis2(), Rhs.TransformsAs());
-         // Orthogonalize the initial guess -- this is important for the numerical stability
          if (HasEigenvalue1 && Rhs.TransformsAs() == Rho.TransformsAs())
          {
+            // Orthogonalize the initial guess -- this is important for the numerical stability
             F[m] -= std::conj(inner_prod(F[m], Rho)) * Identity;
-         }
 
-         LinearSolveOrtho(F[m], Rho, Identity, OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
-                     Identity, Rho, HasEigenvalue1),
-                     TCond, Rhs, Tol, Verbose);
+            LinearSolveOrtho(F[m], Rho, Identity, OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
+                             Identity, Rho, HasEigenvalue1),
+                             TCond, Rhs, Tol, Verbose);
 
-         //DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
+            //DEBUG_TRACE(m)(norm_frob(F[m]))(inner_prod(F[m], Rho));
 
-         // do another orthogonalization -- this should be unncessary but for the paranoid...
-         if (HasEigenvalue1 && F[m].TransformsAs() == Rho.TransformsAs())
-         {
+            // do another orthogonalization -- this should be unncessary but for the paranoid...
             std::complex<double> z = inner_prod(F[m], Rho);
-            if (LinearAlgebra::norm_frob_sq(z) > 1E-8)
+            F[m] -= std::conj(z) * Identity;
+            z = inner_prod(F[m], Rho);
+            if (Verbose > 2)
+            {
+               std::cerr << "z=" << norm_frob_sq(z) << '\n';
+            }
+            if (LinearAlgebra::norm_frob_sq(z) > Tol * RhsNorm2)
             {
                WARNING("Possible numerical instability in triangular MPO solver")(z);
             };
             F[m] -= std::conj(z) * Identity;
+         }
+         else
+         {
+            LinearSolve(F[m], OneMinusTransferRight_Ortho(Psi1, QShift, K*Diag, Psi2,
+                        Identity, Rho, HasEigenvalue1),
+                        Rhs, Tol, Verbose);
          }
       }
       else
