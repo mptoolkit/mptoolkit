@@ -128,6 +128,7 @@ int main(int argc, char** argv)
       std::string LatticeFilename;
       std::string OutputFilename;
       std::string States;
+      int Repeat = 1;
       bool Infinite = false;
       bool Finite = false;
       bool Force = false;
@@ -140,6 +141,7 @@ int main(int argc, char** argv)
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("infinite", prog_opt::bool_switch(&Infinite), "Create an infinite wavefunction [default]")
          ("finite", prog_opt::bool_switch(&Finite), "Create a finite wavefunction")
+         ("repeat,r", prog_opt::value(&Repeat), "Repeat the specified unit cell this number of times")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -174,6 +176,8 @@ int main(int argc, char** argv)
       }
       else if (!Infinite && !Finite)
          Infinite = true; // This is the current default behavior.
+
+      CHECK(Repeat > 0);
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
@@ -267,7 +271,9 @@ int main(int argc, char** argv)
          QuantumNumber QShift(SL);
          QuantumNumberList QL = transform_targets(QPrev, adjoint(QLast));
          if (QL.size() == 1 && QL[0].degree() == 1)
+         {
             QShift = QL[0];
+         }
          else if (QPrev != QLast)
          {
             std::cerr << "fatal: Cannot have a nontrivial qshift in a non-Abelian quantum number." << std::endl;
@@ -277,10 +283,45 @@ int main(int argc, char** argv)
          InfiniteWavefunctionLeft PsiOut = InfiniteWavefunctionLeft::ConstructFromOrthogonal(Psi, QShift, Lambda);
          PsiOut.check_structure();
 
-         Wavefunction.Wavefunction() = std::move(PsiOut);
+         Wavefunction.Wavefunction() = std::move(repeat(PsiOut, Repeat));
       }
       else if (Finite)
       {
+         if (Repeat > 1)
+         {
+            VectorBasis Basis(SL);
+            Basis.push_back(QLast, 1);
+            RealDiagonalOperator Lambda = RealDiagonalOperator::make_identity(Basis);
+
+            // Find the QShift if the first and last quantum numbers are Abelian.
+            // If they are non-Abelian, then we require that the first and last quantum number are the same.
+            QuantumNumber QShift(SL);
+            QuantumNumberList QL = transform_targets(QPrev, adjoint(QLast));
+            if (QL.size() == 1 && QL[0].degree() == 1)
+            {
+               QShift = QL[0];
+            }
+            else if (QPrev != QLast)
+            {
+               std::cerr << "fatal: Cannot have a nontrivial qshift in a non-Abelian quantum number." << std::endl;
+               return 1;
+            }
+
+            LinearWavefunction PsiUC = Psi;
+            QuantumNumber Q = QShift;
+
+            for (int i = 1; i < Repeat; ++i)
+            {
+               auto I = PsiUC.end();
+               while (I != PsiUC.begin())
+               {
+                  --I;
+                  Psi.push_front(delta_shift(*I, Q));
+               }
+               Q = delta_shift(Q, QShift);
+            }
+         }
+
          FiniteWavefunctionLeft PsiOut = FiniteWavefunctionLeft::Construct(Psi);
          PsiOut.check_structure();
 
