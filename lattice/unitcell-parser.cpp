@@ -72,6 +72,7 @@ struct push_local_operator
       int n = pop_int(eval);
       int j = pop_int(eval);
       CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Site index out of bounds")(j)(NumCells);
+
       if (!Cell.local_operator_exists(OpName, n))
       {
          ParserError w = ParserError::AtRange("Local operator does not exist: '"
@@ -153,11 +154,11 @@ struct eval_local_function
 
    void operator()(char const*, char const*) const
    {
-      TRACE(eval.size());
+      //TRACE(eval.size());
       int Site = pop_int(eval);
       int n = pop_int(eval);
 
-      TRACE(n)(Site)(&Cell);
+      //TRACE(n)(Site)(&Cell);
 
       SiteElementType Element = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
       FuncStack.pop();
@@ -174,7 +175,7 @@ struct eval_local_function
          SiteOperator Op = boost::get<SiteOperator>(Element);
          eval.push(Cell.map_local_operator(Op, n, Site));
       }
-      TRACE(eval.size());
+      //TRACE(eval.size());
    }
 
    UnitCell const& Cell;
@@ -712,6 +713,26 @@ struct push_rand_expr
    std::stack<ElementType>& eval;
 };
 
+struct range_check_site
+{
+   range_check_site(UnitCell const& Cell_, std::stack<ElementType>& eval_)
+      : Cell(Cell_), eval(eval_) {}
+
+   void operator()(char const* Start, char const* End) const
+   {
+      int s = pop_int(eval);
+      if (s < 0 || s >= Cell.size())
+      {
+         ParserError w = ParserError::AtRange("Site index out of bounds", Start, End);
+         throw w;
+      }
+      eval.push(s);  // put it back on the stack
+   }
+
+   UnitCell const& Cell;
+   std::stack<ElementType>& eval;
+};
+
 
 } // namespace UP
 
@@ -876,7 +897,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          local_function = identifier[push_function(self.FunctionStack,
                                                    self.ParameterStack)]
             >> bracket_expr
-            >> sq_bracket_expr
+            >> sq_bracket_expr[range_check_site(self.Cell,self.eval)]
             >> parameter_list[eval_local_function(self.Cell,
                                                   self.FunctionStack,
                                                   self.ParameterStack,
@@ -888,7 +909,7 @@ struct UnitCellParser : public grammar<UnitCellParser>
          // (ie. no cell index), as long as it evalates to a c-number.
          local_c_function = identifier[push_function(self.FunctionStack,
                                                      self.ParameterStack)]
-            >> sq_bracket_expr
+            >> sq_bracket_expr[range_check_site(self.Cell,self.eval)]
             >> parameter_list[eval_local_c_function(self.Cell,
                                                     self.FunctionStack,
                                                     self.ParameterStack,
@@ -899,7 +920,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
 
          local_operator = identifier[push_identifier(self.IdentifierStack)]
             >> bracket_expr
-            >> sq_bracket_expr[push_local_operator(self.Cell,
+            >> sq_bracket_expr[range_check_site(self.Cell,self.eval)]
+                              [push_local_operator(self.Cell,
                                                    self.NumCells,
                                                    self.IdentifierStack,
                                                    self.eval)];
@@ -929,7 +951,8 @@ struct UnitCellParser : public grammar<UnitCellParser>
          local_arg_t = identifier_t >> sq_bracket_expr_t;
 
          local_arg = identifier[push_identifier(self.IdentifierStack)]
-            >> sq_bracket_expr[push_local_argument(self.Cell,
+            >> sq_bracket_expr[range_check_site(self.Cell,self.eval)]
+                              [push_local_argument(self.Cell,
                                                    self.IdentifierStack,
                                                    self.eval)];
 
