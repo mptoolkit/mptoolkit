@@ -907,6 +907,30 @@ iTDVP::ExpandRight()
 }
 
 void
+iTDVP::UpdateHamiltonian()
+{
+   MatrixOperator RhoL = scalar_prod(herm(LambdaR), LambdaR);
+   RhoL = delta_shift(RhoL, QShift);
+
+   BlockHamL = Initial_E(HamMPO, Psi.Basis1());
+   BlockHamL.back() = HamL.front().back();
+
+   SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO, RhoL, GMRESTol, Verbose-1);
+   HamL = std::deque<StateComponent>(1, BlockHamL);
+   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
+
+   MatrixOperator RhoR = scalar_prod(herm(LambdaR), LambdaR);
+   RhoR = delta_shift(RhoR, adjoint(QShift));
+
+   BlockHamR = Initial_F(HamMPO, Psi.Basis2());
+   BlockHamR.front() = HamR.back().front();
+
+   SolveHamiltonianMPO_Right(BlockHamR, Psi, QShift, HamMPO, RhoR, GMRESTol, Verbose-1);
+   HamR = std::deque<StateComponent>(1, BlockHamR);
+   BlockHamR = delta_shift(BlockHamR, QShift);
+}
+
+void
 iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
 {
    if (!Ham.is_time_dependent())
@@ -919,25 +943,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    if (Verbose > 1)
       std::cout << "Recalculating Hamiltonian environments (left)..." << '\n';
 
-   MatrixOperator Rho = scalar_prod(herm(LambdaR), LambdaR);
-   Rho = delta_shift(Rho, QShift);
-
-   BlockHamL = Initial_E(HamMPO, Psi.Basis1());
-   BlockHamL.back() = HamL.front().back();
-
-   SolveHamiltonianMPO_Left(BlockHamL, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
-   HamL = std::deque<StateComponent>(1, BlockHamL);
-   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
-
-   MatrixOperator RhoOld = scalar_prod(herm(LambdaROld), LambdaROld);
-   RhoOld = delta_shift(RhoOld, adjoint(QShift));
-
-   BlockHamR = Initial_F(HamMPO, PsiOld.Basis2());
-   BlockHamR.front() = HamROld.back().front();
-
-   SolveHamiltonianMPO_Right(BlockHamR, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
-   HamR = std::deque<StateComponent>(1, BlockHamR);
-   BlockHamR = delta_shift(BlockHamR, QShift);
+   this->UpdateHamiltonian();
 
    LinearWavefunction::iterator CLocal = Psi.begin();
    BasicTriangularMPO::const_iterator HLocal = HamMPO.begin();
@@ -964,25 +970,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    if (Verbose > 1)
       std::cout << "Recalculating Hamiltonian environments (right)..." << '\n';
 
-   MatrixOperator RhoOld = scalar_prod(LambdaROld, herm(LambdaROld));
-   RhoOld = delta_shift(RhoOld, QShift);
-
-   BlockHamL = Initial_E(HamMPO, PsiOld.Basis1());
-   BlockHamL.back() = HamL.front().back();
-
-   SolveHamiltonianMPO_Left(BlockHamL, PsiOld, QShift, HamMPO, RhoOld, GMRESTol, Verbose-1);
-   HamL = std::deque<StateComponent>(1, BlockHamL);
-   BlockHamL = delta_shift(BlockHamL, adjoint(QShift));
-
-   MatrixOperator Rho = scalar_prod(LambdaR, herm(LambdaR));
-   Rho = delta_shift(Rho, adjoint(QShift));
-
-   BlockHamR = Initial_F(HamMPO, Psi.Basis2());
-   BlockHamR.front() = HamR.back().front();
-
-   SolveHamiltonianMPO_Right(BlockHamR, Psi, QShift, HamMPO, Rho, GMRESTol, Verbose-1);
-   HamR = std::deque<StateComponent>(1, BlockHamR);
-   BlockHamR = delta_shift(BlockHamR, QShift);
+   this->UpdateHamiltonian();
 
    LinearWavefunction::iterator CLocal = Psi.end();
    BasicTriangularMPO::const_iterator HLocal = HamMPO.end();

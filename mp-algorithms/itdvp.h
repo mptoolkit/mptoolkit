@@ -75,6 +75,7 @@ class iTDVP : public TDVP
 
       // Update the Hamiltonian if time-dependent, recalculating the left/right
       // environments.
+      void UpdateHamiltonian();
       void UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt);
       void UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt);
 

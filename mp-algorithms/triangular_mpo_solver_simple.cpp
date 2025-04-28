@@ -280,7 +280,7 @@ SolveHamiltonianMPO_Left(StateComponent& E, LinearWavefunction const& Psi,
    std::complex<double> Energy = inner_prod(Rho, EMat.back()[1]);
    // Check that the linear part of the Hamiltonian is a constant
    MatrixOperator Remainder = EMat.back()[1] - Energy*E.front();
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
+   if (norm_frob(Remainder) > Tol * norm_frob(Energy) && Verbose > 0)
    {
       std::cerr << "SolveHamiltonianMPO_Left: warning: Hamiltonian has diverging matrix elements.\n";
       std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';
@@ -336,7 +336,7 @@ SolveHamiltonianMPO_Right(StateComponent& F, LinearWavefunction const& Psi,
    std::complex<double> Energy = inner_prod(Rho, FMat.front()[1]);
    // Check that the linear part of the Hamiltonian is a constant
    MatrixOperator Remainder = FMat.front()[1] - Energy*F.back();
-   if (norm_frob(Remainder) > Tol * norm_frob(Energy))
+   if (norm_frob(Remainder) > Tol * norm_frob(Energy) && Verbose > 0)
    {
       std::cerr << "SolveHamiltonianMPO_Right: warning: Hamiltonian has diverging matrix elements.\n";
       std::cerr << "Norm of remainder = " << norm_frob(Remainder) << '\n';

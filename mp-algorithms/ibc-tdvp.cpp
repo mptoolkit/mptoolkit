@@ -115,7 +115,7 @@ IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, I
    HamWindow(Ham_), GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), NExpand(Settings_.NExpand),
    Comoving(Settings_.Comoving), PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
-   // We do not (currently) support time dependent Hamiltonians.
+   // We do not (currently) support time dependent Hamiltonians (TODO).
    // (We would need to recalculate the left and right block Hamiltonians each timestep.)
    CHECK(Ham.is_time_dependent() == false);
 
