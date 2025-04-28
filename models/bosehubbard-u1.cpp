@@ -65,7 +65,9 @@ int main(int argc, char** argv)
          ("H_V"    , "nearest-neighbour Coulomb repulsion")
          ("H_delta", "QLM gauge site potential", "QLM enabled",
          [&QLM]()->bool{return QLM;})
-         ("H_V2g"  , "next-nearest-neighbour gauge site Coulomb repulsion", "QLM enabled",
+         ("H_W"    , "next-nearest-neighbour gauge site Coulomb repulsion", "QLM enabled",
+         [&QLM]()->bool{return QLM;})
+         ("H_chi"  , "QLM staggering potential", "QLM enabled",
          [&QLM]()->bool{return QLM;})
          ;
       OpDescriptions.add_functions()
@@ -99,7 +101,8 @@ int main(int argc, char** argv)
       if (QLM)
       {
          Lattice["H_delta"] = sum_unit(N(1), 2);
-         Lattice["H_V2g"] = sum_unit(N(1)*N(3), 2);
+         Lattice["H_W"] = sum_unit(N(1)*N(3), 2);
+         Lattice["H_chi"] = sum_unit(0.5*(N(1)-N(3)), 4);
       }
 
       // Information about the lattice

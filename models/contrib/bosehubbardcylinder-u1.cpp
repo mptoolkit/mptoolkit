@@ -81,6 +81,8 @@ int main(int argc, char** argv)
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
          ("H_W"    , "QLM gauge site repulsion", "x = 0, y even, QLM enabled",
          [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
+         ("H_chi"  , "QLM staggering potential", "x = 0, 4 | y, QLM enabled",
+         [&x, &y, &QLM]()->bool{return x == 0 && y%4 == 0 && QLM;})
          ;
       OpDescriptions.add_functions()
          ("H_Jx"   , "nearest-neighbor complex hopping in x-direction")
@@ -164,13 +166,13 @@ int main(int argc, char** argv)
       if (x == 0 && y%2 == 0 && QLM)
       {
          // Define QLM potentials.
-         UnitCellMPO H_delta, H_eta, H_alpha, W;
+         UnitCellMPO delta, eta, alpha, W;
 
          for (int i = 0; i < CellSize/2; ++i)
          {
-            H_delta += N(0)[2*i+1] + N(1)[2*i];
-            H_eta += N(1)[2*i+1];
-            H_alpha += 0.5*N2(0)[2*i];
+            delta += N(0)[2*i+1] + N(1)[2*i];
+            eta += N(1)[2*i+1];
+            alpha += 0.5*N2(0)[2*i];
             W += N(0)[2*i+1] * N(0)[(2*i-1+y)%y];
             W += N(0)[2*i+1] * N(1)[2*i];
             W += N(0)[2*i+1] * N(-1)[2*i];
@@ -179,12 +181,26 @@ int main(int argc, char** argv)
             W += N(-1)[2*i] * N(1)[2*i];
          }
 
-         Lattice["H_delta"] = sum_unit(H_delta, 2*CellSize);
-         Lattice["H_eta"] = sum_unit(H_eta, 2*CellSize);
-         Lattice["H_alpha"] = sum_unit(H_alpha, 2*CellSize);
+         Lattice["H_delta"] = sum_unit(delta, 2*CellSize);
+         Lattice["H_eta"] = sum_unit(eta, 2*CellSize);
+         Lattice["H_alpha"] = sum_unit(alpha, 2*CellSize);
          Lattice["H_W"] = sum_unit(W, 2*CellSize);
 
-         // Define Gauss' law operators.
+         if (y%4 == 0)
+         {
+            UnitCellMPO chi;
+            for (int i = 0; i < CellSize/2; ++i)
+            {
+               chi += N(0)[2*i+1] + N(1)[2*i];
+               chi -= N(2)[2*i+1] + N(3)[2*i];
+               ++i;
+               chi -= N(0)[2*i+1] + N(1)[2*i];
+               chi += N(2)[2*i+1] + N(3)[2*i];
+            }
+            Lattice["H_chi"] = sum_unit(0.5*chi, 4*CellSize);
+         }
+
+         // Define Gauss's law operators.
          // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.
          UnitCellMPO G[CellSize/2];
 
