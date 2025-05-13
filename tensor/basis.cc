@@ -23,6 +23,14 @@
 #include <numeric>
 #include <iterator>
 #include <boost/iterator/transform_iterator.hpp>
+#include <iterator>
+
+namespace std {
+  template<typename Func, typename BaseIter>
+  struct iterator_traits<boost::transform_iterator<Func, BaseIter>>
+    : std::iterator_traits<BaseIter>
+  {};
+}
 
 namespace Tensor
 {

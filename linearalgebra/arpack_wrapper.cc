@@ -269,7 +269,6 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
       // eigenvectors
       if (OutputVectors)
       {
-         OutputVectors->empty();
          std::swap(z, *OutputVectors);
       }
    }
