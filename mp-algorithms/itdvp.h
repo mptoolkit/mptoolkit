@@ -38,7 +38,10 @@ class iTDVP : public TDVP
       iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDVPSettings Settings_);
 
       // Return the current wavefunction in left-canonical form.
-      InfiniteWavefunctionLeft Wavefunction() const;
+      InfiniteWavefunctionLeft Wavefunction();
+
+      // Construct the left-canonical form, if it hasn’t already been constructed.
+      void Canonicalize();
 
       // Orthogonalize the leftmost/rightmost site in the unit cell, performing
       // truncation and post-expansion, and updating the left/right block
@@ -100,6 +103,10 @@ class iTDVP : public TDVP
 
       // Current energy per unit cell.
       std::complex<double> E;
+
+      InfiniteWavefunctionLeft PsiCanonical;
+      // Flag to check whether the canonical form has been constructed for the current unit cell.
+      bool Canonicalized;
 };
 
 #endif

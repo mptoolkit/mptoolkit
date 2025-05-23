@@ -55,7 +55,8 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
    HamMPO = Ham(Time-dt, dt);
 
    // Make sure that Psi and HamMPO have the same unit cell.
-   InfiniteWavefunctionLeft PsiCanonical = Psi_;
+   PsiCanonical = Psi_;
+   Canonicalized = true;
    int UnitCellSize = statistics::lcm(PsiCanonical.size(), HamMPO.size());
 
    if (PsiCanonical.size() != UnitCellSize)
@@ -118,9 +119,20 @@ iTDVP::iTDVP(InfiniteWavefunctionLeft const& Psi_, Hamiltonian const& Ham_, iTDV
 }
 
 InfiniteWavefunctionLeft
-iTDVP::Wavefunction() const
+iTDVP::Wavefunction()
 {
-   return InfiniteWavefunctionLeft::Construct(Psi, QShift, Normalize ? 0.0 : LogAmplitude);
+   this->Canonicalize();
+   return PsiCanonical;
+}
+
+void
+iTDVP::Canonicalize()
+{
+   if (Canonicalized)
+      return;
+
+   PsiCanonical = InfiniteWavefunctionLeft::Construct(Psi, QShift, scalar_prod(LambdaR, herm(LambdaR)), Normalize ? 0.0 : LogAmplitude);
+   Canonicalized = true;
 }
 
 void
@@ -245,6 +257,8 @@ iTDVP::EvolveLambdaRLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveLeft(std::complex<double> Tau)
 {
+   Canonicalized = false;
+
    // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
@@ -331,6 +345,8 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 void
 iTDVP::EvolveRight(std::complex<double> Tau)
 {
+   Canonicalized = false;
+
    // Save old data.
    PsiOld = Psi;
    LambdaROld = LambdaR;
@@ -916,7 +932,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    H = HamMPO.end();
    --H;
 
-   InfiniteWavefunctionLeft PsiCanonical = InfiniteWavefunctionLeft::Construct(Psi, QShift, scalar_prod(LambdaR, herm(LambdaR)), Normalize ? 0.0 : LogAmplitude);
+   this->Canonicalize();
 
    std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
    C = Psi.end();
@@ -973,7 +989,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    HamMPO = Ham(t, dt);
    H = HamMPO.begin();
 
-   InfiniteWavefunctionLeft PsiCanonical = InfiniteWavefunctionLeft::Construct(Psi, QShift, scalar_prod(LambdaR, herm(LambdaR)), Normalize ? 0.0 : LogAmplitude);
+   this->Canonicalize();
 
    std::tie(LambdaR, Psi) = get_right_canonical(PsiCanonical);
    C = Psi.begin();
