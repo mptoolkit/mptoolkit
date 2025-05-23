@@ -776,7 +776,7 @@ opstreambuf<Format>& operator<<(opstreambuf<Format>& stream, std::vector<T> cons
    stream << Size;
 
    if (Size > 0)
-     stream.write_n(&vec[0], Size);
+     stream.write_n(vec.data(), Size);
    return stream;
 }
 
@@ -786,7 +786,7 @@ ipstreambuf<Format>& operator>>(ipstreambuf<Format>& stream, std::vector<T>& vec
    typename ipstreambuf<Format>::size_type Size;
    stream >> Size;
    vec.resize(Size);
-   copy_n(ipstreambuf_iterator<Format, T>(stream), Size, &vec[0]);
+   copy_n(ipstreambuf_iterator<Format, T>(stream), Size, vec.data());
    return stream;
 }
 

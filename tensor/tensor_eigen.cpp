@@ -257,6 +257,10 @@ SingularValueDecompositionRegular(IrredTensor<LinearAlgebra::Matrix<std::complex
          set_element(D, BasisMap[i], BasisMap[i], LinearAlgebra::DiagonalMatrix<double>(Dvec));
       }
    }
+
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
 }
 
 void
@@ -422,6 +426,10 @@ SingularValueDecomposition(IrredTensor<std::complex<double>, BasisList, BasisLis
    U = map_1x1_operator(triple_prod(herm(U1), UMatrix, Splitter));
    D = map_1x1_operator(triple_prod(herm(Splitter), DMatrix, Splitter));
    Vh = map_1x1_operator(triple_prod(herm(Splitter), VhMatrix, U2));
+
+   U.debug_check_structure();
+   D.debug_check_structure();
+   Vh.debug_check_structure();
    return;
 }
 

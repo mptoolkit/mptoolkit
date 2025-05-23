@@ -84,7 +84,7 @@ std::vector<unsigned> get_seed()
 random_stream::random_stream()
 //   : Seed{1,2,3,4,5,6},//crypto_rand_vector(8)},
    : Seed{crypto_rand_vector(8)},
-     UniformDist(1,0),
+     UniformDist(0,1),
      NormalDist()
 {
    std::seed_seq TempInitializer(Seed.begin(), Seed.end());

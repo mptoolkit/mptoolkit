@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 
          for (int i = 0; i < CellSize/2; ++i)
          {
-            G[i] = N(0)[2*i] + 0.5 * (N(0)[2*i+1] + N(0)[(2*i-1+CellSize)%CellSize] + N(1)[2*i] + N(-1)[0]) - 4.0 * QLMSpin * I(0)[2*i];
+            G[i] = N(0)[2*i] + 0.5 * (N(0)[2*i+1] + N(0)[(2*i-1+CellSize)%CellSize] + N(1)[2*i] + N(-1)[2*i]) - 4.0 * QLMSpin * I(0)[2*i];
             G[i].set_description("Gauss's law operator for matter site " + std::to_string(2*i));
             Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
          }

@@ -82,8 +82,12 @@ ExtractRealDiagonal(IrredTensor<LinearAlgebra::Matrix<std::complex<T>>, VectorBa
    IrredTensor<LinearAlgebra::DiagonalMatrix<T>, VectorBasis, VectorBasis, Tensor::DiagonalStructure> Result(A.Basis1(), A.Basis2());
    for (int i = 0; i < A.Basis1().size(); ++i)
    {
-      Result(i,i).diagonal() = real_diagonal_vector(A(i,i));
+      if (A(i,i).size() > 0)
+         Result(i,i).diagonal() = real_diagonal_vector(A(i,i));
+      else
+         Result(i,i).diagonal() = LinearAlgebra::Vector<T>(A.Basis1().dim(i), T{});
    }
+   Result.debug_check_structure();
    return Result;
 }
 
