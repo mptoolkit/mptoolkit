@@ -58,7 +58,7 @@ struct Iterate<std::vector<T> >
    typedef VecPtrIterator<T const> result_type;
    result_type operator()(argument_type x) const
    {
-      return result_type(&x[0], x.size(), 0);
+      return result_type(x.data(), x.size(), 0);
    }
 };
 
@@ -69,7 +69,7 @@ struct Iterate<std::vector<T>&>
    typedef VecPtrIterator<T> result_type;
    result_type operator()(argument_type x) const
    {
-      return result_type(&x[0], x.size(), 0);
+      return result_type(x.data(), x.size(), 0);
    }
 };
 
