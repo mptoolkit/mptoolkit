@@ -289,10 +289,6 @@ int main(int argc, char** argv)
       {
          if (Repeat > 1)
          {
-            VectorBasis Basis(SL);
-            Basis.push_back(QLast, 1);
-            RealDiagonalOperator Lambda = RealDiagonalOperator::make_identity(Basis);
-
             // Find the QShift if the first and last quantum numbers are Abelian.
             // If they are non-Abelian, then we require that the first and last quantum number are the same.
             QuantumNumber QShift(SL);
