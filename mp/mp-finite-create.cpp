@@ -17,20 +17,12 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/environment.h"
+#include "common/prog_options.h"
+#include "common/terminal.h"
+#include "interface/inittemp.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
-#include "lattice/latticesite.h"
-#include "common/environment.h"
-#include "common/terminal.h"
-#include "common/prog_options.h"
-#include "common/prog_opt_accum.h"
-#include "common/environment.h"
-#include "interface/inittemp.h"
-#include "lattice/infinitelattice.h"
-#include "lattice/infinite-parser.h"
-#include "mp-algorithms/triangular_mpo_solver.h"
-#include "linearalgebra/arpack_wrapper.h"
-#include "mps/packunpack.h"
 
 namespace prog_opt = boost::program_options;
 
@@ -88,38 +80,65 @@ int main(int argc, char** argv)
 
       QuantumNumber QShift = PsiInf.qshift();
 
-      LinearWavefunction Psi;
+      // Extract unit cell and lambda matrix of infinite wave function
+      LinearWavefunction PsiUC;
       RealDiagonalOperator Lambda;
 
-      std::tie(Psi, Lambda) = get_left_canonical(PsiInf);
+      std::tie(PsiUC, Lambda) = get_left_canonical(PsiInf);
 
-      QuantumNumber Q = QShift;
-
-      if (Repeat > 1)
+      // Find degree 1 quantum number in right basis with largest size
+      QuantumNumber QR;
+      int Max = 0;
+      for (int i = 0; i < PsiUC.Basis2().size(); ++i)
       {
-         LinearWavefunction PsiUC = Psi;
-
-         for (int i = 1; i < Repeat; ++i)
+         if (PsiUC.Basis2()[i].degree() == 1)
          {
-            auto I = PsiUC.end();
-            while (I != PsiUC.begin())
+            if (PsiUC.Basis2().dim(i) > Max)
             {
-               --I;
-               Psi.push_front(delta_shift(*I, Q));
+               QR = PsiUC.Basis2()[i];
+               Max = PsiUC.Basis2().dim(i);
             }
-            Q = delta_shift(Q, QShift);
          }
+      }
+
+      if (Max == 0)
+      {
+         std::cerr << "fatal: No quantum number of the unit cell basis has degree 1: cannot create finite wave function.\n";
+         return 1;
+      }
+
+      if (Verbose > 0)
+         std::cout << "Setting right basis quantum number " << QR << '\n';
+
+      //QR = adjoint(QR);
+
+      // Output finite wave function
+      LinearWavefunction Psi;
+
+      // Left basis quantum number
+      QuantumNumber QL = QR;
+
+      for (int i = 0; i < Repeat; ++i)
+      {
+         auto I = PsiUC.end();
+         while (I != PsiUC.begin())
+         {
+            --I;
+            Psi.push_front(delta_shift(*I, QL));
+         }
+         QL = delta_shift(QL, QShift);
       }
 
       // Choose random left/right vectors to make the ends of the MPS one-dimensional.
       VectorBasis Vacuum(make_vacuum_basis(Psi.Basis2().GetSymmetryList()));
 
-      MatrixOperator VR = MakeRandomMatrixOperator(Psi.Basis2(), Vacuum); 
-      MatrixOperator VL = MakeRandomMatrixOperator(delta_shift(Vacuum, Q), Psi.Basis1()); 
+      MatrixOperator VR = MakeRandomMatrixOperator(Psi.Basis2(), Vacuum);
+      MatrixOperator VL = MakeRandomMatrixOperator(delta_shift(delta_shift(Vacuum, QL), adjoint(QR)), Psi.Basis1());
 
-      Psi.set_front(VL * delta_shift(Lambda, Q) * Psi.get_front());
+      Psi.set_front(VL * delta_shift(Lambda, QL) * Psi.get_front());
       Psi.set_back(Psi.get_back() * VR);
 
+      // Canonicalize output wave function
       FiniteWavefunctionLeft PsiOut = FiniteWavefunctionLeft::Construct(Psi);
       PsiOut.check_structure();
 
@@ -138,24 +157,24 @@ int main(int argc, char** argv)
    }
    catch (prog_opt::error& e)
    {
-      std::cerr << "Exception while processing command line options: " << e.what() << std::endl;
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
       return 1;
    }
    catch (pheap::PHeapCannotCreateFile& e)
    {
-      std::cerr << "Exception: " << e.what() << std::endl;
+      std::cerr << "Exception: " << e.what() << '\n';
       if (e.Why == "File exists")
-         std::cerr << "Note: Use --force (-f) option to overwrite." << std::endl;
+         std::cerr << "Note: Use --force (-f) option to overwrite.\n";
       return 1;
    }
    catch (std::exception& e)
    {
-      std::cerr << "Exception: " << e.what() << std::endl;
+      std::cerr << "Exception: " << e.what() << '\n';
       return 1;
    }
    catch (...)
    {
-      std::cerr << "Unknown exception!" << std::endl;
+      std::cerr << "Unknown exception!\n";
       return 1;
    }
 }
