@@ -379,9 +379,10 @@ left_orthogonalize_from_evector(LinearWavefunction& Psi, QuantumNumbers::Quantum
          M = std::max(M, x);
       }
    }
-   double ConditionNum = M / m;
-   if (Verbose > 0 || ConditionNum > 10.0)
+
+   if (Verbose > 0)
    {
+      double ConditionNum = M / m;
       std::cerr << "left_orthogonalize_from_evector: Left evector condition number is " << ConditionNum << '\n';
    }
 
