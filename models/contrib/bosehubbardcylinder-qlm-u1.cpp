@@ -2,10 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/bosehubbardcylinder-u1.cpp
+// models/contrib/bosehubbardcylinder-qlm-u1.cpp
 //
-// Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
-// Copyright (C) 2021-2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2025 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +35,6 @@ int main(int argc, char** argv)
       int MaxN = DefaultMaxN;
       int x = 0;
       int y = 4;
-      bool QLM = false;
       half_int QLMSpin = 0.5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -46,7 +44,6 @@ int main(int argc, char** argv)
           FormatDefault("maximum number of bosons per site", MaxN).c_str())
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
-         ("qlm", prog_opt::bool_switch(&QLM), "include terms for the mapping of the 2D QLM")
          ("qlm-spin", prog_opt::value(&QLMSpin), "value of the spin sites for the QLM [default 1/2]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
@@ -71,22 +68,16 @@ int main(int argc, char** argv)
          ("H_J"    , "nearest-neighbor hopping")
          ("H_U"    , "on-site Coulomb interaction N*(N-1)/2")
          ("H_Vx"   , "nearest-neighbour Coulomb repulsion in x-direction")
-         ("H_Vy"   , "nearest-neighbour Coulomb repulsion in y-direction")
+         ("H_Vy"   , "nearest-neighbour Coulomb repulsion in x-direction")
          ("H_V"    , "nearest-neighbour Coulomb repulsion")
-         ("H_delta", "QLM gauge site potential", "x = 0, y even, QLM enabled",
-         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
-         ("H_eta"  , "QLM forbidden site potential", "x = 0, y even, QLM enabled",
-         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
-         ("H_alpha", "QLM matter site interaction", "x = 0, y even, QLM enabled",
-         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
-         ("H_W"    , "QLM gauge site repulsion", "x = 0, y even, QLM enabled",
-         [&x, &y, &QLM]()->bool{return x == 0 && y%2 == 0 && QLM;})
-         ("H_chi"  , "QLM staggering potential", "x = 0, 4 | y, QLM enabled",
-         [&x, &y, &QLM]()->bool{return x == 0 && y%4 == 0 && QLM;})
+         ("H_delta", "QLM gauge site potential")
+         ("H_alpha", "QLM matter site interaction")
+         ("H_W"    , "QLM gauge site repulsion")
+         ("H_chi"  , "QLM staggering potential")
          ;
       OpDescriptions.add_functions()
          ("H_Jx"   , "nearest-neighbor complex hopping in x-direction")
-         ("H_Jy"   , "nearest-neighbor complex hopping in y-direction")
+         ("H_Jy"   , "nearest-neighbor complex hopping in x-direction")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -101,7 +92,7 @@ int main(int argc, char** argv)
       int CellSize = x == 0 ? y : x;
 
       LatticeSite Site = BosonU1(MaxN);
-      UnitCell Cell(repeat(Site, CellSize));
+      UnitCell Cell(repeat(Site, 3*CellSize));
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator BH(Cell, "BH"), B(Cell, "B"), N(Cell, "N"), N2(Cell, "N2"), I(Cell, "I");
 
@@ -113,32 +104,23 @@ int main(int argc, char** argv)
       {
          for (int i = 0; i < y; ++i)
          {
-            Jxm += BH(0)[i]*B(1)[i];
-            Jxp += B(0)[i]*BH(1)[i];
-            Jym += BH(0)[i]*B(0)[(i+1)%y];
-            Jyp += B(0)[i]*BH(0)[(i+1)%y];
-            Vx += N(0)[i]*N(1)[i];
-            Vy += N(0)[i]*N(0)[(i+1)%y];
+            Jxm += BH(0)[3*i]*B(0)[3*i+1];
+            Jxp += B(0)[3*i]*BH(0)[3*i+1];
+            Jxm += BH(0)[3*i+1]*B(1)[3*i];
+            Jxp += B(0)[3*i+1]*BH(1)[3*i];
+            Jym += BH(0)[3*i]*B(0)[3*i+2];
+            Jyp += B(0)[3*i]*BH(0)[3*i+2];
+            Jym += BH(0)[3*i+2]*B(0)[(3*i+3)%(3*y)];
+            Jyp += B(0)[3*i+2]*BH(0)[(3*i+3)%(3*y)];
+            Vx += N(0)[3*i]*N(0)[3*i+1];
+            Vx += N(0)[3*i+1]*N(1)[3*i];
+            Vy += N(0)[3*i]*N(0)[3*i+2];
+            Vy += N(0)[3*i+2]*N(0)[(3*i+3)%(3*y)];
          }
       }
       else
       {
-         for (int i = 0; i < x-1; ++i)
-         {
-            Jxm += BH(0)[i]*B(0)[i+1];
-            Jxp += B(0)[i]*BH(0)[i+1];
-            Vx += N(0)[i]*N(0)[i+1];
-         }
-         Jxm += BH(0)[x-1]*B(y+1)[0];
-         Jxp += B(0)[x-1]*BH(y+1)[0];
-         Vx += N(0)[x-1]*N(y+1)[0];
-
-         for (int i = 0; i < x; ++i)
-         {
-            Jym += BH(0)[i]*B(1)[i];
-            Jyp += B(0)[i]*BH(1)[i];
-            Vy += N(0)[i]*N(1)[i];
-         }
+         // ...
       }
 
       Lattice["H_Jxm"] = sum_unit(Jxm);
@@ -158,57 +140,55 @@ int main(int argc, char** argv)
       // Define on-site interactions.
       UnitCellMPO U;
 
-      for (int i = 0; i < CellSize; ++i)
+      for (int i = 0; i < 3*y; ++i)
          U += 0.5*N2(0)[i];
 
       Lattice["H_U"] = sum_unit(U);
 
-      if (x == 0 && y%2 == 0 && QLM)
+      if (x == 0)
       {
          // Define QLM potentials.
-         UnitCellMPO delta, eta, alpha, W;
+         UnitCellMPO delta, alpha, W;
 
-         for (int i = 0; i < CellSize/2; ++i)
+         for (int i = 0; i < y; ++i)
          {
-            delta += N(0)[2*i+1] + N(1)[2*i];
-            eta += N(1)[2*i+1];
-            alpha += 0.5*N2(0)[2*i];
-            W += N(0)[2*i+1] * N(0)[(2*i-1+y)%y];
-            W += N(0)[2*i+1] * N(1)[2*i];
-            W += N(0)[2*i+1] * N(-1)[2*i];
-            W += N(0)[(2*i-1+y)%y] * N(1)[2*i];
-            W += N(0)[(2*i-1+y)%y] * N(-1)[2*i];
-            W += N(-1)[2*i] * N(1)[2*i];
+            delta += N(0)[3*i+1] + N(0)[3*i+2];
+            alpha += 0.5*N2(0)[3*i];
+            W += N(0)[3*i+1] * N(0)[3*i+2];
+            W += N(0)[3*i+1] * N(0)[(3*i-1+3*y)%(3*y)];
+            W += N(0)[3*i+1] * N(-1)[3*i+1];
+            W += N(0)[3*i+2] * N(0)[(3*i-1+3*y)%(3*y)];
+            W += N(0)[3*i+2] * N(-1)[3*i+1];
+            W += N(0)[(3*i-1+3*y)%(3*y)] * N(-1)[3*i+1];
          }
 
-         Lattice["H_delta"] = sum_unit(delta, 2*CellSize);
-         Lattice["H_eta"] = sum_unit(eta, 2*CellSize);
-         Lattice["H_alpha"] = sum_unit(alpha, 2*CellSize);
-         Lattice["H_W"] = sum_unit(W, 2*CellSize);
+         Lattice["H_delta"] = sum_unit(delta, 3*y);
+         Lattice["H_alpha"] = sum_unit(alpha, 3*y);
+         Lattice["H_W"] = sum_unit(W, 3*y);
 
-         if (y%4 == 0)
+         if (y%2 == 0)
          {
             UnitCellMPO chi;
-            for (int i = 0; i < CellSize/2; ++i)
+            for (int i = 0; i < y; ++i)
             {
-               chi += N(0)[2*i+1] + N(1)[2*i];
-               chi -= N(2)[2*i+1] + N(3)[2*i];
+               chi += N(0)[3*i+1] + N(0)[3*i+2];
+               chi -= N(1)[3*i+1] + N(1)[3*i+2];
                ++i;
-               chi -= N(0)[2*i+1] + N(1)[2*i];
-               chi += N(2)[2*i+1] + N(3)[2*i];
+               chi -= N(0)[3*i+1] + N(0)[3*i+2];
+               chi -= N(1)[3*i+1] + N(1)[3*i+2];
             }
-            Lattice["H_chi"] = sum_unit(0.5*chi, 4*CellSize);
+            Lattice["H_chi"] = sum_unit(0.5*chi, 6*y);
          }
 
          // Define Gauss's law operators.
          // Note: Ideally, this operator should be multiplied by -1 for an antimatter site.
-         UnitCellMPO G[CellSize/2];
+         UnitCellMPO G[y];
 
-         for (int i = 0; i < CellSize/2; ++i)
+         for (int i = 0; i < y; ++i)
          {
-            G[i] = N(0)[2*i] + 0.5 * (N(0)[2*i+1] + N(0)[(2*i-1+CellSize)%CellSize] + N(1)[2*i] + N(-1)[2*i]) - 4.0 * QLMSpin * I(0)[2*i];
-            G[i].set_description("Gauss's law operator for matter site " + std::to_string(2*i));
-            Lattice.GetUnitCell().assign_operator("G" + std::to_string(2*i), G[i]);
+            G[i] = N(0)[3*i] + 0.5 * (N(0)[3*i+1] + N(0)[3*i+2] + N(0)[(3*i-1+3*y)%(3*y)] + N(-1)[3*i+1]) - 4.0 * QLMSpin * I(0)[3*i];
+            G[i].set_description("Gauss's law operator for matter site " + std::to_string(3*i));
+            Lattice.GetUnitCell().assign_operator("G" + std::to_string(3*i), G[i]);
          }
       }
 

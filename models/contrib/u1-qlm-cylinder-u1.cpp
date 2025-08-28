@@ -79,8 +79,8 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1) 2+1D U(1) quantum link model (U.-J. Wiese, Annalen der Physik 525, 777 (2013), arXiv:1305.1602)");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx" , "nearest-neighbor hopping in y-direction")
-         ("H_ty" , "nearest-neighbor hopping in x-direction")
+         ("H_tx" , "nearest-neighbor hopping in x-direction")
+         ("H_ty" , "nearest-neighbor hopping in y-direction")
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
          ("H_g"  , "gauge coupling")
