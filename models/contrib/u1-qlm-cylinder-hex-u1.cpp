@@ -66,6 +66,7 @@ int main(int argc, char** argv)
       int y = 4;
       half_int Spin = 0.5;
       bool Bosonic = false;
+      bool OBC = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -73,6 +74,7 @@ int main(int argc, char** argv)
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector (must be even)", y).c_str())
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
+         ("obc", prog_opt::bool_switch(&OBC), "use open boundary conditions along the y direction")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -129,8 +131,11 @@ int main(int argc, char** argv)
       for (int i = 0; i < CellSize; i += 5)
       {
          tx += Sp(0)[i+2] * dot(CH(0)[i],   C(0)[i+1])             + Sm(0)[i+2] * dot(CH(0)[i+1],             C(0)[i]);
-         ty += Sp(0)[i+3] * dot(CH(0)[i+1], C(0)[(i+5)%CellSize])  + Sm(0)[i+3] * dot(CH(0)[(i+5)%CellSize],  C(0)[i+1]);
-         tz += Sp(0)[i+4] * dot(CH(0)[i+1], C(-1)[(i+5)%CellSize]) + Sm(0)[i+4] * dot(CH(-1)[(i+5)%CellSize], C(0)[i+1]);
+         if (!(OBC && i == CellSize - 5)) // Do not include these terms for the final site if using OBC
+         {
+            ty += Sp(0)[i+3] * dot(CH(0)[i+1], C(0)[(i+5)%CellSize])  + Sm(0)[i+3] * dot(CH(0)[(i+5)%CellSize],  C(0)[i+1]);
+            tz += Sp(0)[i+4] * dot(CH(0)[i+1], C(-1)[(i+5)%CellSize]) + Sm(0)[i+4] * dot(CH(-1)[(i+5)%CellSize], C(0)[i+1]);
+         }
          chi += Sz(0)[i+2] + Sz(0)[i+3] + Sz(0)[i+4];
          g += Sz(0)[i+2]*Sz(0)[i+2] + Sz(0)[i+3]*Sz(0)[i+3] + Sz(0)[i+4]*Sz(0)[i+4];
          m += N(0)[i] - N(0)[i+1];

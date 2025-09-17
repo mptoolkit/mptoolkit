@@ -56,6 +56,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       bool Bosonic = false;
       bool Tau = false;
+      bool OBC = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -65,6 +66,7 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
          ("tau", prog_opt::bool_switch(&Tau), "use alternative coeffients for the ladder operators based on the boson ladder operators")
+         ("obc", prog_opt::bool_switch(&OBC), "use open boundary conditions along the y direction")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -146,9 +148,12 @@ int main(int argc, char** argv)
          {
             tx += Sp(0)[i+1]     * dot(CH(0)[i],     C(0)[i+3*y])           + Sm(0)[i+1]     * dot(CH(0)[i+3*y], C(0)[i]);
             tx += Sp(0)[i+1+3*y] * dot(CH(0)[i+3*y], C(1)[i])               + Sm(0)[i+1+3*y] * dot(CH(1)[i], C(0)[i+3*y]);
-            ty += Sp(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Sm(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
-            // This term is intentionally negative.
-            ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Sm(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
+            if (!(OBC && i == 3*y - 3)) // Do not include these terms for the final sites if using OBC
+            {
+               ty += Sp(0)[i+2]     * dot(CH(0)[i],     C(0)[(i+3)%(3*y)])     + Sm(0)[i+2]     * dot(CH(0)[(i+3)%(3*y)], C(0)[i]);
+               // This term is intentionally negative.
+               ty -= Sp(0)[i+2+3*y] * dot(CH(0)[i+3*y], C(0)[(i+3)%(3*y)+3*y]) + Sm(0)[i+2+3*y] * dot(CH(0)[(i+3)%(3*y)+3*y], C(0)[i+3*y]);
+            }
             J += Sp(0)[i+1] * Sp(0)[i+2+3*y] * Sm(0)[(i+4)%(3*y)] * Sm(0)[i+2];
             J += Sm(0)[i+1] * Sm(0)[i+2+3*y] * Sp(0)[(i+4)%(3*y)] * Sp(0)[i+2];
             J += Sp(0)[i+1+3*y] * Sp(1)[i+2] * Sm(0)[(i+4)%(3*y)+3*y] * Sm(0)[i+2+3*y];
