@@ -67,6 +67,7 @@ int main(int argc, char** argv)
       half_int Spin = 0.5;
       bool Bosonic = false;
       bool OBC = false;
+      std::string InternalBond = "x";
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
          ("Spin,S", prog_opt::value(&Spin), FormatDefault("magnitude of the link spins", Spin).c_str())
          ("bosonic", prog_opt::bool_switch(&Bosonic), "use hardcore bosons instead of spinless fermions on the matter sites")
          ("obc", prog_opt::bool_switch(&OBC), "use open boundary conditions along the y direction")
+         ("internal-bond", prog_opt::value(&InternalBond), FormatDefault("use this bond as the internal bond for defining Gauss's law [x, y, z]", InternalBond).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -95,7 +97,7 @@ int main(int argc, char** argv)
          ("H_t"  , "nearest-neighbor hopping")
          ("H_m"  , "fermion mass")
          ("H_g"  , "gauge coupling")
-         ("H_chi"      , "background field")
+         ("H_chi", "background field")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -112,6 +114,13 @@ int main(int argc, char** argv)
          std::cerr << "y must be even" << std::endl;
          return 1;
       }
+
+      if (!(InternalBond == "x" || InternalBond == "y" || InternalBond == "z"))
+      {
+         std::cerr << "error: --internal-bond must be one of x, y, or z" << std::endl;
+         return 1;
+      }
+
 
       int CellSize = 5 * (y/2);
 
@@ -156,11 +165,24 @@ int main(int argc, char** argv)
       {
          int i = 5*(j/2);
 
-         G[j] = N(0)[i] - Sz(0)[i+2] + Sz(0)[(i-2+CellSize)%CellSize] + Sz(1)[(i-1+CellSize)%CellSize];
+         if (InternalBond == "x")
+         {
+            G[j] = N(0)[i] - Sz(0)[i+2] + Sz(0)[(i-2+CellSize)%CellSize] + Sz(1)[(i-1+CellSize)%CellSize];
+            G[j+1] = N(0)[i+1] + Sz(0)[i+2] - Sz(0)[i+3] - Sz(0)[i+4];
+         }
+         else if (InternalBond == "y")
+         {
+            G[j] = N(0)[i] + Sz(0)[i+2] - Sz(0)[(i-2+CellSize)%CellSize] + Sz(1)[(i-1+CellSize)%CellSize];
+            G[j+1] = N(0)[i+1] - Sz(0)[i+2] + Sz(0)[i+3] - Sz(0)[i+4];
+         }
+         else if (InternalBond == "z")
+         {
+            G[j] = N(0)[i] + Sz(0)[i+2] + Sz(0)[(i-2+CellSize)%CellSize] - Sz(1)[(i-1+CellSize)%CellSize];
+            G[j+1] = N(0)[i+1] - Sz(0)[i+2] - Sz(0)[i+3] + Sz(0)[i+4];
+         }
+
          G[j].set_description("Gauss's law operator for site " + std::to_string(i));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(i), G[j]);
-
-         G[j+1] = N(0)[i+1] + Sz(0)[i+2] - Sz(0)[i+3] - Sz(0)[i+4];
          G[j+1].set_description("Gauss's law operator for site " + std::to_string(i+1));
          Lattice.GetUnitCell().assign_operator("G" + std::to_string(i+1), G[j+1]);
       }
