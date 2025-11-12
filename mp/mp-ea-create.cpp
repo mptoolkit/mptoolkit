@@ -156,6 +156,8 @@ int main(int argc, char** argv)
          return 1;
       }
 
+      Op.ExtendToCoverUnitCell(PsiSize);
+
       // The number of lattice unit cells in Psi.
       int LatticeUCsPerPsiUC = PsiSize / LatticeUCSize;
 
@@ -169,8 +171,8 @@ int main(int argc, char** argv)
 
       LinearWavefunction PsiWindowLinear = PsiWindowLinearEmpty;
 
-      auto J = Op.MPO().begin();
-      for (auto I = PsiWindowLinear.begin(); I != PsiWindowLinear.end(); ++I, ++J)
+      auto I = PsiWindowLinear.begin();
+      for (auto J = Op.MPO().begin(); J != Op.MPO().end(); ++I, ++J)
          (*I) = aux_tensor_prod(*J, *I);
 
       MatrixOperator Identity = MatrixOperator::make_identity(PsiWindowLinear.Basis2());
@@ -194,11 +196,12 @@ int main(int argc, char** argv)
       WindowVec[0] = PsiWindow;
 
       // Fill the rest of WindowVec with empty windows (for multi-site unit cells).
+      // TODO: We should just be able to omit these somehow?
       auto W = WindowVec.begin();
       ++W;
       while (W != WindowVec.end())
       {
-         PsiWindowLinearEmpty.push_back(PsiWindowLinearEmpty.get_front());
+         PsiWindowLinearEmpty.push_back(delta_shift(PsiWindowLinearEmpty.get_front(), adjoint(PsiLeft.qshift())));
          PsiWindowLinearEmpty.pop_front();
 
          MatrixOperator LambdaZero = 0.0 * MatrixOperator::make_identity(PsiWindowLinearEmpty.Basis2());
