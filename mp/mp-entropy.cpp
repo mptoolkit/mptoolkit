@@ -62,8 +62,6 @@ namespace
          parts.emplace_back(token.substr(start, comma - start));
          start = comma + 1;
       }
-      if (parts.empty())
-         parts.push_back(token);
       return parts;
    }
 
@@ -104,11 +102,8 @@ namespace
 
       std::string compact;
       compact.reserve(token.size());
-      for (unsigned char c : token)
-      {
-         if (!std::isspace(c))
-            compact.push_back(static_cast<char>(c));
-      }
+      std::copy_if(token.begin(), token.end(), std::back_inserter(compact),
+                   [](unsigned char c) { return !std::isspace(c); });
 
       if (compact.empty())
          return {};
@@ -118,19 +113,11 @@ namespace
          std::size_t processed = 0;
          int const result = std::stoi(value, &processed, 10);
          if (processed != value.size())
-            throw std::runtime_error("Invalid site number: " + value);
+            throw std::runtime_error("Invalid site specification: " + value);
          return result;
       };
 
-      std::size_t range_pos = std::string::npos;
-      for (std::size_t i = 1; i < compact.size(); ++i)
-      {
-         if (compact[i] == '-')
-         {
-            range_pos = i;
-            break;
-         }
-      }
+      std::size_t const range_pos = compact.find('-', 1);
 
       if (range_pos == std::string::npos)
       {
@@ -273,10 +260,10 @@ int main(int argc, char** argv)
       SimpleOperator Rho = make_vacuum_simple(Psi.GetSymmetryList());
       for (auto const& range : SiteRanges)
       {
-         StateComponent C = make_vacuum_state(Psi.GetSymmetryList());
-         for (int site : range)
+         StateComponent C = Psi[range.first_];
+         for (int n = range.first_ + 1; n <= range.last_; ++n)
          {
-            C = local_tensor_prod(C, Psi[site]);
+            C = local_tensor_prod(C, Psi[n]);
          }
          C = prod(C, Psi.lambda(range.last_ + 1));
          Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
