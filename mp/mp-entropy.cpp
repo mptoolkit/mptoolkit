@@ -25,6 +25,164 @@
 #include "interface/inittemp.h"
 #include "mp/copyright.h"
 #include "wavefunction/mpwavefunction.h"
+#include "mps/state_component.h"
+
+#include <algorithm>
+#include <cctype>
+#include <iterator>
+#include <set>
+#include <type_traits>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace
+{
+   std::string trim(std::string s)
+   {
+      auto const not_space = [](unsigned char c) { return !std::isspace(c); };
+      s.erase(s.begin(), std::find_if(s.begin(), s.end(), not_space));
+      s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
+      return s;
+   }
+
+   std::vector<std::string> split_commas(std::string const& token)
+   {
+      std::vector<std::string> parts;
+      std::size_t start = 0;
+      while (start <= token.size())
+      {
+         std::size_t comma = token.find(',', start);
+         if (comma == std::string::npos)
+         {
+            parts.emplace_back(token.substr(start));
+            break;
+         }
+         parts.emplace_back(token.substr(start, comma - start));
+         start = comma + 1;
+      }
+      return parts;
+   }
+
+   // TODO: In C++23, replace int_range with std::views::iota.
+
+   template <typename Int>
+   struct int_range
+   {
+      static_assert(std::is_integral<Int>::value, "int_range requires integral type");
+
+      Int first_;
+      Int last_;
+
+      struct iterator
+      {
+         using iterator_category = std::forward_iterator_tag;
+         using value_type        = Int;
+         using difference_type   = Int;
+         using pointer           = void;
+         using reference         = Int;
+
+         Int current_;
+
+         Int operator*() const noexcept { return current_; }
+         iterator& operator++() noexcept { ++current_; return *this; }
+         bool operator!=(iterator const& other) const noexcept { return current_ != other.current_; }
+      };
+
+      iterator begin() const noexcept { return iterator{first_}; }
+      iterator end()   const noexcept { return iterator{static_cast<Int>(last_ + 1)}; } // inclusive range
+   };
+
+   std::vector<int> parse_site_token(std::string token)
+   {
+      token = trim(std::move(token));
+      if (token.empty())
+         return {};
+
+      std::string compact;
+      compact.reserve(token.size());
+      std::copy_if(token.begin(), token.end(), std::back_inserter(compact),
+                   [](unsigned char c) { return !std::isspace(c); });
+
+      if (compact.empty())
+         return {};
+
+      auto const parse_integer = [](std::string const& value) -> int
+      {
+         std::size_t processed = 0;
+         int const result = std::stoi(value, &processed, 10);
+         if (processed != value.size())
+            throw std::runtime_error("Invalid site specification: " + value);
+         return result;
+      };
+
+      std::size_t const range_pos = compact.find('-', 1);
+
+      if (range_pos == std::string::npos)
+      {
+         return {parse_integer(compact)};
+      }
+
+      std::string const start_text = compact.substr(0, range_pos);
+      std::string const end_text = compact.substr(range_pos + 1);
+
+      if (start_text.empty() || end_text.empty())
+         throw std::runtime_error("Invalid site specification: " + token);
+
+      int const start = parse_integer(start_text);
+      int const end = parse_integer(end_text);
+
+      if (end < start)
+      {
+         throw std::runtime_error(
+            "Invalid site range: " + std::to_string(start) + "-" + std::to_string(end) +
+            " (end is less than start)");
+      }
+
+      std::vector<int> result;
+      result.reserve(static_cast<std::size_t>(end - start + 1));
+      for (int value = start; value <= end; ++value)
+      {
+         result.push_back(value);
+      }
+
+      return result;
+   }
+
+   std::vector<int_range<int>> parse_sites(std::vector<std::string> const& tokens)
+   {
+      std::set<int> unique_sites;
+      for (auto const& token : tokens)
+      {
+         for (auto part : split_commas(token))
+         {
+            auto expanded = parse_site_token(std::move(part));
+            unique_sites.insert(expanded.begin(), expanded.end());
+         }
+      }
+
+      std::vector<int_range<int>> ranges;
+      if (unique_sites.empty())
+         return ranges;
+
+      auto it = unique_sites.begin();
+      while (it != unique_sites.end())
+      {
+         int const start = *it;
+         int end = start;
+         ++it;
+         while (it != unique_sites.end() && *it == end + 1)
+         {
+            end = *it;
+            ++it;
+         }
+         ranges.push_back(int_range<int>{start, end});
+      }
+
+      return ranges;
+   }
+}
 
 namespace prog_opt = boost::program_options;
 
@@ -39,7 +197,7 @@ int main(int argc, char** argv)
       bool ShowDensity = false;
       bool ShowDegen = false;
       bool Quiet = false;
-      std::vector<int> Sites;
+      std::vector<std::string> SiteTokens;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -55,7 +213,7 @@ int main(int argc, char** argv)
       prog_opt::options_description hidden("Hidden options");
       hidden.add_options()
          ("psi", prog_opt::value(&Filename), "psi")
-         ("sites", prog_opt::value<std::vector<int>>(&Sites)->multitoken(), "sites")
+         ("sites", prog_opt::value<std::vector<std::string>>(&SiteTokens)->multitoken(), "sites")
          ;
 
       prog_opt::positional_options_description p;
@@ -75,6 +233,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <sites>" << std::endl;
          std::cerr << desc << std::endl;
+         std::cerr << "Specify sites using integers or inclusive ranges (e.g. 0-3)." << std::endl;
          return 1;
       }
 
@@ -87,40 +246,28 @@ int main(int argc, char** argv)
       if (ShowDegen)
          ShowDensity = true;
 
+      auto SiteRanges = parse_sites(SiteTokens);
+      if (SiteRanges.empty())
+      {
+         std::cerr << "No sites specified." << std::endl;
+         return 1;
+      }
+
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(Filename, mp_pheap::CacheSize(), true);
 
       FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
 
       SimpleOperator Rho = make_vacuum_simple(Psi.GetSymmetryList());
-      StateComponent C;
-      int nPrev;
-      bool FirstIter = true;
-      for (auto const& n : Sites)
+      for (auto const& range : SiteRanges)
       {
-         if (FirstIter)
+         StateComponent C = Psi[range.first_];
+         for (int n = range.first_ + 1; n <= range.last_; ++n)
          {
-            C = Psi[n];
-            FirstIter = false;
+            C = local_tensor_prod(C, Psi[n]);
          }
-         else
-         {
-            if (n != nPrev + 1)
-            {
-               C = prod(C, Psi.lambda(nPrev+1));
-               Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
-
-               C = Psi[n];
-            }
-            else
-            {
-               C = local_tensor_prod(C, Psi[n]);
-            }
-         }
-         nPrev = n;
+         C = prod(C, Psi.lambda(range.last_ + 1));
+         Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
       }
-
-      C = prod(C, Psi.lambda(nPrev+1));
-      Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
 
       DensityMatrix<SimpleOperator> DM(Rho);
       if (!ShowDensity)
