@@ -48,8 +48,7 @@ int main(int argc, char** argv)
          ("degen", prog_opt::bool_switch(&ShowDegen), "Show degeneracies in the density matrix as repeated eigenvalues (implies -d)")
          ("limit,l", prog_opt::value<int>(&MaxEigenvalues), "Limit the density matrix display to N eigenvalues (implies -d)")
          ("base2,2", prog_opt::bool_switch(&Base2), "Show the entropy using base 2 instead of base e")
-	 ("quiet", prog_opt::bool_switch(&Quiet), "Do not show column headings")
-         //("site,s", prog_opt::value(&Sites), "Sites for the RDM")
+         ("quiet", prog_opt::bool_switch(&Quiet), "Do not show column headings")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -71,7 +70,7 @@ int main(int argc, char** argv)
                       options(opt).positional(p).run(), vm);
       prog_opt::notify(vm);
 
-      if (vm.count("help") || vm.count("psi") == 0)
+      if (vm.count("help") || vm.count("sites") == 0)
       {
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " [options] <psi> <sites>" << std::endl;
@@ -92,36 +91,36 @@ int main(int argc, char** argv)
 
       FiniteWavefunctionLeft Psi = PsiPtr->get<FiniteWavefunctionLeft>();
 
-      SimpleOperator Rho;
+      SimpleOperator Rho = make_vacuum_simple(Psi.GetSymmetryList());
       StateComponent C;
-      int nPrev = -2;
+      int nPrev;
+      bool FirstIter = true;
       for (auto const& n : Sites)
       {
-         if (n != nPrev + 1)
+         if (FirstIter)
          {
-            if (nPrev != -2)
-            {
-               C = prod(C, Psi.lambda(nPrev+1));
-               if (Rho.is_null())
-                  Rho = trace_prod(C, herm(C));
-               else
-                  Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
-            }
-
             C = Psi[n];
+            FirstIter = false;
          }
          else
          {
-            C = local_tensor_prod(C, Psi[n]);
+            if (n != nPrev + 1)
+            {
+               C = prod(C, Psi.lambda(nPrev+1));
+               Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
+
+               C = Psi[n];
+            }
+            else
+            {
+               C = local_tensor_prod(C, Psi[n]);
+            }
          }
          nPrev = n;
       }
 
       C = prod(C, Psi.lambda(nPrev+1));
-      if (Rho.is_null())
-         Rho = trace_prod(C, herm(C));
-      else
-         Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
+      Rho = tensor_prod(Rho, trace_prod(C, herm(C)));
 
       DensityMatrix<SimpleOperator> DM(Rho);
       if (!ShowDensity)
