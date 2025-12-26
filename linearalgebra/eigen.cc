@@ -911,7 +911,21 @@ struct ImplementSingularValueDecompositionLeftFull<A, U, D,
          Ures(LinearAlgebra::all,i) *= Phase;
       }
 #endif
-      assign(u, Ures);
+#if defined(RANDOMIZE_NULLSPACE)
+      if (m > n)
+      {
+         // Assign the leading (non-nullspace) vectors directly
+         assign(u(LinearAlgebra::all, LinearAlgebra::range(0, n)), Ures(LinearAlgebra::all, LinearAlgebra::range(0, n)));
+
+         // Randomize the trailing (nullspace) block
+         auto Q = LinearAlgebra::random_unitary<std::complex<double>>(m - n, m - n);
+         assign(u(LinearAlgebra::all, LinearAlgebra::range(n, m)), Ures(LinearAlgebra::all, LinearAlgebra::range(n, m)) * Q);
+      }
+      else
+#endif
+      {
+         assign(u, Ures);
+      }
       assign(d, Dres);
    }
 };
@@ -967,7 +981,21 @@ struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
       }
 #endif
       assign(d, Dres);
-      assign(vt, Vtres);
+#if defined(RANDOMIZE_NULLSPACE)
+      if (n > m)
+      {
+         // Assign leading rows of Vt directly
+         assign(vt(LinearAlgebra::range(0, m), LinearAlgebra::all), Vtres(LinearAlgebra::range(0, m), LinearAlgebra::all));
+
+         // Randomize nullspace rows
+         auto Q = LinearAlgebra::random_unitary<std::complex<double>>(n - m, n - m);
+         assign(vt(LinearAlgebra::range(m, n), LinearAlgebra::all), Q * Vtres(LinearAlgebra::range(m, n), LinearAlgebra::all));
+      }
+      else
+#endif
+      {
+         assign(vt, Vtres);
+      }
    }
 };
 
