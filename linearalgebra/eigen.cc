@@ -789,9 +789,9 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       zero_all(u);
       zero_all(d);
       zero_all(vt);
-      assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
+      assign(u, Ures);
       assign(d.diagonal(), Dres);
-      assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
+      assign(vt, Vtres);
    }
 };
 
