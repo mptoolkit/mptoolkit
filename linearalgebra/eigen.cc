@@ -786,9 +786,11 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
 #endif
-      assign(u, Ures);
+      zero_all(u);
+      zero_all(vt);
+      assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
       assign(d.diagonal(), Dres);
-      assign(vt, Vtres);
+      assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
    }
 };
 
