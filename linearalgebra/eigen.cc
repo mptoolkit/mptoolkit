@@ -786,11 +786,42 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
 #endif
-      zero_all(u);
-      zero_all(vt);
-      assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
+
+#if defined(RANDOMIZE_NULLSPACE)
+      if (m > n)
+      {
+         // Assign the leading (non-nullspace) vectors directly
+         assign(u(LinearAlgebra::all, LinearAlgebra::range(0, n)), Ures(LinearAlgebra::all, LinearAlgebra::range(0, n)));
+
+         // Randomize the trailing (nullspace) block
+         auto Q = LinearAlgebra::random_unitary<Real>(m - n, m - n);
+         assign(u(LinearAlgebra::all, LinearAlgebra::range(n, m)), Ures(LinearAlgebra::all, LinearAlgebra::range(n, m)) * Q);
+      }
+      else
+#endif
+      {
+         zero_all(u);
+         assign(u(LinearAlgebra::all, LinearAlgebra::range(0, m)), Ures);
+      }
+
       assign(d.diagonal(), Dres);
-      assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
+
+#if defined(RANDOMIZE_NULLSPACE)
+      if (n > m)
+      {
+         // Assign leading rows of Vt directly
+         assign(vt(LinearAlgebra::range(0, m), LinearAlgebra::all), Vtres(LinearAlgebra::range(0, m), LinearAlgebra::all));
+
+         // Randomize nullspace rows
+         auto Q = LinearAlgebra::random_unitary<Real>(n - m, n - m);
+         assign(vt(LinearAlgebra::range(m, n), LinearAlgebra::all), Q * Vtres(LinearAlgebra::range(m, n), LinearAlgebra::all));
+      }
+      else
+#endif
+      {
+         zero_all(vt);
+         assign(vt(LinearAlgebra::range(0, n), LinearAlgebra::all), Vtres);
+      }
    }
 };
 
