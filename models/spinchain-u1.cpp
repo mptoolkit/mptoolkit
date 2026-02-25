@@ -65,7 +65,7 @@ int main(int argc, char** argv)
          ("H_PD"   , "spin-1 projector onto singlet dimers (S(0)+S(1))^2 - 2) * (S(0)+S(1))^2 - 6)")
          ("H_PT"   , "spin-1 projector onto singlet trimers (S(0)+S(1)+S(2))^2 - 2)*(S(0)+S(1)+S(2))^2 - 6)*(S(0)+S(1)+S(2))^2 - 12)")
          ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
-	      ("H_stag" , "staggered field (-1)^n Sz(n)")
+         ("H_stag" , "staggered field (-1)^n Sz(n)")
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 

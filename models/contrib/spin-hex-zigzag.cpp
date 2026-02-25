@@ -85,11 +85,8 @@ int main(int argc, char** argv)
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
       OpDescriptions.set_description("Hexagonal lattice zigzag configuration, no spin symmetry");
-      OpDescriptions.author("IP McCullocch", "ianmcc@physics.uq.edu.au");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_cell_operators()
-         ("Sp"          , "S+ on a leg of the cylinder")
-         ("Sm"          , "S- on a leg of the cylinder")
-         ("Sz"          , "Sz on a leg of the cylinder")
          ("Trans"      , "translation by one site (rotation by 2\u0071/w) in lattice short direction")
          ("Ref"        , "reflection in lattice short direction",
           "not present with --noreflect", [&NoReflect]()->bool{return !NoReflect;})
@@ -98,9 +95,15 @@ int main(int argc, char** argv)
          ;
       OpDescriptions.add_operators()
          ("H_J1"       , "nearest neighbor spin exchange")
-         ("H_x"        , "nearest neighbor spin exchange in the X direction")
-         ("H_even"        , "nearest neighbor spin exchange in the even bonds in the Y direction")
-         ("H_odd"        , "nearest neighbor spin exchange in the odd bonds in the U direction")
+         ("H_J1_x"     , "nearest neighbor spin exchange in the X direction")
+         ("H_J1_even"  , "nearest neighbor spin exchange in the even bonds in the Y direction")
+         ("H_J1_odd"   , "nearest neighbor spin exchange in the odd bonds in the U direction")
+         ("H_xx"       , "nearest neighbor xx spin coupling")
+         ("H_yy"       , "nearest neighbor yy spin coupling")
+         ("H_zz"       , "nearest neighbor zz spin coupling")
+         ("H_x"        , "magnetic field in the x direction")
+         ("H_y"        , "magnetic field in the y direction")
+         ("H_z"        , "magnetic field in the z direction")
          ("Ty"         , "momentum operator in lattice short direction")
          ("TyPi"       , "translation by w/2 sites in the Y direction",
           "width even, not present with --noreflect",
@@ -122,19 +125,12 @@ int main(int argc, char** argv)
       UnitCell Cell = repeat(Site, w);
       InfiniteLattice Lattice(&Cell);
 
-      UnitCellOperator Sp(Cell, "Sp");
-      UnitCellOperator Sm(Cell, "Sm");
+      UnitCellOperator Sx(Cell, "Sx");
+      UnitCellOperator Sy(Cell, "Sy");
       UnitCellOperator Sz(Cell, "Sz");
       UnitCellOperator I(Cell, "I"); // identity operator
       UnitCellOperator Trans(Cell, "Trans"), Ref(Cell, "Ref");
       UnitCellOperator RyUnit(Cell, "RyUnit");
-
-      for (int i = 0; i < w; ++i)
-      {
-         Sp += Sp[i];                    // total spin on a leg of cylinder
-         Sm += Sm[i];                    // total spin on a leg of cylinder
-         Sz += Sz[i];                    // total spin on a leg of cylinder
-      }
 
       Trans = I(0);
       for (int i = 0; i < w-1; ++i)
@@ -155,26 +151,32 @@ int main(int argc, char** argv)
 
 
       // Construct the Hamiltonian for a single unit-cell,
-      UnitCellMPO Heven, Hodd, Hx;
+      UnitCellMPO H_xx_even, H_yy_even, H_zz_even,
+                  H_xx_odd, H_yy_odd, H_zz_odd,
+                  H_xx_x, H_yy_x, H_zz_x,
+                  H_x, H_y, H_z;
 
       for (int i = 0; i < w; ++i)
       {
 	 if (i % 2 == 0)
          {
-            Heven += 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%w]);   // vertical bonds
-            Heven += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%w]);   // vertical bonds
-            Heven += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
+            H_xx_even += inner(Sx(0)[i], Sx(0)[(i+1)%w]);   // vertical bonds
+            H_yy_even += inner(Sy(0)[i], Sy(0)[(i+1)%w]);   // vertical bonds
+            H_zz_even += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
 
-	    Hx += 0.5 * inner(Sp(0)[i], Sp(1)[(i+1)%w]);
-	    Hx += 0.5 * inner(Sm(0)[i], Sm(1)[(i+1)%w]);
-	    Hx += inner(Sz(0)[i], Sz(1)[(i+1)%w]);
+	    H_xx_x += inner(Sx(0)[i], Sx(1)[(i+1)%w]);
+	    H_yy_x += inner(Sy(0)[i], Sy(1)[(i+1)%w]);
+	    H_zz_x += inner(Sz(0)[i], Sz(1)[(i+1)%w]);
          }
          else
          {
-            Hodd+= 0.5 * inner(Sp(0)[i], Sp(0)[(i+1)%w]);   // vertical bonds
-            Hodd += 0.5 * inner(Sm(0)[i], Sm(0)[(i+1)%w]);   // vertical bonds
-            Hodd += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
+            H_xx_odd += inner(Sx(0)[i], Sx(0)[(i+1)%w]);   // vertical bonds
+            H_yy_odd += inner(Sy(0)[i], Sy(0)[(i+1)%w]);   // vertical bonds
+            H_zz_odd += inner(Sz(0)[i], Sz(0)[(i+1)%w]);   // vertical bonds
          }
+         H_x += Sx(0)[i];
+         H_y += Sy(0)[i];
+         H_z += Sz(0)[i];
       }
 
       // Reflection.  This is in the 'wrong' 45 degree angle
@@ -210,10 +212,16 @@ int main(int argc, char** argv)
 
       // Now we construct the InfiniteLattice,
 
-      Lattice["H_even"]  = sum_unit(Heven);
-      Lattice["H_odd"]   = sum_unit(Hodd);
-      Lattice["H_x"]   = sum_unit(Hx);
+      Lattice["H_J1_even"]  = sum_unit(H_xx_even+H_yy_even+H_zz_even);
+      Lattice["H_J1_odd"]   = sum_unit(H_xx_odd+H_yy_odd+H_zz_odd);
+      Lattice["H_J1_x"]   = sum_unit(H_xx_x+H_yy_x+H_zz_x);
       Lattice["H_J1"] = Lattice["H_even"] + Lattice["H_odd"] + Lattice["H_x"];
+      Lattice["H_xx"]   = sum_unit(H_xx_even+H_xx_odd+H_xx_x);
+      Lattice["H_yy"]   = sum_unit(H_yy_even+H_yy_odd+H_yy_x);
+      Lattice["H_zz"]   = sum_unit(H_zz_even+H_zz_odd+H_zz_x);
+      Lattice["H_x"]   = sum_unit(H_x);
+      Lattice["H_y"]   = sum_unit(H_y);
+      Lattice["H_z"]   = sum_unit(H_z);
 
       // Momentum operators in Y-direction
       Lattice["Ty"] = prod_unit_left_to_right(UnitCellMPO(Trans(0)).MPO(), w);
