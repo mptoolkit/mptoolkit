@@ -503,7 +503,7 @@ int main(int argc, char** argv)
          }
 
          // do we do a continuation?
-         Continue = Gates.EvenU.size() > Gates.OddU.size():
+         Continue = Gates.EvenU.size() > Gates.OddU.size();
 
          ++tstep;
          std::cout << "Timestep " << formatting::format_complex(tstep)
