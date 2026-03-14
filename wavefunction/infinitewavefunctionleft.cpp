@@ -73,6 +73,11 @@ extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
 
 double const UnityEpsilon = 1E-14;
 
+// Magic numbers for left_orthogonalize and gauge_fix_left_orthogonal
+double const HermTol = 1E-14;
+int const MaxTries = 100;
+int const ResetGuessInterval = 10;
+
 std::string InfiniteWavefunctionLeft::Type = "InfiniteWavefunctionLeft";
 
 namespace
@@ -445,7 +450,7 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    MatrixOperator XH = MatrixOperator::make_identity(X.Basis1()) * herm(X);
    X = 0.5*(X + XH);
 
-   std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, X, tol, Verbose-2);
+   std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, std::move(X), tol, Verbose-2);
 
    if (Verbose >= 2 && std::abs(EVal-1.0) > UnityEpsilon)
    {
@@ -466,11 +471,28 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
    double e = norm_frob(X-Xh);
    X = 0.5*(X+Xh);
    int Tries = 0;
-   while (e > 1E-14 && ++Tries < 10) // some arbitrary number of tries.  In practice nothing seems to change after 2
+   while (e > HermTol && ++Tries < MaxTries) // some arbitrary number of tries.  In practice nothing seems to change after 2
    {
-      std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^dagger = " << e << " restarting orthogonalization\n";
+      if (Verbose > 0)
+      {
+         std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix is not hermitian, norm of X-X^dagger = " << e << " restarting orthogonalization\n";
+      }
 
-      std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, X);
+      // Reuse previous result as initial guess, but reset to an initial guess every 10 tries
+      if (Tries % ResetGuessInterval == 0)
+      {
+         if (Verbose > 0)
+         {
+            std::cerr << "left_orthogonalize: resetting initial guess\n";
+         }
+         std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose-2);
+      }
+      else
+      {
+         std::tie(EVal, X) = get_left_transfer_eigenvector(Psi, Psi, QShift, std::move(X), tol, Verbose-2);
+      }
+
+
       x = trace(X*X);   // TODO: this isn't as efficient as it should be
       X *= std::pow(x, -0.5);
       if (trace(X).real() < 0)
@@ -479,7 +501,7 @@ left_orthogonalize(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber const&
       e = norm_frob(X-Xh);
       X = 0.5*(X+Xh);
    }
-   if (Tries == 10)
+   if (Tries == MaxTries)
    {
       std::cerr << "left_orthogonalize: warning: left transfer eigenmatrix never converged to a Hermitian matrix!\n";
    }
@@ -573,10 +595,27 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
    double e = norm_frob(Y-rH);
    Y = 0.5*(Y+rH);
    int Tries = 0;
-   while (e > 1E-14 && ++Tries < 10)
+   while (e > HermTol && ++Tries < MaxTries)
    {
-      std::cerr << "gauge_fix_left_orthogonal: warning: right transfer eigenmatrix is not hermitian, norm of Y-Y^dagger = " << e << " restarting orthogonalization\n";
-      std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, std::move(Y), tol, Verbose);
+      if (Verbose > 0)
+      {
+         std::cerr << "gauge_fix_left_orthogonal: warning: right transfer eigenmatrix is not hermitian, norm of Y-Y^dagger = " << e << " restarting orthogonalization\n";
+      }
+
+      // Reuse previous result as initial guess, but reset to an initial guess every 10 tries
+      if (Tries % ResetGuessInterval == 0)
+      {
+         if (Verbose > 0)
+         {
+            std::cerr << "gauge_fix_left_orthogonal: resetting initial guess\n";
+         }
+         std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, tol, Verbose);
+      }
+      else
+      {
+         std::tie(EValue, Y) = get_right_transfer_eigenvector(Psi, Psi, QShift, std::move(Y), tol, Verbose);
+      }
+
       // scale Y so it is Hermitian - as an eigenvector it may be arbitrarily rotated by a complex number
       auto y = trace(Y*Y);  // TODO: fixme
       Y *= std::pow(y, -0.5);
@@ -587,7 +626,7 @@ gauge_fix_left_orthogonal(LinearWavefunction& Psi, QuantumNumbers::QuantumNumber
       e = norm_frob(Y-rH);
       Y = 0.5*(Y+rH);
    }
-   if (Tries == 10)
+   if (Tries == MaxTries)
    {
       std::cerr << "gauge_fix_left_orthogonal: warning: right transfer eigenmatrix never converged to a Hermitian matrix!\n";
    }
