@@ -33,6 +33,7 @@
 #include <map>
 #include <ostream>
 #include <cmath>
+#include <complex>
 
 template <typename CoefficientField>
 class Polynomial
