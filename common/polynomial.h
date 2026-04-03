@@ -349,4 +349,24 @@ operator*=(Polynomial<CF>& x, Polynomial<CF> const& y)
    return x;
 }
 
+template <typename CF>
+auto norm(Polynomial<CF> const& p)
+{
+   using std::norm;
+   using std::real;
+   using std::conj;
+   Polynomial<decltype(norm(CF()))> Result;
+   for (auto I = p.begin(); I != p.end(); ++I)
+   {
+      Result[I->first*2] += norm(I->second);
+      auto J = I;
+      ++J;
+      for ( ; J != p.end(); ++J)
+      {
+         Result[I->first + J->first] += real(I->second*conj(J->second) + J->second*conj(I->second));
+      }
+   }
+   return Result;
+}
+
 #endif
