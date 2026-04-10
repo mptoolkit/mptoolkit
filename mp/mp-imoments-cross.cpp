@@ -52,8 +52,10 @@
 #include "wavefunction/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
+#include "common/json_emit.h"
 #include <boost/algorithm/string.hpp>
 #include "common/openmp.h"
+#include <sstream>
 
 namespace prog_opt = boost::program_options;
 
@@ -176,6 +178,113 @@ void ShowCumulants(std::vector<std::complex<double> > const& Cumulants,
    }
    if (OneLine)
       std::cout << '\n';
+}
+
+template <typename T>
+std::string ToString(T const& Value)
+{
+   std::ostringstream Out;
+   Out << Value;
+   return Out.str();
+}
+
+void EmitComplexJson(std::ostream& Out, std::complex<double> const& Value)
+{
+   json_emit::object Obj(Out);
+   Obj.next("real");
+   Out << Value.real();
+   Obj.next("imag");
+   Out << Value.imag();
+}
+
+void EmitCumulantsJson(std::ostream& Out,
+                       std::string const& Psi1,
+                       std::string const& Psi2,
+                       std::string const& Operator,
+                       std::string const& Sector,
+                       int WhichEigenvalue,
+                       int Power,
+                       int UnitCellSize,
+                       int Degree,
+                       int Rotate,
+                       bool Reflect,
+                       bool Conj,
+                       double Tol,
+                       double UnityEpsilon,
+                       double ScaleFactor,
+                       std::complex<double> const& TransferEigenvalue,
+                       double LogAmplitude,
+                       std::vector<std::complex<double> > const& Cumulants)
+{
+   json_emit::object Root(Out);
+
+   Root.next("format");
+   json_emit::emit_string(Out, "mptoolkit.imoments-cross.cumulants/v1");
+
+   Root.next("psi1");
+   json_emit::emit_string(Out, Psi1);
+
+   Root.next("psi2");
+   json_emit::emit_string(Out, Psi2);
+
+   Root.next("operator");
+   json_emit::emit_string(Out, Operator);
+
+   Root.next("quantum_number_sector");
+   json_emit::emit_string(Out, Sector);
+
+   Root.next("eigenvalue_index");
+   Out << WhichEigenvalue;
+
+   Root.next("power");
+   Out << Power;
+
+   Root.next("unit_cell_size");
+   Out << UnitCellSize;
+
+   Root.next("degree");
+   Out << Degree;
+
+   Root.next("rotate");
+   Out << Rotate;
+
+   Root.next("reflect");
+   Out << (Reflect ? "true" : "false");
+
+   Root.next("conj");
+   Out << (Conj ? "true" : "false");
+
+   Root.next("tol");
+   Out << Tol;
+
+   Root.next("unityepsilon");
+   Out << UnityEpsilon;
+
+   Root.next("scale_factor");
+   Out << ScaleFactor;
+
+   Root.next("transfer_matrix_eigenvalue");
+   EmitComplexJson(Out, TransferEigenvalue);
+
+   Root.next("log_amplitude");
+   Out << LogAmplitude;
+
+   Root.next("cumulants");
+   {
+      json_emit::array A(Out);
+      for (int n = 0; n < Cumulants.size(); ++n)
+      {
+         A.next();
+         json_emit::object Item(Out);
+         Item.next("order");
+         Out << n;
+         Item.next("real");
+         Out << (Cumulants[n] * ScaleFactor).real();
+         Item.next("imag");
+         Out << (Cumulants[n] * ScaleFactor).imag();
+      }
+   }
+   Out << '\n';
 }
 
 // given an array of moment polynomials (ordered by degree, and in multiples of the
@@ -318,6 +427,7 @@ int main(int argc, char** argv)
    bool ShowPolar = false;
    bool ShowCartesian = false;
    bool Quiet = false;
+   bool JsonOutput = false;
    bool CalculateMoments = false;
    bool CalculateCumulants = false;
    double UnityEpsilon = DefaultEigenUnityEpsilon;
@@ -358,6 +468,8 @@ int main(int argc, char** argv)
          ("degree,d", prog_opt::value(&Degree),
           "force setting the degree of the MPO")
          ("quiet", prog_opt::bool_switch(&Quiet), "don't show column headings")
+         ("json", prog_opt::bool_switch(&JsonOutput),
+          "emit one JSON object for a single eigenvalue [currently supports cumulants only]")
          ("oneline", prog_opt::bool_switch(&OneLine), "Show all output on one line (currently only works with --cumulants)")
          ("rotate", prog_opt::value(&Rotate),
           "rotate the unit cell of psi1 this many sites to the left before calculating the overlap [default 0]")
@@ -433,9 +545,21 @@ int main(int argc, char** argv)
       if (ShowRadians)
          ShowArgument = true;
 
-      // If none of --cumulants and --moments are specified, then the default is to calculate moments
+      // If none of --cumulants and --moments are specified, then the default is
+      // to calculate moments in text mode and cumulants in JSON mode.
       if (!CalculateMoments && !CalculateCumulants)
-         CalculateMoments = true;
+      {
+         if (JsonOutput)
+            CalculateCumulants = true;
+         else
+            CalculateMoments = true;
+      }
+
+      if (JsonOutput && CalculateMoments)
+      {
+         std::cerr << basename(argv[0]) << ": fatal: --json currently supports --cumulants only.\n";
+         return 1;
+      }
 
       long CacheSize = getenv_or_default("MP_CACHESIZE", 655360);
       pvalue_ptr<MPWavefunction> Psi2Ptr = pheap::OpenPersistent(Psi2Str, CacheSize, true);
@@ -525,7 +649,7 @@ int main(int argc, char** argv)
          UnitCellSize = Psi1.size();
       double ScaleFactor = double(UnitCellSize) / double(Size);
 
-      if (!Quiet)
+      if (!Quiet && !JsonOutput)
       {
          print_preamble(std::cout, argc, argv);
          std::cout << "#operator " << EscapeArgument(OpStr) << '\n';
@@ -548,7 +672,7 @@ int main(int argc, char** argv)
       TLeft = LV[WhichEigenvalue];
       TRight = RV[WhichEigenvalue];
 
-      if (!Quiet)
+      if (!Quiet && !JsonOutput)
       {
          std::cout << "#transfer matrix eigenvalue = " << formatting::format_complex(lambda) << '\n';
       }
@@ -570,7 +694,7 @@ int main(int argc, char** argv)
          }
          TCond = 1.0 / Dist;
       }
-      if (!Quiet)
+      if (!Quiet && !JsonOutput)
       {
          std::cout << "#condition number estimate = " << TCond << '\n';
       }
@@ -601,7 +725,7 @@ int main(int argc, char** argv)
       // but maybe more general to have lambda as an explicit argument?
       auto lambda0 = std::pow(lambda, UnitCellSize / Psi1.size());
       double LogAmplitude = Psi1.log_amplitude()*(UnitCellSize/Psi1.size()) + Psi2.log_amplitude()*(UnitCellSize/Psi2.size());
-      if (!Quiet)
+      if (!Quiet && !JsonOutput)
       {
          std::cout << "#log amplitude = " << LogAmplitude << '\n';
       }
@@ -675,7 +799,7 @@ int main(int argc, char** argv)
       if (CalculateCumulants)
       {
          // If we calculated the moments, then put in a blank line to separate them
-         if (CalculateMoments)
+         if (CalculateMoments && !JsonOutput)
             std::cout << '\n';
 
          std::vector<std::complex<double>> Cumulants = MomentsToCumulants(Moments, Tol, Quiet);
@@ -684,9 +808,19 @@ int main(int argc, char** argv)
          // F(t) = 1/N log <LHS|exp(tX)|RHS> for the operator X, so the 0th order cumulant is
          // log <LHS|RHS> = log lambda
          Cumulants[0] = std::log(lambda0) + LogAmplitude;
-         ShowCumulants(Cumulants, OneLine, Quiet, ShowRealPart,
-                       ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
-                       ScaleFactor);
+         if (JsonOutput)
+         {
+            EmitCumulantsJson(std::cout, Psi1Str, Psi2Str, OpStr, ToString(q),
+                              WhichEigenvalue, Power, UnitCellSize, Degree, Rotate,
+                              Reflect, Conj, Tol, UnityEpsilon, ScaleFactor,
+                              lambda0, LogAmplitude, Cumulants);
+         }
+         else
+         {
+            ShowCumulants(Cumulants, OneLine, Quiet, ShowRealPart,
+                          ShowImagPart, ShowMagnitude, ShowArgument, ShowRadians,
+                          ScaleFactor);
+         }
       }
 
       pheap::Shutdown();
