@@ -132,6 +132,10 @@ iTDVP::Canonicalize()
       return;
 
    PsiCanonical = InfiniteWavefunctionLeft::Construct(Psi, QShift, scalar_prod(LambdaR, herm(LambdaR)), Normalize ? 0.0 : LogAmplitude);
+   std::complex<double> ScaleLog = ProjectedScaleLog;
+   if (Normalize)
+      ScaleLog = std::complex<double>(0.0, ScaleLog.imag());
+   PsiCanonical.scale_log(ScaleLog);
    Canonicalized = true;
 }
 
@@ -300,6 +304,11 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
       this->OrthogonalizeLeftmostSite();
 
+      // The tangent-space projection removes the component parallel to the
+      // state, which carries the extensive phase/amplitude density -i E Tau.
+      if (Sweep == EvolutionSweeps)
+         ProjectedScaleLog += -I * E * Tau;
+
       if (Verbose > 0)
       {
          if (Sweep > 1)
@@ -385,6 +394,11 @@ iTDVP::EvolveRight(std::complex<double> Tau)
       this->SweepRight(Tau);
 
       this->OrthogonalizeRightmostSite();
+
+      // The tangent-space projection removes the component parallel to the
+      // state, which carries the extensive phase/amplitude density -i E Tau.
+      if (Sweep == EvolutionSweeps)
+         ProjectedScaleLog += -I * E * Tau;
 
       if (Verbose > 0)
       {
