@@ -42,7 +42,59 @@ std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::ou
 
 bool Flush = false;  // set to true to flush standard output every step
 
-void SweepRight(FiniteDMRG& dmrg, StatesInfo const& SInfo, double MixFactor)
+namespace
+{
+
+class FiniteDMRG3S : public FiniteDMRG
+{
+   public:
+      using FiniteDMRG::FiniteDMRG;
+
+      TruncationInfo TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor)
+      {
+         MatrixOperator U;
+         RealDiagonalOperator Lambda;
+         TruncationInfo Info;
+         std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, HamMatrices.right(), MixFactor, States, Info, HamMatrices.left());
+
+         if (Verbose > 1)
+         {
+            std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
+         }
+
+         this->ShiftLeft(U*Lambda);
+
+         IterationNumStates = Info.KeptStates();
+         IterationTruncation += Info.TruncationError();
+         IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+         return Info;
+      }
+
+      TruncationInfo TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor)
+      {
+         RealDiagonalOperator Lambda;
+         MatrixOperator U;
+         TruncationInfo Info;
+         std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, HamMatrices.left(), MixFactor, States, Info, HamMatrices.right());
+         if (Verbose > 1)
+         {
+            std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
+         }
+
+         this->ShiftRight(Lambda*U);
+
+         IterationNumStates = Info.KeptStates();
+         IterationTruncation += Info.TruncationError();
+         IterationEntropy = std::max(IterationEntropy, Info.KeptEntropy());
+
+         return Info;
+      }
+};
+
+} // namespace
+
+void SweepRight(FiniteDMRG3S& dmrg, StatesInfo const& SInfo, double MixFactor)
 {
    dmrg.StartSweep();
    while (dmrg.Site() < dmrg.size()-1)
@@ -71,7 +123,7 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& SInfo, double MixFactor)
    std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
 
-void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& SInfo, double MixFactor)
+void SweepLeft(FiniteDMRG3S& dmrg, StatesInfo const& SInfo, double MixFactor)
 {
    dmrg.StartSweep();
    while (dmrg.Site() > 0)
@@ -233,7 +285,7 @@ int main(int argc, char** argv)
 	     HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
 
       // Now we can construct the actual DMRG object
-      FiniteDMRG dmrg(Psi, HamMPO, Verbose);
+      FiniteDMRG3S dmrg(Psi, HamMPO, Verbose);
 
       dmrg.Solver().SetSolver(Solver);
 

@@ -72,18 +72,8 @@ class DMRG
       // get the current wavefunction
       FiniteWavefunctionLeft Wavefunction() const;
 
-      // Coarse-grain the current site with the site on the right, i.e. 2-site DMRG
-      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainRight(StatesInfo const& SInfo);
-
-      // Coarse-grain the current site with the site on the left, i.e. 2-site DMRG
-      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& SInfo);
-
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
-
-      // The old 3S algorithm
-      TruncationInfo TruncateAndShiftLeft3S(StatesInfo const& States, double MixFactor);
-      TruncationInfo TruncateAndShiftRight3S(StatesInfo const& States, double MixFactor);
 
       // Pre-expansion: expand the environment basis to that it contains at least StatesWanted states, if possible.
       // Returns the actual environment size.
