@@ -1,7 +1,7 @@
 # Coverage Checklist
 
 This document is the concrete rollout checklist for extending the declarative
-test prototype into broad MPToolkit integration coverage.
+integration test system into broad MPToolkit coverage.
 
 Scope:
 

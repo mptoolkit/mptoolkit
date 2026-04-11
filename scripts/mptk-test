@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: mptk-test [--bin-dir DIR] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [suite ...]
+
+Run MPToolkit declarative integration suites.
+
+If no suite is given, all files under tests/suites/*.yaml are run.
+Suite arguments may be:
+  - an absolute or relative path to a suite file
+  - a basename under tests/suites/
+  - a basename without the .yaml suffix
+
+The default binary directory is the current working directory, so this script is
+intended to be run from a build tree.
+EOF
+}
+
+script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd -- "${script_dir}/.." && pwd)
+
+bin_dir=$PWD
+work_root=""
+runner_flags=()
+suite_specs=()
+
+resolve_suite() {
+    local spec=$1
+
+    if [[ -f $spec ]]; then
+        printf '%s\n' "$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/$spec ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/${spec}.yaml ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/${spec}.yaml"
+        return 0
+    fi
+
+    printf 'Unknown suite: %s\n' "$spec" >&2
+    return 1
+}
+
+while (($#)); do
+    case "$1" in
+        --bin-dir)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
+            bin_dir=$2
+            shift 2
+            ;;
+        --work-root)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --work-root\n' >&2; exit 2; }
+            work_root=$2
+            shift 2
+            ;;
+        --verbose|--explain|--trace|--dump-ir)
+            runner_flags+=("$1")
+            shift
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            suite_specs+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if ((${#suite_specs[@]})); then
+    suites=()
+    for spec in "${suite_specs[@]}"; do
+        suites+=("$(resolve_suite "$spec")")
+    done
+else
+    mapfile -t suites < <(find "${repo_root}/tests/suites" -maxdepth 1 -type f -name '*.yaml' | sort)
+fi
+
+if ((${#suites[@]} == 0)); then
+    printf 'No suites found\n' >&2
+    exit 1
+fi
+
+if [[ " ${runner_flags[*]} " == *" --dump-ir "* ]] && ((${#suites[@]} != 1)); then
+    printf '%s\n' '--dump-ir requires exactly one suite' >&2
+    exit 2
+fi
+
+status=0
+for suite in "${suites[@]}"; do
+    cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    if [[ -n $work_root ]]; then
+        suite_name=$(basename "$suite" .yaml)
+        cmd+=(--work-root "${work_root}/${suite_name}")
+    fi
+    cmd+=("${runner_flags[@]}")
+
+    printf '=== %s ===\n' "$(basename "$suite")"
+    if ! "${cmd[@]}"; then
+        status=1
+    fi
+done
+
+exit "$status"

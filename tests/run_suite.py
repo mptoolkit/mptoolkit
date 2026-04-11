@@ -1344,7 +1344,7 @@ class SuiteRunner:
             try:
                 self.run_test(name)
                 print(f"PASS {name}")
-            except Exception as exc:  # pragma: no cover - prototype failure path
+            except Exception as exc:  # pragma: no cover - suite failure path
                 failures.append((name, str(exc)))
                 print(f"FAIL {name}")
                 print(str(exc))
@@ -1356,7 +1356,7 @@ class SuiteRunner:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run MPToolkit declarative test prototype")
+    parser = argparse.ArgumentParser(description="Run MPToolkit integration test suite")
     parser.add_argument("suite", type=Path, help="Path to YAML suite file")
     parser.add_argument("--bin-dir", type=Path, required=True, help="Directory containing MPToolkit binaries")
     parser.add_argument("--work-root", type=Path, help="Working directory for fixture and test outputs")
@@ -1379,7 +1379,7 @@ def main(argv: list[str]) -> int:
 
     work_root = args.work_root
     if work_root is None:
-        work_root = Path(tempfile.mkdtemp(prefix="mptk-test-prototype-"))
+        work_root = Path(tempfile.mkdtemp(prefix="mptk-tests-"))
     ensure_directory(work_root)
 
     runner = SuiteRunner(

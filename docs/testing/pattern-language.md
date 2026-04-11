@@ -21,7 +21,7 @@ Unless explicitly overridden, text matching should:
 Flexible whitespace means that a literal space in the pattern matches zero or
 more spaces or tabs in the output.
 
-The current prototype uses `%(...)` for typed captures so that ordinary suite
+The current runner uses `%(...)` for typed captures so that ordinary suite
 template interpolation can continue to use `{...}` without ambiguity.
 
 Example:
