@@ -104,6 +104,11 @@ class iTDVP : public TDVP
       // Current energy per unit cell.
       std::complex<double> E;
 
+      // Cumulative logarithmic scale removed by the tangent-space projection.
+      // The real part contributes to the extensive amplitude, while the
+      // imaginary part is the phase per unit cell.
+      std::complex<double> ProjectedScaleLog = 0.0;
+
       InfiniteWavefunctionLeft PsiCanonical;
       // Flag to check whether the canonical form has been constructed for the current unit cell.
       bool Canonicalized;
