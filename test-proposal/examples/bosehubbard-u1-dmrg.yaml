@@ -1,0 +1,90 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: bosehubbard-u1 -o lat
+    outputs:
+      lattice: lat
+
+  one_zero_2:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 1:0
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.0
+          abs: 1e-12
+
+  ground2_n1:
+    from: one_zero_2
+    run: mp-dmrg -w psi -H lat:H_J -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:BH(0)*B(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:B(0)*BH(1)"
+          approx: -0.5
+          abs: 1e-12
+
+tests:
+  finite_one_boson_product_state_has_expected_occupancy:
+    use: one_zero_2
+    expect:
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.0
+          abs: 1e-12
+
+  one_boson_ground_state_has_expected_energy_density_and_hopping:
+    use: ground2_n1
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:BH(0)*B(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:B(0)*BH(1)"
+          approx: -0.5
+          abs: 1e-12

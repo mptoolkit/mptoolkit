@@ -44,6 +44,12 @@ Documents in this directory:
 - [examples/spinlessfermion-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinlessfermion-dmrg.yaml):
   Executable suite covering finite `spinlessfermion-u1`, `mp-construct`,
   `mp-random`, `mp-dmrg`, and sign-sensitive off-diagonal fermion correlators.
+- [examples/hubbard-u1u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/hubbard-u1u1-dmrg.yaml):
+  Executable suite covering finite `hubbard-u1u1`, `mp-construct`, `mp-dmrg`,
+  and sign-sensitive up-spin hopping correlators in a tiny Hubbard sector.
+- [examples/bosehubbard-u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/bosehubbard-u1-dmrg.yaml):
+  Executable suite covering finite `bosehubbard-u1`, `mp-construct`,
+  `mp-dmrg`, and a tiny one-boson hopping sector.
 - [examples/identity-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/identity-tebd.yaml):
   A worked example showing fixtures, derived fixtures, probes, and test reuse.
 

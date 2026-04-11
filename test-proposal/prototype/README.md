@@ -67,6 +67,18 @@ python3 test-proposal/prototype/run_suite.py \
   --bin-dir /home/ian/build/main-optimized
 ```
 
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/hubbard-u1u1-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/bosehubbard-u1-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
 Debugging modes:
 
 ```bash
@@ -157,6 +169,29 @@ The first fermion-model slice exercises:
 and validates a tiny one-particle finite-chain ground state, including
 sign-sensitive off-diagonal correlators `dot(CH(0), C(1))` and
 `dot(C(0), CH(1))`.
+
+The first Hubbard-family slice exercises:
+
+- `hubbard-u1u1`
+- `mp-construct`
+- `mp-dmrg`
+- `mp-expectation`
+- `mp-attr`
+
+and validates a tiny one-up-electron finite-chain ground state, including
+sign-sensitive up-spin hopping correlators `dot(CHup(0), Cup(1))` and
+`dot(Cup(0), CHup(1))`.
+
+The first boson-model slice exercises:
+
+- `bosehubbard-u1`
+- `mp-construct`
+- `mp-dmrg`
+- `mp-expectation`
+- `mp-attr`
+
+and validates a tiny one-boson finite-chain ground state, including simple
+hopping correlators `BH(0)*B(1)` and `B(0)*BH(1)`.
 
 The author-facing syntax is now shorter than the original canonical form:
 

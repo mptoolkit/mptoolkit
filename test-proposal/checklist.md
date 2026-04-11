@@ -275,12 +275,12 @@ coverage without exploding the matrix.
 ### Fermion
 
 - [x] `spinlessfermion-u1.cpp` priority
-- [ ] `hubbard-u1u1.cpp` priority
+- [x] `hubbard-u1u1.cpp` priority
 - [ ] `hubbard-su2.cpp` priority
 - [x] `spinlessfermion-u1.cpp`
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `hubbard.cpp`
-- [ ] `hubbard-u1u1.cpp`
+- [x] `hubbard-u1u1.cpp`
 - [ ] `hubbard-su2.cpp`
 - [ ] `hubbard-so4.cpp`
 - [ ] `hubbard-u1su2.cpp`
@@ -294,7 +294,7 @@ coverage without exploding the matrix.
 ### Boson
 
 - [ ] `bosehubbard.cpp`
-- [ ] `bosehubbard-u1.cpp`
+- [x] `bosehubbard-u1.cpp`
 - [ ] `bosehubbard-u1-trap.cpp`
 - [ ] `bosehubbard-ladder-u1.cpp`
 - [ ] `bosehubbard-flux-2leg-u1.cpp`
@@ -313,12 +313,12 @@ coverage. This list is the completion target for supported models.
 - [ ] `bosehubbard-flux-3leg-u1.cpp`
 - [ ] `bosehubbard-ladder-u1.cpp`
 - [ ] `bosehubbard-u1-trap.cpp`
-- [ ] `bosehubbard-u1.cpp`
+- [x] `bosehubbard-u1.cpp`
 - [ ] `bosehubbard.cpp`
 - [ ] `hubbard-so4.cpp`
 - [ ] `hubbard-su2.cpp`
 - [ ] `hubbard-u1su2.cpp`
-- [ ] `hubbard-u1u1.cpp`
+- [x] `hubbard-u1u1.cpp`
 - [ ] `hubbard.cpp`
 - [ ] `hubbardcylinder-u1su2-k.cpp`
 - [ ] `hubbardcylinder-u1su2-k2.cpp`
@@ -352,14 +352,14 @@ coverage. This list is the completion target for supported models.
 - [ ] Add finite `mp-tdvp` suite.
 - [ ] Add infinite `mp-itdvp` suite.
 - [x] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
-- [ ] Add the first Hubbard-family fermion-sign suite.
+- [x] Add the first Hubbard-family fermion-sign suite.
 
 ### Phase 2: Expand Model Diversity
 
 - [ ] Add one spin `su2` suite.
 - [x] Add one fermion `u1` suite.
 - [ ] Add one fermion `su2` suite.
-- [ ] Add one boson `u1` suite.
+- [x] Add one boson `u1` suite.
 - [ ] Add one ladder or cylinder suite.
 
 ### Phase 3: Add Exact / Stronger References
