@@ -1,0 +1,100 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinlessfermion-u1 -o lat
+    outputs:
+      lattice: lat
+
+  vacuum2:
+    from: lat
+    run: mp-construct -l lat -o psi --finite empty:empty
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.0
+          abs: 1e-12
+
+  rand2_q1:
+    from: lat
+    run: mp-random -l lat -u 2 -q 1 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  ground2_q1:
+    from: rand2_q1
+    run: mp-dmrg -w psi -H lat:H_t -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(CH(0), C(1))"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(C(0), CH(1))"
+          approx: 0.5
+          abs: 1e-12
+
+tests:
+  finite_vacuum_has_zero_occupancy:
+    use: vacuum2
+    expect:
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.0
+          abs: 1e-12
+
+  one_particle_ground_state_has_expected_energy_density_and_fermion_signs:
+    use: ground2_q1
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:N(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(CH(0), C(1))"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(C(0), CH(1))"
+          approx: 0.5
+          abs: 1e-12

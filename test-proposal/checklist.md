@@ -258,7 +258,7 @@ coverage without exploding the matrix.
 
 ### Spin
 
-- [ ] `spinchain-u1`
+- [x] `spinchain-u1`
 - [ ] `spinchain-su2`
 - [ ] `spinchain-z2`
 - [ ] `spinchain-spin2-su2`
@@ -274,10 +274,10 @@ coverage without exploding the matrix.
 
 ### Fermion
 
-- [ ] `spinlessfermion-u1.cpp` priority
+- [x] `spinlessfermion-u1.cpp` priority
 - [ ] `hubbard-u1u1.cpp` priority
 - [ ] `hubbard-su2.cpp` priority
-- [ ] `spinlessfermion-u1.cpp`
+- [x] `spinlessfermion-u1.cpp`
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `hubbard.cpp`
 - [ ] `hubbard-u1u1.cpp`
@@ -328,7 +328,7 @@ coverage. This list is the completion target for supported models.
 - [ ] `klm-u1u1.cpp`
 - [ ] `spinchain-spin2-su2.cpp`
 - [ ] `spinchain-su2.cpp`
-- [ ] `spinchain-u1.cpp`
+- [x] `spinchain-u1.cpp`
 - [ ] `spinchain-z2.cpp`
 - [ ] `spinchain.cpp`
 - [ ] `spincylinder-su2.cpp`
@@ -338,7 +338,7 @@ coverage. This list is the completion target for supported models.
 - [ ] `spinladder-su2.cpp`
 - [ ] `spinladder-z2.cpp`
 - [ ] `spinladder.cpp`
-- [ ] `spinlessfermion-u1.cpp`
+- [x] `spinlessfermion-u1.cpp`
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `spinorbitchain-u1u1.cpp`
 - [ ] `spinorbitchain.cpp`
@@ -351,13 +351,13 @@ coverage. This list is the completion target for supported models.
 - [ ] Extend transform coverage with stronger complex-conjugation checks.
 - [ ] Add finite `mp-tdvp` suite.
 - [ ] Add infinite `mp-itdvp` suite.
-- [ ] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
+- [x] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
 - [ ] Add the first Hubbard-family fermion-sign suite.
 
 ### Phase 2: Expand Model Diversity
 
 - [ ] Add one spin `su2` suite.
-- [ ] Add one fermion `u1` suite.
+- [x] Add one fermion `u1` suite.
 - [ ] Add one fermion `su2` suite.
 - [ ] Add one boson `u1` suite.
 - [ ] Add one ladder or cylinder suite.

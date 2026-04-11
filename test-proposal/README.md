@@ -41,6 +41,9 @@ Documents in this directory:
 - [examples/spinchain-transforms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-transforms.yaml):
   Executable suite covering `mp-overlap`, `mp-scale`, `mp-normalize`, and
   `mp-conj`, including explicit output bindings for cross-state checks.
+- [examples/spinlessfermion-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinlessfermion-dmrg.yaml):
+  Executable suite covering finite `spinlessfermion-u1`, `mp-construct`,
+  `mp-random`, `mp-dmrg`, and sign-sensitive off-diagonal fermion correlators.
 - [examples/identity-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/identity-tebd.yaml):
   A worked example showing fixtures, derived fixtures, probes, and test reuse.
 

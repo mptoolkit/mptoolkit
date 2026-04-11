@@ -61,6 +61,12 @@ python3 test-proposal/prototype/run_suite.py \
   --bin-dir /home/ian/build/main-optimized
 ```
 
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinlessfermion-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
 Debugging modes:
 
 ```bash
@@ -138,6 +144,19 @@ The next transform slice exercises:
 
 and validates in-place scaling and normalization, plus an out-of-place
 conjugation workflow checked via explicit output bindings.
+
+The first fermion-model slice exercises:
+
+- `spinlessfermion-u1`
+- `mp-construct`
+- `mp-random`
+- `mp-dmrg`
+- `mp-expectation`
+- `mp-attr`
+
+and validates a tiny one-particle finite-chain ground state, including
+sign-sensitive off-diagonal correlators `dot(CH(0), C(1))` and
+`dot(C(0), CH(1))`.
 
 The author-facing syntax is now shorter than the original canonical form:
 
