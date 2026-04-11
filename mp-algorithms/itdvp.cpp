@@ -949,6 +949,7 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    this->Canonicalize();
 
    std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
+   LogAmplitude = PsiCanonical.log_amplitude();
    // The projected scale has now been embedded back into Psi via PsiCanonical.
    ProjectedScaleLog = 0.0;
    C = Psi.end();
@@ -1008,6 +1009,7 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    this->Canonicalize();
 
    std::tie(LambdaR, Psi) = get_right_canonical(PsiCanonical);
+   LogAmplitude = PsiCanonical.log_amplitude();
    // The projected scale has now been embedded back into Psi via PsiCanonical.
    ProjectedScaleLog = 0.0;
    C = Psi.begin();
