@@ -21,10 +21,13 @@ Unless explicitly overridden, text matching should:
 Flexible whitespace means that a literal space in the pattern matches zero or
 more spaces or tabs in the output.
 
+The current prototype uses `%(...)` for typed captures so that ordinary suite
+template interpolation can continue to use `{...}` without ambiguity.
+
 Example:
 
 ```yaml
-stdout: "Energy = {float}"
+stdout: "Energy = %(float)"
 ```
 
 should match all of:
@@ -50,11 +53,11 @@ Recommended built-in selectors:
 Examples:
 
 ```yaml
-stdout: "Energy = {float}"
+stdout: "Energy = %(float)"
 ```
 
 ```yaml
-stdout_starts_with: "Converged after {int} sweeps"
+stdout_starts_with: "Converged after %(int) sweeps"
 ```
 
 ```yaml
@@ -62,25 +65,24 @@ stdout_contains: "Lanczos terminated early"
 ```
 
 ```yaml
-stdout_last: "{float}"
+stdout_last: "%(float)"
 ```
 
 ## Typed Placeholders
 
 Recommended standard placeholders:
 
-- `{float}`
-- `{int}`
-- `{complex}`
-- `{word}`
-- `{path}`
-- `{rest}`
+- `%(float)`
+- `%(int)`
+- `%(complex)`
+- `%(word)`
+- `%(rest)`
 
 Named captures should also be supported:
 
-- `{float:energy}`
-- `{int:steps}`
-- `{path:outfile}`
+- `%(float:energy)`
+- `%(int:steps)`
+- `%(word:outfile)`
 
 The engine should compile these placeholders to robust internal regex and then
 parse them into typed values.
@@ -97,7 +99,7 @@ where that helps common CLI output.
 For example:
 
 ```yaml
-stdout: "Energy = {float}"
+stdout: "Energy = %(float)"
 ```
 
 should match `Energy=-0.2` as well as `Energy = -0.2`.
@@ -118,7 +120,7 @@ extract:
   source: stdout
   match:
     mode: line
-    pattern: "Energy = {float:energy} Variance = {float:variance}"
+    pattern: "Energy = %(float:energy) Variance = %(float:variance)"
   value: energy
 ```
 

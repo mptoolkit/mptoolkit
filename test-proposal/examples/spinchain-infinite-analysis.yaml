@@ -1,0 +1,179 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_repeated:
+    from: infinite_neel2
+    run: mp-irepeat --times 2 psi psi_rep
+    outputs:
+      state: psi_rep
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{parent.state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{parent.state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_rotated:
+    from: infinite_neel2
+    run: mp-irotate --left 1 psi psi_rot
+    outputs:
+      state: psi_rot
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  irepeat_preserves_the_underlying_infinite_state:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_repeated.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  irotate_shifts_local_expectation_values:
+    use: infinite_neel2_rotated
+    expect:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  imoments_identity_returns_exact_moments_and_cumulants:
+    use: infinite_neel2
+    expect:
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 2
+          moment: 1
+          degree: 1
+          approx: 2.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 2
+          moment: 2
+          degree: 1
+          approx: 0.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 2
+          moment: 2
+          degree: 2
+          approx: 4.0
+          abs: 1e-12
+      - imoments_cumulant_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 2
+          cumulant: 1
+          approx: 2.0
+          abs: 1e-12
+      - imoments_cumulant_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 2
+          cumulant: 2
+          approx: 0.0
+          abs: 1e-12
+
+  ies_on_a_product_state_has_one_zero_entropy_level:
+    use: infinite_neel2
+    expect:
+      - ies_first_angle:
+          operator: "lat:prod_unit(exp(i*pi*Sz(0)))"
+          approx: 0.0
+          abs: 1e-12
+      - ies_first_eigenvalue:
+          operator: "lat:prod_unit(exp(i*pi*Sz(0)))"
+          approx: 1.0
+          abs: 1e-12
+      - ies_first_entropy:
+          operator: "lat:prod_unit(exp(i*pi*Sz(0)))"
+          approx: 0.0
+          abs: 1e-12
+
+  ies_cross_self_pair_matches_the_same_product_spectrum:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2.state
+    expect:
+      - ies_cross_first_angle:
+          approx: 0.0
+          abs: 1e-12
+      - ies_cross_first_eigenvalue:
+          approx: 1.0
+          abs: 1e-12
+      - ies_cross_first_entropy:
+          approx: 0.0
+          abs: 1e-12

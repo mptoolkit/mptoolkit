@@ -88,3 +88,66 @@ recipes:
       json_path: ""
     extract:
       json_path: "{json_path}"
+
+  imoments_real:
+    probe: mp-imoments --quiet --real --power {power} {state} {operator}
+    defaults:
+      power: 1
+      moment: 1
+      degree: 1
+    extract:
+      line_pattern:
+        pattern: "{moment} {degree} %(float:value)"
+        capture: value
+
+  imoments_cumulant_real:
+    probe: mp-imoments --quiet --real --power {power} --cumulants {state} {operator}
+    defaults:
+      power: 1
+      cumulant: 1
+    extract:
+      line_pattern:
+        pattern: "{cumulant} %(float:value)"
+        capture: value
+
+  ies_first_angle:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: angle
+
+  ies_first_eigenvalue:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: eigenvalue
+
+  ies_first_entropy:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: entropy
+
+  ies_cross_first_angle:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: angle
+
+  ies_cross_first_eigenvalue:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: eigenvalue
+
+  ies_cross_first_entropy:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: entropy

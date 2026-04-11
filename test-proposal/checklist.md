@@ -103,7 +103,7 @@ Immediate implications:
 - [x] Action outputs are enforced and undeclared created files are errors.
 - [x] String command tokenization is placeholder-safe.
 - [x] `approx`, `equals`, `matches`, `contains`, and `exists` comparisons work.
-- [ ] Add first-class line-pattern extraction with typed placeholders.
+- [x] Add first-class line-pattern extraction with typed placeholders.
 - [ ] Add persistent content-addressed fixture cache.
 - [ ] Add fixture-build locking for parallel workers.
 - [ ] Add parallel test execution.
@@ -151,9 +151,9 @@ Framework policy:
 - [ ] `history_field`
 - [ ] `info_field`
 - [ ] `moments`
-- [ ] `imoments`
+- [x] `imoments`
 - [ ] `json_field` as a generic helper
-- [ ] typed line-pattern extractors for verbose text tools
+- [x] typed line-pattern extractors for verbose text tools
 
 ## Tool-Family Checklist
 
@@ -180,8 +180,8 @@ Framework policy:
 - [x] `mp-right-canonicalize`
 - [x] `mp-reorder-symmetry`
 - [x] `mp-change-lattice`
-- [ ] `mp-irepeat`
-- [ ] `mp-irotate`
+- [x] `mp-irepeat`
+- [x] `mp-irotate`
 
 ### Finite Ground-State Algorithms
 
@@ -209,14 +209,14 @@ Finite-algorithm note:
 
 ### Moments, Cross, And Overlap Families
 
-- [ ] `mp-overlap`
+- [x] `mp-overlap`
 - [x] `mp-ioverlap`
-- [ ] `mp-imoments`
+- [x] `mp-imoments`
 - [x] `mp-imoments-cross`
 - [ ] `mp-iexpectation` (obsolete; use `mp-expectation`)
 - [x] `mp-iexpectation-cross`
-- [ ] `mp-ies`
-- [ ] `mp-ies-cross`
+- [x] `mp-ies`
+- [x] `mp-ies-cross`
 
 ### Correlation / Spectrum / Fluctuation Families
 

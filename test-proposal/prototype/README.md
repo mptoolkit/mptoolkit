@@ -17,6 +17,7 @@ Implemented features:
 - float and complex scalar extraction
 - whole-stdout text extraction
 - JSON field extraction
+- line-pattern extraction with typed `%(...)` placeholders
 - fixture dependencies via `from`
 - fixture certification
 - test execution with reusable fixtures
@@ -32,7 +33,6 @@ Not yet implemented:
 
 - persistent content-addressed fixture cache
 - parallel execution
-- text-pattern extraction beyond scalar helpers
 - recipe inheritance
 - CLI result formats beyond the current prototype reporter
 
@@ -131,6 +131,12 @@ python3 test-proposal/prototype/run_suite.py \
 ```bash
 python3 test-proposal/prototype/run_suite.py \
   test-proposal/examples/hubbard-so4-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-infinite-analysis.yaml \
   --bin-dir /home/ian/build/main-optimized
 ```
 
@@ -248,6 +254,18 @@ The next infinite cross-expectation slice exercises:
 
 and validates the nonzero-overlap regime on an exact product iMPS, including
 self-expectation and phase-equivalent cross-state checks.
+
+The next infinite analysis slice exercises:
+
+- `mp-irepeat`
+- `mp-irotate`
+- `mp-imoments`
+- `mp-ies`
+- `mp-ies-cross`
+
+and validates exact repeat/rotate behavior on a 2-site Neel iMPS plus exact
+moment, cumulant, and entanglement-spectrum rows through typed line-pattern
+extraction.
 
 The next finite-inspection and legacy-algorithm slices exercise:
 

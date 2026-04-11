@@ -39,11 +39,9 @@ recipes:
   beta_from_info:
     probe: mp-info {state}
     extract:
-      source: stdout
-      match:
-        mode: line
-        pattern: "Beta = {float:beta}"
-      value: beta
+      line_pattern:
+        pattern: "Beta = %(float:beta)"
+        capture: beta
 
   prepare_product_up:
     action: make-product-state --sites {sites} --state up --output {output}

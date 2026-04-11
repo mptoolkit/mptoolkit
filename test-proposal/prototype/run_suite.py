@@ -21,6 +21,7 @@ import yaml
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 TEMPLATE_RE = re.compile(r"\{([^{}]+)\}")
+LINE_PATTERN_RE = re.compile(r"%\(([^()]+)\)")
 DEFAULT_OVERLAY = {
     "defaults": {
         "env": {
@@ -148,6 +149,133 @@ def approx_equal(actual: Any, expected: Any, abs_tol: float, rel_tol: float) -> 
 
 def normalize_capture(text: str) -> str:
     return strip_ansi(text).replace("\r\n", "\n").replace("\r", "\n")
+
+
+def line_pattern_literal_to_regex(literal: str) -> str:
+    parts: list[str] = []
+    i = 0
+    while i < len(literal):
+        if literal[i].isspace():
+            while i < len(literal) and literal[i].isspace():
+                i += 1
+            parts.append(r"\s*")
+            continue
+        parts.append(re.escape(literal[i]))
+        i += 1
+    return "".join(parts)
+
+
+def line_pattern_type_regex(kind: str) -> str:
+    if kind == "float":
+        return r"[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?"
+    if kind == "int":
+        return r"[+-]?\d+"
+    if kind == "complex":
+        return r"\S+"
+    if kind == "word":
+        return r"\S+"
+    if kind == "rest":
+        return r".+"
+    raise SuiteError(f"Unsupported line-pattern placeholder type: {kind}")
+
+
+def parse_line_pattern_value(kind: str, text: str) -> Any:
+    if kind == "float":
+        return parse_float(text)
+    if kind == "int":
+        return int(text)
+    if kind == "complex":
+        return parse_complex(text)
+    if kind in {"word", "rest"}:
+        return text
+    raise SuiteError(f"Unsupported line-pattern placeholder type: {kind}")
+
+
+def compile_line_pattern(pattern: str) -> tuple[re.Pattern[str], list[dict[str, Any]]]:
+    pieces: list[str] = []
+    captures: list[dict[str, Any]] = []
+    position = 0
+
+    for index, match in enumerate(LINE_PATTERN_RE.finditer(pattern)):
+        pieces.append(line_pattern_literal_to_regex(pattern[position:match.start()]))
+
+        spec = match.group(1).strip()
+        if not spec:
+            raise SuiteError(f"Invalid empty line-pattern placeholder in {pattern!r}")
+
+        if ":" in spec:
+            kind, name = spec.split(":", 1)
+            kind = kind.strip()
+            name = name.strip()
+        else:
+            kind = spec
+            name = str(index)
+
+        if not name:
+            name = str(index)
+
+        group_name = f"capture_{index}"
+        pieces.append(f"(?P<{group_name}>{line_pattern_type_regex(kind)})")
+        captures.append({"group": group_name, "kind": kind, "name": name})
+        position = match.end()
+
+    pieces.append(line_pattern_literal_to_regex(pattern[position:]))
+    regex = re.compile(r"^" + "".join(pieces) + r"$")
+    return regex, captures
+
+
+def extract_line_pattern(text: str, pattern: str, capture: Any = None) -> Any:
+    regex, captures = compile_line_pattern(pattern)
+
+    for raw_line in normalize_capture(text).splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = regex.fullmatch(line)
+        if match is None:
+            continue
+
+        ordered_values: list[Any] = []
+        named_values: dict[str, Any] = {}
+        for item in captures:
+            value = parse_line_pattern_value(item["kind"], match.group(item["group"]))
+            ordered_values.append(value)
+            named_values[item["name"]] = value
+
+        if capture is None:
+            if not ordered_values:
+                return line
+            if len(ordered_values) == 1:
+                return ordered_values[0]
+            return named_values
+
+        if isinstance(capture, int):
+            try:
+                return ordered_values[capture]
+            except IndexError as exc:
+                raise SuiteError(
+                    f"Line-pattern capture index {capture} out of range for pattern {pattern!r}"
+                ) from exc
+
+        capture_text = str(capture)
+        if capture_text.isdigit() or (
+            capture_text.startswith("-") and capture_text[1:].isdigit()
+        ):
+            index = int(capture_text)
+            try:
+                return ordered_values[index]
+            except IndexError as exc:
+                raise SuiteError(
+                    f"Line-pattern capture index {index} out of range for pattern {pattern!r}"
+                ) from exc
+
+        if capture_text not in named_values:
+            raise SuiteError(
+                f"Line-pattern capture {capture_text!r} not found in pattern {pattern!r}"
+            )
+        return named_values[capture_text]
+
+    raise SuiteError(f"No output line matched pattern {pattern!r}")
 
 
 def last_nonblank_line(text: str) -> str:
@@ -322,6 +450,8 @@ def normalize_extract(extract: Any) -> dict[str, Any]:
                 return normalized
             if kind == "json_path":
                 return {"kind": "json_path", "path": deep_copy(value)}
+            if kind == "line_pattern":
+                return {"kind": "line_pattern", "pattern": deep_copy(value)}
             return {"kind": kind}
     raise SuiteError(f"Invalid extract specification: {extract!r}")
 
@@ -937,6 +1067,12 @@ class SuiteRunner:
         elif kind == "json_path":
             payload = json.loads(normalize_capture(result.stdout))
             value = extract_json_path(payload, extract.get("path", ""))
+        elif kind == "line_pattern":
+            value = extract_line_pattern(
+                result.stdout,
+                str(extract.get("pattern", "")),
+                extract.get("capture"),
+            )
         else:
             raise SuiteError(f"Unsupported probe extractor kind: {kind}")
         if self.trace:

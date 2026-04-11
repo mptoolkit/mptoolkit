@@ -295,7 +295,7 @@ language with typed placeholders. See
 The intention is that novice test authors write:
 
 ```yaml
-stdout: "Energy = {float}"
+stdout: "Energy = %(float)"
 ```
 
 not floating-point regexes.

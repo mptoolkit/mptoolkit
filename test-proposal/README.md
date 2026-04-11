@@ -60,6 +60,10 @@ Documents in this directory:
 - [examples/spinchain-iexpectation-cross.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-iexpectation-cross.yaml):
   Executable suite covering `mp-iexpectation-cross` in the nonzero-overlap
   regime, including self-expectation and phase-equivalent cross-state checks.
+- [examples/spinchain-infinite-analysis.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-infinite-analysis.yaml):
+  Executable suite covering `mp-irepeat`, `mp-irotate`, `mp-imoments`,
+  `mp-ies`, and `mp-ies-cross`, using typed line-pattern extraction on exact
+  product-state rows.
 - [examples/spinchain-finite-inspection.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-inspection.yaml):
   Executable suite covering finite `mp-info` and `mp-history` output on a
   small constructed `spinchain-u1` product state.
@@ -136,3 +140,7 @@ The separate `--dump-ir` mode is intended for implementers of the test runner.
 The current direction is to preserve the explicit internal model while making
 the author-facing form concise enough for normal contributors without hiding
 workflow commands behind a second layer of action-specific sugar.
+
+The current prototype now also has a first typed line-pattern extractor for
+table-style text output. It uses `%(float)` / `%(int:name)` captures so that
+normal suite-template interpolation can continue to use `{...}`.
