@@ -81,11 +81,11 @@ int main(int argc, char** argv)
          std::cerr << "usage: " << basename(argv[0]) << " [options] <operator> <input-psi> <output-psi>\n";
          std::cerr << desc << '\n';
          std::cerr << "This tool calculates the action of an operator on a finite MPS.\n";
-         std::cerr << "The operator must be of the ProductMPO form.\n";
-         std::cerr << "If the operator is unitary and the boundary of the unit cell is invariant,\n"
-                   << "that is, the operator is a ProductMPO with 1-dimensional boundaries\n"
-                   << "(use mp-show-operator to check), then the final wavefunction will already be\n"
-                   << "orthogonal already, and the orthonormalization step can be ommitted by using\n"
+         std::cerr << "The operator is parsed as a finite/unit-cell MPO and then extended to cover\n"
+                   << "the full wavefunction.\n";
+         std::cerr << "If the operator is unitary and has 1-dimensional boundaries\n"
+                   << "(use mp-show-operator -f to check), then the final wavefunction will already be\n"
+                   << "orthogonal, and the orthonormalization step can be omitted by using\n"
                    << "the --assume-orthogonal option.\n";
 
          return 1;
