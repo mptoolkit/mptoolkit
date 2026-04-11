@@ -1384,20 +1384,24 @@ def main(argv: list[str]) -> int:
             yaml.safe_dump(suite, sys.stdout, sort_keys=False)
             return 0
 
-        work_root = args.work_root
-        if work_root is None:
-            work_root = Path(tempfile.mkdtemp(prefix="mptk-tests-"))
-        ensure_directory(work_root)
+        def run_with_work_root(work_root: Path) -> int:
+            ensure_directory(work_root)
 
-        runner = SuiteRunner(
-            suite=suite,
-            bin_dir=args.bin_dir,
-            work_root=work_root,
-            verbose=args.verbose,
-            explain=args.explain,
-            trace=args.trace,
-        )
-        return runner.run(selected_tests=args.tests or None)
+            runner = SuiteRunner(
+                suite=suite,
+                bin_dir=args.bin_dir,
+                work_root=work_root,
+                verbose=args.verbose,
+                explain=args.explain,
+                trace=args.trace,
+            )
+            return runner.run(selected_tests=args.tests or None)
+
+        if args.work_root is None:
+            with tempfile.TemporaryDirectory(prefix="mptk-tests-") as temp_root:
+                return run_with_work_root(Path(temp_root))
+
+        return run_with_work_root(args.work_root)
     except SuiteError as exc:
         print(str(exc))
         return 1
