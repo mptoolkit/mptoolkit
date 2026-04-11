@@ -1,0 +1,58 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  rand4:
+    from: lat
+    run: mp-random -l lat -u 4 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  ground4:
+    from: rand4
+    run: mp-dmrg -w psi -H lat:H_J1 -m 20x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.616025403784439
+          abs: 1e-12
+
+  neel4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  dmrg_from_random_fixture_reaches_exact_ground_energy:
+    use: ground4
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.616025403784439
+          abs: 1e-12
+
+  dmrg_sweeps_option_matches_stateslist_path:
+    use: neel4
+    steps:
+      run: mp-dmrg -w psi -H lat:H_J1 -s 4 -m 20 --flush
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.616025403784439
+          abs: 1e-12

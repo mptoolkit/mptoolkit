@@ -1,0 +1,88 @@
+recipes:
+  norm:
+    kind: probe
+    command: ["{bin_dir}/mp-norm", "{state}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+    cwd: "{cwd}"
+    extract:
+      kind: last_float
+
+  expectation:
+    kind: probe
+    command: ["{bin_dir}/mp-expectation", "{state}", "{operator}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+      operator: null
+    cwd: "{cwd}"
+    extract:
+      kind: last_complex
+
+  expectation_real:
+    kind: probe
+    command: ["{bin_dir}/mp-expectation", "--real", "{state}", "{operator}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+      operator: null
+    cwd: "{cwd}"
+    extract:
+      kind: last_float
+
+  expectation_imag:
+    kind: probe
+    command: ["{bin_dir}/mp-expectation", "--imag", "{state}", "{operator}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+      operator: null
+    cwd: "{cwd}"
+    extract:
+      kind: last_float
+
+  attr_float:
+    kind: probe
+    command: ["{bin_dir}/mp-attr", "{state}", "{attribute}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+      attribute: null
+    cwd: "{cwd}"
+    extract:
+      kind: last_float
+
+  attr_text:
+    kind: probe
+    command: ["{bin_dir}/mp-attr", "{state}", "{attribute}"]
+    params:
+      cwd: "{scratch}"
+      state: psi
+      attribute: null
+    cwd: "{cwd}"
+    extract:
+      kind: last_text
+
+  imoments_cross_json:
+    kind: probe
+    command:
+      - "{bin_dir}/mp-imoments-cross"
+      - -q
+      - "{sector}"
+      - --json
+      - --cumulants
+      - "{psi1}"
+      - "{operator}"
+      - "{psi2}"
+    params:
+      cwd: "{scratch}"
+      sector: 0
+      psi1: psi
+      psi2: psi
+      operator: null
+      json_path: ""
+    cwd: "{cwd}"
+    extract:
+      kind: json_path
+      path: "{json_path}"
