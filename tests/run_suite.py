@@ -1339,6 +1339,9 @@ class SuiteRunner:
 
     def run(self, selected_tests: list[str] | None = None) -> int:
         test_names = selected_tests or list(self.tests.keys())
+        unknown = [name for name in test_names if name not in self.tests]
+        if unknown:
+            raise SuiteError(f"Unknown test(s): {', '.join(unknown)}")
         failures: list[tuple[str, str]] = []
         for name in test_names:
             try:
@@ -1348,10 +1351,13 @@ class SuiteRunner:
                 failures.append((name, str(exc)))
                 print(f"FAIL {name}")
                 print(str(exc))
+        passed = len(test_names) - len(failures)
+        print(f"Summary: {len(test_names)} total, {passed} passed, {len(failures)} failed")
         if failures:
-            print(f"{len(failures)} test(s) failed")
+            print("Failed tests:")
+            for name, _message in failures:
+                print(f"- {name}")
             return 1
-        print(f"{len(test_names)} test(s) passed")
         return 0
 
 
@@ -1371,26 +1377,30 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str]) -> int:
-    args = parse_args(argv)
-    suite = normalize_suite(load_raw_suite(args.suite.resolve()))
-    if args.dump_ir:
-        yaml.safe_dump(suite, sys.stdout, sort_keys=False)
-        return 0
+    try:
+        args = parse_args(argv)
+        suite = normalize_suite(load_raw_suite(args.suite.resolve()))
+        if args.dump_ir:
+            yaml.safe_dump(suite, sys.stdout, sort_keys=False)
+            return 0
 
-    work_root = args.work_root
-    if work_root is None:
-        work_root = Path(tempfile.mkdtemp(prefix="mptk-tests-"))
-    ensure_directory(work_root)
+        work_root = args.work_root
+        if work_root is None:
+            work_root = Path(tempfile.mkdtemp(prefix="mptk-tests-"))
+        ensure_directory(work_root)
 
-    runner = SuiteRunner(
-        suite=suite,
-        bin_dir=args.bin_dir,
-        work_root=work_root,
-        verbose=args.verbose,
-        explain=args.explain,
-        trace=args.trace,
-    )
-    return runner.run(selected_tests=args.tests or None)
+        runner = SuiteRunner(
+            suite=suite,
+            bin_dir=args.bin_dir,
+            work_root=work_root,
+            verbose=args.verbose,
+            explain=args.explain,
+            trace=args.trace,
+        )
+        return runner.run(selected_tests=args.tests or None)
+    except SuiteError as exc:
+        print(str(exc))
+        return 1
 
 
 if __name__ == "__main__":
