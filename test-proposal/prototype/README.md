@@ -217,6 +217,38 @@ The next transform slice exercises:
 and validates in-place scaling and normalization, plus an out-of-place
 conjugation workflow checked via explicit output bindings.
 
+The next canonicalization slice exercises:
+
+- `mp-right-canonicalize`
+- `mp-left-canonicalize`
+
+and validates the right-canonical intermediate through metadata plus an exact
+round trip back to left-canonical form checked with `mp-ioverlap` and local
+expectation values.
+
+The next infinite-apply slice exercises:
+
+- `mp-iapply`
+
+and validates exact identity and sign/phase product operators built with
+`prod_unit(...)`, including safe-case `--assume-orthogonal` checks on explicit
+1D-boundary product MPOs.
+
+The next infinite ground-state slice exercises:
+
+- `mp-idmrg-s3e`
+
+and validates an exact 2-site staggered-field `spinchain-u1` ground state
+using `--exactdiag --create`, with deterministic energy and local-magnetization
+checks.
+
+The next infinite cross-expectation slice exercises:
+
+- `mp-iexpectation-cross`
+
+and validates the nonzero-overlap regime on an exact product iMPS, including
+self-expectation and phase-equivalent cross-state checks.
+
 The next finite-inspection and legacy-algorithm slices exercise:
 
 - `mp-info`

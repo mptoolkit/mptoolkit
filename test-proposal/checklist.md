@@ -176,8 +176,8 @@ Framework policy:
 - [x] `mp-scale`
 - [x] `mp-conj`
 - [ ] `mp-reflect`
-- [ ] `mp-left-canonicalize`
-- [ ] `mp-right-canonicalize`
+- [x] `mp-left-canonicalize`
+- [x] `mp-right-canonicalize`
 - [x] `mp-reorder-symmetry`
 - [x] `mp-change-lattice`
 - [ ] `mp-irepeat`
@@ -203,7 +203,7 @@ Finite-algorithm note:
 
 - [ ] `mp-icdmrg`
 - [ ] `mp-idmrg-ee`
-- [ ] `mp-idmrg-s3e`
+- [x] `mp-idmrg-s3e`
 - [x] `mp-itebd`
 - [x] `mp-itdvp`
 
@@ -214,7 +214,7 @@ Finite-algorithm note:
 - [ ] `mp-imoments`
 - [x] `mp-imoments-cross`
 - [ ] `mp-iexpectation` (obsolete; use `mp-expectation`)
-- [ ] `mp-iexpectation-cross`
+- [x] `mp-iexpectation-cross`
 - [ ] `mp-ies`
 - [ ] `mp-ies-cross`
 
@@ -229,7 +229,7 @@ Finite-algorithm note:
 ### Apply / Matrix / Operator Families
 
 - [x] `mp-apply`
-- [ ] `mp-iapply`
+- [x] `mp-iapply`
 - [ ] `mp-ibc-apply`
 - [ ] `mp-idivide`
 - [ ] `mp-matrix`

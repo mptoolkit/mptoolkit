@@ -1,0 +1,56 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_spinchain_hstag_ground:
+    from: lat
+    run: mp-idmrg-s3e -e -b -u 2 -q 0 -w psi -H lat:H_stag -m 4x2
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 2"
+      - info_text:
+          contains: "Quantum number per unit cell = 0"
+
+tests:
+  idmrg_s3e_finds_the_exact_staggered_field_ground_state:
+    use: infinite_spinchain_hstag_ground
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12

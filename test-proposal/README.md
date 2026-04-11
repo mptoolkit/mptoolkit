@@ -44,6 +44,22 @@ Documents in this directory:
 - [examples/spinchain-transforms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-transforms.yaml):
   Executable suite covering `mp-overlap`, `mp-scale`, `mp-normalize`, and
   `mp-conj`, including explicit output bindings for cross-state checks.
+- [examples/spinchain-canonicalization.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-canonicalization.yaml):
+  Executable suite covering infinite `mp-right-canonicalize` and
+  `mp-left-canonicalize`, validating the right-canonical intermediate by
+  metadata and the left-right round trip by exact overlap and local
+  expectation values.
+- [examples/spinchain-iapply.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-iapply.yaml):
+  Executable suite covering infinite `mp-iapply`, including exact identity and
+  sign/phase product operators and safe-case `--assume-orthogonal` checks on
+  explicit 1D-boundary product MPOs.
+- [examples/spinchain-idmrg-s3e.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-idmrg-s3e.yaml):
+  Executable suite covering `mp-idmrg-s3e` on a deterministic 2-site
+  staggered-field `spinchain-u1` ground state with exact energy and local
+  magnetization checks.
+- [examples/spinchain-iexpectation-cross.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-iexpectation-cross.yaml):
+  Executable suite covering `mp-iexpectation-cross` in the nonzero-overlap
+  regime, including self-expectation and phase-equivalent cross-state checks.
 - [examples/spinchain-finite-inspection.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-inspection.yaml):
   Executable suite covering finite `mp-info` and `mp-history` output on a
   small constructed `spinchain-u1` product state.

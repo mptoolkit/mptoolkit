@@ -69,6 +69,18 @@ recipes:
     probe: mp-ioverlap --mag --quiet {psi1} {psi2}
     extract: last_float
 
+  iexpectation_cross_real:
+    probe: mp-iexpectation-cross -q {sector} --real {psi1} {operator} {psi2}
+    defaults:
+      sector: 0
+    extract: last_float
+
+  iexpectation_cross_imag:
+    probe: mp-iexpectation-cross -q {sector} --imag {psi1} {operator} {psi2}
+    defaults:
+      sector: 0
+    extract: last_float
+
   imoments_cross_json:
     probe: mp-imoments-cross -q {sector} --json --cumulants {psi1} {operator} {psi2}
     defaults:

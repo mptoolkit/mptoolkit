@@ -1,0 +1,87 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - info_text:
+          contains: "Infinite wavefunction in the left canonical basis."
+      - info_text:
+          contains: "WavefunctionType=Infinite"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  infinite_neel2_right:
+    from: infinite_neel2
+    run: mp-right-canonicalize psi psi_right
+    outputs:
+      state: psi_right
+    certify:
+      - info_text:
+          contains: "Infinite wavefunction in the right canonical basis."
+      - info_text:
+          contains: "WavefunctionType=InfiniteRightCanonical"
+      - history_text:
+          contains: "mp-right-canonicalize psi psi_right"
+
+  infinite_neel2_left_roundtrip:
+    from: infinite_neel2_right
+    run: mp-left-canonicalize psi_right psi_left2
+    outputs:
+      state: psi_left2
+    certify:
+      - info_text:
+          contains: "Infinite wavefunction in the left canonical basis."
+      - info_text:
+          contains: "WavefunctionType=Infinite"
+      - history_text:
+          contains: "mp-left-canonicalize psi_right psi_left2"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+tests:
+  right_canonicalize_updates_wavefunction_type:
+    use: infinite_neel2_right
+    expect:
+      - info_text:
+          contains: "Infinite wavefunction in the right canonical basis."
+      - info_text:
+          contains: "WavefunctionType=InfiniteRightCanonical"
+
+  left_right_canonical_roundtrip_preserves_the_state:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_left_roundtrip.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
