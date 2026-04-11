@@ -23,6 +23,18 @@ recipes:
     probe: mp-attr {state} {attribute}
     extract: last_text
 
+  overlap_real:
+    probe: mp-overlap --real --quiet {psi1} {psi2}
+    extract: last_float
+
+  overlap_imag:
+    probe: mp-overlap --imag --quiet {psi1} {psi2}
+    extract: last_float
+
+  overlap_mag:
+    probe: mp-overlap --mag --quiet {psi1} {psi2}
+    extract: last_float
+
   imoments_cross_json:
     probe: mp-imoments-cross -q {sector} --json --cumulants {psi1} {operator} {psi2}
     defaults:

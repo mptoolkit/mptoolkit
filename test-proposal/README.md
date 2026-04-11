@@ -38,6 +38,9 @@ Documents in this directory:
 - [examples/spinchain-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-tebd.yaml):
   Executable suite covering `mp-tebd`, `mp-itebd`, and `mp-imoments-cross
   --json`, including reuse of an iTEBD-derived fixture in a JSON probe.
+- [examples/spinchain-transforms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-transforms.yaml):
+  Executable suite covering `mp-overlap`, `mp-scale`, `mp-normalize`, and
+  `mp-conj`, including explicit output bindings for cross-state checks.
 - [examples/identity-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/identity-tebd.yaml):
   A worked example showing fixtures, derived fixtures, probes, and test reuse.
 

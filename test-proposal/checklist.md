@@ -35,6 +35,64 @@ The goal is:
 - representative models in each family reach `Level B`
 - selected core workflows reach `Level C`
 
+## Coverage Philosophy
+
+The target is not exhaustive flag-permutation testing.
+
+The target is:
+
+- strong coverage of core workflow contracts
+- broad smoke coverage across supported models
+- explicit regression coverage for real bugs
+- focused option coverage for distinct, high-risk behaviors
+
+Guiding rules:
+
+- test each important behavior class, not every syntactic spelling
+- prefer model breadth over option explosion on one model
+- prefer workflow-level invariants over tool-internal implementation detail
+- add a regression test whenever a bug is fixed in a core workflow
+- give extra attention to options that:
+  - change semantics rather than formatting
+  - have broken before
+  - affect file mutation or output discovery
+  - affect symmetry sector, normalization, or amplitude
+  - change finite vs infinite behavior
+  - provide machine-readable output
+
+Usually not worth exhaustive direct coverage:
+
+- cosmetic formatting flags
+- redundant spellings for the same behavior
+- every combination of otherwise independent options
+
+When in doubt, ask:
+
+- does this option create a distinct semantic contract?
+- is it risky or historically fragile?
+- would a user reasonably depend on it in production workflows?
+
+If the answer is yes, it probably deserves direct coverage.
+
+## High-Priority Risk Areas
+
+These are not optional polish items. They are priority targets because errors
+here can survive smoke tests while breaking real physics.
+
+- complex conjugation and related transform behavior
+- fermion-sign-sensitive workflows
+- symmetry-sector preservation
+- normalization and amplitude handling
+- finite versus infinite algorithm differences
+- output-file mutation and discovery behavior
+
+Immediate implications:
+
+- state-transform coverage is a priority, not a later cleanup task
+- fermionic model coverage should start early, not after all spin-only suites
+- exact or sharply constrained checks are especially valuable where sign errors
+  can otherwise hide behind plausible scalar outputs
+
 ## Framework Checklist
 
 - [x] Raw action commands in suites use real CLI syntax.
@@ -53,6 +111,13 @@ The goal is:
 - [ ] Add first-class binding syntax for non-state outputs in examples and docs.
 - [ ] Add suite tags or tiers for fast PR vs slow/nightly coverage.
 
+Framework policy:
+
+- use fresh fixture/test directories and unique output names rather than
+  depending on `--force`
+- treat inconsistent `--force` handling as a tool bug, not as required test
+  harness behavior
+
 ## Shared Fixture Library Checklist
 
 - [ ] Add a common lattice-fixture catalog for representative models.
@@ -63,6 +128,8 @@ The goal is:
 - [ ] Add reusable small TEBD / iTEBD evolved-state fixtures.
 - [ ] Add reusable TDVP / iTDVP evolved-state fixtures.
 - [ ] Add normalization and canonicalization derived fixtures.
+- [ ] Add genuinely complex-state fixtures for conjugation and phase tests.
+- [ ] Add fermion-sign-sensitive fixtures on representative fermionic models.
 - [ ] Add a small catalog of exact tiny-system references where feasible.
 
 ## Shared Probe / Helper Checklist
@@ -74,7 +141,7 @@ The goal is:
 - [x] `attr_float`
 - [x] `attr_text`
 - [x] `imoments_cross_json`
-- [ ] `overlap`
+- [x] `overlap`
 - [ ] `ioverlap`
 - [ ] `history_field`
 - [ ] `info_field`
@@ -92,7 +159,7 @@ The goal is:
 - [x] `mp-norm`
 - [x] `mp-expectation`
 - [x] `mp-attr`
-- [ ] `mp-overlap`
+- [x] `mp-overlap`
 - [ ] `mp-info`
 - [ ] `mp-history`
 - [ ] `mp-lattice-info`
@@ -100,9 +167,9 @@ The goal is:
 
 ### State Transforms And Canonicalization
 
-- [ ] `mp-normalize`
-- [ ] `mp-scale`
-- [ ] `mp-conj`
+- [x] `mp-normalize`
+- [x] `mp-scale`
+- [x] `mp-conj`
 - [ ] `mp-reflect`
 - [ ] `mp-left-canonicalize`
 - [ ] `mp-right-canonicalize`
@@ -207,6 +274,9 @@ coverage without exploding the matrix.
 
 ### Fermion
 
+- [ ] `spinlessfermion-u1.cpp` priority
+- [ ] `hubbard-u1u1.cpp` priority
+- [ ] `hubbard-su2.cpp` priority
 - [ ] `spinlessfermion-u1.cpp`
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `hubbard.cpp`
@@ -278,9 +348,11 @@ coverage. This list is the completion target for supported models.
 ### Phase 1: Finish The Core Contract Layer
 
 - [ ] Add `overlap`, `ioverlap`, `info_field`, and `history_field` probes.
-- [ ] Add transform and canonicalization suites.
+- [ ] Extend transform coverage with stronger complex-conjugation checks.
 - [ ] Add finite `mp-tdvp` suite.
 - [ ] Add infinite `mp-itdvp` suite.
+- [ ] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
+- [ ] Add the first Hubbard-family fermion-sign suite.
 
 ### Phase 2: Expand Model Diversity
 

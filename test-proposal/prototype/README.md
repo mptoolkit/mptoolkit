@@ -55,6 +55,12 @@ python3 test-proposal/prototype/run_suite.py \
   --bin-dir /home/ian/build/main-optimized
 ```
 
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-transforms.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
 Debugging modes:
 
 ```bash
@@ -123,6 +129,16 @@ The next tool slice exercises:
 and validates finite and infinite derived-state workflows, plus a JSON-emitting
 probe that reuses an iTEBD output fixture.
 
+The next transform slice exercises:
+
+- `mp-overlap`
+- `mp-scale`
+- `mp-normalize`
+- `mp-conj`
+
+and validates in-place scaling and normalization, plus an out-of-place
+conjugation workflow checked via explicit output bindings.
+
 The author-facing syntax is now shorter than the original canonical form:
 
 - fixture and test actions can be written as the real commands users run, for
@@ -180,3 +196,6 @@ Command rules:
   whitespace
 - if the command name has no slash and exists in `--bin-dir`, the runner uses
   that binary automatically
+- tests should rely on fresh fixture/test directories and unique output names,
+  not on `--force`; inconsistent `--force` handling across tools should be
+  treated as a separate bug
