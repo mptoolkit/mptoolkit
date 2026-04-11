@@ -82,6 +82,36 @@ fixtures:
           approx: 0.0
           abs: 1e-12
 
+  infinite_neel2_reflected:
+    from: infinite_neel2
+    run: mp-reflect psi psi_ref
+    outputs:
+      state: psi_ref
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_neel2_divided:
+    from: infinite_neel2_repeated
+    run: mp-idivide --divide 2 psi_rep psi_div
+    outputs:
+      state: psi_div
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
 tests:
   irepeat_preserves_the_underlying_infinite_state:
     use:
@@ -108,6 +138,36 @@ tests:
       - expectation_real:
           operator: "lat:Sz(1)"
           approx: 0.5
+          abs: 1e-12
+
+  reflect_matches_the_one_site_rotation_on_the_neel_imps:
+    use:
+      psi1: infinite_neel2_reflected.state
+      psi2: infinite_neel2_rotated.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  idivide_recovers_the_minimal_unit_cell_from_the_repeated_state:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_divided.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
           abs: 1e-12
 
   imoments_identity_returns_exact_moments_and_cumulants:

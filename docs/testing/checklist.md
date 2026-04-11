@@ -175,7 +175,7 @@ Framework policy:
 - [x] `mp-normalize`
 - [x] `mp-scale`
 - [x] `mp-conj`
-- [ ] `mp-reflect`
+- [x] `mp-reflect`
 - [x] `mp-left-canonicalize`
 - [x] `mp-right-canonicalize`
 - [x] `mp-reorder-symmetry`
@@ -231,7 +231,7 @@ Finite-algorithm note:
 - [x] `mp-apply`
 - [x] `mp-iapply`
 - [ ] `mp-ibc-apply`
-- [ ] `mp-idivide`
+- [x] `mp-idivide`
 - [ ] `mp-matrix`
 - [ ] `mp-aux-matrix`
 - [ ] `mp-aux-algebra`
@@ -277,8 +277,8 @@ coverage without exploding the matrix.
 
 - [x] `spinchain-u1`
 - [x] `spinchain-su2`
-- [ ] `spinchain-z2`
-- [ ] `spinchain-spin2-su2`
+- [x] `spinchain-z2`
+- [x] `spinchain-spin2-su2`
 - [ ] `spinladder.cpp`
 - [ ] `spinladder-su2.cpp`
 - [ ] `spinladder-z2.cpp`
@@ -299,7 +299,7 @@ coverage without exploding the matrix.
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `hubbard.cpp`
 - [x] `hubbard-u1u1.cpp`
-- [ ] `hubbard-su2.cpp`
+- [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-so4.cpp`
 - [ ] `hubbardcylinder-u1su2.cpp`
@@ -314,7 +314,7 @@ coverage without exploding the matrix.
 - [ ] `bosehubbard.cpp`
 - [x] `bosehubbard-u1.cpp`
 - [ ] `bosehubbard-u1-trap.cpp`
-- [ ] `bosehubbard-ladder-u1.cpp`
+- [x] `bosehubbard-ladder-u1.cpp`
 - [ ] `bosehubbard-flux-2leg-u1.cpp`
 - [ ] `bosehubbard-flux-3leg-u1.cpp`
 - [ ] `bosehubbard-2component-u1u1.cpp`
@@ -329,12 +329,12 @@ coverage. This list is the completion target for supported models.
 - [ ] `bosehubbard-2component-u1z2.cpp`
 - [ ] `bosehubbard-flux-2leg-u1.cpp`
 - [ ] `bosehubbard-flux-3leg-u1.cpp`
-- [ ] `bosehubbard-ladder-u1.cpp`
+- [x] `bosehubbard-ladder-u1.cpp`
 - [ ] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-u1.cpp`
 - [ ] `bosehubbard.cpp`
 - [x] `hubbard-so4.cpp`
-- [ ] `hubbard-su2.cpp`
+- [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-u1u1.cpp`
 - [ ] `hubbard.cpp`
@@ -344,10 +344,10 @@ coverage. This list is the completion target for supported models.
 - [ ] `klm-cylinder-u1su2.cpp`
 - [ ] `klm-u1su2.cpp`
 - [ ] `klm-u1u1.cpp`
-- [ ] `spinchain-spin2-su2.cpp`
+- [x] `spinchain-spin2-su2.cpp`
 - [x] `spinchain-su2.cpp`
 - [x] `spinchain-u1.cpp`
-- [ ] `spinchain-z2.cpp`
+- [x] `spinchain-z2.cpp`
 - [ ] `spinchain.cpp`
 - [ ] `spincylinder-su2.cpp`
 - [ ] `spincylinder-u1.cpp`
@@ -367,7 +367,7 @@ coverage. This list is the completion target for supported models.
 
 - [ ] Add `overlap`, `ioverlap`, `info_field`, and `history_field` probes.
 - [ ] Extend transform coverage with stronger complex-conjugation checks.
-- [ ] Add finite `mp-tdvp` suite.
+- [x] Add finite `mp-tdvp` suite.
 - [x] Add infinite `mp-itdvp` suite.
 - [x] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
 - [x] Add the first Hubbard-family fermion-sign suite.
