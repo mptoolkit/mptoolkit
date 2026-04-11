@@ -43,6 +43,7 @@ namespace prog_opt = boost::program_options;
 
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
+                 double& LogAmplitude,
                  std::vector<SimpleOperator> const& UEven,
                  StatesInfo const& SInfo,
                  int Verbose)
@@ -53,7 +54,6 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
    // A (Lambda) B C (Lambda) D E (Lambda) ...
    // If the number of sites is even, we replicate the last Lambda matrix, so that
    // we always have a final Lambda matrix at the end
-   double LogAmplitude = 0.0;  // this isn't used yet ...
    unsigned Sz = Psi.size();
    if (Sz%2 == 0)
    {
@@ -74,7 +74,7 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
                    << '\n';
       }
       #pragma omp critical
-         MaxStates = std::max(MaxStates, Info.KeptStates());
+      MaxStates = std::max(MaxStates, Info.KeptStates());
    }
    LogAmplitude += DeltaLogAmplitude;
    std::cout << "Even slice finished, max states=" << MaxStates << '\n';
@@ -83,24 +83,36 @@ void DoEvenSlice(std::deque<StateComponent>& Psi,
 
 void DoOddSlice(std::deque<StateComponent>& Psi,
                 std::deque<RealDiagonalOperator>& Lambda,
+                double& LogAmplitude,
                 std::vector<SimpleOperator> const& UOdd,
                 StatesInfo const& SInfo,
                 int Verbose)
 {
    // Physical state is
-   // A (Lambda) B C (Lambda) D E (Lambda) ...
+   // A (Lambda) B C (Lambda) D E (Lambda) ... (all left-canonical)
    // After an odd slice, the physical state is
-   // physical state is A B (Lambda) C D (Lambda) ...
+   // A B (Lambda) C D (Lambda) ...
+   // Each TEBD iteration turns a set B C (Lambda) -> B (Lambda) C
    // The first (Lambda) matrix is unused; we remove it from the container.
    // If the number of sites is odd, we copy the last Lambda matrix so that we always have a
    // 1x1 identity lambda at the end
-   double LogAmplitude = 0.0;  // this isn't used yet ...
+
+   // If the system size is odd:
+   // Physical state is
+   // A (Lambda) B C (Lambda)
+   // We want to access lambda matrices at indices 1,3,5,...
+   // after we remove the first entry, we index lambda 0,2,4,...
+   // on exit the first lambda in the container comes from psi[1] psi[2]
+   // After odd slice, physical state is
+   // A B (Lambda) C
+
    unsigned Sz = Psi.size();
    if (Sz%2 == 1)
    {
       Lambda.push_back(Lambda.back());
    }
    Lambda.pop_front();
+
    int MaxStates = 0;
    double DeltaLogAmplitude = 0;
    #pragma omp parallel for reduction(+:DeltaLogAmplitude)
@@ -140,6 +152,8 @@ int main(int argc, char** argv)
       std::string HamStr;
       int MinStates = 1;
       int States = 100000;
+      bool Normalize = false;
+      bool NoNormalize = false;
       double TruncCutoff = 0;
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
@@ -168,6 +182,8 @@ int main(int argc, char** argv)
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("coarsegrain", prog_opt::value(&Coarsegrain),
           "coarse-grain N-to-1 sites")
+         ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default if timestep is real]")
+         ("nonormalize", prog_opt::bool_switch(&NoNormalize), "Don't normalize the wavefunction [default if the timestep is complex]")
          ("verbose,v",  prog_opt_ext::accum_value(&Verbose),
           "extra debug output [can be used multiple times]")
          ;
@@ -244,6 +260,11 @@ int main(int argc, char** argv)
          Timestep += ParseNumber(TimestepStr);
       if (!BetastepStr.empty())
          Timestep += std::complex<double>(0.0,-1.0)* ParseNumber(BetastepStr);
+
+      if (Timestep.imag() == 0.0)
+         Normalize = true;
+      if (NoNormalize)
+         Normalize = false;
 
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
@@ -373,13 +394,20 @@ int main(int argc, char** argv)
 
       std::cout << SInfo << '\n';
 
+      double LogAmplitude = 0.0; // normalization is contained in the lambda matrices
+
       std::deque<StateComponent> PsiVec(Psi.begin(), Psi.end());
       std::deque<RealDiagonalOperator> Lambda;
 
-      for (int i = 2; i <= Psi.size(); i += 2)
+      // The Lambda matrices we need are on the right hand side of every pair of A-matrices, so sites
+      // 2,4,6,...
+      // But we always want the edge lambda, so if size is odd, we add one additional lambda matrix. This
+      // is to cover the case where the system size is odd, and when we do a odd slice, we need this matrix.
+      for (int i = 2; i < Psi.size(); i += 2)
       {
          Lambda.push_back(Psi.lambda(i));
       }
+      Lambda.push_back(Psi.lambda_r());
 
       if (SaveEvery == 0)
          SaveEvery = N;
@@ -397,18 +425,18 @@ int main(int argc, char** argv)
             {
                std::cout << "Merge slice\n";
             }
-            DoEvenSlice(PsiVec, Lambda, EvenContinuation, SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenContinuation, SInfo, Verbose);
          }
          else
          {
-            DoEvenSlice(PsiVec, Lambda, EvenU[0], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenU[0], SInfo, Verbose);
          }
 
-         DoOddSlice(PsiVec, Lambda, OddU[0], SInfo, Verbose);
+         DoOddSlice(PsiVec, Lambda, LogAmplitude, OddU[0], SInfo, Verbose);
          for (int bi = 1; bi < OddU.size(); ++bi)
          {
-            DoEvenSlice(PsiVec, Lambda, EvenU[bi], SInfo, Verbose);
-            DoOddSlice(PsiVec, Lambda, OddU[bi], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenU[bi], SInfo, Verbose);
+            DoOddSlice(PsiVec, Lambda, LogAmplitude, OddU[bi], SInfo, Verbose);
          }
 
          // do we do a continuation?
@@ -422,6 +450,7 @@ int main(int argc, char** argv)
          if ((tstep % SaveEvery) == 0 || tstep == N)
          {
             LinearWavefunction Psi;
+            double ThisLogAmplitude = LogAmplitude;
             if (EvenU.size() > OddU.size())
             {
                CHECK_EQUAL(EvenU.size(), OddU.size()+1);
@@ -430,7 +459,7 @@ int main(int argc, char** argv)
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
-               DoEvenSlice(PsiVecSave, LambdaSave, EvenU.back(), SInfo, Verbose);
+               DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else
@@ -442,6 +471,10 @@ int main(int argc, char** argv)
             std::string TimeStr = formatting::format_digits(std::real(InitialTime + double(tstep)*Timestep), OutputDigits);
             std::string BetaStr = formatting::format_digits(-std::imag(InitialTime + double(tstep)*Timestep), OutputDigits);
             FiniteWavefunctionLeft PsiL = FiniteWavefunctionLeft::Construct(Psi);
+            if (!Normalize)
+            {
+               PsiL *= std::exp(ThisLogAmplitude);
+            }
             Wavefunction.Wavefunction() = std::move(PsiL);
             Wavefunction.AppendHistoryCommand(EscapeCommandline(argc, argv));
             Wavefunction.SetDefaultAttributes();
