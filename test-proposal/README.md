@@ -50,6 +50,9 @@ Documents in this directory:
 - [examples/bosehubbard-u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/bosehubbard-u1-dmrg.yaml):
   Executable suite covering finite `bosehubbard-u1`, `mp-construct`,
   `mp-dmrg`, and a tiny one-boson hopping sector.
+- [examples/spinchain-su2-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-su2-dmrg.yaml):
+  Executable suite covering finite `spinchain-su2`, `mp-random`, `mp-dmrg`,
+  reduced-state norms, and orthogonality between exact total-spin sectors.
 - [examples/identity-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/identity-tebd.yaml):
   A worked example showing fixtures, derived fixtures, probes, and test reuse.
 

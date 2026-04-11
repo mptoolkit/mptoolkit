@@ -259,7 +259,7 @@ coverage without exploding the matrix.
 ### Spin
 
 - [x] `spinchain-u1`
-- [ ] `spinchain-su2`
+- [x] `spinchain-su2`
 - [ ] `spinchain-z2`
 - [ ] `spinchain-spin2-su2`
 - [ ] `spinladder.cpp`
@@ -327,7 +327,7 @@ coverage. This list is the completion target for supported models.
 - [ ] `klm-u1su2.cpp`
 - [ ] `klm-u1u1.cpp`
 - [ ] `spinchain-spin2-su2.cpp`
-- [ ] `spinchain-su2.cpp`
+- [x] `spinchain-su2.cpp`
 - [x] `spinchain-u1.cpp`
 - [ ] `spinchain-z2.cpp`
 - [ ] `spinchain.cpp`
@@ -356,7 +356,7 @@ coverage. This list is the completion target for supported models.
 
 ### Phase 2: Expand Model Diversity
 
-- [ ] Add one spin `su2` suite.
+- [x] Add one spin `su2` suite.
 - [x] Add one fermion `u1` suite.
 - [ ] Add one fermion `su2` suite.
 - [x] Add one boson `u1` suite.

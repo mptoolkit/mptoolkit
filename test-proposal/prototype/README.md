@@ -79,6 +79,12 @@ python3 test-proposal/prototype/run_suite.py \
   --bin-dir /home/ian/build/main-optimized
 ```
 
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-su2-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
 Debugging modes:
 
 ```bash
@@ -192,6 +198,20 @@ The first boson-model slice exercises:
 
 and validates a tiny one-boson finite-chain ground state, including simple
 hopping correlators `BH(0)*B(1)` and `B(0)*BH(1)`.
+
+The first SU(2) spin-model slice exercises:
+
+- `spinchain-su2`
+- `mp-random`
+- `mp-dmrg`
+- `mp-expectation`
+- `mp-attr`
+- `mp-overlap`
+- `mp-norm`
+
+and validates exact 2-site and 3-site total-spin sectors, including the
+current reduced-state conventions for non-scalar SU(2) states: norms equal to
+irrep dimensions and scalar-operator expectations in the reduced convention.
 
 The author-facing syntax is now shorter than the original canonical form:
 
