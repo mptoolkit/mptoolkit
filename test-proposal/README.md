@@ -25,6 +25,8 @@ Documents in this directory:
   Line-oriented matching and typed placeholder syntax for text output.
 - [roadmap.md](/home/ian/sync/git/main/test-proposal/roadmap.md): Suggested
   implementation path from Python-first to a stable declarative layer.
+- [checklist.md](/home/ian/sync/git/main/test-proposal/checklist.md): Concrete
+  rollout checklist for tool coverage, model coverage, and CI growth.
 - [prototype/README.md](/home/ian/sync/git/main/test-proposal/prototype/README.md):
   Minimal executable prototype for the first vertical slice.
 - [examples/spinchain-expectation.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-expectation.yaml):
