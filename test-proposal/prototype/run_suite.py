@@ -932,6 +932,8 @@ class SuiteRunner:
             value = parse_complex(last_nonblank_line(result.stdout))
         elif kind == "last_text":
             value = last_nonblank_line(result.stdout)
+        elif kind == "full_text":
+            value = normalize_capture(result.stdout)
         elif kind == "json_path":
             payload = json.loads(normalize_capture(result.stdout))
             value = extract_json_path(payload, extract.get("path", ""))

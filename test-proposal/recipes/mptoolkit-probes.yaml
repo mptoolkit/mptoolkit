@@ -23,6 +23,14 @@ recipes:
     probe: mp-attr {state} {attribute}
     extract: last_text
 
+  info_text:
+    probe: mp-info {state}
+    extract: full_text
+
+  history_text:
+    probe: mp-history {state}
+    extract: full_text
+
   overlap_real:
     probe: mp-overlap --real --quiet {psi1} {psi2}
     extract: last_float

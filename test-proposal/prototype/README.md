@@ -15,6 +15,7 @@ Implemented features:
 - action recipes
 - probe recipes
 - float and complex scalar extraction
+- whole-stdout text extraction
 - JSON field extraction
 - fixture dependencies via `from`
 - fixture certification
@@ -58,6 +59,24 @@ python3 test-proposal/prototype/run_suite.py \
 ```bash
 python3 test-proposal/prototype/run_suite.py \
   test-proposal/examples/spinchain-transforms.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-finite-inspection.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-finite-algorithms.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-dmrg-2site.yaml \
   --bin-dir /home/ian/build/main-optimized
 ```
 
@@ -174,6 +193,18 @@ The next transform slice exercises:
 
 and validates in-place scaling and normalization, plus an out-of-place
 conjugation workflow checked via explicit output bindings.
+
+The next finite-inspection and legacy-algorithm slices exercise:
+
+- `mp-info`
+- `mp-history`
+- `mp-dmrg-2site`
+- `mp-dmrg-3s`
+- `mp-tdvp`
+
+and validate finite-wavefunction reporting, history capture, legacy `-s`
+sweep handling in both legacy DMRG variants, cleaned real-energy formatting for
+`mp-dmrg-3s`, and finite TDVP metadata updates under an identity evolution.
 
 The first fermion-model slice exercises:
 

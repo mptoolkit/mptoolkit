@@ -140,6 +140,8 @@ Framework policy:
 - [x] `expectation_imag`
 - [x] `attr_float`
 - [x] `attr_text`
+- [x] `info_text`
+- [x] `history_text`
 - [x] `imoments_cross_json`
 - [x] `overlap`
 - [ ] `ioverlap`
@@ -160,8 +162,8 @@ Framework policy:
 - [x] `mp-expectation`
 - [x] `mp-attr`
 - [x] `mp-overlap`
-- [ ] `mp-info`
-- [ ] `mp-history`
+- [x] `mp-info`
+- [x] `mp-history`
 - [ ] `mp-lattice-info`
 - [ ] `mp-show-operator`
 
@@ -181,13 +183,18 @@ Framework policy:
 ### Finite Ground-State Algorithms
 
 - [x] `mp-dmrg`
-- [ ] `mp-dmrg-2site`
-- [ ] `mp-dmrg-3s`
+- [x] `mp-dmrg-2site`
+- [x] `mp-dmrg-3s`
 
 ### Finite Time Evolution
 
 - [x] `mp-tebd`
-- [ ] `mp-tdvp`
+- [x] `mp-tdvp`
+
+Finite-algorithm note:
+
+- `mp-dmrg-2site` now has declarative coverage in both optimized and debug
+  builds.
 
 ### Infinite Ground-State And Evolution
 

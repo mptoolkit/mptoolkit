@@ -41,6 +41,16 @@ Documents in this directory:
 - [examples/spinchain-transforms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-transforms.yaml):
   Executable suite covering `mp-overlap`, `mp-scale`, `mp-normalize`, and
   `mp-conj`, including explicit output bindings for cross-state checks.
+- [examples/spinchain-finite-inspection.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-inspection.yaml):
+  Executable suite covering finite `mp-info` and `mp-history` output on a
+  small constructed `spinchain-u1` product state.
+- [examples/spinchain-finite-algorithms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-algorithms.yaml):
+  Executable suite covering finite `mp-dmrg-3s` and `mp-tdvp`, including a
+  legacy `-s` sweep-path regression for `mp-dmrg-3s`.
+- [examples/spinchain-dmrg-2site.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-dmrg-2site.yaml):
+  Executable suite covering finite `mp-dmrg-2site` on an 8-site random
+  `spinchain-u1` fixture, including the legacy `-s` sweep-path regression in
+  both debug and optimized builds.
 - [examples/spinlessfermion-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinlessfermion-dmrg.yaml):
   Executable suite covering finite `spinlessfermion-u1`, `mp-construct`,
   `mp-random`, `mp-dmrg`, and sign-sensitive off-diagonal fermion correlators.

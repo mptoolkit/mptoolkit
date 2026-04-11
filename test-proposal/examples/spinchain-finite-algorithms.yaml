@@ -1,0 +1,95 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  neel4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  rand8:
+    from: lat
+    run: mp-random -l lat -u 8 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  rand8_dmrg_3s_s4:
+    from: rand8
+    run: mp-dmrg-3s -w psi -H lat:H_J1 -m 20 -s 4
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.374932598661831
+          abs: 1e-10
+      - attr_text:
+          attribute: LastEnergy
+          matches: '^[^(),]+$'
+
+  neel4_tdvp_identity:
+    from: neel4
+    run: mp-tdvp -w psi -H lat:sum_unit(I(0)) -o out -t 0-0.1i -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+
+tests:
+  dmrg_3s_legacy_sweeps_path_converges_and_formats_real_energy_cleanly:
+    use: rand8_dmrg_3s_s4
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.374932598661831
+          abs: 1e-10
+      - attr_text:
+          attribute: LastEnergy
+          matches: '^[^(),]+$'
+
+  tdvp_identity_updates_beta_and_evolution_metadata:
+    use: neel4_tdvp_identity
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
