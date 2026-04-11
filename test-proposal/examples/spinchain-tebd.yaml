@@ -210,6 +210,39 @@ fixtures:
           approx: 1.0
           abs: 1e-12
 
+  infinite_neel2_itdvp_time_dependent_imag:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H "lat:(1+i*t)*sum_unit(I(0))" -o out -t 0-0.1i -n 4 -s 1 -m 4
+    outputs:
+      state: out.b0.4
+      state_b0p1: out.b0.1
+      state_b0p2: out.b0.2
+      state_b0p3: out.b0.3
+      state_b0p4: out.b0.4
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*t)*sum_unit(I(0))"
+      - ioverlap_real:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+      - ioverlap_imag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+
 tests:
   tebd_identity_updates_norm_and_beta:
     use: finite_neel4_tebd_identity
@@ -325,6 +358,75 @@ tests:
           abs: 1e-12
       - ioverlap_mag:
           approx: 1.0
+          abs: 1e-12
+
+  itdvp_time_dependent_imaginary_time_tracks_projected_amplitude:
+    use:
+      psi0: infinite_neel2.state
+      beta_0p1: infinite_neel2_itdvp_time_dependent_imag.state_b0p1
+      beta_0p2: infinite_neel2_itdvp_time_dependent_imag.state_b0p2
+      beta_0p3: infinite_neel2_itdvp_time_dependent_imag.state_b0p3
+      beta_0p4: infinite_neel2_itdvp_time_dependent_imag.state_b0p4
+    expect:
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81464731641141
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81464731641141
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64726466707803
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64726466707803
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50409022957483
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50409022957483
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38481214455298
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38481214455298
           abs: 1e-12
 
   imoments_cross_json_reuses_itebd_output:
