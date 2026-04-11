@@ -147,7 +147,7 @@ Framework policy:
 - [x] `show_product_operator_text`
 - [x] `imoments_cross_json`
 - [x] `overlap`
-- [ ] `ioverlap`
+- [x] `ioverlap`
 - [ ] `history_field`
 - [ ] `info_field`
 - [ ] `moments`
@@ -178,7 +178,7 @@ Framework policy:
 - [ ] `mp-reflect`
 - [ ] `mp-left-canonicalize`
 - [ ] `mp-right-canonicalize`
-- [ ] `mp-reorder-symmetry`
+- [x] `mp-reorder-symmetry`
 - [x] `mp-change-lattice`
 - [ ] `mp-irepeat`
 - [ ] `mp-irotate`
@@ -205,15 +205,15 @@ Finite-algorithm note:
 - [ ] `mp-idmrg-ee`
 - [ ] `mp-idmrg-s3e`
 - [x] `mp-itebd`
-- [ ] `mp-itdvp`
+- [x] `mp-itdvp`
 
 ### Moments, Cross, And Overlap Families
 
 - [ ] `mp-overlap`
-- [ ] `mp-ioverlap`
+- [x] `mp-ioverlap`
 - [ ] `mp-imoments`
 - [x] `mp-imoments-cross`
-- [ ] `mp-iexpectation`
+- [ ] `mp-iexpectation` (obsolete; use `mp-expectation`)
 - [ ] `mp-iexpectation-cross`
 - [ ] `mp-ies`
 - [ ] `mp-ies-cross`
@@ -368,7 +368,7 @@ coverage. This list is the completion target for supported models.
 - [ ] Add `overlap`, `ioverlap`, `info_field`, and `history_field` probes.
 - [ ] Extend transform coverage with stronger complex-conjugation checks.
 - [ ] Add finite `mp-tdvp` suite.
-- [ ] Add infinite `mp-itdvp` suite.
+- [x] Add infinite `mp-itdvp` suite.
 - [x] Add the first fermion-sign-sensitive suite on `spinlessfermion-u1`.
 - [x] Add the first Hubbard-family fermion-sign suite.
 

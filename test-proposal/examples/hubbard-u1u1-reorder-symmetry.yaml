@@ -1,0 +1,78 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: hubbard-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  up_empty:
+    from: lat
+    run: mp-construct -l lat -o psi --finite up:empty
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number = 1,0.5"
+
+  up_empty_swapped:
+    from: up_empty
+    run: mp-reorder-symmetry 'Sz:U(1),N:U(1)' psi psi_swapped
+    outputs:
+      state: psi_swapped
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = Sz:U(1),N:U(1)"
+      - info_text:
+          contains: "Quantum number = 0.5,1"
+      - history_text:
+          contains: "mp-reorder-symmetry \"Sz:U(1),N:U(1)\" psi psi_swapped"
+
+  up_empty_roundtrip:
+    from: up_empty_swapped
+    run: mp-reorder-symmetry 'N:U(1),Sz:U(1)' psi_swapped psi_roundtrip
+    outputs:
+      state: psi_roundtrip
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number = 1,0.5"
+
+tests:
+  reorder_symmetry_updates_the_reported_symmetry_order:
+    use: up_empty_swapped
+    expect:
+      - info_text:
+          contains: "Symmetry list = Sz:U(1),N:U(1)"
+      - info_text:
+          contains: "Quantum number = 0.5,1"
+
+  reorder_symmetry_roundtrip_preserves_the_state:
+    use:
+      psi1: up_empty.state
+      psi2: up_empty_roundtrip.state
+    expect:
+      - overlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - overlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - overlap_mag:
+          approx: 1.0
+          abs: 1e-12

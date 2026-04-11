@@ -100,6 +100,12 @@ python3 test-proposal/prototype/run_suite.py \
 
 ```bash
 python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/hubbard-u1u1-reorder-symmetry.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
   test-proposal/examples/bosehubbard-u1-dmrg.yaml \
   --bin-dir /home/ian/build/main-optimized
 ```
@@ -191,10 +197,15 @@ The next tool slice exercises:
 
 - `mp-tebd`
 - `mp-itebd`
+- `mp-itdvp`
+- `mp-ioverlap`
+- `mp-expectation` on infinite states
 - `mp-imoments-cross --json`
 
 and validates finite and infinite derived-state workflows, plus a JSON-emitting
-probe that reuses an iTEBD output fixture.
+probe that reuses an iTEBD output fixture. It also now includes exact
+real-time phase tests for both iTEBD and iTDVP on an infinite product-state
+eigenvector, checked through `mp-ioverlap`.
 
 The next transform slice exercises:
 
@@ -214,6 +225,7 @@ The next finite-inspection and legacy-algorithm slices exercise:
 - `mp-show-operator`
 - `mp-apply`
 - `mp-change-lattice`
+- `mp-reorder-symmetry`
 - `mp-dmrg-2site`
 - `mp-dmrg-3s`
 - `mp-tdvp`
@@ -221,8 +233,9 @@ The next finite-inspection and legacy-algorithm slices exercise:
 and validate finite-wavefunction reporting, history capture, legacy `-s`
 sweep handling in both legacy DMRG variants, basic finite-operator parsing,
 finite operator application on explicit product states, safe lattice changes
-inside a shared local subspace, cleaned real-energy formatting for `mp-dmrg-3s`,
-and finite TDVP metadata updates under an identity evolution.
+inside a shared local subspace, abelian symmetry-order round trips on a tiny
+Hubbard state, cleaned real-energy formatting for `mp-dmrg-3s`, and finite
+TDVP metadata updates under an identity evolution.
 
 The first fermion-model slice exercises:
 

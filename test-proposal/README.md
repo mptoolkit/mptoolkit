@@ -36,8 +36,11 @@ Documents in this directory:
   Executable suite covering `mp-random`, `mp-dmrg`, and `mp-attr`, including a
   derived ground-state fixture and a regression test for the legacy `-s` path.
 - [examples/spinchain-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-tebd.yaml):
-  Executable suite covering `mp-tebd`, `mp-itebd`, and `mp-imoments-cross
-  --json`, including reuse of an iTEBD-derived fixture in a JSON probe.
+  Executable suite covering `mp-tebd`, `mp-itebd`, `mp-itdvp`,
+  `mp-ioverlap`, `mp-expectation` on infinite states, and `mp-imoments-cross
+  --json`, including reuse of an iTEBD-derived fixture in a JSON probe and a
+  real-time phase-per-unit-cell checks for both iTEBD and iTDVP via
+  `mp-ioverlap`.
 - [examples/spinchain-transforms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-transforms.yaml):
   Executable suite covering `mp-overlap`, `mp-scale`, `mp-normalize`, and
   `mp-conj`, including explicit output bindings for cross-state checks.
@@ -61,6 +64,10 @@ Documents in this directory:
 - [examples/hubbard-u1u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/hubbard-u1u1-dmrg.yaml):
   Executable suite covering finite `hubbard-u1u1`, `mp-construct`, `mp-dmrg`,
   and sign-sensitive up-spin hopping correlators in a tiny Hubbard sector.
+- [examples/hubbard-u1u1-reorder-symmetry.yaml](/home/ian/sync/git/main/test-proposal/examples/hubbard-u1u1-reorder-symmetry.yaml):
+  Executable suite covering finite `mp-reorder-symmetry` on a small
+  `hubbard-u1u1` state, including symmetry-order metadata checks and a
+  round-trip overlap check back to the original symmetry ordering.
 - [examples/bosehubbard-u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/bosehubbard-u1-dmrg.yaml):
   Executable suite covering finite `bosehubbard-u1`, `mp-construct`,
   `mp-dmrg`, and a tiny one-boson hopping sector.
@@ -98,6 +105,9 @@ Its current direction is:
 - write fixture and test actions as the real commands a user would run
 - keep reusable checks like `norm`, `expectation`, and `attr` as imported probe
   recipes
+- use `mp-expectation` as the common expectation-value interface for both
+  finite and infinite states, rather than the obsolete `mp-iexpectation`
+  binary
 
 It also now has two user-facing debug modes:
 
