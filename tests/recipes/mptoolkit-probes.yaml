@@ -69,6 +69,52 @@ recipes:
     probe: mp-ioverlap --mag --quiet {psi1} {psi2}
     extract: last_float
 
+  allcorrelation_real:
+    probe: mp-allcorrelation --quiet --real {state} {operator1} {operator2}
+    defaults:
+      site1: 0
+      site2: 1
+    extract:
+      line_pattern:
+        pattern: "{site1} {site2} %(float:value)"
+        capture: value
+
+  icorrelation_real:
+    probe: mp-icorrelation --quiet --real --left {left} -n {length} {state} {operator1} {operator2}
+    defaults:
+      left: 0
+      distance: 0
+      length: 4
+    extract:
+      line_pattern:
+        pattern: "{left} {distance} %(float:value)"
+        capture: value
+
+  icorrelation_connected_real:
+    probe: mp-icorrelation --quiet --real --connected --left {left} -n {length} {state} {operator1} {operator2}
+    defaults:
+      left: 0
+      distance: 0
+      length: 4
+    extract:
+      line_pattern:
+        pattern: "{left} {distance} %(float:value)"
+        capture: value
+
+  ispectrum_first_real:
+    probe: mp-ispectrum --quiet -c {state}
+    extract:
+      line_pattern:
+        pattern: "0 0 %(float:real) %(float:imag)"
+        capture: real
+
+  ispectrum_first_imag:
+    probe: mp-ispectrum --quiet -c {state}
+    extract:
+      line_pattern:
+        pattern: "0 0 %(float:real) %(float:imag)"
+        capture: imag
+
   iexpectation_cross_real:
     probe: mp-iexpectation-cross -q {sector} --real {psi1} {operator} {psi2}
     defaults:

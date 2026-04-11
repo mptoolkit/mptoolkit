@@ -170,6 +170,55 @@ tests:
           approx: 1.0
           abs: 1e-12
 
+  allcorrelation_reports_the_exact_nearest_neighbor_sz_correlation:
+    use: infinite_neel2
+    expect:
+      - allcorrelation_real:
+          operator1: "lat:Sz(0)"
+          operator2: "lat:Sz(0)"
+          site1: 0
+          site2: 1
+          approx: -0.25
+          abs: 1e-12
+
+  icorrelation_reports_the_exact_alternating_product_state_correlator:
+    use: infinite_neel2
+    expect:
+      - icorrelation_real:
+          operator1: "lat:Sz(0)"
+          operator2: "lat:Sz(0)"
+          left: 0
+          distance: 0
+          length: 4
+          approx: 0.25
+          abs: 1e-12
+      - icorrelation_real:
+          operator1: "lat:Sz(0)"
+          operator2: "lat:Sz(0)"
+          left: 0
+          distance: 1
+          length: 4
+          approx: -0.25
+          abs: 1e-12
+      - icorrelation_connected_real:
+          operator1: "lat:Sz(0)"
+          operator2: "lat:Sz(0)"
+          left: 0
+          distance: 3
+          length: 4
+          approx: 0.0
+          abs: 1e-12
+
+  ispectrum_has_a_single_unit_eigenvalue_on_a_product_state:
+    use: infinite_neel2
+    expect:
+      - ispectrum_first_real:
+          approx: 1.0
+          abs: 1e-12
+      - ispectrum_first_imag:
+          approx: 0.0
+          abs: 1e-12
+
   imoments_identity_returns_exact_moments_and_cumulants:
     use: infinite_neel2
     expect:

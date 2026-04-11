@@ -220,11 +220,11 @@ Finite-algorithm note:
 
 ### Correlation / Spectrum / Fluctuation Families
 
-- [ ] `mp-allcorrelation`
+- [x] `mp-allcorrelation`
 - [ ] `mp-fluctuation`
-- [ ] `mp-icorrelation`
+- [x] `mp-icorrelation`
 - [ ] `mp-ibc-correlation`
-- [ ] `mp-ispectrum`
+- [x] `mp-ispectrum`
 
 ### Apply / Matrix / Operator Families
 
