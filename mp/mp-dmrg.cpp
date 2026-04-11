@@ -360,7 +360,7 @@ int main(int argc, char** argv)
       std::cout << States << '\n';
 
       StatesList MyStates(StatesString);
-      if (vm.count("steps") && MyStates.size() == 1)
+      if (vm.count("sweeps") && MyStates.size() == 1)
       {
          MyStates.Repeat(NumSweeps);
       }
