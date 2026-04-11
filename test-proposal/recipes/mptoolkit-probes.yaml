@@ -31,6 +31,20 @@ recipes:
     probe: mp-history {state}
     extract: full_text
 
+  lattice_info_text:
+    probe: mp-lattice-info {lattice}
+    defaults:
+      lattice: lat
+    extract: full_text
+
+  show_finite_operator_text:
+    probe: mp-show-operator -f {operator}
+    extract: full_text
+
+  show_product_operator_text:
+    probe: mp-show-operator -p {operator}
+    extract: full_text
+
   overlap_real:
     probe: mp-overlap --real --quiet {psi1} {psi2}
     extract: last_float

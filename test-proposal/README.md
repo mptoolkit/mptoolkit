@@ -44,6 +44,10 @@ Documents in this directory:
 - [examples/spinchain-finite-inspection.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-inspection.yaml):
   Executable suite covering finite `mp-info` and `mp-history` output on a
   small constructed `spinchain-u1` product state.
+- [examples/spinchain-finite-operators.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-operators.yaml):
+  Executable suite covering finite `mp-lattice-info`, `mp-show-operator`, and
+  `mp-apply`, including identity, local-`Sz`, and pure-phase operator
+  application checks on a small `spinchain-u1` Neel state.
 - [examples/spinchain-finite-algorithms.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-finite-algorithms.yaml):
   Executable suite covering finite `mp-dmrg-3s` and `mp-tdvp`, including a
   legacy `-s` sweep-path regression for `mp-dmrg-3s`.
@@ -60,6 +64,10 @@ Documents in this directory:
 - [examples/bosehubbard-u1-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/bosehubbard-u1-dmrg.yaml):
   Executable suite covering finite `bosehubbard-u1`, `mp-construct`,
   `mp-dmrg`, and a tiny one-boson hopping sector.
+- [examples/bosehubbard-change-lattice.yaml](/home/ian/sync/git/main/test-proposal/examples/bosehubbard-change-lattice.yaml):
+  Executable suite covering finite `mp-change-lattice` on a small
+  `bosehubbard-u1` state that remains inside the shared local subspace between
+  the source and target lattices.
 - [examples/spinchain-su2-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-su2-dmrg.yaml):
   Executable suite covering finite `spinchain-su2`, `mp-random`, `mp-dmrg`,
   reduced-state norms, and orthogonality between exact total-spin sectors.

@@ -142,6 +142,9 @@ Framework policy:
 - [x] `attr_text`
 - [x] `info_text`
 - [x] `history_text`
+- [x] `lattice_info_text`
+- [x] `show_finite_operator_text`
+- [x] `show_product_operator_text`
 - [x] `imoments_cross_json`
 - [x] `overlap`
 - [ ] `ioverlap`
@@ -164,8 +167,8 @@ Framework policy:
 - [x] `mp-overlap`
 - [x] `mp-info`
 - [x] `mp-history`
-- [ ] `mp-lattice-info`
-- [ ] `mp-show-operator`
+- [x] `mp-lattice-info`
+- [x] `mp-show-operator`
 
 ### State Transforms And Canonicalization
 
@@ -176,7 +179,7 @@ Framework policy:
 - [ ] `mp-left-canonicalize`
 - [ ] `mp-right-canonicalize`
 - [ ] `mp-reorder-symmetry`
-- [ ] `mp-change-lattice`
+- [x] `mp-change-lattice`
 - [ ] `mp-irepeat`
 - [ ] `mp-irotate`
 
@@ -225,7 +228,7 @@ Finite-algorithm note:
 
 ### Apply / Matrix / Operator Families
 
-- [ ] `mp-apply`
+- [x] `mp-apply`
 - [ ] `mp-iapply`
 - [ ] `mp-ibc-apply`
 - [ ] `mp-idivide`
@@ -257,6 +260,13 @@ Finite-algorithm note:
 - [ ] `mp-coarsegrain`
 - [ ] `mp-finegrain`
 - [ ] `mp-finite-create`
+
+## Known Gaps Inside Covered Tools
+
+- [ ] `mp-change-lattice` should handle states that project completely out of
+  the target local basis without aborting. A manual `bosehubbard-u1` check from
+  `N=5` to `N=2` with the state `0:1:3:0` currently triggers a tensor-basis
+  precondition failure instead of returning the zero state or a clear error.
 
 ## Representative Model-Family Checklist
 

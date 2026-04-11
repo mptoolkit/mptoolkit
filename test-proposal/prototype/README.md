@@ -70,6 +70,12 @@ python3 test-proposal/prototype/run_suite.py \
 
 ```bash
 python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/spinchain-finite-operators.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
   test-proposal/examples/spinchain-finite-algorithms.yaml \
   --bin-dir /home/ian/build/main-optimized
 ```
@@ -95,6 +101,12 @@ python3 test-proposal/prototype/run_suite.py \
 ```bash
 python3 test-proposal/prototype/run_suite.py \
   test-proposal/examples/bosehubbard-u1-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/bosehubbard-change-lattice.yaml \
   --bin-dir /home/ian/build/main-optimized
 ```
 
@@ -198,13 +210,19 @@ The next finite-inspection and legacy-algorithm slices exercise:
 
 - `mp-info`
 - `mp-history`
+- `mp-lattice-info`
+- `mp-show-operator`
+- `mp-apply`
+- `mp-change-lattice`
 - `mp-dmrg-2site`
 - `mp-dmrg-3s`
 - `mp-tdvp`
 
 and validate finite-wavefunction reporting, history capture, legacy `-s`
-sweep handling in both legacy DMRG variants, cleaned real-energy formatting for
-`mp-dmrg-3s`, and finite TDVP metadata updates under an identity evolution.
+sweep handling in both legacy DMRG variants, basic finite-operator parsing,
+finite operator application on explicit product states, safe lattice changes
+inside a shared local subspace, cleaned real-energy formatting for `mp-dmrg-3s`,
+and finite TDVP metadata updates under an identity evolution.
 
 The first fermion-model slice exercises:
 
