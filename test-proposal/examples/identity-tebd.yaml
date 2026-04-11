@@ -17,30 +17,12 @@ defaults:
 
 recipes:
   norm:
-    kind: probe
-    command: ["mp-norm", "{state}"]
-    params:
-      state: null
-    extract:
-      kind: last_float
+    probe: mp-norm {state}
+    extract: last_float
 
   tebd_step:
-    kind: action
-    command:
-      - mp-tebd
-      - -w
-      - "{input}"
-      - -H
-      - "{hamiltonian}"
-      - -o
-      - "{output_prefix}"
-      - -t
-      - "{time}"
-      - -n
-      - "{steps}"
-      - -s
-      - "{save_every}"
-    params:
+    action: mp-tebd -w {input} -H {hamiltonian} -o {output_prefix} -t {time} -n {steps} -s {save_every}
+    defaults:
       input: null
       hamiltonian: null
       output_prefix: "{scratch}/psi"
@@ -55,10 +37,7 @@ recipes:
           select: newest
 
   beta_from_info:
-    kind: probe
-    command: ["mp-info", "{state}"]
-    params:
-      state: null
+    probe: mp-info {state}
     extract:
       source: stdout
       match:
@@ -67,9 +46,8 @@ recipes:
       value: beta
 
   prepare_product_up:
-    kind: action
-    command: ["make-product-state", "--sites", "{sites}", "--state", "up", "--output", "{output}"]
-    params:
+    action: make-product-state --sites {sites} --state up --output {output}
+    defaults:
       sites: null
       output: "{scratch}/psi"
     outputs:

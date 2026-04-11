@@ -273,6 +273,59 @@ def normalize_outputs(outputs: Any) -> dict[str, Any]:
     return normalized
 
 
+def normalize_extract(extract: Any) -> dict[str, Any]:
+    if isinstance(extract, str):
+        return {"kind": extract}
+    if isinstance(extract, dict):
+        if "kind" in extract:
+            return deep_copy(extract)
+        if len(extract) == 1:
+            kind, value = next(iter(extract.items()))
+            if isinstance(value, dict):
+                normalized = {"kind": kind}
+                normalized.update(deep_copy(value))
+                return normalized
+            if kind == "json_path":
+                return {"kind": "json_path", "path": deep_copy(value)}
+            return {"kind": kind}
+    raise SuiteError(f"Invalid extract specification: {extract!r}")
+
+
+def normalize_recipe(recipe: dict[str, Any]) -> dict[str, Any]:
+    normalized = deep_copy(recipe)
+
+    if "probe" in normalized:
+        if "kind" in normalized or "command" in normalized:
+            raise SuiteError(f"Recipe may not combine 'probe' with 'kind' or 'command': {recipe!r}")
+        normalized["kind"] = "probe"
+        normalized["command"] = normalized.pop("probe")
+
+    if "action" in normalized:
+        if "kind" in normalized or "command" in normalized:
+            raise SuiteError(f"Recipe may not combine 'action' with 'kind' or 'command': {recipe!r}")
+        normalized["kind"] = "action"
+        normalized["command"] = normalized.pop("action")
+
+    defaults = deep_copy(normalized.pop("defaults", {}))
+    params = deep_copy(normalized.get("params", {}))
+    merged_params = deep_merge(defaults, params)
+    if merged_params:
+        normalized["params"] = merged_params
+    elif "params" in normalized:
+        normalized["params"] = {}
+
+    if "cwd" not in normalized and normalized.get("kind") in {"action", "probe"}:
+        normalized["cwd"] = "{cwd}"
+
+    if "extract" in normalized:
+        normalized["extract"] = normalize_extract(normalized["extract"])
+
+    if "outputs" in normalized:
+        normalized["outputs"] = normalize_outputs(normalized["outputs"])
+
+    return normalized
+
+
 def normalize_raw_action(step: dict[str, Any]) -> dict[str, Any]:
     command = deep_copy(step["run"])
     action: dict[str, Any] = {"command": command}
@@ -434,7 +487,11 @@ def normalize_test(test: dict[str, Any], recipes: dict[str, Any]) -> dict[str, A
 
 def normalize_suite(suite: dict[str, Any]) -> dict[str, Any]:
     normalized = deep_merge(DEFAULT_OVERLAY, deep_copy(suite))
-    recipes = normalized.get("recipes", {})
+    recipes = {
+        name: normalize_recipe(spec)
+        for name, spec in normalized.get("recipes", {}).items()
+    }
+    normalized["recipes"] = recipes
     normalized["fixtures"] = {
         name: normalize_fixture(spec, recipes)
         for name, spec in normalized.get("fixtures", {}).items()

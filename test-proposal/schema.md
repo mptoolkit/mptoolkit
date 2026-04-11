@@ -52,36 +52,18 @@ Suggested canonical fields:
 ```yaml
 recipes:
   norm:
-    kind: probe
-    command: ["mp-norm", "{state}"]
-    params:
-      state: null
+    probe: mp-norm {state}
     env: {}
-    cwd: "{scratch}"
+    cwd: "{cwd}"
     capture:
       stream: stdout
       strip_ansi: true
       whitespace: flexible
-    extract:
-      kind: last_float
+    extract: last_float
 
   tebd_step:
-    kind: action
-    command:
-      - mp-tebd
-      - -w
-      - "{input}"
-      - -H
-      - "{hamiltonian}"
-      - -o
-      - "{output_prefix}"
-      - -t
-      - "{time}"
-      - -n
-      - "{steps}"
-      - -s
-      - "{save_every}"
-    params:
+    action: mp-tebd -w {input} -H {hamiltonian} -o {output_prefix} -t {time} -n {steps} -s {save_every}
+    defaults:
       input: null
       hamiltonian: null
       output_prefix: "{scratch}/{name}"
@@ -98,9 +80,11 @@ recipes:
 
 Notes:
 
+- `action:` and `probe:` are author-facing shorthands for `kind` plus
+  `command`.
 - `command` is a template. Parameters are resolved before execution.
 - Parameter precedence should be:
-  `suite defaults < recipe params < per-use overrides`.
+  `suite defaults < recipe defaults < per-use overrides`.
 - `capture` is relevant mainly to probes, but may also be useful for actions
   whose outputs are reported in text.
 - `outputs` tells the runner how to name or discover produced artifacts.
@@ -289,19 +273,17 @@ outputs:
 
 ## Command Representation
 
-Commands should be represented as argv lists, not shell strings.
+Author-facing suites can use simple command strings:
 
-This keeps the declarative syntax focused on tool behavior rather than shell
-quoting rules. For example:
+```yaml
+command: mp-expectation {state} lat:Sz(0)
+```
+
+The runner should split these without invoking a shell. Argv-list form should
+also remain valid when authors need exact token control:
 
 ```yaml
 command: ["mp-expectation", "{state}", "lat:Sz(0)"]
-```
-
-not:
-
-```yaml
-command: "mp-expectation {state} 'lat:\"Sz(0)\"'"
 ```
 
 ## Text Matching

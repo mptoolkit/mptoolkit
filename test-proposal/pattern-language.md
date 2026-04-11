@@ -138,10 +138,8 @@ That allows recipes like:
 ```yaml
 recipes:
   norm:
-    kind: probe
-    command: ["mp-norm", "{state}"]
-    extract:
-      kind: last_float
+    probe: mp-norm {state}
+    extract: last_float
 ```
 
 ## Regex as Escape Hatch

@@ -125,6 +125,12 @@ The author-facing syntax is now shorter than the original canonical form:
   example `mp-construct -l lat -o psi --finite ...`
 - suites can import a small shared probe library such as
   [../recipes/mptoolkit-probes.yaml](/home/ian/sync/git/main/test-proposal/recipes/mptoolkit-probes.yaml)
+- probe recipes can use `probe: ...` and action recipes can use `action: ...`
+  instead of spelling out `kind` plus `command`
+- recipe-local parameter defaults can use `defaults:` instead of `params:`
+  when that reads more naturally
+- simple extractors can use `extract: last_float` or
+  `extract: {json_path: "{json_path}"}`
 - assertions can use probe-name shorthand such as `norm:`, `attr_float:`,
   `expectation:`, or `imoments_cross_json:`
 - the working directory is inferred from fixture scope in normal cases, so test
