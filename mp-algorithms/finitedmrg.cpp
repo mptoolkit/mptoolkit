@@ -47,7 +47,7 @@ FiniteDMRG::StartSweep()
 {
    this->DMRG::StartSweep();
 
-   // Reset the wavfunction for the per-sweep fidelity
+   // Reset the wavefunction for the per-sweep fidelity
    SweepC = *C;
 }
 
@@ -86,8 +86,10 @@ void
 FiniteDMRG::ShiftLeft(MatrixOperator const& Lambda)
 {
    // The projection operator that maps from the SweepC basis to the new basis
-   auto L = C; --L;
-   SweepC = prod(*L, scalar_prod(SweepC, herm(*C)));
+   auto L = C;
+   --L;
+   MatrixOperator P = scalar_prod(SweepC, herm(*C));
+   SweepC = prod(*L, P);
    this->DMRG::ShiftLeft(Lambda);
 }
 
@@ -95,7 +97,9 @@ void
 FiniteDMRG::ShiftRight(MatrixOperator const& Lambda)
 {
    // The projection operator that maps from the SweepC basis to the new basis
-   auto R = C; ++R;
-   SweepC = prod(scalar_prod(herm(*C), SweepC), *R);
+   auto R = C;
+   ++R;
+   MatrixOperator P = scalar_prod(herm(*C), SweepC);
+   SweepC = prod(P, *R);
    this->DMRG::ShiftRight(Lambda);
 }

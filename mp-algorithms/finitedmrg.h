@@ -46,7 +46,7 @@ class FiniteDMRG : public DMRG
 
       virtual void check_structure() const;
 
-      // The wavefunction from the start of the sweep, projected into the basis of C
+      // The wavefunction from the start of the sweep, projected into the basis of C.
       StateComponent SweepC;
 
       //      std::vector<CenterWavefunction> Ortho;              // set of wavefunctions that we want to be

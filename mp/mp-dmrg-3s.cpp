@@ -256,7 +256,7 @@ int main(int argc, char** argv)
       std::cout << SInfo << '\n';
 
       StatesList MyStates(States);
-      if (vm.count("steps") && MyStates.size() == 1)
+      if (vm.count("sweeps") && MyStates.size() == 1)
       {
          MyStates.Repeat(NumSweeps);
       }
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
       Wavefunction.Wavefunction() = dmrg.Wavefunction();
 
       // any other attributes?
-      Wavefunction.Attributes()["LastEnergy"] = dmrg.Solver().LastEnergy();
+      Wavefunction.Attributes()["LastEnergy"] = formatting::format_complex(dmrg.Solver().LastEnergy());
       Wavefunction.SetDefaultAttributes();
 
       // History log

@@ -42,7 +42,109 @@ std::ofstream BenchFile(getenv_or_default("MP_BENCHFILE", ""), std::ios_base::ou
 
 bool Flush = false;  // set to true to flush standard output every step
 
-void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States)
+namespace
+{
+
+class FiniteDMRG2Site : public FiniteDMRG
+{
+   public:
+      using FiniteDMRG::FiniteDMRG;
+
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainRight(StatesInfo const& States)
+      {
+         auto R = C;
+         ++R;
+         StateComponent Rold = *R;
+         auto CoarseGrainBasis = make_product_basis(C->LocalBasis(), R->LocalBasis());
+         StateComponent X = local_tensor_prod(*C, *R);
+
+         auto HR = H;
+         ++HR;
+         OperatorComponent HX = local_tensor_prod(*H, *HR);
+
+         StateComponent SaveF = HamMatrices.right();
+         HamMatrices.pop_right();
+
+         Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
+
+         IterationEnergy = Solver_.LastEnergy();
+         IterationNumMultiplies = Solver_.LastIter();
+
+         AMatSVD DM(X, CoarseGrainBasis);
+
+         TruncationInfo Info;
+         auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+         RealDiagonalOperator Lambda;
+         DM.ConstructMatrices(DM.begin(), DMPivot, *C, Lambda, *R);
+
+         HamMatrices.push_right(SaveF);
+         this->ShiftRightTwoSite(Lambda, Rold);
+
+         IterationNumStates = Info.KeptStates();
+         IterationTruncation += Info.TruncationError();
+         IterationEntropy = Info.KeptEntropy();
+
+         return std::make_pair(IterationEnergy, Info);
+      }
+
+      std::pair<std::complex<double>, TruncationInfo> SolveCoarseGrainLeft(StatesInfo const& States)
+      {
+         auto L = C;
+         --L;
+         StateComponent Lold = *L;
+         auto CoarseGrainBasis = make_product_basis(L->LocalBasis(), C->LocalBasis());
+         StateComponent X = local_tensor_prod(*L, *C);
+
+         auto HL = H;
+         --HL;
+         OperatorComponent HX = local_tensor_prod(*HL, *H);
+
+         StateComponent SaveE = HamMatrices.left();
+         HamMatrices.pop_left();
+
+         Solver_.Solve(X, HamMatrices.left(), HX, HamMatrices.right());
+
+         IterationEnergy = Solver_.LastEnergy();
+         IterationNumMultiplies = Solver_.LastIter();
+
+         AMatSVD DM(X, CoarseGrainBasis);
+
+         TruncationInfo Info;
+         auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+         RealDiagonalOperator Lambda;
+         DM.ConstructMatrices(DM.begin(), DMPivot, *L, Lambda, *C);
+
+         HamMatrices.push_left(SaveE);
+         this->ShiftLeftTwoSite(Lambda, Lold);
+
+         IterationNumStates = Info.KeptStates();
+         IterationTruncation += Info.TruncationError();
+         IterationEntropy = Info.KeptEntropy();
+
+         return std::make_pair(IterationEnergy, Info);
+      }
+
+   private:
+      void ShiftLeftTwoSite(MatrixOperator const& Lambda, StateComponent const& Left)
+      {
+         MatrixOperator P = scalar_prod(SweepC, herm(*C));
+         CHECK_EQUAL(Left.Basis2(), P.Basis1());
+         SweepC = prod(Left, P);
+         this->DMRG::ShiftLeft(Lambda);
+      }
+
+      void ShiftRightTwoSite(MatrixOperator const& Lambda, StateComponent const& Right)
+      {
+         MatrixOperator P = scalar_prod(herm(*C), SweepC);
+         CHECK_EQUAL(P.Basis2(), Right.Basis1());
+         SweepC = prod(P, Right);
+         this->DMRG::ShiftRight(Lambda);
+      }
+};
+
+} // namespace
+
+void SweepRight(FiniteDMRG2Site& dmrg, StatesInfo const& States)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -70,7 +172,7 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States)
    std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
 }
 
-void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States)
+void SweepLeft(FiniteDMRG2Site& dmrg, StatesInfo const& States)
 {
    double SweepTruncation = 0;
    dmrg.StartSweep();
@@ -230,7 +332,7 @@ int main(int argc, char** argv)
 	 HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
 
       // Now we can construct the actual DMRG object
-      FiniteDMRG dmrg(Psi, HamMPO, Verbose);
+      FiniteDMRG2Site dmrg(Psi, HamMPO, Verbose);
 
       dmrg.Oversampling = Oversampling;
 
@@ -257,7 +359,7 @@ int main(int argc, char** argv)
       std::cout << States << '\n';
 
       StatesList MyStates(StatesString);
-      if (vm.count("steps") && MyStates.size() == 1)
+      if (vm.count("sweeps") && MyStates.size() == 1)
       {
          MyStates.Repeat(NumSweeps);
       }
