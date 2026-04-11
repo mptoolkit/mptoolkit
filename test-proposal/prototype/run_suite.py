@@ -40,6 +40,14 @@ def strip_ansi(text: str) -> str:
     return ANSI_ESCAPE_RE.sub("", text)
 
 
+def is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
 def ensure_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
@@ -49,6 +57,8 @@ def deep_copy(value: Any) -> Any:
 
 
 def resolve_reference(expr: str, context: dict[str, Any]) -> Any:
+    if "." not in expr and "bindings" in context and expr in context["bindings"]:
+        return context["bindings"][expr]
     current: Any = context
     for part in expr.split("."):
         if isinstance(current, dict) and part in current:
@@ -152,6 +162,31 @@ def indent_block(text: str, prefix: str = "  ") -> str:
     if not stripped:
         return prefix + "(empty)"
     return "\n".join(prefix + line for line in stripped.splitlines())
+
+
+def snapshot_tree(root: Path, ignore_roots: list[Path] | None = None) -> set[Path]:
+    root = root.resolve()
+    ignored = [path.resolve() for path in (ignore_roots or []) if path.exists()]
+    snapshot: set[Path] = set()
+
+    for dirpath, dirnames, filenames in os.walk(root):
+        current = Path(dirpath).resolve()
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if not any(is_relative_to(current / name, ignore_root) for ignore_root in ignored)
+        ]
+
+        if current != root and not any(is_relative_to(current, ignore_root) for ignore_root in ignored):
+            snapshot.add(current.relative_to(root))
+
+        for filename in filenames:
+            path = (current / filename).resolve()
+            if any(is_relative_to(path, ignore_root) for ignore_root in ignored):
+                continue
+            snapshot.add(path.relative_to(root))
+
+    return snapshot
 
 
 def deep_merge(base: Any, overlay: Any) -> Any:
@@ -326,6 +361,41 @@ def normalize_recipe(recipe: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def parse_use_mapping(reference: str) -> dict[str, str]:
+    if "." in reference:
+        fixture_name, output_name = reference.split(".", 1)
+    else:
+        fixture_name, output_name = reference, "state"
+    if not fixture_name:
+        raise SuiteError(f"Invalid fixture output reference: {reference!r}")
+    if not output_name:
+        raise SuiteError(f"Invalid fixture output reference: {reference!r}")
+    return {"fixture": fixture_name, "output": output_name}
+
+
+def normalize_use(use: Any) -> dict[str, Any]:
+    if use is None:
+        return {"fixtures": [], "bindings": {}}
+    if isinstance(use, str):
+        return {"fixtures": [use], "bindings": {}}
+    if isinstance(use, list):
+        if not all(isinstance(item, str) for item in use):
+            raise SuiteError(f"Fixture list must contain only strings: {use!r}")
+        return {"fixtures": deep_copy(use), "bindings": {}}
+    if isinstance(use, dict):
+        bindings: dict[str, dict[str, str]] = {}
+        fixtures: list[str] = []
+        for alias, reference in use.items():
+            if not isinstance(reference, str):
+                raise SuiteError(f"Use binding {alias!r} must be a string reference, got: {reference!r}")
+            binding = parse_use_mapping(reference)
+            bindings[alias] = binding
+            if binding["fixture"] not in fixtures:
+                fixtures.append(binding["fixture"])
+        return {"fixtures": fixtures, "bindings": bindings}
+    raise SuiteError(f"Invalid use specification: {use!r}")
+
+
 def normalize_raw_action(step: dict[str, Any]) -> dict[str, Any]:
     command = deep_copy(step["run"])
     action: dict[str, Any] = {"command": command}
@@ -474,7 +544,9 @@ def normalize_fixture(fixture: dict[str, Any], recipes: dict[str, Any]) -> dict[
 def normalize_test(test: dict[str, Any], recipes: dict[str, Any]) -> dict[str, Any]:
     normalized = deep_copy(test)
     if "use" in normalized:
-        normalized["use"] = as_list(normalized["use"])
+        normalized["use"] = normalize_use(normalized["use"])
+    else:
+        normalized["use"] = normalize_use(None)
     if "steps" in normalized:
         normalized["steps"] = [normalize_step(step, recipes) for step in as_list(normalized["steps"])]
     if "expect" in normalized:
@@ -528,6 +600,7 @@ class SuiteRunner:
         ensure_directory(self.fixture_root)
         ensure_directory(self.run_root)
         self.built_fixtures: dict[str, dict[str, Any]] = {}
+        self.validate_fixtures()
 
     def log(self, message: str) -> None:
         if self.verbose:
@@ -567,11 +640,11 @@ class SuiteRunner:
         return cwd_path
 
     def render_command(self, recipe: dict[str, Any], call_context: dict[str, Any]) -> list[str]:
-        command = render_value(deep_copy(recipe["command"]), call_context)
+        command = deep_copy(recipe["command"])
         if isinstance(command, str):
-            argv = shlex.split(command)
+            argv = [render_value(token, call_context) for token in shlex.split(command)]
         elif isinstance(command, list) and all(isinstance(item, str) for item in command):
-            argv = command
+            argv = [render_value(item, call_context) for item in command]
         else:
             raise SuiteError("Command must render to a string or a list of strings")
         if argv and "/" not in argv[0]:
@@ -588,6 +661,31 @@ class SuiteRunner:
 
     def resolve_probe_spec(self, op_name: str) -> dict[str, Any]:
         return resolve_probe_spec(op_name, self.recipes)
+
+    def validate_fixtures(self) -> None:
+        visiting: list[str] = []
+        visited: set[str] = set()
+
+        def dfs(name: str) -> None:
+            if name in visited:
+                return
+            if name in visiting:
+                cycle = visiting[visiting.index(name):] + [name]
+                raise SuiteError(f"Fixture dependency cycle detected: {' -> '.join(cycle)}")
+            if name not in self.fixtures:
+                raise SuiteError(f"Unknown fixture dependency: {name}")
+
+            visiting.append(name)
+            parent = self.fixtures[name].get("from")
+            if parent is not None:
+                if parent not in self.fixtures:
+                    raise SuiteError(f"Fixture {name} depends on unknown fixture {parent}")
+                dfs(parent)
+            visiting.pop()
+            visited.add(name)
+
+        for fixture_name in self.fixtures:
+            dfs(fixture_name)
 
     def materialize_action(self, action_spec: dict[str, Any]) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if "command" in action_spec:
@@ -612,6 +710,33 @@ class SuiteRunner:
             )
         raise SuiteError(f"Invalid action specification: {action_spec!r}")
 
+    def unexpected_created_paths(
+        self,
+        cwd: Path,
+        before: set[Path],
+        after: set[Path],
+        discovered: dict[str, str],
+    ) -> list[Path]:
+        cwd = cwd.resolve()
+        new_paths = sorted(after - before)
+        if not new_paths:
+            return []
+
+        declared = [Path(path_text).resolve() for path_text in discovered.values()]
+
+        def is_expected(relative_path: Path) -> bool:
+            absolute_path = (cwd / relative_path).resolve()
+            for output_path in declared:
+                if absolute_path == output_path:
+                    return True
+                if is_relative_to(output_path, absolute_path):
+                    return True
+                if output_path.exists() and output_path.is_dir() and is_relative_to(absolute_path, output_path):
+                    return True
+            return False
+
+        return [path for path in new_paths if not is_expected(path)]
+
     def apply_scope_defaults(self, overrides: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         scoped = deep_copy(overrides)
         fixture_name = scoped.pop("fixture", None)
@@ -625,11 +750,16 @@ class SuiteRunner:
 
         if "cwd" not in scoped and default_cwd is not None:
             scoped["cwd"] = default_cwd
-        default_state_name = context.get("_default_state_name")
-        if default_state_name is not None:
-            for key in ("state", "psi1", "psi2"):
-                if key not in scoped:
-                    scoped[key] = default_state_name
+        bound_paths = context.get("bindings", {})
+        current_state_path = context.get("_current_state_path")
+        for key in ("state", "psi1", "psi2"):
+            if key in scoped:
+                continue
+            if key in bound_paths:
+                scoped[key] = bound_paths[key]
+                continue
+            if current_state_path is not None:
+                scoped[key] = current_state_path
         return scoped
 
     def discover_outputs(
@@ -705,6 +835,12 @@ class SuiteRunner:
         cwd = self.resolve_cwd(spec, call_context)
         env = self.merged_env(spec, call_context)
         command = self.render_command(spec, call_context)
+        ignored_roots: list[Path] = []
+        if "MP_BINPATH" in env:
+            mp_binpath = Path(env["MP_BINPATH"]).resolve()
+            if is_relative_to(mp_binpath, cwd.resolve()):
+                ignored_roots.append(mp_binpath)
+        before_snapshot = snapshot_tree(cwd, ignore_roots=ignored_roots)
         self.log(f"[action] {' '.join(command)}")
         if self.explain:
             print(f"ACTION {action_name}")
@@ -736,6 +872,13 @@ class SuiteRunner:
                 f"stderr:\n{result.stderr}"
             )
         discovered = self.discover_outputs(spec, call_context, cwd)
+        after_snapshot = snapshot_tree(cwd, ignore_roots=ignored_roots)
+        unexpected = self.unexpected_created_paths(cwd, before_snapshot, after_snapshot, discovered)
+        if unexpected:
+            unexpected_text = "\n".join(f"  {path}" for path in unexpected)
+            raise SuiteError(
+                f"Action {action_name} created undeclared outputs in {cwd}:\n{unexpected_text}"
+            )
         if self.trace and discovered:
             print("  discovered outputs:")
             for name, value in discovered.items():
@@ -827,6 +970,42 @@ class SuiteRunner:
             if self.trace:
                 print(f"  assertion passed: equals actual={actual!r} expected={expected!r}")
             return
+        if kind == "matches":
+            pattern = str(compare["value"])
+            if re.search(pattern, str(actual)) is None:
+                raise SuiteError(f"Regex comparison failed: actual={actual!r} pattern={pattern!r}")
+            if self.trace:
+                print(f"  assertion passed: matches actual={actual!r} pattern={pattern!r}")
+            return
+        if kind == "contains":
+            expected = compare["value"]
+            if isinstance(actual, str):
+                ok = str(expected) in actual
+            else:
+                try:
+                    ok = expected in actual
+                except TypeError:
+                    ok = False
+            if not ok:
+                raise SuiteError(f"Contains comparison failed: actual={actual!r} expected={expected!r}")
+            if self.trace:
+                print(f"  assertion passed: contains actual={actual!r} expected={expected!r}")
+            return
+        if kind == "exists":
+            should_exist = bool(compare.get("value", True))
+            if isinstance(actual, (str, os.PathLike)):
+                exists = Path(actual).exists()
+            else:
+                exists = actual is not None
+            if exists != should_exist:
+                raise SuiteError(
+                    f"Exists comparison failed: actual={actual!r} exists={exists!r} expected={should_exist!r}"
+                )
+            if self.trace:
+                print(
+                    f"  assertion passed: exists actual={actual!r} exists={exists!r} expected={should_exist!r}"
+                )
+            return
         raise SuiteError(f"Unsupported comparison kind: {kind}")
 
     def run_steps(
@@ -846,7 +1025,9 @@ class SuiteRunner:
                 output_namespace[output_name][alias] = outputs[output_name]
                 published[alias] = outputs[output_name]
                 if output_name == "state":
-                    context["_default_state_name"] = Path(outputs[output_name]).name
+                    context["_current_state_path"] = outputs[output_name]
+                    context["bindings"]["state"] = outputs[output_name]
+                context["bindings"][alias] = outputs[output_name]
             context["artifacts"].update(published)
         return published
 
@@ -910,17 +1091,21 @@ class SuiteRunner:
 
         inherited_outputs = self.inherit_fixture_outputs(parent_info, fixture_dir)
         parent_context = {"dir": str(fixture_dir), **inherited_outputs} if parent_info is not None else {}
+        bindings: dict[str, str] = {}
+        if "state" in inherited_outputs:
+            bindings["state"] = inherited_outputs["state"]
 
         base_context = self.make_base_context()
         context: dict[str, Any] = {
             **base_context,
             "scratch": str(fixture_dir),
             "_default_cwd": str(fixture_dir),
-            "_default_state_name": None,
+            "_current_state_path": bindings.get("state"),
+            "bindings": deep_copy(bindings),
             "fixture": {"dir": str(fixture_dir)},
             "parent": deep_copy(parent_context),
             "fixtures": deep_copy(self.built_fixtures),
-            "artifacts": {},
+            "artifacts": deep_copy(bindings),
         }
         output_namespace: dict[str, dict[str, str]] = {}
         published = self.run_steps(self.fixture_steps(fixture_spec), context, output_namespace)
@@ -928,7 +1113,8 @@ class SuiteRunner:
         fixture_info.update(inherited_outputs)
         fixture_info.update(published)
         if "state" in fixture_info:
-            context["_default_state_name"] = Path(fixture_info["state"]).name
+            context["_current_state_path"] = fixture_info["state"]
+            context["bindings"]["state"] = fixture_info["state"]
         context["fixture"].update(fixture_info)
         if self.trace and fixture_info:
             print("  fixture outputs:")
@@ -943,9 +1129,14 @@ class SuiteRunner:
 
     def run_test(self, name: str) -> None:
         test_spec = self.tests[name]
+        use_spec = test_spec.get("use", {"fixtures": [], "bindings": {}})
         self.log_explain(f"TEST {name}")
-        if test_spec.get("use"):
-            self.log_explain(f"  uses fixtures: {', '.join(test_spec['use'])}")
+        if use_spec.get("fixtures"):
+            self.log_explain(f"  uses fixtures: {', '.join(use_spec['fixtures'])}")
+        if use_spec.get("bindings"):
+            self.log_explain("  bindings:")
+            for alias, binding in use_spec["bindings"].items():
+                self.log_explain(f"    {alias}: {binding['fixture']}.{binding['output']}")
         scratch = self.run_root / name
         if scratch.exists():
             shutil.rmtree(scratch)
@@ -953,7 +1144,7 @@ class SuiteRunner:
         self.log_explain(f"  scratch dir: {scratch}")
 
         fixture_cache_infos: dict[str, Any] = {}
-        for fixture_name in test_spec.get("use", []):
+        for fixture_name in use_spec.get("fixtures", []):
             fixture_cache_infos[fixture_name] = self.build_fixture(fixture_name)
 
         fixtures: dict[str, Any] = {}
@@ -964,22 +1155,42 @@ class SuiteRunner:
             )
 
         base_context = self.make_base_context()
-        default_cwd = None
-        default_state_name = None
-        if len(fixtures) == 1:
+        bindings: dict[str, str] = {}
+        for alias, binding in use_spec.get("bindings", {}).items():
+            fixture_name = binding["fixture"]
+            output_name = binding["output"]
+            if fixture_name not in fixtures:
+                raise SuiteError(f"Use binding references unknown fixture {fixture_name}")
+            if output_name not in fixtures[fixture_name]:
+                raise SuiteError(
+                    f"Use binding {alias} references missing output {fixture_name}.{output_name}"
+                )
+            bindings[alias] = fixtures[fixture_name][output_name]
+
+        if not bindings and len(fixtures) == 1:
             only_fixture = next(iter(fixtures.values()))
-            default_cwd = only_fixture["dir"]
             if "state" in only_fixture:
-                default_state_name = Path(only_fixture["state"]).name
+                bindings["state"] = only_fixture["state"]
+
+        default_cwd = str(scratch)
+        if len(fixtures) == 1:
+            default_cwd = next(iter(fixtures.values()))["dir"]
+        elif use_spec.get("bindings"):
+            bound_fixture_names = {binding["fixture"] for binding in use_spec["bindings"].values()}
+            if len(bound_fixture_names) == 1:
+                default_cwd = fixtures[next(iter(bound_fixture_names))]["dir"]
+
+        current_state_path = bindings.get("state")
         context: dict[str, Any] = {
             **base_context,
             "scratch": str(scratch),
             "_default_cwd": default_cwd,
-            "_default_state_name": default_state_name,
+            "_current_state_path": current_state_path,
             "fixtures": deep_copy(fixtures),
+            "bindings": deep_copy(bindings),
             "state": {},
             "lattice": {},
-            "artifacts": {},
+            "artifacts": deep_copy(bindings),
         }
 
         output_namespace: dict[str, dict[str, str]] = {"state": context["state"], "lattice": context["lattice"]}

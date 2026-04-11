@@ -22,6 +22,10 @@ Implemented features:
 - implicit fixture-scoped `cwd`
 - implicit current-state tracking for `state`, `psi1`, and `psi2`
 - bare tool names resolved against `--bin-dir`
+- fixture dependency validation, including cycle detection
+- action output enforcement: listed outputs must appear, and undeclared created
+  files are treated as errors
+- regex, contains, and exists comparisons in addition to `approx` and `equals`
 
 Not yet implemented:
 
@@ -139,6 +143,8 @@ The author-facing syntax is now shorter than the original canonical form:
   do not write `state: psi` either
 - single-fixture `use:` can be written as a scalar instead of a one-element
   list
+- `use:` can also bind named fixture outputs, for example
+  `psi1: left.state` and `psi2: right.state`
 
 The intended split is now:
 
@@ -152,6 +158,8 @@ Fixture scope rules:
 - fixture build and certify actions run in the fixture directory
 - tests that `use` a single fixture run steps and probes relative to that
   fixture by default
+- mapped `use:` bindings are resolved against the test-local materialized copy
+  of each fixture output, not the shared fixture cache
 - multi-fixture tests can override scope with `fixture: some_fixture`
 - raw `cwd:` still exists as an escape hatch, but is not part of ordinary
   authoring
@@ -167,7 +175,8 @@ Default state rules:
 Command rules:
 
 - action commands may be written as a shell-like string or as an argv list
-- the runner splits string commands with `shlex.split` rather than invoking a
-  shell
+- for string commands, the runner tokenizes the template first and then
+  substitutes placeholders per token, so placeholder values are not re-split by
+  whitespace
 - if the command name has no slash and exists in `--bin-dir`, the runner uses
   that binary automatically

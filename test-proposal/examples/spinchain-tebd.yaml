@@ -100,3 +100,14 @@ tests:
           json_path: cumulants[0].real
           approx: -0.4
           abs: 1e-12
+
+  imoments_cross_json_accepts_explicit_output_bindings:
+    use:
+      psi1: infinite_neel2_itebd_identity.state
+      psi2: infinite_neel2_itebd_identity.state
+    expect:
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: log_amplitude
+          approx: -0.4
+          abs: 1e-12
