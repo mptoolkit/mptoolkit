@@ -276,14 +276,15 @@ coverage without exploding the matrix.
 
 - [x] `spinlessfermion-u1.cpp` priority
 - [x] `hubbard-u1u1.cpp` priority
-- [ ] `hubbard-su2.cpp` priority
+- [x] `hubbard-u1su2.cpp` priority
+- [x] `hubbard-so4.cpp` priority
 - [x] `spinlessfermion-u1.cpp`
 - [ ] `spinlessfermionladder-u1u1.cpp`
 - [ ] `hubbard.cpp`
 - [x] `hubbard-u1u1.cpp`
 - [ ] `hubbard-su2.cpp`
-- [ ] `hubbard-so4.cpp`
-- [ ] `hubbard-u1su2.cpp`
+- [x] `hubbard-u1su2.cpp`
+- [x] `hubbard-so4.cpp`
 - [ ] `hubbardcylinder-u1su2.cpp`
 - [ ] `hubbardcylinder-u1su2-k.cpp`
 - [ ] `hubbardcylinder-u1su2-k2.cpp`
@@ -315,9 +316,9 @@ coverage. This list is the completion target for supported models.
 - [ ] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-u1.cpp`
 - [ ] `bosehubbard.cpp`
-- [ ] `hubbard-so4.cpp`
+- [x] `hubbard-so4.cpp`
 - [ ] `hubbard-su2.cpp`
-- [ ] `hubbard-u1su2.cpp`
+- [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-u1u1.cpp`
 - [ ] `hubbard.cpp`
 - [ ] `hubbardcylinder-u1su2-k.cpp`
@@ -358,7 +359,7 @@ coverage. This list is the completion target for supported models.
 
 - [x] Add one spin `su2` suite.
 - [x] Add one fermion `u1` suite.
-- [ ] Add one fermion `su2` suite.
+- [x] Add one fermion `su2` suite.
 - [x] Add one boson `u1` suite.
 - [ ] Add one ladder or cylinder suite.
 

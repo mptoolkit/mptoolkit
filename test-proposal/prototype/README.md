@@ -85,6 +85,18 @@ python3 test-proposal/prototype/run_suite.py \
   --bin-dir /home/ian/build/main-optimized
 ```
 
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/hubbard-u1su2-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
+```bash
+python3 test-proposal/prototype/run_suite.py \
+  test-proposal/examples/hubbard-so4-dmrg.yaml \
+  --bin-dir /home/ian/build/main-optimized
+```
+
 Debugging modes:
 
 ```bash
@@ -212,6 +224,22 @@ The first SU(2) spin-model slice exercises:
 and validates exact 2-site and 3-site total-spin sectors, including the
 current reduced-state conventions for non-scalar SU(2) states: norms equal to
 irrep dimensions and scalar-operator expectations in the reduced convention.
+
+The first reduced-symmetry Hubbard slices exercise:
+
+- `hubbard-u1su2`
+- `hubbard-so4`
+- `mp-construct`
+- `mp-dmrg`
+- `mp-expectation`
+- `mp-attr`
+- `mp-overlap`
+- `mp-norm`
+
+and validate two small exact sectors that are sensitive to the current
+non-abelian conventions: a `u1su2` one-particle hopping ground state, and an
+`so4` scalar `spinon:spinon` state created with explicit bond quantum numbers
+plus the orthogonal `spinon:holon` hopping sector.
 
 The author-facing syntax is now shorter than the original canonical form:
 

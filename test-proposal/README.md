@@ -53,6 +53,12 @@ Documents in this directory:
 - [examples/spinchain-su2-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/spinchain-su2-dmrg.yaml):
   Executable suite covering finite `spinchain-su2`, `mp-random`, `mp-dmrg`,
   reduced-state norms, and orthogonality between exact total-spin sectors.
+- [examples/hubbard-u1su2-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/hubbard-u1su2-dmrg.yaml):
+  Executable suite covering finite `hubbard-u1su2`, reduced-spin one-particle
+  DMRG, and reduced hopping correlators.
+- [examples/hubbard-so4-dmrg.yaml](/home/ian/sync/git/main/test-proposal/examples/hubbard-so4-dmrg.yaml):
+  Executable suite covering finite `hubbard-so4`, explicit bond-QN
+  construction, reduced norms, and orthogonality between exact SO(4) sectors.
 - [examples/identity-tebd.yaml](/home/ian/sync/git/main/test-proposal/examples/identity-tebd.yaml):
   A worked example showing fixtures, derived fixtures, probes, and test reuse.
 
