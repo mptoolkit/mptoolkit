@@ -11,7 +11,8 @@ Examples:
 
 ```bash
 /home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug
+  --bin-dir /home/ian/build/main-debug \
+  --forever
 ```
 
 ```bash
@@ -105,7 +106,7 @@ Run the default overnight debug stress test:
 ```bash
 /home/ian/sync/git/main/scripts/mptk-stress-test \
   --bin-dir /home/ian/build/main-debug \
-  --iterations 1000
+  --forever
 ```
 
 Stop on the first failure and keep every log:
@@ -113,7 +114,7 @@ Stop on the first failure and keep every log:
 ```bash
 /home/ian/sync/git/main/scripts/mptk-stress-test \
   --bin-dir /home/ian/build/main-debug \
-  --iterations 1000 \
+  --forever \
   --fail-fast \
   --keep-all-logs
 ```

@@ -18,6 +18,7 @@ Options:
   --test NAME         Restrict to a single test inside the suite.
   --iterations N      Number of iterations to run.
                       Default: 100
+  --forever           Run until interrupted.
   --log-dir DIR       Directory for stress logs.
                       Default: /tmp/mptk-stress-<suite>-<timestamp>
   --fail-fast         Stop after the first failure.
@@ -29,6 +30,7 @@ Options:
 Examples:
   mptk-stress-test --bin-dir /home/ian/build/main-debug
   mptk-stress-test --bin-dir /home/ian/build/main-debug --iterations 1000
+  mptk-stress-test --bin-dir /home/ian/build/main-debug --forever
   mptk-stress-test --bin-dir /home/ian/build/main-debug --test rerunning_single_site_aklt_dmrg_preserves_exact_energy_and_spt_projective_phase
 EOF
 }
@@ -40,10 +42,14 @@ bin_dir=$PWD
 suite_spec="spinchain-aklt-spt-uc1-rerun"
 test_name=""
 iterations=100
+iterations_set=0
+run_forever=0
 log_dir=""
 fail_fast=0
 keep_all_logs=0
 runner_flags=()
+interrupted=0
+summary_printed=0
 
 resolve_suite() {
     local spec=$1
@@ -85,7 +91,12 @@ while (($#)); do
         --iterations)
             [[ $# -ge 2 ]] || { printf 'Missing argument for --iterations\n' >&2; exit 2; }
             iterations=$2
+            iterations_set=1
             shift 2
+            ;;
+        --forever)
+            run_forever=1
+            shift
             ;;
         --log-dir)
             [[ $# -ge 2 ]] || { printf 'Missing argument for --log-dir\n' >&2; exit 2; }
@@ -119,6 +130,11 @@ done
 suite=$(resolve_suite "$suite_spec")
 suite_name=$(basename "$suite" .yaml)
 
+if (( run_forever && iterations_set )); then
+    printf '%s\n' '--forever cannot be combined with --iterations' >&2
+    exit 2
+fi
+
 if ! [[ $iterations =~ ^[0-9]+$ ]] || (( iterations < 1 )); then
     printf 'Invalid --iterations value: %s\n' "$iterations" >&2
     exit 2
@@ -134,9 +150,46 @@ summary_file="${log_dir}/summary.txt"
 failures_file="${log_dir}/failures.txt"
 touch "$summary_file" "$failures_file"
 
+print_summary() {
+    local end_epoch elapsed total
+
+    if (( summary_printed )); then
+        return
+    fi
+    summary_printed=1
+
+    end_epoch=$(date +%s)
+    elapsed=$((end_epoch - start_epoch))
+    total=$((passes + failures))
+
+    printf '\n'
+    printf 'Overall summary: %d total, %d passed, %d failed\n' \
+        "$total" "$passes" "$failures" | tee -a "$summary_file"
+    if (( interrupted )); then
+        printf 'Stopped by interrupt\n' | tee -a "$summary_file"
+    fi
+    printf 'Elapsed: %ds\n' "$elapsed" | tee -a "$summary_file"
+    if (( failures )); then
+        printf 'Failure logs:\n' | tee -a "$summary_file"
+        cat "$failures_file"
+    fi
+    printf 'Summary file: %s\n' "$summary_file"
+}
+
+handle_interrupt() {
+    interrupted=1
+}
+
+trap handle_interrupt INT TERM
+trap print_summary EXIT
+
 printf 'Suite: %s\n' "$suite" | tee -a "$summary_file"
 printf 'Bin dir: %s\n' "$bin_dir" | tee -a "$summary_file"
-printf 'Iterations: %s\n' "$iterations" | tee -a "$summary_file"
+if (( run_forever )); then
+    printf 'Iterations: forever\n' | tee -a "$summary_file"
+else
+    printf 'Iterations: %s\n' "$iterations" | tee -a "$summary_file"
+fi
 if [[ -n $test_name ]]; then
     printf 'Test: %s\n' "$test_name" | tee -a "$summary_file"
 fi
@@ -147,7 +200,14 @@ passes=0
 failures=0
 start_epoch=$(date +%s)
 
-for ((i = 1; i <= iterations; ++i)); do
+for ((i = 1; ; ++i)); do
+    if (( interrupted )); then
+        break
+    fi
+    if (( ! run_forever && i > iterations )); then
+        break
+    fi
+
     log_file="${log_dir}/iter-$(printf '%04d' "$i").log"
     cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
     cmd+=("${runner_flags[@]}")
@@ -155,7 +215,11 @@ for ((i = 1; i <= iterations; ++i)); do
         cmd+=("$test_name")
     fi
 
-    printf '[%s/%s] ' "$i" "$iterations"
+    if (( run_forever )); then
+        printf '[%s/forever] ' "$i"
+    else
+        printf '[%s/%s] ' "$i" "$iterations"
+    fi
     if "${cmd[@]}" >"$log_file" 2>&1; then
         passes=$((passes + 1))
         printf 'PASS\n'
@@ -164,6 +228,12 @@ for ((i = 1; i <= iterations; ++i)); do
             rm -f "$log_file"
         fi
     else
+        rc=$?
+        if (( interrupted )) && (( rc == 130 || rc == 143 )); then
+            printf 'STOP\n'
+            rm -f "$log_file"
+            break
+        fi
         failures=$((failures + 1))
         printf 'FAIL (%s)\n' "$log_file"
         printf 'FAIL %04d %s\n' "$i" "$log_file" | tee -a "$summary_file" >>"$failures_file"
@@ -172,19 +242,6 @@ for ((i = 1; i <= iterations; ++i)); do
         fi
     fi
 done
-
-end_epoch=$(date +%s)
-elapsed=$((end_epoch - start_epoch))
-
-printf '\n'
-printf 'Overall summary: %d total, %d passed, %d failed\n' \
-    "$((passes + failures))" "$passes" "$failures" | tee -a "$summary_file"
-printf 'Elapsed: %ds\n' "$elapsed" | tee -a "$summary_file"
-if (( failures )); then
-    printf 'Failure logs:\n' | tee -a "$summary_file"
-    cat "$failures_file"
-fi
-printf 'Summary file: %s\n' "$summary_file"
 
 if (( failures )); then
     exit 1

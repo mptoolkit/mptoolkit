@@ -46,7 +46,8 @@ For manual overnight stress checks of a single suite, use:
 
 ```bash
 /home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug
+  --bin-dir /home/ian/build/main-debug \
+  --forever
 ```
 
 The default stress target is `spinchain-aklt-spt-uc1-rerun.yaml`.
@@ -56,7 +57,7 @@ Common stress-test patterns:
 ```bash
 /home/ian/sync/git/main/scripts/mptk-stress-test \
   --bin-dir /home/ian/build/main-debug \
-  --iterations 1000
+  --forever
 ```
 
 ```bash
