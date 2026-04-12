@@ -79,7 +79,7 @@ Common stress-test patterns:
 
 Stress-test behavior:
 
-- default log directory is `/tmp/mptk-stress-<suite>-<timestamp>/`
+- default log directory is `/tmp/mptk-stress-<suite>-<timestamp>-<pid>/`
 - `summary.txt` records pass/fail by iteration
 - failed iteration logs are kept automatically
 - passing iteration logs are deleted unless `--keep-all-logs` is given

@@ -907,6 +907,8 @@ class SuiteRunner:
                 path = Path(rendered_path)
                 if not path.is_absolute():
                     path = cwd / path
+                if not path.exists():
+                    raise SuiteError(f"Declared output path was not created: {path}")
                 discovered[output_name] = str(path.resolve())
                 continue
             if kind == "glob":
@@ -919,7 +921,7 @@ class SuiteRunner:
                     raise SuiteError(f"No outputs matched glob {pattern_path}")
                 select = discover.get("select", "first")
                 if select == "newest":
-                    chosen = max(matches, key=lambda path: path.stat().st_mtime)
+                    chosen = max(matches, key=lambda path: (path.stat().st_mtime_ns, str(path)))
                 else:
                     chosen = matches[0]
                 discovered[output_name] = str(chosen.resolve())

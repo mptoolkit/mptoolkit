@@ -83,7 +83,7 @@ If there are failures, it also prints the failed iteration log paths.
 
 By default the script writes logs under:
 
-- `/tmp/mptk-stress-<suite>-<timestamp>/`
+- `/tmp/mptk-stress-<suite>-<timestamp>-<pid>/`
 
 The directory contains:
 

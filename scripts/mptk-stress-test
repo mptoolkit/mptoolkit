@@ -20,7 +20,7 @@ Options:
                       Default: 100
   --forever           Run until interrupted.
   --log-dir DIR       Directory for stress logs.
-                      Default: /tmp/mptk-stress-<suite>-<timestamp>
+                      Default: /tmp/mptk-stress-<suite>-<timestamp>-<pid>
   --fail-fast         Stop after the first failure.
   --keep-all-logs     Keep per-iteration logs for successful runs too.
   --trace             Pass --trace through to the runner.
@@ -142,7 +142,7 @@ fi
 
 if [[ -z $log_dir ]]; then
     timestamp=$(date +%Y%m%d-%H%M%S)
-    log_dir="/tmp/mptk-stress-${suite_name}-${timestamp}"
+    log_dir="/tmp/mptk-stress-${suite_name}-${timestamp}-$$"
 fi
 
 mkdir -p "$log_dir"
