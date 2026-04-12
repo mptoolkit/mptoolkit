@@ -8,6 +8,9 @@ Scope:
 - cover the supported toolkit and model surface in this repository
 - eventually cover every model generator in `models/`
 - explicitly do **not** treat `models/contrib/` as required coverage
+- explicitly do **not** require declarative integration coverage for binaries
+  listed under `experimental-tools` in `Makefile.in` unless they are later
+  promoted into the supported tool set
 
 The point is not to cross every tool with every model. The point is to build a
 test catalog that gives strong confidence in the high-level workflows while the
@@ -73,6 +76,14 @@ When in doubt, ask:
 - would a user reasonably depend on it in production workflows?
 
 If the answer is yes, it probably deserves direct coverage.
+
+Tool-scope rule:
+
+- treat the `tools` list in `Makefile.in` as the required integration-test
+  surface
+- treat the `experimental-tools` list as deferred by default
+- if an experimental tool becomes supported, move it into the required list and
+  then add coverage here
 
 ## High-Priority Risk Areas
 
@@ -221,7 +232,6 @@ Finite-algorithm note:
 ### Correlation / Spectrum / Fluctuation Families
 
 - [x] `mp-allcorrelation`
-- [ ] `mp-fluctuation`
 - [x] `mp-icorrelation`
 - [ ] `mp-ibc-correlation`
 - [x] `mp-ispectrum`
@@ -230,7 +240,7 @@ Finite-algorithm note:
 
 - [x] `mp-apply`
 - [x] `mp-iapply`
-- [ ] `mp-ibc-apply`
+- [x] `mp-ibc-apply`
 - [x] `mp-idivide`
 - [ ] `mp-matrix`
 - [ ] `mp-aux-matrix`
@@ -239,9 +249,9 @@ Finite-algorithm note:
 
 ### IBC Families
 
-- [ ] `mp-ibc-create`
+- [x] `mp-ibc-create`
 - [ ] `mp-ibc-dmrg`
-- [ ] `mp-ibc-overlap`
+- [x] `mp-ibc-overlap`
 - [ ] `mp-ibc-splice`
 - [ ] `mp-ibc-tdvp`
 - [ ] `mp-ibc-wavepacket`
@@ -261,12 +271,25 @@ Finite-algorithm note:
 - [ ] `mp-finegrain`
 - [ ] `mp-finite-create`
 
+### Deferred Experimental Tools
+
+These binaries currently live in `experimental-tools` in `Makefile.in`, so
+they are not part of the required declarative integration-test surface unless
+they are promoted later.
+
+- `mp-fluctuation`
+
 ## Known Gaps Inside Covered Tools
 
 - [ ] `mp-change-lattice` should handle states that project completely out of
   the target local basis without aborting. A manual `bosehubbard-u1` check from
   `N=5` to `N=2` with the state `0:1:3:0` currently triggers a tensor-basis
   precondition failure instead of returning the zero state or a clear error.
+- [ ] `mp-ibc-dmrg` currently segfaults on simple `mp-ibc-create` outputs,
+  including identical-boundary `spinchain-u1` IBC states with both empty and
+  one-site windows. The crash happens before the initial `Timestep=0` output,
+  so the current bug is in the initialization/first-energy path rather than the
+  declarative harness.
 
 ## Representative Model-Family Checklist
 

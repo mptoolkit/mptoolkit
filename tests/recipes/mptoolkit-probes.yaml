@@ -69,6 +69,18 @@ recipes:
     probe: mp-ioverlap --mag --quiet {psi1} {psi2}
     extract: last_float
 
+  ibc_overlap_real:
+    probe: mp-ibc-overlap --real --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_overlap_imag:
+    probe: mp-ibc-overlap --imag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_overlap_mag:
+    probe: mp-ibc-overlap --mag --quiet {psi1} {psi2}
+    extract: last_float
+
   allcorrelation_real:
     probe: mp-allcorrelation --quiet --real {state} {operator1} {operator2}
     defaults:

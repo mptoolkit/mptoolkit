@@ -54,6 +54,7 @@ Representative suites:
 - `suites/spinchain-expectation.yaml`: finite construction and scalar probes
 - `suites/spinchain-dmrg.yaml`: finite ground-state workflow
 - `suites/spinchain-tebd.yaml`: finite and infinite evolution workflows
+- `suites/spinchain-ibc.yaml`: first infinite-boundary-condition workflow checks
 - `suites/spinchain-transforms.yaml`: scale/normalize/conjugation behavior
 - `suites/spinchain-infinite-analysis.yaml`: moments and spectrum-style output
 
