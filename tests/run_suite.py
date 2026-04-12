@@ -16,7 +16,13 @@ import sys
 import tempfile
 from typing import Any
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "fatal: PyYAML is required to run integration suites. "
+        "Install it with `python3 -m pip install pyyaml`."
+    ) from exc
 
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
@@ -610,11 +616,15 @@ def normalize_assertion(assertion: dict[str, Any], recipes: dict[str, Any]) -> d
     if "probe" in assertion and "compare" in assertion:
         normalized = deep_copy(assertion)
         probe_spec = normalized["probe"]
-        if isinstance(probe_spec, dict):
+        if isinstance(probe_spec, str):
+            normalized["probe"] = {"op": probe_spec, "with": deep_copy(assertion.get("with", {}))}
+        elif isinstance(probe_spec, dict):
             op_name = probe_spec.pop("op", probe_spec.pop("recipe", None))
             if op_name is None:
                 raise SuiteError(f"Probe assertion is missing an operation name: {assertion!r}")
             normalized["probe"] = {"op": op_name, "with": deep_copy(probe_spec.get("with", {}))}
+        else:
+            raise SuiteError(f"Invalid probe specification: {probe_spec!r}")
         return normalized
 
     if "probe" in assertion:
