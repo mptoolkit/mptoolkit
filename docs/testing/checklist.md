@@ -279,13 +279,13 @@ coverage without exploding the matrix.
 - [x] `spinchain-su2`
 - [x] `spinchain-z2`
 - [x] `spinchain-spin2-su2`
-- [ ] `spinladder.cpp`
-- [ ] `spinladder-su2.cpp`
-- [ ] `spinladder-z2.cpp`
-- [ ] `spincylinder.cpp`
-- [ ] `spincylinder-u1.cpp`
-- [ ] `spincylinder-su2.cpp`
-- [ ] `spincylinder-z2.cpp`
+- [x] `spinladder.cpp`
+- [x] `spinladder-su2.cpp`
+- [x] `spinladder-z2.cpp`
+- [x] `spincylinder.cpp`
+- [x] `spincylinder-u1.cpp`
+- [x] `spincylinder-su2.cpp`
+- [x] `spincylinder-z2.cpp`
 - [ ] `spinorbitchain.cpp`
 - [ ] `spinorbitchain-u1u1.cpp`
 
@@ -296,8 +296,8 @@ coverage without exploding the matrix.
 - [x] `hubbard-u1su2.cpp` priority
 - [x] `hubbard-so4.cpp` priority
 - [x] `spinlessfermion-u1.cpp`
-- [ ] `spinlessfermionladder-u1u1.cpp`
-- [ ] `hubbard.cpp`
+- [x] `spinlessfermionladder-u1u1.cpp`
+- [x] `hubbard.cpp`
 - [x] `hubbard-u1u1.cpp`
 - [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
@@ -311,12 +311,12 @@ coverage without exploding the matrix.
 
 ### Boson
 
-- [ ] `bosehubbard.cpp`
+- [x] `bosehubbard.cpp`
 - [x] `bosehubbard-u1.cpp`
-- [ ] `bosehubbard-u1-trap.cpp`
+- [x] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-ladder-u1.cpp`
-- [ ] `bosehubbard-flux-2leg-u1.cpp`
-- [ ] `bosehubbard-flux-3leg-u1.cpp`
+- [x] `bosehubbard-flux-2leg-u1.cpp`
+- [x] `bosehubbard-flux-3leg-u1.cpp`
 - [ ] `bosehubbard-2component-u1u1.cpp`
 - [ ] `bosehubbard-2component-u1z2.cpp`
 
@@ -327,17 +327,17 @@ coverage. This list is the completion target for supported models.
 
 - [ ] `bosehubbard-2component-u1u1.cpp`
 - [ ] `bosehubbard-2component-u1z2.cpp`
-- [ ] `bosehubbard-flux-2leg-u1.cpp`
-- [ ] `bosehubbard-flux-3leg-u1.cpp`
+- [x] `bosehubbard-flux-2leg-u1.cpp`
+- [x] `bosehubbard-flux-3leg-u1.cpp`
 - [x] `bosehubbard-ladder-u1.cpp`
-- [ ] `bosehubbard-u1-trap.cpp`
+- [x] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-u1.cpp`
-- [ ] `bosehubbard.cpp`
+- [x] `bosehubbard.cpp`
 - [x] `hubbard-so4.cpp`
 - [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-u1u1.cpp`
-- [ ] `hubbard.cpp`
+- [x] `hubbard.cpp`
 - [ ] `hubbardcylinder-u1su2-k.cpp`
 - [ ] `hubbardcylinder-u1su2-k2.cpp`
 - [ ] `hubbardcylinder-u1su2.cpp`
@@ -348,16 +348,16 @@ coverage. This list is the completion target for supported models.
 - [x] `spinchain-su2.cpp`
 - [x] `spinchain-u1.cpp`
 - [x] `spinchain-z2.cpp`
-- [ ] `spinchain.cpp`
-- [ ] `spincylinder-su2.cpp`
-- [ ] `spincylinder-u1.cpp`
-- [ ] `spincylinder-z2.cpp`
-- [ ] `spincylinder.cpp`
-- [ ] `spinladder-su2.cpp`
-- [ ] `spinladder-z2.cpp`
-- [ ] `spinladder.cpp`
+- [x] `spinchain.cpp`
+- [x] `spincylinder-su2.cpp`
+- [x] `spincylinder-u1.cpp`
+- [x] `spincylinder-z2.cpp`
+- [x] `spincylinder.cpp`
+- [x] `spinladder-su2.cpp`
+- [x] `spinladder-z2.cpp`
+- [x] `spinladder.cpp`
 - [x] `spinlessfermion-u1.cpp`
-- [ ] `spinlessfermionladder-u1u1.cpp`
+- [x] `spinlessfermionladder-u1u1.cpp`
 - [ ] `spinorbitchain-u1u1.cpp`
 - [ ] `spinorbitchain.cpp`
 

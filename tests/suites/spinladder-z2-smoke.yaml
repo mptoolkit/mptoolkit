@@ -1,0 +1,51 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinladder-z2 -o lat
+    outputs:
+      lattice: lat
+
+  parity_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5s:0.5a
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_default_two_leg_z2_ladder_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: spin ladder with Z_2 symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Z:Z2"
+      - lattice_info_text:
+          contains: "Unit cell size: 2"
+
+  z2_ladder_product_state_supports_exact_identity_moments:
+    use: parity_neel2
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 1.0
+          abs: 1e-12

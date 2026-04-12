@@ -1,0 +1,59 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: bosehubbard-flux-2leg-u1 -o lat
+    outputs:
+      lattice: lat
+
+  rung_occupancy_01:
+    from: lat
+    run: mp-construct -l lat -o psi 0:1
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_two_leg_flux_ladder_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: Bosonic 2-leg ladder with flux"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1)"
+      - lattice_info_text:
+          contains: "Unit cell size: 2"
+
+  two_leg_flux_product_state_supports_exact_identity_moments:
+    use: rung_occupancy_01
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 1.0
+          abs: 1e-12
