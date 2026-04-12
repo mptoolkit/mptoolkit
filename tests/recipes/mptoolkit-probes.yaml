@@ -85,6 +85,19 @@ recipes:
     probe: mp-ibc-overlap --mag --quiet {psi1} {psi2}
     extract: last_float
 
+  ibc_correlation_real:
+    probe: mp-ibc-correlation --quiet --real -w {prefix} -t {timestep} -n {num_steps} --xmin {xmin} -x {xmax}
+    defaults:
+      num_steps: 0
+      xmin: 0
+      xmax: 0
+      x: 0
+      time: "-0.0"
+    extract:
+      line_pattern:
+        pattern: "{time} {x} %(float:value)"
+        capture: value
+
   allcorrelation_real:
     probe: mp-allcorrelation --quiet --real {state} {operator1} {operator2}
     defaults:

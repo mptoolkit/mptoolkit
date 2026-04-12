@@ -233,7 +233,7 @@ Finite-algorithm note:
 
 - [x] `mp-allcorrelation`
 - [x] `mp-icorrelation`
-- [ ] `mp-ibc-correlation`
+- [x] `mp-ibc-correlation`
 - [x] `mp-ispectrum`
 
 ### Apply / Matrix / Operator Families
@@ -253,16 +253,16 @@ Finite-algorithm note:
 - [ ] `mp-ibc-dmrg`
 - [x] `mp-ibc-overlap`
 - [ ] `mp-ibc-splice`
-- [ ] `mp-ibc-tdvp`
-- [ ] `mp-ibc-wavepacket`
+- [x] `mp-ibc-tdvp`
+- [x] `mp-ibc-wavepacket`
 
 ### Excitations / EA Families
 
 - [ ] `mp-excitation-ansatz`
-- [ ] `mp-ea-create`
+- [x] `mp-ea-create`
 - [ ] `mp-ea-dmrg`
-- [ ] `mp-ea-extend`
-- [ ] `mp-ea-change-k`
+- [x] `mp-ea-extend`
+- [x] `mp-ea-change-k`
 - [ ] `mp-ea-moments`
 
 ### Specialized / Lower Priority
@@ -293,6 +293,12 @@ they are promoted later.
   one-site windows. The crash happens before the initial `Timestep=0` output,
   so the current bug is in the initialization/first-energy path rather than the
   declarative harness.
+- [ ] `mp-ibc-splice` currently aborts on a trivial self-splice of identical
+  `spinchain-u1` IBC states (`mp-ibc-splice ibc ibc -o out`) with a
+  `pheap::pvalue_ptr` null-pointer precondition failure.
+- [ ] `mp-ea-moments` currently aborts on the trivial self-overlap of a
+  one-site `spinchain-u1` EA state created with `mp-ea-create "lat:Sm(0)"`,
+  hitting the ARPACK precondition `n > 0 is false` before producing output.
 
 ## Representative Model-Family Checklist
 
