@@ -1,0 +1,54 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_up1:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  aux_matrix_up1:
+    from: infinite_up1
+    run: mp-aux-matrix -w psi -l lat --rho rho.mm -p "id.mm=prod_unit(I(0))" --matrixmarket
+    outputs:
+      rho: rho.mm
+      identity_matrix: id.mm
+    certify:
+      - file_text:
+          path: "{rho}"
+          contains: "1 1"
+      - file_text:
+          path: "{rho}"
+          contains: "1 1 1 0"
+      - file_text:
+          path: "{identity_matrix}"
+          contains: "1 1"
+      - file_text:
+          path: "{identity_matrix}"
+          contains: "1 1 1 0"
+
+tests:
+  mp_aux_matrix_writes_the_identity_and_density_matrices:
+    use:
+      rho: aux_matrix_up1.rho
+      identity_matrix: aux_matrix_up1.identity_matrix
+    expect:
+      - file_text:
+          path: "{rho}"
+          contains: "1 1 1 0"
+      - file_text:
+          path: "{identity_matrix}"
+          contains: "1 1 1 0"

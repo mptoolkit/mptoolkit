@@ -31,6 +31,10 @@ recipes:
     probe: mp-history {state}
     extract: full_text
 
+  file_text:
+    probe: /bin/sed -n 1,80p {path}
+    extract: full_text
+
   lattice_info_text:
     probe: mp-lattice-info {lattice}
     defaults:

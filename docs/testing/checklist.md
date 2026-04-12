@@ -243,9 +243,9 @@ Finite-algorithm note:
 - [x] `mp-ibc-apply`
 - [x] `mp-idivide`
 - [ ] `mp-matrix`
-- [ ] `mp-aux-matrix`
+- [x] `mp-aux-matrix`
 - [ ] `mp-aux-algebra`
-- [ ] `mp-wigner-eckart`
+- [x] `mp-wigner-eckart`
 
 ### IBC Families
 
@@ -267,9 +267,9 @@ Finite-algorithm note:
 
 ### Specialized / Lower Priority
 
-- [ ] `mp-coarsegrain`
-- [ ] `mp-finegrain`
-- [ ] `mp-finite-create`
+- [x] `mp-coarsegrain`
+- [x] `mp-finegrain`
+- [x] `mp-finite-create`
 
 ### Deferred Experimental Tools
 
@@ -285,6 +285,9 @@ they are promoted later.
   the target local basis without aborting. A manual `bosehubbard-u1` check from
   `N=5` to `N=2` with the state `0:1:3:0` currently triggers a tensor-basis
   precondition failure instead of returning the zero state or a clear error.
+- [ ] `mp-matrix` currently aborts in debug builds on simple `spinchain-u1`
+  product iMPS inputs, so it is not yet covered declaratively even though
+  `mp-aux-matrix` is.
 - [ ] `mp-ibc-dmrg` currently segfaults on simple `mp-ibc-create` outputs,
   including identical-boundary `spinchain-u1` IBC states with both empty and
   one-site windows. The crash happens before the initial `Timestep=0` output,

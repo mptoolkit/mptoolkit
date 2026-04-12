@@ -1,0 +1,95 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  finite_neel4_ref:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: -0.5
+          abs: 1e-12
+
+  finite_neel4_from_infinite:
+    from: infinite_neel2
+    run: mp-finite-create -r 2 psi psi_fin
+    outputs:
+      state: psi_fin
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: -0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Length = 4"
+      - info_text:
+          contains: "WavefunctionType=Finite"
+
+tests:
+  finite_create_matches_the_finite_reference_state_up_to_global_phase:
+    use:
+      psi1: finite_neel4_ref.state
+      psi2: finite_neel4_from_infinite.state
+    expect:
+      - overlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  finite_create_preserves_local_observables:
+    use: finite_neel4_from_infinite
+    expect:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: -0.5
+          abs: 1e-12

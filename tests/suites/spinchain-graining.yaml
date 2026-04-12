@@ -1,0 +1,73 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  infinite_neel2_coarse:
+    from: infinite_neel2
+    run: mp-coarsegrain psi psi_cg
+    outputs:
+      state: psi_cg
+    certify:
+      - info_text:
+          contains: "Unit cell size = 1"
+      - info_text:
+          contains: "WavefunctionType=Infinite"
+
+  infinite_neel2_roundtrip:
+    from: infinite_neel2_coarse
+    run: mp-finegrain -l lat psi_cg psi_fg
+    outputs:
+      state: psi_fg
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+tests:
+  coarsegrain_reduces_the_unit_cell_size:
+    use: infinite_neel2_coarse
+    expect:
+      - info_text:
+          contains: "Unit cell size = 1"
+
+  finegrain_inverts_the_simple_neel_coarsegraining:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_roundtrip.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12

@@ -1,0 +1,61 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat_su2:
+    run: spinchain-su2 -o lat
+    outputs:
+      lattice: lat
+
+  finite_singlet_su2:
+    from: lat_su2
+    steps:
+      - run: mp-random -l lat -u 2 -q 0 -o psi -s 1 --quiet
+        outputs:
+          state: psi
+      - run: mp-dmrg -w psi -H lat:H_J1 -m 8x2
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = S:SU(2)"
+      - attr_text:
+          attribute: LastEnergy
+          equals: "-0.7499999999999998"
+
+  finite_singlet_u1:
+    from: finite_singlet_su2
+    run: mp-wigner-eckart "Sz:U(1)" psi psi_u1
+    outputs:
+      state: psi_u1
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = Sz:U(1)"
+      - info_text:
+          contains: "Length = 2"
+      - info_text:
+          contains: "Quantum number = 0"
+
+tests:
+  wigner_eckart_projects_the_su2_singlet_to_u1:
+    use: finite_singlet_u1
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = Sz:U(1)"
+
+  wigner_eckart_preserves_basic_finite_state_metadata:
+    use: finite_singlet_u1
+    expect:
+      - info_text:
+          contains: "Length = 2"
+      - info_text:
+          contains: "WavefunctionType=Finite"
