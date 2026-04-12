@@ -20,6 +20,21 @@ fixtures:
           approx: 0.5
           abs: 1e-12
 
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi_neel 0.5:-0.5
+    outputs:
+      state: psi_neel
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
   aux_matrix_up1:
     from: infinite_up1
     run: mp-aux-matrix -w psi -l lat --rho rho.mm -p "id.mm=prod_unit(I(0))" --matrixmarket
@@ -52,3 +67,17 @@ tests:
       - file_text:
           path: "{identity_matrix}"
           contains: "1 1 1 0"
+
+  mp_aux_algebra_reports_trivial_unitary_commutation_phase:
+    use: infinite_neel2
+    expect:
+      - aux_algebra_commutator_real:
+          operator1: "prod_unit(exp(i*pi*Sz(0)))"
+          operator2: "prod_unit(exp(i*pi*Sz(0)))"
+          approx: 1.0
+          abs: 1e-12
+      - aux_algebra_commutator_imag:
+          operator1: "prod_unit(exp(i*pi*Sz(0)))"
+          operator2: "prod_unit(exp(i*pi*Sz(0)))"
+          approx: 0.0
+          abs: 1e-12

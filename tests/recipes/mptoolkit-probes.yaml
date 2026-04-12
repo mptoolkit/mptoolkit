@@ -98,6 +98,24 @@ recipes:
         pattern: "{time} {x} %(float:value)"
         capture: value
 
+  aux_algebra_commutator_real:
+    probe: mp-aux-algebra -w {state} -l {lattice} --quiet {operator1} {operator2}
+    defaults:
+      lattice: lat
+    extract:
+      line_pattern:
+        pattern: "0 1 %(float:real) %(float:imag)"
+        capture: real
+
+  aux_algebra_commutator_imag:
+    probe: mp-aux-algebra -w {state} -l {lattice} --quiet {operator1} {operator2}
+    defaults:
+      lattice: lat
+    extract:
+      line_pattern:
+        pattern: "0 1 %(float:real) %(float:imag)"
+        capture: imag
+
   allcorrelation_real:
     probe: mp-allcorrelation --quiet --real {state} {operator1} {operator2}
     defaults:

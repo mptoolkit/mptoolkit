@@ -244,7 +244,7 @@ Finite-algorithm note:
 - [x] `mp-idivide`
 - [ ] `mp-matrix`
 - [x] `mp-aux-matrix`
-- [ ] `mp-aux-algebra`
+- [x] `mp-aux-algebra`
 - [x] `mp-wigner-eckart`
 
 ### IBC Families
