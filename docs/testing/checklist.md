@@ -311,6 +311,7 @@ coverage without exploding the matrix.
 - [x] `spinchain-su2`
 - [x] `spinchain-z2`
 - [x] `spinchain-spin2-su2`
+  Includes AKLT ground-state and SPT projective-commutator checks.
 - [x] `spinladder.cpp`
 - [x] `spinladder-su2.cpp`
 - [x] `spinladder-z2.cpp`

@@ -1,0 +1,90 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain -S 1 -o lat
+    outputs:
+      lattice: lat
+
+  aklt_ground_uc1:
+    from: lat
+    run: mp-idmrg-s3e -e -b -u 1 -w psi -H lat:H_AKLT -m 8x32
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_AKLT"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.666666666666667
+          abs: 1e-5
+      - info_text:
+          contains: "Unit cell size = 1"
+      - aux_algebra_commutator_real:
+          operator1: X
+          operator2: Z
+          approx: -1.0
+          abs: 1e-5
+      - aux_algebra_commutator_imag:
+          operator1: X
+          operator2: Z
+          approx: 0.0
+          abs: 1e-10
+
+tests:
+  aklt_single_site_ground_state_has_the_expected_energy_density:
+    use: aklt_ground_uc1
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_AKLT"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.666666666666667
+          abs: 1e-5
+
+  aklt_single_site_ground_state_shows_the_expected_spt_xz_projective_phase:
+    use: aklt_ground_uc1
+    expect:
+      - aux_algebra_commutator_real:
+          operator1: X
+          operator2: Z
+          approx: -1.0
+          abs: 1e-5
+      - aux_algebra_commutator_imag:
+          operator1: X
+          operator2: Z
+          approx: 0.0
+          abs: 1e-10
+
+  aklt_single_site_ground_state_shows_the_expected_spt_xy_projective_phase:
+    use: aklt_ground_uc1
+    expect:
+      - aux_algebra_commutator_real:
+          operator1: X
+          operator2: Y
+          approx: -1.0
+          abs: 1e-5
+      - aux_algebra_commutator_imag:
+          operator1: X
+          operator2: Y
+          approx: 0.0
+          abs: 1e-10
+
+  aklt_single_site_ground_state_shows_the_expected_spt_yz_projective_phase:
+    use: aklt_ground_uc1
+    expect:
+      - aux_algebra_commutator_real:
+          operator1: Y
+          operator2: Z
+          approx: -1.0
+          abs: 1e-5
+      - aux_algebra_commutator_imag:
+          operator1: Y
+          operator2: Z
+          approx: 0.0
+          abs: 1e-10

@@ -53,6 +53,8 @@ Representative suites:
 
 - `suites/spinchain-expectation.yaml`: finite construction and scalar probes
 - `suites/spinchain-dmrg.yaml`: finite ground-state workflow
+- `suites/spinchain-aklt-spt.yaml`: AKLT SPT commutator checks via
+  `mp-aux-algebra`
 - `suites/spinchain-tebd.yaml`: finite and infinite evolution workflows
 - `suites/spinchain-ibc.yaml`: first infinite-boundary-condition workflow checks
 - `suites/spinchain-ibc-dynamics.yaml`: IBC TDVP and correlation prefix checks
