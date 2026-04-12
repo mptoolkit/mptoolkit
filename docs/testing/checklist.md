@@ -121,6 +121,7 @@ Immediate implications:
 - [ ] Add better failure summaries for missing/extra output files.
 - [ ] Add first-class binding syntax for non-state outputs in examples and docs.
 - [ ] Add suite tags or tiers for fast PR vs slow/nightly coverage.
+- [x] Add a manual stress runner for intermittent-failure hunting.
 
 Framework policy:
 
@@ -128,6 +129,14 @@ Framework policy:
   depending on `--force`
 - treat inconsistent `--force` handling as a tool bug, not as required test
   harness behavior
+
+Manual stress-test note:
+
+- use [scripts/mptk-stress-test](/home/ian/sync/git/main/scripts/mptk-stress-test)
+  for overnight or repeated-attempt debugging of a single suspicious suite
+- do not treat the stress runner as part of the normal green CI path
+- keep ordinary integration coverage deterministic; use stress tests to turn
+  suspected flakes into concrete saved failure logs
 
 ## Shared Fixture Library Checklist
 

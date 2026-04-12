@@ -42,6 +42,52 @@ Typical usage from a build directory:
 The wrapper defaults `--bin-dir` to the current working directory, so it is
 intended to be run from the build tree.
 
+For manual overnight stress checks of a single suite, use:
+
+```bash
+/home/ian/sync/git/main/scripts/mptk-stress-test \
+  --bin-dir /home/ian/build/main-debug
+```
+
+The default stress target is `spinchain-aklt-spt-uc1-rerun.yaml`.
+
+Common stress-test patterns:
+
+```bash
+/home/ian/sync/git/main/scripts/mptk-stress-test \
+  --bin-dir /home/ian/build/main-debug \
+  --iterations 1000
+```
+
+```bash
+/home/ian/sync/git/main/scripts/mptk-stress-test \
+  --bin-dir /home/ian/build/main-debug \
+  --suite spinchain-tebd \
+  --test itdvp_projected_amplitude_tracks_time_dependent_imaginary_time_identity \
+  --iterations 200 \
+  --fail-fast
+```
+
+```bash
+/home/ian/sync/git/main/scripts/mptk-stress-test \
+  --bin-dir /home/ian/build/main-debug \
+  --keep-all-logs \
+  --trace \
+  --iterations 20
+```
+
+Stress-test behavior:
+
+- default log directory is `/tmp/mptk-stress-<suite>-<timestamp>/`
+- `summary.txt` records pass/fail by iteration
+- failed iteration logs are kept automatically
+- passing iteration logs are deleted unless `--keep-all-logs` is given
+- `--fail-fast` stops on the first failure
+
+See also:
+
+- [docs/testing/stress-testing.md](/home/ian/sync/git/main/docs/testing/stress-testing.md)
+
 Supported debug modes:
 
 - `--explain`: show fixture dependencies, scratch directories, resolved
