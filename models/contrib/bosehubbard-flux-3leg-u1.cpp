@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/bosehubbard-flux-3leg-u1.cpp
+// models/contrib/bosehubbard-flux-3leg-u1.cpp
 //
 // Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 //
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
          ("k1" , "rung local current between legs 1,2")
          ;
       OpDescriptions.add_functions()
-         ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
+         ("H", "Hamiltonian, parameterized by K, alpha (flux), U, J")
          ;
 
       if (vm.count("help") || !vm.count("out"))

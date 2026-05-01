@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/bosehubbard-flux-2leg-u1.cpp
+// models/contrib/bosehubbard-flux-2leg-u1.cpp
 //
 // Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 //
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
          ("jTotalU0", "exact current at U=0")
          ;
       OpDescriptions.add_functions()
-         ("H", "Hamiltonian, parametized by K, alpha (flux), U, J")
+         ("H", "Hamiltonian, parameterized by K, alpha (flux), U, J")
          ("jTotal", "Total current, function of alpha")
          ("jTotalU0", "Current at U=0 as a function of K, alpha (number, not an operator)")
          ;

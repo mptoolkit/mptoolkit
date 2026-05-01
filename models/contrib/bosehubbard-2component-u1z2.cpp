@@ -2,10 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/spinorbitchain.cpp
+// models/contrib/bosehubbard-2component-u1z2.cpp
 //
-// Copyright (C) 2004-2022 Ian McCulloch <ian@qusim.net>
-// Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
+// Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,8 +21,9 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin.h"
+#include "models/boson-2component-u1z2.h"
 #include "common/terminal.h"
+#include "common/prog_options.h"
 #include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
@@ -32,13 +32,14 @@ int main(int argc, char** argv)
 {
    try
    {
-      half_int Spin = 0.5;
       std::string FileName;
+      int MaxN = 5;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
+         ("NumBosons,N", prog_opt::value(&MaxN),
+          FormatDefault("Maximum number of bosons per site", MaxN).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -50,16 +51,15 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("S-T spin chain");
+      OpDescriptions.set_description("Two-component Bose-Hubbard model with U(1)xZ2 symmetry");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_Sz"  , "nearest neighbor spin coupling Sz Sz")
-         ("H_St"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_S"   , "nearest neighbor spin = H_Sz + H_St")
-         ("H_Tz"  , "nearest neighbor pseudospin coupling Tz Tz")
-         ("H_Tt"  , "nearest neighbor pseudospin exchange (1/2)(Tp Tm + Tm Tp)")
-         ("H_T"   , "nearest neighbor pseudospin = H_Tz + H_Tt")
-         ("H_ST"  , "nearest neighbor spin * pseudospin")
+         ("H_J"   , "nearest-neighbor hopping")
+         ("H_K"   , "tunnelling  between components")
+         ("H_U"   , "intra-species Coulomb repulsion")
+         ("H_U12" , "inter-species Coulomb repulsion")
+         ("D"     , "difference in occupation number between components\n")
+         ("D2"    , "squared difference in occuptation number between components\n")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -67,39 +67,34 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << OpDescriptions;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
-      LatticeSite SiteS = SpinSite(Spin);
-      LatticeSite SiteT = SpinSite(Spin);
-      UnitCell Cell(SiteS.GetSymmetryList(), SiteS, SiteT);
-
-      // On the 2-site unit cell, S^a[0] is the S sites, S^a[1] is the T sites
-      UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
-      UnitCellOperator Tp(Cell, "Tp"), Tm(Cell, "Tm"), Tz(Cell, "Tz");
-
-      // Unit cell operators S and T
-      Sp(0) = Sp(0)[0];
-      Sm(0) = Sm(0)[0];
-      Sz(0) = Sz(0)[0];
-
-      Tp(0) = Sp(0)[1];
-      Tm(0) = Sm(0)[1];
-      Tz(0) = Sz(0)[1];
-
+      LatticeSite Site = Boson2ComponentU1Z2(MaxN);
+      UnitCell Cell = Site;
       InfiniteLattice Lattice(&Cell);
 
-      Lattice["H_Sz"] = sum_unit(Sz(0)*Sz(1));
-      Lattice["H_St"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
-      Lattice["H_S"]  = Lattice["H_Sz"] + Lattice["H_St"];
+      UnitCellOperator BH_A(Cell, "BH_A"), B_A(Cell, "B_A"), N_A(Cell, "N_A"), N2_A(Cell, "N2_A"),
+         BH_S(Cell, "BH_S"), B_S(Cell, "B_S"), N_S(Cell, "N_S"), N2_S(Cell, "N2_S");
 
-      Lattice["H_Tz"] = sum_unit(Tz(0)*Tz(1));
-      Lattice["H_Tt"] = 0.5 * sum_unit(Tp(0)*Tm(1) + Tm(0)*Tp(1));
-      Lattice["H_T"]  = Lattice["H_Tz"] + Lattice["H_Tt"];
 
-      Lattice["H_ST"] = sum_unit( ( Sz(0)*Sz(1) + 0.5 * (Sp(0)*Sm(1) + Sm(0)*Sp(1)) )
-                                 *( Tz(0)*Tz(1) + 0.5 * (Tp(0)*Tm(1) + Tm(0)*Tp(1)) ) );
+      UnitCellMPO HJ = -(BH_A(0)*B_A(1) + B_A(0)*BH_A(1) + BH_S(0)*B_S(1) + B_S(0)*BH_S(1));
+      UnitCellMPO HK = -(N_S(0) - N_A(0));
+
+      UnitCellMPO PairHopping = pow(BH_S(0)*B_A(0),2) + pow(BH_A(0)*B_S(0),2);
+
+      UnitCellMPO HU = N_S(0)*N_A(0) + 0.25 * (N2_S(0) + N2_A(0) + PairHopping);
+      UnitCellMPO HU12 = 0.25 * (N2_S(0) + N2_A(0) - PairHopping);
+
+      UnitCellMPO D = BH_A(0)*B_S(0) + BH_S(0)*B_A(0);  // the order parameter, is antisymmetric in this basis
+
+      Lattice["H_J"]   = sum_unit(HJ);
+      Lattice["H_K"]   = sum_unit(HK);
+      Lattice["H_U"]   = sum_unit(HU);
+      Lattice["H_U12"] = sum_unit(HU12);
+      Lattice["D"]     = sum_unit(D);
+      Lattice["D2"]    = sum_unit(D*D);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

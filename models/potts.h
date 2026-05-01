@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/potts.h
+// models/potts.h
 //
 // Copyright (C) 2021 Ian McCulloch <ian@qusim.net>
 //

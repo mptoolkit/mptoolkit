@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/bosehubbard-2component-u1u1.cpp
+// models/contrib/bosehubbard-2component-u1u1.cpp
 //
 // Copyright (C) 2015-2023 Ian McCulloch <ian@qusim.net>
 //
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Bosonic 2-leg ladder with U(1)xU(1) symmetry");
+      OpDescriptions.set_description("Two-component Bose-Hubbard model with U(1)xU(1) symmetry");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_JA"   , "nearest-neighbor hopping for the A-species")
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << OpDescriptions << 'n';
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 

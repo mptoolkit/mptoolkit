@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/spinorbitchain-u1u1.cpp
+// models/clock-zn.cpp
 //
-// Copyright (C) 2004-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2026 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/spin-u1.h"
+#include "models/clock-zn.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -31,13 +31,13 @@ int main(int argc, char** argv)
 {
    try
    {
-      half_int Spin = 0.5;
+      int q = 3;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
+         ("q,q", prog_opt::value(&q), "number of states, supported range 2..12 [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -49,57 +49,29 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xU(1) S-T spin chain");
+      OpDescriptions.set_description("q-state clock model with Z_q symmetry");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_Sz"  , "nearest neighbor spin coupling Sz Sz")
-         ("H_St"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_S"   , "nearest neighbor spin = H_Sz + H_St")
-         ("H_Tz"  , "nearest neighbor pseudospin coupling Tz Tz")
-         ("H_Tt"  , "nearest neighbor pseudospin exchange (1/2)(Tp Tm + Tm Tp)")
-         ("H_T"   , "nearest neighbor pseudospin = H_Tz + H_Tt")
-         ("H_ST"  , "nearest neighbor spin * pseudospin")
+         ("H_J"    , "nearest neighbor coupling -sum_i (Omega_i OmegaD_{i+1} + OmegaD_i Omega_{i+1})")
+         ("H_g"    , "transverse field -sum_i (Gamma_i + GammaD_i)")
          ;
-
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << OpDescriptions;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
-      LatticeSite SiteS = SpinU1(Spin, "Sz");
-      LatticeSite SiteT = SpinU1(Spin, "Tz");
-      SymmetryList ST("Sz:U(1),Tz:U(1)");
-      UnitCell Cell(ST, SiteS, SiteT);
-
-      // On the 2-site unit cell, S^a[0] is the S sites, S^a[1] is the T sites
-      UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
-      UnitCellOperator Tp(Cell, "Tp"), Tm(Cell, "Tm"), Tz(Cell, "Tz");
-
-      // Unit cell operators S and T
-      Sp(0) = Sp(0)[0];
-      Sm(0) = Sm(0)[0];
-      Sz(0) = Sz(0)[0];
-
-      Tp(0) = Sp(0)[1];
-      Tm(0) = Sm(0)[1];
-      Tz(0) = Sz(0)[1];
-
+      LatticeSite Site = ZnClockSite(q);
+      UnitCell Cell(Site);
+      UnitCellOperator Gamma(Cell, "Gamma"), GammaD(Cell, "GammaD");
+      UnitCellOperator Omega(Cell, "Omega"), OmegaD(Cell, "OmegaD");
       InfiniteLattice Lattice(&Cell);
 
-      Lattice["H_Sz"] = sum_unit(Sz(0)*Sz(1));
-      Lattice["H_St"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
-      Lattice["H_S"]  = Lattice["H_Sz"] + Lattice["H_St"];
-
-      Lattice["H_Tz"] = sum_unit(Tz(0)*Tz(1));
-      Lattice["H_Tt"] = 0.5 * sum_unit(Tp(0)*Tm(1) + Tm(0)*Tp(1));
-      Lattice["H_T"]  = Lattice["H_Tz"] + Lattice["H_Tt"];
-
-      Lattice["H_ST"] = sum_unit( ( Sz(0)*Sz(1) + 0.5 * (Sp(0)*Sm(1) + Sm(0)*Sp(1)) )
-                                 *( Tz(0)*Tz(1) + 0.5 * (Tp(0)*Tm(1) + Tm(0)*Tp(1)) ) );
+      Lattice["H_J"] = -sum_unit(Omega(0)*OmegaD(1) + OmegaD(0)*Omega(1));
+      Lattice["H_g"] = -sum_unit(Gamma(0) + GammaD(0));
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

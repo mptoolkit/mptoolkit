@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/clock-zn.h
+// models/clock-zn.h
 //
 // Copyright (C) 2026 Ian McCulloch <ian@qusim.net>
 //

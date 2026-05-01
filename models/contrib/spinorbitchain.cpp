@@ -2,9 +2,10 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/hubbardcylinder-u1su2-k2.cpp
+// models/contrib/spinorbitchain.cpp
 //
-// Copyright (C) 2012-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2004-2022 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2024 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,24 +22,23 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/fermion-u1su2.h"
+#include "models/spin.h"
 #include "common/terminal.h"
-#include "common/prog_options.h"
+#include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
-
-int const NN = 8;
 
 int main(int argc, char** argv)
 {
    try
    {
+      half_int Spin = 0.5;
       std::string FileName;
-      int w = NN;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -50,78 +50,56 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard cylinder");
+      OpDescriptions.set_description("S-T spin chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx" , "nearest neighbor hopping in y-direction")
-         ("H_ty" , "nearest neighbor hopping in x-direction")
-         ("H_t"  , "nearest neighbor hopping")
-         ("H_U"  , "on-site Coulomb interaction n_up*n_down")
-         ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+         ("H_Sz"  , "nearest neighbor spin coupling Sz Sz")
+         ("H_St"  , "nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
+         ("H_S"   , "nearest neighbor spin = H_Sz + H_St")
+         ("H_Tz"  , "nearest neighbor pseudospin coupling Tz Tz")
+         ("H_Tt"  , "nearest neighbor pseudospin exchange (1/2)(Tp Tm + Tm Tp)")
+         ("H_T"   , "nearest neighbor pseudospin = H_Tz + H_Tt")
+         ("H_ST"  , "nearest neighbor spin * pseudospin")
          ;
 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: " << argv[0] << " [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << "Operators:\n" << OpDescriptions;
+         std::cerr << OpDescriptions;
          return 1;
       }
 
-      std::vector<LatticeSite> Sites;
-      for (int k = 0; k < w; ++k)
-      {
-         Sites.push_back(FermionU1SU2());
-      }
+      LatticeSite SiteS = SpinSite(Spin);
+      LatticeSite SiteT = SpinSite(Spin);
+      UnitCell Cell(SiteS.GetSymmetryList(), SiteS, SiteT);
 
-      std::vector<LatticeSite> Sites2 = {Sites[0], Sites[4], Sites[1], Sites[5], Sites[2], Sites[6],
-                                         Sites[3], Sites[7]};
+      // On the 2-site unit cell, S^a[0] is the S sites, S^a[1] is the T sites
+      UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
+      UnitCellOperator Tp(Cell, "Tp"), Tm(Cell, "Tm"), Tz(Cell, "Tz");
 
-      std::vector<int> kk = {0,2,4,6,1,3,5,7};
-      //std::vector<int> kk = {0,1,2,3,4,5,6,7};
+      // Unit cell operators S and T
+      Sp(0) = Sp(0)[0];
+      Sm(0) = Sm(0)[0];
+      Sz(0) = Sz(0)[0];
 
-      UnitCell Cell(Sites2);
+      Tp(0) = Sp(0)[1];
+      Tm(0) = Sm(0)[1];
+      Tz(0) = Sz(0)[1];
+
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
-         Hu(Cell, "Hu"), N(Cell, "N");
 
-      UnitCellMPO tx, ty, Pd, hu;
+      Lattice["H_Sz"] = sum_unit(Sz(0)*Sz(1));
+      Lattice["H_St"] = 0.5 * sum_unit(Sp(0)*Sm(1) + Sm(0)*Sp(1));
+      Lattice["H_S"]  = Lattice["H_Sz"] + Lattice["H_St"];
 
-      QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2>
-         QN(Cell.GetSymmetryList());
+      Lattice["H_Tz"] = sum_unit(Tz(0)*Tz(1));
+      Lattice["H_Tt"] = 0.5 * sum_unit(Tp(0)*Tm(1) + Tm(0)*Tp(1));
+      Lattice["H_T"]  = Lattice["H_Tz"] + Lattice["H_Tt"];
 
-      for (int k = 0; k < w; ++k)
-      {
-         ty += std::cos(math_const::pi*2*k / w) * N(0)[k];
-      }
-
-      for (int k = 0; k < w; ++k)
-      {
-         tx += dot(CH(0)[k], C(1)[k]) + dot(C(0)[k], CH(1)[k]);
-      }
-
-      for (int k = 0; k < w; ++k)
-      {
-         for (int l = 0; l < w; ++l)
-         {
-            for (int m = 0; m < w; ++m)
-            {
-               UnitCellMPO Op = (1.0/w) * prod(CH(0)[kk[k]], C(0)[kk[l]], QN(0,0))
-                  * prod(CH(0)[kk[m]], C(0)[kk[(k-l+m+w)%w]], QN(0,0));
-               CHECK(Op.size() != 0);
-               hu += Op;
-            }
-         }
-         Pd -= N(0)[k];
-      }
-      Pd += hu;
-
-      Lattice["H_tx"] = sum_unit(tx);
-      Lattice["H_ty"] = sum_unit(ty);
-      Lattice["H_t"] = sum_unit(tx+ty);
-      Lattice["H_Us"] = sum_unit(Pd);
-      Lattice["H_U"] = sum_unit(hu);
+      Lattice["H_ST"] = sum_unit( ( Sz(0)*Sz(1) + 0.5 * (Sp(0)*Sm(1) + Sm(0)*Sp(1)) )
+                                 *( Tz(0)*Tz(1) + 0.5 * (Tp(0)*Tm(1) + Tm(0)*Tp(1)) ) );
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

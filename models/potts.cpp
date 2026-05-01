@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/contrib/potts-zn.cpp
+// models/potts.cpp
 //
-// Copyright (C) 2026 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2004-2021 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/contrib/clock-zn.h"
+#include "models/potts.h"
 #include "common/terminal.h"
 #include <boost/program_options.hpp>
 
@@ -31,13 +31,13 @@ int main(int argc, char** argv)
 {
    try
    {
-      int q = 3;
+      int q = 2;
       std::string FileName;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("q,q", prog_opt::value(&q), "number of states, supported range 2..12 [default 3]")
+         (",q", prog_opt::value(&q), "number of states [default 2]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -49,13 +49,12 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("q-state Potts model with Z_q symmetry");
+      OpDescriptions.set_description("q-state Potts model; after arXiv:1702.02675v1");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J"    , "nearest neighbor coupling -sum_i sum_{k=1}^{q-1} Omega_i^k Omega_{i+1}^{q-k}")
          ("H_g"    , "transverse field -sum_i sum_{k=1}^{q-1} Gamma_i^k")
          ;
-
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
@@ -65,14 +64,15 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = ZnClockSite(q);
+      LatticeSite Site = PottsSite(q);
       UnitCell Cell(Site);
       UnitCellOperator Gamma(Cell, "Gamma"), Omega(Cell, "Omega");
+      UnitCellOperator I(Cell, "I"); // identity operator
       InfiniteLattice Lattice(&Cell);
 
       for (int k = 1; k < q; ++k)
       {
-         Lattice["H_J"] += -sum_unit(pow(Omega(0), k)*pow(Omega(1), q-k));
+         Lattice["H_J"] += -sum_unit(pow(Omega(0),k)*pow(Omega(1),q-k));
          Lattice["H_g"] += -sum_unit(pow(Gamma(0), k));
       }
 

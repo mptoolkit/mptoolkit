@@ -2,9 +2,9 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/hubbardcylinder-u1su2-k.cpp
+// models/potts-zn.cpp
 //
-// Copyright (C) 2012-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2026 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,24 +21,23 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/fermion-u1su2-k.h"
+#include "models/clock-zn.h"
 #include "common/terminal.h"
-#include "common/prog_options.h"
+#include <boost/program_options.hpp>
 
 namespace prog_opt = boost::program_options;
-
-int const NN = 8;
 
 int main(int argc, char** argv)
 {
    try
    {
+      int q = 3;
       std::string FileName;
-      int w = NN;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("q,q", prog_opt::value(&q), "number of states, supported range 2..12 [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -50,78 +49,32 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.set_description("q-state Potts model with Z_q symmetry");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx" , "nearest neighbor hopping in y-direction")
-         ("H_ty" , "nearest neighbor hopping in x-direction")
-         ("H_t"  , "nearest neighbor hopping")
-         ("H_U"  , "on-site Coulomb interaction n_up*n_down")
-         ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+         ("H_J"    , "nearest neighbor coupling -sum_i sum_{k=1}^{q-1} Omega_i^k Omega_{i+1}^{q-k}")
+         ("H_g"    , "transverse field -sum_i sum_{k=1}^{q-1} Gamma_i^k")
          ;
 
       if (vm.count("help") || !vm.count("out"))
       {
          print_copyright(std::cerr);
-         std::cerr << "usage: " << argv[0] << " [options]\n";
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cerr << "Operators:\n" << OpDescriptions;
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
-      std::vector<LatticeSite> Sites;
-      for (int k = 0; k < w; ++k)
-      {
-         Sites.push_back(FermionU1SU2_K<NN>(k));
-      }
-
-      std::vector<LatticeSite> Sites2 = {Sites[0], Sites[4], Sites[1], Sites[5], Sites[2], Sites[6],
-                                         Sites[3], Sites[7]};
-
-      //std::vector<int> kk = {0,2,4,6,1,3,5,7};
-      std::vector<int> kk = {0,1,2,3,4,5,6,7};
-
-      UnitCell Cell(Sites);
+      LatticeSite Site = ZnClockSite(q);
+      UnitCell Cell(Site);
+      UnitCellOperator Gamma(Cell, "Gamma"), Omega(Cell, "Omega");
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
-         Hu(Cell, "Hu"), N(Cell, "N");
 
-      UnitCellMPO tx, ty, Pd, hu;
-
-      QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2,
-         QuantumNumbers::Zn<NN>> QN(Cell.GetSymmetryList());
-
-      for (int k = 0; k < w; ++k)
+      for (int k = 1; k < q; ++k)
       {
-         ty += std::cos(math_const::pi*2*k / w) * N(0)[k];
+         Lattice["H_J"] += -sum_unit(pow(Omega(0), k)*pow(Omega(1), q-k));
+         Lattice["H_g"] += -sum_unit(pow(Gamma(0), k));
       }
-
-      for (int k = 0; k < w; ++k)
-      {
-         tx += dot(CH(0)[k], C(1)[k]) + dot(C(0)[k], CH(1)[k]);
-      }
-
-      for (int k = 0; k < w; ++k)
-      {
-         for (int l = 0; l < w; ++l)
-         {
-            for (int m = 0; m < w; ++m)
-            {
-               UnitCellMPO Op = (1.0/w) * prod(CH(0)[kk[k]], C(0)[kk[l]], QN(0,0,k-l))
-                  * prod(CH(0)[kk[m]], C(0)[kk[(k-l+m+w)%w]], QN(0,0,l-k));
-               CHECK(Op.size() != 0);
-               hu += Op;
-            }
-         }
-         Pd -= N(0)[k];
-      }
-      Pd += hu;
-
-      Lattice["H_tx"] = sum_unit(tx);
-      Lattice["H_ty"] = sum_unit(ty);
-      Lattice["H_t"] = sum_unit(tx+ty);
-      Lattice["H_Us"] = sum_unit(Pd);
-      Lattice["H_U"] = sum_unit(hu);
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);
