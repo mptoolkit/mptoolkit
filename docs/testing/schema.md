@@ -290,7 +290,7 @@ command: ["mp-expectation", "{state}", "lat:Sz(0)"]
 
 Text output matching should be line-oriented by default and use a small pattern
 language with typed placeholders. See
-[pattern-language.md](/home/ian/sync/git/main/docs/testing/pattern-language.md).
+[pattern-language.md](pattern-language.md).
 
 The intention is that novice test authors write:
 

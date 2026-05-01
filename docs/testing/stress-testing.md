@@ -2,7 +2,7 @@
 
 This note documents the manual stress-test wrapper:
 
-- [scripts/mptk-stress-test](/home/ian/sync/git/main/scripts/mptk-stress-test)
+- [scripts/mptk-stress-test](../../scripts/mptk-stress-test)
 
 It is intended for hunting intermittent failures that are too rare or too slow
 to turn into ordinary CI regressions.
@@ -10,21 +10,21 @@ to turn into ordinary CI regressions.
 Examples:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --forever
 ```
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --iterations 1000 \
   --fail-fast
 ```
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --suite spinchain-tebd \
   --test itdvp_projected_amplitude_tracks_time_dependent_imaginary_time_identity \
   --iterations 200
@@ -34,8 +34,8 @@ Examples:
 
 Use the ordinary runner and wrapper for normal integration coverage:
 
-- [tests/run_suite.py](/home/ian/sync/git/main/tests/run_suite.py)
-- [scripts/mptk-test](/home/ian/sync/git/main/scripts/mptk-test)
+- [tests/run_suite.py](../../tests/run_suite.py)
+- [scripts/mptk-test](../../scripts/mptk-test)
 
 Use `mptk-stress-test` when:
 
@@ -52,7 +52,7 @@ focused debugging, not for ordinary `make test-integration`.
 
 If no suite is given, the script stresses:
 
-- [tests/suites/spinchain-aklt-spt-uc1-rerun.yaml](/home/ian/sync/git/main/tests/suites/spinchain-aklt-spt-uc1-rerun.yaml)
+- [tests/suites/spinchain-aklt-spt-uc1-rerun.yaml](../../tests/suites/spinchain-aklt-spt-uc1-rerun.yaml)
 
 That suite exercises the warm-start rerun of single-site AKLT iDMRG, which is a
 good probe of the infinite-wavefunction orthogonalization path.
@@ -64,7 +64,7 @@ test.
 
 Per iteration it:
 
-- runs [tests/run_suite.py](/home/ian/sync/git/main/tests/run_suite.py)
+- runs [tests/run_suite.py](../../tests/run_suite.py)
 - writes the raw output to a per-iteration log file
 - records pass/fail in a summary file
 - deletes passing logs by default, so failed iterations stand out
@@ -104,16 +104,16 @@ If you want a stable location for a longer investigation, pass:
 Run the default overnight debug stress test:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --forever
 ```
 
 Stop on the first failure and keep every log:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --forever \
   --fail-fast \
   --keep-all-logs
@@ -122,8 +122,8 @@ Stop on the first failure and keep every log:
 Stress one specific test inside a suite:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --suite spinchain-aklt-spt-uc1-rerun \
   --test rerunning_single_site_aklt_dmrg_preserves_exact_energy_and_spt_projective_phase \
   --iterations 500
@@ -132,8 +132,8 @@ Stress one specific test inside a suite:
 Add runner verbosity for a shorter debugging session:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --iterations 20 \
   --trace \
   --keep-all-logs
@@ -161,9 +161,9 @@ The stress wrapper does not replace the normal integration suite.
 
 Use:
 
-- [scripts/mptk-test](/home/ian/sync/git/main/scripts/mptk-test) for regular
+- [scripts/mptk-test](../../scripts/mptk-test) for regular
   development and pre-push checks
-- [scripts/mptk-stress-test](/home/ian/sync/git/main/scripts/mptk-stress-test)
+- [scripts/mptk-stress-test](../../scripts/mptk-stress-test)
   for repeated attempts at one suspicious case
 
 That separation is intentional: the main suite should stay deterministic and

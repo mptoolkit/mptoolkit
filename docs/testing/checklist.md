@@ -132,7 +132,7 @@ Framework policy:
 
 Manual stress-test note:
 
-- use [scripts/mptk-stress-test](/home/ian/sync/git/main/scripts/mptk-stress-test)
+- use [scripts/mptk-stress-test](../../scripts/mptk-stress-test)
   for overnight or repeated-attempt debugging of a single suspicious suite
 - do not treat the stress runner as part of the normal green CI path
 - keep ordinary integration coverage deterministic; use stress tests to turn

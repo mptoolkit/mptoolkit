@@ -2,6 +2,61 @@
 
 This directory contains the declarative MPToolkit integration test system.
 
+## Quick Start
+
+Build MPToolkit first, then run the integration wrapper from the build
+directory. The wrapper uses the current directory as `--bin-dir`, so it can find
+programs such as `mp-construct`, `mp-itebd`, and `spinchain-u1`.
+
+Run all integration suites:
+
+```bash
+cd /path/to/mptoolkit-build
+/path/to/mptoolkit-source/scripts/mptk-test
+```
+
+Run one suite:
+
+```bash
+cd /path/to/mptoolkit-build
+/path/to/mptoolkit-source/scripts/mptk-test spinchain-tebd
+```
+
+Run one named test inside one suite:
+
+```bash
+cd /path/to/mptoolkit-build
+/path/to/mptoolkit-source/scripts/mptk-test \
+  spinchain-tebd \
+  --test itebd_and_itdvp_real_time_ising_match_phase_and_fidelity_per_unit_cell
+```
+
+Run from the source tree by passing the build directory explicitly:
+
+```bash
+cd /path/to/mptoolkit-source
+scripts/mptk-test --bin-dir /path/to/mptoolkit-build spinchain-tebd
+```
+
+Run the lower-level Python runner directly when debugging a single suite:
+
+```bash
+cd /path/to/mptoolkit-source
+python3 tests/run_suite.py \
+  tests/suites/spinchain-tebd.yaml \
+  --bin-dir /path/to/mptoolkit-build \
+  --trace
+```
+
+Useful runner flags:
+
+- `--trace`: print command output, extracted probe values, and assertion details
+- `--explain`: show fixture dependencies, scratch directories, and resolved
+  commands
+- `--work-root DIR`: keep fixture and test outputs under `DIR` instead of a
+  temporary directory
+- `--dump-ir`: print the normalized suite representation for one suite
+
 Layout:
 
 - `run_suite.py`: the test runner
@@ -14,39 +69,11 @@ isolated directories, and checks results with typed probes such as norms,
 overlaps, expectation values, attributes, JSON fields, and line-pattern
 matches.
 
-Typical usage from the source tree:
-
-```bash
-python3 tests/run_suite.py \
-  tests/suites/spinchain-tebd.yaml \
-  --bin-dir /home/ian/build/main-optimized
-```
-
-```bash
-python3 tests/run_suite.py \
-  tests/suites/spinchain-tebd.yaml \
-  --bin-dir /home/ian/build/main-optimized \
-  --trace
-```
-
-Typical usage from a build directory:
-
-```bash
-/home/ian/sync/git/main/scripts/mptk-test
-```
-
-```bash
-/home/ian/sync/git/main/scripts/mptk-test spinchain-tebd
-```
-
-The wrapper defaults `--bin-dir` to the current working directory, so it is
-intended to be run from the build tree.
-
 For manual overnight stress checks of a single suite, use:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --forever
 ```
 
@@ -55,14 +82,14 @@ The default stress target is `spinchain-aklt-spt-uc1-rerun.yaml`.
 Common stress-test patterns:
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --forever
 ```
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --suite spinchain-tebd \
   --test itdvp_projected_amplitude_tracks_time_dependent_imaginary_time_identity \
   --iterations 200 \
@@ -70,8 +97,8 @@ Common stress-test patterns:
 ```
 
 ```bash
-/home/ian/sync/git/main/scripts/mptk-stress-test \
-  --bin-dir /home/ian/build/main-debug \
+/path/to/mptoolkit-source/scripts/mptk-stress-test \
+  --bin-dir /path/to/mptoolkit-build \
   --keep-all-logs \
   --trace \
   --iterations 20
@@ -87,7 +114,7 @@ Stress-test behavior:
 
 See also:
 
-- [docs/testing/stress-testing.md](/home/ian/sync/git/main/docs/testing/stress-testing.md)
+- [docs/testing/stress-testing.md](../docs/testing/stress-testing.md)
 
 Supported debug modes:
 
