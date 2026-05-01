@@ -24,7 +24,7 @@ LatticeSite PottsSite(int qq)
 {
    SymmetryList Symmetry("S:Null");
    SiteBasis Basis(Symmetry);
-   SiteOperator Omega, Gamma, R, P, I;
+   SiteOperator Omega, OmegaD, Gamma, GammaD, R, P, I;
    LatticeSite Site(std::to_string(qq)+"-state Potts");
 
    QuantumNumbers::QuantumNumber q(Symmetry); // no symmetries, only one quantum number
@@ -40,25 +40,37 @@ LatticeSite PottsSite(int qq)
       ("R"   , "reflection")
       ("P"   , "fermion parity")
       ("Omega", "clock operator, diagonal in the Potts basis (alias Z)")
+      ("OmegaD", "adjoint of Omega (alias ZD)")
       ("Gamma", "shift operator (alias X)")
+      ("GammaD", "adjoint of Gamma (alias XD)")
       ("Z"   , "alias for Omega")
+      ("ZD"  , "alias for OmegaD")
       ("X"   , "alias for Gamma")
+      ("XD"  , "alias for GammaD")
       ;
 
    P = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    R = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    I = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    Omega = SiteOperator(Basis, q, LatticeCommute::Bosonic);
+   OmegaD = SiteOperator(Basis, q, LatticeCommute::Bosonic);
    Gamma = SiteOperator(Basis, q, LatticeCommute::Bosonic);
+   GammaD = SiteOperator(Basis, q, LatticeCommute::Bosonic);
 
    for (int s = 0; s < qq; ++s)
    {
       std::string ss = std::to_string(s);
+      std::string sp = std::to_string((s+1)%qq);
+      std::string sm = std::to_string((s+qq-1)%qq);
+      std::complex<double> phase = std::exp(std::complex<double>(0.0, 1.0) *
+                                            2.0 * math_const::pi * double(s) / double(qq));
       I(ss, ss) = 1.0;
       P(ss, ss) = 1.0;
       R(ss, ss) = 1.0;
-      Omega(ss, ss) = std::exp(std::complex<double>(0.0, 1.0) * 2.0 * math_const::pi * double(s) / double(qq));
-      Gamma(std::to_string((s+1)%qq), ss) = 1;
+      Omega(ss, ss) = phase;
+      OmegaD(ss, ss) = std::conj(phase);
+      Gamma(sp, ss) = 1;
+      GammaD(sm, ss) = 1;
    }
 
    Site.arg("q") = qq;
@@ -67,9 +79,13 @@ LatticeSite PottsSite(int qq)
    Site["P"] = P;
    Site["R"] = R;
    Site["Omega"] = Omega;
+   Site["OmegaD"] = OmegaD;
    Site["Gamma"] = Gamma;
+   Site["GammaD"] = GammaD;
    Site["Z"] = Omega;
+   Site["ZD"] = OmegaD;
    Site["X"] = Gamma;
+   Site["XD"] = GammaD;
 
    Site.set_operator_descriptions(OpDescriptions);
 

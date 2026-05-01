@@ -16,6 +16,20 @@ fixtures:
       - lattice_info_text:
           contains: "Z          - alias for Omega"
 
+  zn_lat:
+    run: potts-zn -q 3 -o lat
+    outputs:
+      lattice: lat
+    certify:
+      - lattice_info_text:
+          contains: "Description: q-state Potts model with Z_q symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Q:Z_3"
+      - lattice_info_text:
+          contains: "Omega      - charge +1 shift operator in the Gamma-diagonal basis (alias Z)"
+      - lattice_info_text:
+          contains: "Gamma      - neutral diagonal symmetry generator in this basis (alias X)"
+
   critical_ground:
     from: lat
     run: mp-idmrg-s3e -a -b -u 2 -w psi -H lat:H_J+H_g -m 16x16 --seed 1
@@ -32,9 +46,38 @@ fixtures:
           approx: -4.871982248353835
           abs: 2e-3
 
+  zn_critical_ground:
+    from: zn_lat
+    run: mp-idmrg-s3e -a -b -u 2 -q 0 -w psi -H lat:H_J+H_g -m 16x16 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J+H_g"
+      - info_text:
+          contains: "Symmetry list = Q:Z_3"
+      - info_text:
+          contains: "Unit cell size = 2"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -4.871982248353835
+          abs: 2e-3
+
 tests:
   critical_three_state_potts_idmrg_energy_matches_exact_two_site_density:
     use: critical_ground
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J+H_g"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -4.871982248353835
+          abs: 2e-3
+
+  critical_three_state_potts_zn_idmrg_energy_matches_exact_two_site_density:
+    use: zn_critical_ground
     expect:
       - attr_text:
           attribute: Hamiltonian
