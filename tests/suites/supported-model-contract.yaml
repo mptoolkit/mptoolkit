@@ -1,0 +1,471 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  bosehubbard:
+    run: bosehubbard -o lat
+    outputs:
+      lattice: lat
+
+  bosehubbard_u1:
+    run: bosehubbard-u1 -o lat
+    outputs:
+      lattice: lat
+
+  bosehubbard_u1_trap:
+    run: bosehubbard-u1-trap -o lat
+    outputs:
+      lattice: lat
+
+  bosehubbard_ladder_u1:
+    run: bosehubbard-ladder-u1 -o lat
+    outputs:
+      lattice: lat
+
+  clock:
+    run: clock -o lat
+    outputs:
+      lattice: lat
+
+  clock_zn:
+    run: clock-zn -o lat
+    outputs:
+      lattice: lat
+
+  potts:
+    run: potts -o lat
+    outputs:
+      lattice: lat
+
+  potts_zn:
+    run: potts-zn -o lat
+    outputs:
+      lattice: lat
+
+  hubbard:
+    run: hubbard -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_u1u1:
+    run: hubbard-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_u1su2:
+    run: hubbard-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_su2:
+    run: hubbard-su2 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_so4:
+    run: hubbard-so4 -o lat
+    outputs:
+      lattice: lat
+
+  hubbardcylinder_u1su2:
+    run: hubbardcylinder-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+  klm_u1su2:
+    run: klm-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+  klm_u1u1:
+    run: klm-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  klm_cylinder_u1su2:
+    run: klm-cylinder-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+  spinchain:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  spinchain_u1:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  spinchain_z2:
+    run: spinchain-z2 -o lat
+    outputs:
+      lattice: lat
+
+  spinchain_su2:
+    run: spinchain-su2 -o lat
+    outputs:
+      lattice: lat
+
+  spinchain_spin2_su2:
+    run: spinchain-spin2-su2 -o lat
+    outputs:
+      lattice: lat
+
+  spinladder:
+    run: spinladder -o lat
+    outputs:
+      lattice: lat
+
+  spinladder_z2:
+    run: spinladder-z2 -o lat
+    outputs:
+      lattice: lat
+
+  spinladder_su2:
+    run: spinladder-su2 -o lat
+    outputs:
+      lattice: lat
+
+  spincylinder:
+    run: spincylinder -o lat
+    outputs:
+      lattice: lat
+
+  spincylinder_z2:
+    run: spincylinder-z2 -o lat
+    outputs:
+      lattice: lat
+
+  spincylinder_u1:
+    run: spincylinder-u1 -o lat
+    outputs:
+      lattice: lat
+
+  spincylinder_su2:
+    run: spincylinder-su2 -o lat
+    outputs:
+      lattice: lat
+
+  spinlessfermion_u1:
+    run: spinlessfermion-u1 -o lat
+    outputs:
+      lattice: lat
+
+  spinlessfermionladder_u1u1:
+    run: spinlessfermionladder-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+tests:
+  bosehubbard_contract:
+    use: bosehubbard
+    expect:
+      - lattice_info_text:
+          contains: "Description: Bose-Hubbard model (no symmetry)"
+      - lattice_info_text:
+          contains: "SymmetryList: Null:Null"
+      - lattice_info_text:
+          contains: "H_J        - nearest neighbor hopping"
+
+  bosehubbard_u1_contract:
+    use: bosehubbard_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) Bose-Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1)"
+      - lattice_info_text:
+          contains: "H_Jm       - nearest-neighbor hopping in negative direction"
+
+  bosehubbard_u1_trap_contract:
+    use: bosehubbard_u1_trap
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) Bose-Hubbard model"
+      - lattice_info_text:
+          contains: "H_trap     - harmonic trap, n(x)*(x-(L+1)/2)^2"
+      - lattice_info_text:
+          contains: "com        - centre-of-mass"
+
+  bosehubbard_ladder_u1_contract:
+    use: bosehubbard_ladder_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) Bose-Hubbard ladder"
+      - lattice_info_text:
+          contains: "Unit cell size: 2"
+      - lattice_info_text:
+          contains: "H_K        - nearest-neighbor hopping on the rungs"
+
+  clock_contract:
+    use: clock
+    expect:
+      - lattice_info_text:
+          contains: "Description: q-state clock model"
+      - lattice_info_text:
+          contains: "SymmetryList: S:Null"
+      - lattice_info_text:
+          contains: "H_J        - nearest neighbor coupling -sum_i (Omega_i OmegaD_{i+1} + OmegaD_i Omega_{i+1})"
+
+  clock_zn_contract:
+    use: clock_zn
+    expect:
+      - lattice_info_text:
+          contains: "Description: q-state clock model with Z_q symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Q:Z_3"
+      - lattice_info_text:
+          contains: "OmegaD     - charge -1 adjoint of Omega (alias ZD)"
+
+  potts_contract:
+    use: potts
+    expect:
+      - lattice_info_text:
+          contains: "Description: q-state Potts model; after arXiv:1702.02675v1"
+      - lattice_info_text:
+          contains: "SymmetryList: S:Null"
+      - lattice_info_text:
+          contains: "H_g        - transverse field -sum_i sum_{k=1}^{q-1} Gamma_i^k"
+
+  potts_zn_contract:
+    use: potts_zn
+    expect:
+      - lattice_info_text:
+          contains: "Description: q-state Potts model with Z_q symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Q:Z_3"
+      - lattice_info_text:
+          contains: "H_J        - nearest neighbor coupling -sum_i sum_{k=1}^{q-1} Omega_i^k Omega_{i+1}^{q-k}"
+
+  hubbard_contract:
+    use: hubbard
+    expect:
+      - lattice_info_text:
+          contains: "Description: Fermi Hubbard model (no symmetry)"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping = H_t2up + H_t2down"
+      - lattice_info_text:
+          contains: "H_J        - nearest-neighbor complex hopping = H_Jup + H_Jdown"
+
+  hubbard_u1u1_contract:
+    use: hubbard_u1u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Fermi Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),Sz:U(1)"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping = H_t2up + H_t2down"
+
+  hubbard_u1su2_contract:
+    use: hubbard_u1su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Fermi Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),S:SU(2)"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping"
+
+  hubbard_su2_contract:
+    use: hubbard_su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) Fermi Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping"
+
+  hubbard_so4_contract:
+    use: hubbard_so4
+    expect:
+      - lattice_info_text:
+          contains: "Description: SO(4) Fermi Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: Q:SU(2),S:SU(2)"
+      - lattice_info_text:
+          contains: "Unit cell size: 2"
+
+  hubbardcylinder_u1su2_contract:
+    use: hubbardcylinder_u1su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Fermi Hubbard 2D cylinder square lattice"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_tx       - nearest neighbor hopping in x-direction"
+
+  klm_u1su2_contract:
+    use: klm_u1su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Kondo lattice model"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping"
+      - lattice_info_text:
+          contains: "H_K        - Kondo coupling"
+
+  klm_u1u1_contract:
+    use: klm_u1u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Kondo lattice model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),Sz:U(1)"
+      - lattice_info_text:
+          contains: "H_K        - Kondo coupling"
+
+  klm_cylinder_u1su2_contract:
+    use: klm_cylinder_u1su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Kondo lattice cylinder"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_J        - H_Jx + H_Jy"
+
+  spinchain_contract:
+    use: spinchain
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin chain"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
+      - lattice_info_text:
+          contains: "H_B1xy     - nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2"
+
+  spinchain_u1_contract:
+    use: spinchain_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) spin chain"
+      - lattice_info_text:
+          contains: "H_D        - -3*H_PD, projector onto singlet dimer"
+      - lattice_info_text:
+          contains: "H_T        - -6*H_PT, projector onto singlet trimer"
+
+  spinchain_z2_contract:
+    use: spinchain_z2
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin chain with Z_2 symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Z:Z2"
+      - lattice_info_text:
+          contains: "H_ITF      - Ising transverse-field model, equivalent to -4*H_zz + 2*H_x"
+
+  spinchain_su2_contract:
+    use: spinchain_su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) spin chain"
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "H_D        - -3*P_D, projector onto singlet dimer"
+
+  spinchain_spin2_su2_contract:
+    use: spinchain_spin2_su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) spin-2 chain"
+      - lattice_info_text:
+          contains: "SU(2) Spin 2"
+      - lattice_info_text:
+          contains: "H_p0       - projector onto nearest-neighbor spin 0 bond"
+
+  spinladder_contract:
+    use: spinladder
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin ladder"
+      - lattice_info_text:
+          contains: "H_J1_x     - nearest neighbor spin exchange in the x (infinite) direction"
+      - lattice_info_text:
+          contains: "H_J1p      - alias for H_J1_p"
+
+  spinladder_z2_contract:
+    use: spinladder_z2
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin ladder with Z_2 symmetry"
+      - lattice_info_text:
+          contains: "SymmetryList: Z:Z2"
+      - lattice_info_text:
+          contains: "H_J1p      - alias for H_J1_p"
+
+  spinladder_su2_contract:
+    use: spinladder_su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) spin ladder"
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "H_J1_p     - alias for H_J1p"
+
+  spincylinder_contract:
+    use: spincylinder
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin cylinder"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
+      - lattice_info_text:
+          contains: "TyPi       - translation by y/2 sites in y direction"
+
+  spincylinder_z2_contract:
+    use: spincylinder_z2
+    expect:
+      - lattice_info_text:
+          contains: "Description: Z_2 spin cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: Z:Z2"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
+
+  spincylinder_u1_contract:
+    use: spincylinder_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) spin cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: Sz:U(1)"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
+
+  spincylinder_su2_contract:
+    use: spincylinder_su2
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) spin cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
+
+  spinlessfermion_u1_contract:
+    use: spinlessfermion_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) spinless fermion model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1)"
+      - lattice_info_text:
+          contains: "H_tc       - complex nearest neighbor hopping"
+
+  spinlessfermionladder_u1u1_contract:
+    use: spinlessfermionladder_u1u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) spinless fermion ladder"
+      - lattice_info_text:
+          contains: "SymmetryList: N1:U(1),N2:U(1)"
+      - lattice_info_text:
+          contains: "H_t2       - nearest neighbor hopping in the second leg"

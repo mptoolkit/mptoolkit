@@ -29,11 +29,13 @@ tests:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: spin ladder with Z_2 symmetry"
+          contains: "Description: Spin ladder with Z_2 symmetry"
       - lattice_info_text:
           contains: "SymmetryList: Z:Z2"
       - lattice_info_text:
           contains: "Unit cell size: 2"
+      - lattice_info_text:
+          contains: "H_J1p      - alias for H_J1_p"
 
   z2_ladder_product_state_supports_exact_identity_moments:
     use: parity_neel2

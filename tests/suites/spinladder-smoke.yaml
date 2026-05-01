@@ -29,11 +29,13 @@ tests:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: spin ladder"
+          contains: "Description: Spin ladder"
       - lattice_info_text:
           contains: "Unit cell size: 2"
       - lattice_info_text:
           contains: "H_J1_y     - nearest neighbor spin exchange in the y (rung) direction"
+      - lattice_info_text:
+          contains: "H_J1p      - alias for H_J1_p"
 
   plain_ladder_product_state_supports_exact_identity_moments:
     use: neel2

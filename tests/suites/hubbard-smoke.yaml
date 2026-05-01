@@ -34,6 +34,8 @@ tests:
           contains: "Unit cell size: 1"
       - lattice_info_text:
           contains: "H_t        - nearest neighbor hopping = H_tup + H_tdown"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping = H_t2up + H_t2down"
 
   plain_hubbard_product_state_supports_exact_identity_moments:
     use: up_empty

@@ -1,0 +1,66 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  hubbard_lat:
+    run: hubbard -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_u1u1_lat:
+    run: hubbard-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  plain_up_empty_empty:
+    from: hubbard_lat
+    run: mp-construct -l lat -o psi --finite up:empty:empty
+    outputs:
+      state: psi
+
+  u1u1_up_empty_empty:
+    from: hubbard_u1u1_lat
+    run: mp-construct -l lat -o psi --finite up:empty:empty
+    outputs:
+      state: psi
+
+  plain_t2_ground:
+    from: plain_up_empty_empty
+    run: mp-dmrg -w psi -H lat:H_t2up -m 10x4 --flush
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+
+  u1u1_t2_ground:
+    from: u1u1_up_empty_empty
+    run: mp-dmrg -w psi -H lat:H_t2up -m 10x4 --flush
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+
+tests:
+  plain_hubbard_t2up_has_exact_three_site_one_particle_energy:
+    use: plain_t2_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+
+  u1u1_hubbard_t2up_has_exact_three_site_one_particle_energy:
+    use: u1u1_t2_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12

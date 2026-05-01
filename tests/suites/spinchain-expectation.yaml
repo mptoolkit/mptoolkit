@@ -20,6 +20,14 @@ fixtures:
           abs: 1e-12
 
 tests:
+  lattice_info_reports_u1_spin_chain_aliases:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "H_D        - -3*H_PD, projector onto singlet dimer"
+      - lattice_info_text:
+          contains: "H_T        - -6*H_PT, projector onto singlet trimer"
+
   local_sz_expectations_match_neel_state:
     use: neel4
     expect:

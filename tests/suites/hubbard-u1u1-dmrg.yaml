@@ -69,6 +69,14 @@ fixtures:
           abs: 1e-12
 
 tests:
+  lattice_info_reports_the_u1u1_hubbard_operator_contract:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Fermi Hubbard model"
+      - lattice_info_text:
+          contains: "H_t2       - next-nearest neighbor hopping = H_t2up + H_t2down"
+
   finite_one_up_product_state_has_expected_occupancy:
     use: up_empty_2
     expect:

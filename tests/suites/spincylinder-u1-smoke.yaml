@@ -38,6 +38,8 @@ tests:
           contains: "SymmetryList: Sz:U(1)"
       - lattice_info_text:
           contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
 
   cylinder_product_state_supports_exact_identity_moments:
     use: neel_yc4

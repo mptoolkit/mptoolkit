@@ -1,0 +1,77 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  plain_lat:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  u1_lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  z2_lat:
+    run: spinchain-z2 -o lat
+    outputs:
+      lattice: lat
+
+  plain_random_s0:
+    from: plain_lat
+    run: mp-random -l lat -u 4 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  u1_random_s0:
+    from: u1_lat
+    run: mp-random -l lat -u 4 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  plain_hj2_ground:
+    from: plain_random_s0
+    run: mp-dmrg -w psi -H lat:H_J2 -m 10x4 --flush
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.5
+          abs: 1e-12
+
+  u1_hj2_ground:
+    from: u1_random_s0
+    run: mp-dmrg -w psi -H lat:H_J2 -m 10x4 --flush
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.5
+          abs: 1e-12
+
+tests:
+  plain_and_u1_hj2_have_same_four_site_two_singlet_energy:
+    use: plain_hj2_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.5
+          abs: 1e-12
+
+  u1_hj2_has_same_four_site_two_singlet_energy:
+    use: u1_hj2_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.5
+          abs: 1e-12
+
+  z2_variant_exposes_the_same_hj2_contract:
+    use: z2_lat
+    expect:
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"

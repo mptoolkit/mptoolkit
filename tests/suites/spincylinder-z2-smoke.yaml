@@ -29,11 +29,13 @@ tests:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: Z2 spin cylinder"
+          contains: "Description: Z_2 spin cylinder"
       - lattice_info_text:
           contains: "SymmetryList: Z:Z2"
       - lattice_info_text:
           contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
 
   z2_cylinder_product_state_supports_exact_identity_moments:
     use: parity_neel4

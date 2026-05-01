@@ -34,6 +34,8 @@ tests:
           contains: "Unit cell size: 1"
       - lattice_info_text:
           contains: "H_J1       - nearest neighbor spin exchange = H_J1z + H_J1t"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
 
   plain_spin_chain_product_state_has_exact_identity_moments_and_local_sz:
     use: neel2

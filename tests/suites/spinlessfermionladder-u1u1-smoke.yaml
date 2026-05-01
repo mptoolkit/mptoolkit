@@ -33,7 +33,7 @@ tests:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: Spinless fermion ladder U(1)xU(1) symmetry"
+          contains: "Description: U(1)xU(1) spinless fermion ladder"
       - lattice_info_text:
           contains: "SymmetryList: N1:U(1),N2:U(1)"
       - lattice_info_text:

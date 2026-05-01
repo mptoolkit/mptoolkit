@@ -29,7 +29,7 @@ tests:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: Bosonic 2-leg ladder with flux"
+          contains: "Description: Bose-Hubbard model (no symmetry)"
       - lattice_info_text:
           contains: "SymmetryList: Null:Null"
       - lattice_info_text:

@@ -40,6 +40,12 @@ fixtures:
           abs: 1e-12
 
 tests:
+  lattice_info_reports_z2_spin_chain_next_nearest_exchange:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
+
   z2_spin_half_product_state_has_expected_local_sx_and_parity:
     use: sx_neel2
     expect:

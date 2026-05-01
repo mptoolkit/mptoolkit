@@ -37,6 +37,8 @@ tests:
           contains: "Unit cell size: 2"
       - lattice_info_text:
           contains: "H_J1y      - nearest neighbor spin exchange in the y (rung) direction"
+      - lattice_info_text:
+          contains: "H_J1_p     - alias for H_J1p"
 
   rung_exchange_ground_state_has_the_exact_two_site_singlet_energy:
     use: rung_singlet

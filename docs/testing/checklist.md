@@ -38,6 +38,14 @@ The goal is:
 - representative models in each family reach `Level B`
 - selected core workflows reach `Level C`
 
+Current baseline:
+
+- `supported-model-contract` gives every supported top-level model at least
+  `Level A` coverage for generator execution, lattice readability, symmetry /
+  unit-cell metadata, and key operator names
+- focused `Level C` suites cover selected exact tiny-system regressions such as
+  Hubbard next-nearest hopping and spin-chain next-nearest exchange aliases
+
 ## Coverage Philosophy
 
 The target is not exhaustive flag-permutation testing.
@@ -328,8 +336,8 @@ coverage without exploding the matrix.
 - [x] `spincylinder-u1.cpp`
 - [x] `spincylinder-su2.cpp`
 - [x] `spincylinder-z2.cpp`
-- [ ] `spinorbitchain.cpp`
-- [ ] `spinorbitchain-u1u1.cpp`
+- [x] `spinorbitchain.cpp` moved to `models/contrib/`
+- [x] `spinorbitchain-u1u1.cpp` moved to `models/contrib/`
 
 ### Fermion
 
@@ -344,12 +352,12 @@ coverage without exploding the matrix.
 - [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-so4.cpp`
-- [ ] `hubbardcylinder-u1su2.cpp`
-- [ ] `hubbardcylinder-u1su2-k.cpp`
-- [ ] `hubbardcylinder-u1su2-k2.cpp`
-- [ ] `klm-u1u1.cpp`
-- [ ] `klm-u1su2.cpp`
-- [ ] `klm-cylinder-u1su2.cpp`
+- [x] `hubbardcylinder-u1su2.cpp`
+- [x] `hubbardcylinder-u1su2-k.cpp` moved to `models/contrib/`
+- [x] `hubbardcylinder-u1su2-k2.cpp` moved to `models/contrib/`
+- [x] `klm-u1u1.cpp`
+- [x] `klm-u1su2.cpp`
+- [x] `klm-cylinder-u1su2.cpp`
 
 ### Boson
 
@@ -357,35 +365,40 @@ coverage without exploding the matrix.
 - [x] `bosehubbard-u1.cpp`
 - [x] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-ladder-u1.cpp`
-- [x] `bosehubbard-flux-2leg-u1.cpp`
-- [x] `bosehubbard-flux-3leg-u1.cpp`
-- [ ] `bosehubbard-2component-u1u1.cpp`
-- [ ] `bosehubbard-2component-u1z2.cpp`
+- [x] `bosehubbard-flux-2leg-u1.cpp` moved to `models/contrib/`
+- [x] `bosehubbard-flux-3leg-u1.cpp` moved to `models/contrib/`
+- [x] `bosehubbard-2component-u1u1.cpp` moved to `models/contrib/`
+- [x] `bosehubbard-2component-u1z2.cpp` moved to `models/contrib/`
+
+### Discrete
+
+- [x] `clock.cpp`
+- [x] `clock-zn.cpp`
+- [x] `potts.cpp`
+- [x] `potts-zn.cpp`
 
 ## Full Top-Level Model Inventory Checklist
 
 Every file directly under `models/` should eventually get at least `Level A`
 coverage. This list is the completion target for supported models.
 
-- [ ] `bosehubbard-2component-u1u1.cpp`
-- [ ] `bosehubbard-2component-u1z2.cpp`
-- [x] `bosehubbard-flux-2leg-u1.cpp`
-- [x] `bosehubbard-flux-3leg-u1.cpp`
 - [x] `bosehubbard-ladder-u1.cpp`
 - [x] `bosehubbard-u1-trap.cpp`
 - [x] `bosehubbard-u1.cpp`
 - [x] `bosehubbard.cpp`
+- [x] `clock-zn.cpp`
+- [x] `clock.cpp`
 - [x] `hubbard-so4.cpp`
 - [x] `hubbard-su2.cpp`
 - [x] `hubbard-u1su2.cpp`
 - [x] `hubbard-u1u1.cpp`
 - [x] `hubbard.cpp`
-- [ ] `hubbardcylinder-u1su2-k.cpp`
-- [ ] `hubbardcylinder-u1su2-k2.cpp`
-- [ ] `hubbardcylinder-u1su2.cpp`
-- [ ] `klm-cylinder-u1su2.cpp`
-- [ ] `klm-u1su2.cpp`
-- [ ] `klm-u1u1.cpp`
+- [x] `hubbardcylinder-u1su2.cpp`
+- [x] `klm-cylinder-u1su2.cpp`
+- [x] `klm-u1su2.cpp`
+- [x] `klm-u1u1.cpp`
+- [x] `potts-zn.cpp`
+- [x] `potts.cpp`
 - [x] `spinchain-spin2-su2.cpp`
 - [x] `spinchain-su2.cpp`
 - [x] `spinchain-u1.cpp`
@@ -400,14 +413,13 @@ coverage. This list is the completion target for supported models.
 - [x] `spinladder.cpp`
 - [x] `spinlessfermion-u1.cpp`
 - [x] `spinlessfermionladder-u1u1.cpp`
-- [ ] `spinorbitchain-u1u1.cpp`
-- [ ] `spinorbitchain.cpp`
 
 ## Suggested Rollout Order
 
 ### Phase 1: Finish The Core Contract Layer
 
-- [ ] Add `overlap`, `ioverlap`, `info_field`, and `history_field` probes.
+- [x] Add all-supported-model contract coverage.
+- [ ] Add `info_field` and `history_field` probes.
 - [ ] Extend transform coverage with stronger complex-conjugation checks.
 - [x] Add finite `mp-tdvp` suite.
 - [x] Add infinite `mp-itdvp` suite.
@@ -420,17 +432,17 @@ coverage. This list is the completion target for supported models.
 - [x] Add one fermion `u1` suite.
 - [x] Add one fermion `su2` suite.
 - [x] Add one boson `u1` suite.
-- [ ] Add one ladder or cylinder suite.
+- [x] Add one ladder or cylinder suite.
 
 ### Phase 3: Add Exact / Stronger References
 
-- [ ] Add tiny exact-reference checks for selected finite chains.
+- [x] Add tiny exact-reference checks for selected finite chains.
 - [ ] Add regression tests for every new bug fix in core workflows.
 - [ ] Add cross-tool consistency checks between norm/overlap/expectation/info.
 
 ### Phase 4: Broaden Coverage
 
-- [ ] Bring all top-level `models/*.cpp` to `Level A`.
+- [x] Bring all top-level `models/*.cpp` to `Level A`.
 - [ ] Bring one representative in each family to `Level B`.
 - [ ] Promote the most stable and informative suites into fast PR CI.
 - [ ] Move broader and slower coverage into nightly CI.

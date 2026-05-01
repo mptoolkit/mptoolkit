@@ -1,0 +1,59 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  klm_u1su2_lat:
+    run: klm-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+  klm_u1u1_lat:
+    run: klm-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  klm_cylinder_u1su2_lat:
+    run: klm-cylinder-u1su2 -o lat
+    outputs:
+      lattice: lat
+
+tests:
+  klm_u1su2_reports_supported_symmetry_and_operators:
+    use: klm_u1su2_lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Kondo lattice model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),S:SU(2)"
+      - lattice_info_text:
+          contains: "Unit cell size: 1"
+      - lattice_info_text:
+          contains: "H_K        - Kondo coupling"
+
+  klm_u1u1_reports_supported_symmetry_and_operators:
+    use: klm_u1u1_lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Kondo lattice model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),Sz:U(1)"
+      - lattice_info_text:
+          contains: "Unit cell size: 1"
+      - lattice_info_text:
+          contains: "H_K        - Kondo coupling"
+
+  klm_cylinder_u1su2_reports_default_geometry_and_operators:
+    use: klm_cylinder_u1su2_lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xSU(2) Kondo lattice cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),S:SU(2)"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_t        - H_tx + H_ty"
+      - lattice_info_text:
+          contains: "H_K        - Kondo coupling"

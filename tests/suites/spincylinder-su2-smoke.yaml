@@ -29,6 +29,8 @@ tests:
           contains: "SymmetryList: S:SU(2)"
       - lattice_info_text:
           contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_J2       - next-nearest neighbor spin exchange H_J2d + H_J2a"
 
   su2_cylinder_random_scalar_state_has_consistent_basic_metadata:
     use: rand4_s0
