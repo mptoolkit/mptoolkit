@@ -138,6 +138,22 @@ fixtures:
           approx: 1.0
           abs: 1e-12
 
+  infinite_neel2_itebd_ising_real:
+    from: infinite_neel2
+    run: mp-itebd -w psi -H "lat:-4*sum_unit(Sz(0)*Sz(1))" -o out -t 0.1 -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:-4*sum_unit(Sz(0)*Sz(1))"
+
   infinite_neel2_itdvp_identity:
     from: infinite_neel2
     run: mp-itdvp -w psi -H lat:sum_unit(I(0)) -o out -t 0-0.1i -n 1 -s 1 -m 4
@@ -209,6 +225,22 @@ fixtures:
           psi2: "{parent.state}"
           approx: 1.0
           abs: 1e-12
+
+  infinite_neel2_itdvp_ising_real:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H "lat:-4*sum_unit(Sz(0)*Sz(1))" -o out -t 0.1 -n 1 -s 1 -m 4
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:-4*sum_unit(Sz(0)*Sz(1))"
 
   infinite_neel2_itdvp_time_dependent_imag:
     from: infinite_neel2
@@ -288,6 +320,21 @@ tests:
           abs: 1e-12
       - ioverlap_imag:
           approx: -0.19866933079506
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  itebd_and_itdvp_real_time_ising_match_phase_and_fidelity_per_unit_cell:
+    use:
+      psi1: infinite_neel2_itebd_ising_real.state
+      psi2: infinite_neel2_itdvp_ising_real.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
           abs: 1e-12
       - ioverlap_mag:
           approx: 1.0
