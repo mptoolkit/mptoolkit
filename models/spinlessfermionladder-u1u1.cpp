@@ -47,7 +47,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.description("Spinless fermion ladder U(1)xU(1) symmetry");
+      OpDescriptions.description("U(1)xU(1) spinless fermion ladder");
       OpDescriptions.author("IP McCulloch", "ian@qusim.net");
       OpDescriptions.add_operators()
          ("H_t1"  , "nearest neighbor hopping in the first leg")
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
       Lattice["H_t2"]  = -sum_unit(dot(CH(0)[1], C(1)[1]) - dot(C(0)[1], CH(1)[1]));
 
       // Information about the lattice
-      Lattice.set_description("U(1)x(1) Spinless Fermion Fermi-Hubbard 2-leg ladder");
+      Lattice.set_description("U(1)xU(1) spinless fermion 2-leg ladder");
       Lattice.set_command_line(argc, argv);
       Lattice.set_operator_descriptions(OpDescriptions);
 

@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Kondo Lattice Model");
+      OpDescriptions.set_description("U(1)xSU(2) Kondo lattice cylinder");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_tx"   , "nearest neighbor hopping in the x direction")

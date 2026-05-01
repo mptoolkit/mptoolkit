@@ -47,12 +47,15 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard model");
+      OpDescriptions.set_description("U(1)xU(1) Fermi Hubbard model");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_tup"    , "nearest neighbor hopping for up spins")
          ("H_tdown"  , "nearest neighbor hopping for down spins")
          ("H_t"      , "nearest neighbor hopping = H_tup + H_tdown")
+         ("H_t2up"   , "next-nearest neighbor hopping for up spins")
+         ("H_t2down" , "next-nearest neighbor hopping for down spins")
+         ("H_t2"     , "next-nearest neighbor hopping = H_t2up + H_t2down")
          ("H_U"      , "on-site Coulomb interaction n_up*n_down")
          ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
          ("H_V"      , "nearest-neighbor Coulomb interaction")
@@ -80,6 +83,9 @@ int main(int argc, char** argv)
       Lattice["H_tup"]   = -sum_unit(dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)));
       Lattice["H_tdown"] = -sum_unit(dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)));
       Lattice["H_t"]     = Lattice["H_tup"] + Lattice["H_tdown"];
+      Lattice["H_t2up"]   = -sum_unit(dot(CHup(0), Cup(2)) - dot(Cup(0), CHup(2)));
+      Lattice["H_t2down"] = -sum_unit(dot(CHdown(0), Cdown(2)) - dot(Cdown(0), CHdown(2)));
+      Lattice["H_t2"]     = Lattice["H_t2up"] + Lattice["H_t2down"];
       Lattice["H_U"]     = sum_unit(Pdouble(0));
       Lattice["H_Us"]    = sum_unit(Hu(0));
       Lattice["H_V"]     = sum_unit(dot(N(0), N(1)));

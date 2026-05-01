@@ -62,7 +62,7 @@ int main(int argc, char** argv)
          ("H_U"    , "on-site Coulomb repulsion N*(N-1)/2")
          ("H_U12"  , "nearest-neighbor Coulomb repulsion on the rungs")
          ("D"      , "difference in occupation number between leg (W-1) and leg 0")
-         ("D2"     , "squared difference in occuptation number between leg (W-1) and leg 0")
+         ("D2"     , "squared difference in occupation number between leg (W-1) and leg 0")
          ;
 
       if (vm.count("help") || !vm.count("out"))

@@ -63,9 +63,12 @@ int main(int argc, char** argv)
          ("H_J1z"   , "same as H_zz")
          ("H_J1t"   , "transverse spin exchange, H_xx + H_yy")
          ("H_J1"    , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2z"   , "next-nearest neighbor spin coupling Sz Sz")
+         ("H_J2t"   , "next-nearest neighbor transverse spin exchange")
+         ("H_J2"    , "next-nearest neighbor spin exchange = H_J2z + H_J2t")
          ("H_B1"    , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B1xy"  , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
-         ("H_mu"    , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_mu"    , "single-ion anisotropy, H_mu = sum_i Sz(i)^2")
          ("X"       , "pi rotation about the X axis, equivalent to prod_unit(exp(i*pi*Sx(0)))")
          ("Y"       , "pi rotation about the Y axis, equivalent to prod_unit(exp(i*pi*Sy(0)))")
          ("Z"       , "pi rotation about the Z axis, equivalent to prod_unit(exp(i*pi*Sz(0)))")
@@ -74,9 +77,9 @@ int main(int argc, char** argv)
          ("H_AKLT"  , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
       OpDescriptions.add_functions()
-	 ("H_expx", "Exponentially decaying spin exchange in x direction parametrized by lambda s exp(-lambda*r)")
-	 ("H_expy", "Exponentially decaying spin exchange in y direction parametrized by lambda s exp(-lambda*r)")
-	 ("H_expz", "Exponentially decaying spin exchange in z direction parametrized by lambda s exp(-lambda*r)")
+	 ("H_expx", "Exponentially decaying spin exchange in x direction parameterized by lambda as exp(-lambda*r)")
+	 ("H_expy", "Exponentially decaying spin exchange in y direction parameterized by lambda as exp(-lambda*r)")
+	 ("H_expz", "Exponentially decaying spin exchange in z direction parameterized by lambda as exp(-lambda*r)")
 	 ("H_expS", "Exponentially decaying spin-spin exchange")
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1", [&Spin]()->bool {return Spin==1;})
          ("H_murray", "Biquadratic model with anisotropy, parameterized by x, y and z", "spin 1",
@@ -99,6 +102,7 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
+      UnitCellMPO SpinExchange2 = Sx(0)*Sx(2) + Sy(0)*Sy(2) + Sz(0)*Sz(2);
 
       Lattice["H_xx"] = sum_unit(Sx(0)*Sx(1));
       Lattice["H_yy"] = sum_unit(Sy(0)*Sy(1));
@@ -111,6 +115,9 @@ int main(int argc, char** argv)
       Lattice["H_J1z"] = Lattice["H_zz"];
       Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
       Lattice["H_J1"] = sum_unit(SpinExchange);
+      Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
+      Lattice["H_J2t"] = sum_unit(Sx(0)*Sx(2) + Sy(0)*Sy(2));
+      Lattice["H_J2"] = sum_unit(SpinExchange2);
       Lattice["H_B1"] = sum_unit(SpinExchange*SpinExchange);
 
       Lattice["H_B1xy"] = sum_unit(pow(Sx(0)*Sx(1) + Sy(0)*Sy(1),2));

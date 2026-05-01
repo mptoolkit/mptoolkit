@@ -62,7 +62,10 @@ int main(int argc, char** argv)
          ("H_J1yz"  , "nearest neighbor spin exchange z-component in the y direction")
          ("H_J1yt"  , "nearest neighbor spin exchange transverse component in the y direction")
          ("H_J1y"  , "nearest neighbor spin exchange in the y direction (H_J1yz + H_J1yt)")
-         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
+         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J1y")
+         ("H_J2d"  , "next-nearest neighbor spin exchange in the diagonal (0,0) - (1,1) direction")
+         ("H_J2a"  , "next-nearest neighbor spin exchange in the antidiagonal (0,1) - (1,0) direction")
+         ("H_J2"   , "next-nearest neighbor spin exchange H_J2d + H_J2a")
          ("H_B1"   , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ;
 
@@ -85,7 +88,7 @@ int main(int argc, char** argv)
       InfiniteLattice Lattice(&Cell);
       UnitCellOperator Sp(Cell, "Sp"), Sm(Cell, "Sm"), Sz(Cell, "Sz");
 
-      UnitCellMPO J1xz, J1xt, J1yz, J1yt, B1x, B1y;
+      UnitCellMPO J1xz, J1xt, J1yz, J1yt, J2d, J2a, B1x, B1y;
       // the XY configuration is special
       if (x == 0)
       {
@@ -95,6 +98,10 @@ int main(int argc, char** argv)
             J1xt += 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
             J1yz += Sz(0)[i]*Sz(0)[(i+1)%y];
             J1yt += 0.5 * (Sp(0)[i]*Sm(0)[(i+1)%y] + Sm(0)[i]*Sp(0)[(i+1)%y]);
+            J2d += Sz(0)[i]*Sz(1)[(i+1)%y]
+               + 0.5 * (Sp(0)[i]*Sm(1)[(i+1)%y] + Sm(0)[i]*Sp(1)[(i+1)%y]);
+            J2a += Sz(0)[(i+1)%y]*Sz(1)[i]
+               + 0.5 * (Sp(0)[(i+1)%y]*Sm(1)[i] + Sm(0)[(i+1)%y]*Sp(1)[i]);
 
             B1x += pow(Sz(0)[i]*Sz(1)[i] + 0.5*(Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]), 2);
             B1y += pow(Sz(0)[i]*Sz(0)[(i+1)%y] + 0.5*(Sp(0)[i]*Sm(0)[(i+1)%y] + Sm(0)[i]*Sp(0)[(i+1)%y]), 2);
@@ -106,15 +113,21 @@ int main(int argc, char** argv)
          {
             J1xz += Sz(0)[i]*Sz(0)[i+1];
             J1xt += 0.5 * (Sp(0)[i]*Sm(0)[i+1] + Sm(0)[i]*Sp(0)[i+1]);
+            J2d += Sz(0)[i]*Sz(1)[i+1]
+               + 0.5 * (Sp(0)[i]*Sm(1)[i+1] + Sm(0)[i]*Sp(1)[i+1]);
             B1x += pow(Sz(0)[i]*Sz(0)[i+1] + 0.5*(Sp(0)[i]*Sm(0)[i+1] + Sm(0)[i]*Sp(0)[i+1]), 2);
          }
          J1xz += Sz(0)[x-1]*Sz(y+1)[0];
          J1xt += 0.5 * (Sp(0)[x-1]*Sm(y+1)[0] + Sm(0)[x-1]*Sp(y+1)[0]);
+         J2d += Sz(0)[x-1]*Sz(y+2)[0]
+            + 0.5 * (Sp(0)[x-1]*Sm(y+2)[0] + Sm(0)[x-1]*Sp(y+2)[0]);
          B1x += pow(Sz(0)[x-1]*Sz(0)[y+1] + 0.5*(Sp(0)[x-1]*Sm(0)[y+1] + Sm(0)[x-1]*Sp(0)[y+1]), 2);
          for (int i = 0; i < x; ++i)
          {
             J1yz += Sz(0)[i]*Sz(1)[i];
             J1yt += 0.5 * (Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]);
+            J2a += Sz(0)[(i+1)%x]*Sz(1)[i]
+               + 0.5 * (Sp(0)[(i+1)%x]*Sm(1)[i] + Sm(0)[(i+1)%x]*Sp(1)[i]);
             B1y += pow(Sz(0)[i]*Sz(1)[i] + 0.5*(Sp(0)[i]*Sm(1)[i] + Sm(0)[i]*Sp(1)[i]), 2);
          }
       }
@@ -126,6 +139,9 @@ int main(int argc, char** argv)
       Lattice["H_J1x"] = sum_unit(J1xz+J1xt);
       Lattice["H_J1y"] = sum_unit(J1yz+J1yt);
       Lattice["H_J1"] = sum_unit(J1xz+J1xt+J1yz+J1yt);
+      Lattice["H_J2d"] = sum_unit(J2d);
+      Lattice["H_J2a"] = sum_unit(J2a);
+      Lattice["H_J2"] = sum_unit(J2d+J2a);
       Lattice["H_B1"] = sum_unit(B1x+B1y);
 
       // Information about the lattice

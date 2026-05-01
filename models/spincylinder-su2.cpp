@@ -58,10 +58,10 @@ int main(int argc, char** argv)
       OpDescriptions.add_operators()
          ("H_J1x"  , "nearest neighbor spin exchange in the x direction")
          ("H_J1y"  , "nearest neighbor spin exchange in the y direction")
-         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
+         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J1y")
          ("H_J2d"  , "next-nearest neighbor spin exchange in the diagonal (0,0) - (1,1) direction")
          ("H_J2a"  , "next-nearest neighbor spin exchange in the antidiagonal (0,1) - (1,0) direction")
-         ("H_J2"   , "next-nearest neighbor spin exchange H_J1a + H_J2d")
+         ("H_J2"   , "next-nearest neighbor spin exchange H_J2d + H_J2a")
          ;
 
       if (vm.count("help") || !vm.count("out"))

@@ -60,8 +60,11 @@ int main(int argc, char** argv)
          ("H_J1z", "same as H_zz")
          ("H_J1t", "transverse spin exchange, H_xx + H_yy")
          ("H_J1" , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2z", "next-nearest neighbor spin coupling Sz Sz")
+         ("H_J2t", "next-nearest neighbor transverse spin exchange")
+         ("H_J2" , "next-nearest neighbor spin exchange = H_J2z + H_J2t")
          ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
-         ("H_mu" , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_mu" , "single-ion anisotropy, H_mu = sum_i Sz(i)^2")
          ("H_ITF", "Ising transverse-field model, equivalent to -4*H_zz + 2*H_x")
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
@@ -88,6 +91,7 @@ int main(int argc, char** argv)
       UnitCellOperator I(Cell, "I"); // identity operator
 
       UnitCellMPO SpinExchange = Sx(0)*Sx(1) + Sy(0)*Sy(1) + Sz(0)*Sz(1);
+      UnitCellMPO SpinExchange2 = Sx(0)*Sx(2) + Sy(0)*Sy(2) + Sz(0)*Sz(2);
 
       Lattice["H_xx"] = sum_unit(Sx(0)*Sx(1));
       Lattice["H_yy"] = sum_unit(Sy(0)*Sy(1));
@@ -98,6 +102,9 @@ int main(int argc, char** argv)
       Lattice["H_J1z"] = Lattice["H_zz"];
       Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
       Lattice["H_J1"] = sum_unit(SpinExchange);
+      Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
+      Lattice["H_J2t"] = sum_unit(Sx(0)*Sx(2) + Sy(0)*Sy(2));
+      Lattice["H_J2"] = sum_unit(SpinExchange2);
       Lattice["H_B1"] = sum_unit(SpinExchange*SpinExchange);
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));

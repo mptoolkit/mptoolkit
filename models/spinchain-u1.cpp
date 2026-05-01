@@ -49,7 +49,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1) Spin chain");
+      OpDescriptions.set_description("U(1) spin chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J1z"  , "nearest neighbor spin coupling Sz Sz")
@@ -57,13 +57,15 @@ int main(int argc, char** argv)
          ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
          ("H_J2z"  , "next-nearest neighbor spin coupling Sz Sz")
          ("H_J2t"  , "next-nearest neighbor spin exchange (1/2)(Sp Sm + Sm Sp)")
-         ("H_J2"   , "next-nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2"   , "next-nearest neighbor spin exchange = H_J2z + H_J2t")
          ("H_B1"   , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B2"   , "next-nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_B1xy" , "nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2")
-         ("H_mu"   , "single-ion anistotropy, H_mu = sum_i Sz(i)^2")
+         ("H_mu"   , "single-ion anisotropy, H_mu = sum_i Sz(i)^2")
          ("H_PD"   , "spin-1 projector onto singlet dimers (S(0)+S(1))^2 - 2) * (S(0)+S(1))^2 - 6)")
          ("H_PT"   , "spin-1 projector onto singlet trimers (S(0)+S(1)+S(2))^2 - 2)*(S(0)+S(1)+S(2))^2 - 6)*(S(0)+S(1)+S(2))^2 - 12)")
+         ("H_D"    , "-3*H_PD, projector onto singlet dimer")
+         ("H_T"    , "-6*H_PT, projector onto singlet trimer")
          ("H_dimer", "dimerized spin exchange, sum_i S(2*i).S(2*i+1) - S(2*i+1).S(2*i+2)")
          ("H_stag" , "staggered field (-1)^n Sz(n)")
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
@@ -123,6 +125,8 @@ int main(int argc, char** argv)
 
       Lattice["H_PD"] = (1.0 / 12.0) * sum_unit( (S_2(0) - 2*I(0)) * (S_2(0) - 6*I(0)) );
       Lattice["H_PT"] = (-1.0 / 144.0) * sum_unit( (S_3(0) - 2*I(0)) * (S_3(0) - 6*I(0)) * (S_3(0) - 12*I(0)) );
+      Lattice["H_D"] = -3.0 * Lattice["H_PD"];
+      Lattice["H_T"] = -6.0 * Lattice["H_PT"];
 
 
       if (Spin == 1)

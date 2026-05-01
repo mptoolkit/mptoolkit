@@ -48,7 +48,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Spin chain");
+      OpDescriptions.set_description("SU(2) spin-2 chain");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_p0"     , "projector onto nearest-neighbor spin 0 bond")

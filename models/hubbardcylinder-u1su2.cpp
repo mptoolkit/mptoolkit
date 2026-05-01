@@ -54,8 +54,8 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard 2D cylinder square lattice");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx" , "nearest neighbor hopping in y-direction")
-         ("H_ty" , "nearest neighbor hopping in x-direction")
+         ("H_tx" , "nearest neighbor hopping in x-direction")
+         ("H_ty" , "nearest neighbor hopping in y-direction")
          ("H_t"  , "nearest neighbor hopping")
          ("H_U"  , "on-site Coulomb interaction n_up*n_down")
          ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")

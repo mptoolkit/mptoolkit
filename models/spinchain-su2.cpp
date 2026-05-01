@@ -69,7 +69,7 @@ int main(int argc, char** argv)
          ("H_Q1"  , "nearest neighbor quadrupole exchange (Q.Q)")
          ("H_Q2"  , "next-nearest neighbor quadrupole exchange (Q.Q)")
          ("H_Q3"  , "next-next-nearest neighbor quadrupole exchange (Q.Q)")
-         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_J2", "spin 1", [&Spin]()->bool {return Spin==1;})
+         ("H_AKLT", "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
       // Descriptions for the operators

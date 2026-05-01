@@ -58,7 +58,7 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.description("Z2 spin cylinder");
+      OpDescriptions.description("Z_2 spin cylinder");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_cell_operators()
          ("Trans"  , "translation by one site (rotation by 2*pi/y) in y direction",
@@ -80,6 +80,9 @@ int main(int argc, char** argv)
          ("H_J1z"  , "same as H_zz")
          ("H_J1t"  , "transverse spin exchange, H_xx + H_yy")
          ("H_J1"   , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2d"  , "next-nearest neighbor spin exchange in the diagonal (0,0) - (1,1) direction")
+         ("H_J2a"  , "next-nearest neighbor spin exchange in the antidiagonal (0,1) - (1,0) direction")
+         ("H_J2"   , "next-nearest neighbor spin exchange H_J2d + H_J2a")
          ("H_x"    , "magnetic field in the x direction")
          ("Ty"     , "translation by one site in y direction",
          "x = 0", [&x]()->bool{return x == 0;})
@@ -111,7 +114,7 @@ int main(int argc, char** argv)
       UnitCellOperator Sx(Cell, "Sx"), Sy(Cell, "Sy"), Sz(Cell, "Sz"),
                        Sp(Cell, "Sp"), Sm(Cell, "Sm"), I(Cell, "I");
 
-      UnitCellMPO H_xx_x, H_yy_x, H_zz_x, H_xx_y, H_yy_y, H_zz_y;
+      UnitCellMPO H_xx_x, H_yy_x, H_zz_x, H_xx_y, H_yy_y, H_zz_y, J2d, J2a;
       // the XY configuration is special
       if (x == 0)
       {
@@ -123,6 +126,10 @@ int main(int argc, char** argv)
             H_xx_y += Sx(0)[i]*Sx(0)[(i+1)%y];
             H_yy_y += Sy(0)[i]*Sy(0)[(i+1)%y];
             H_zz_y += Sz(0)[i]*Sz(0)[(i+1)%y];
+            J2d += Sx(0)[i]*Sx(1)[(i+1)%y] + Sy(0)[i]*Sy(1)[(i+1)%y]
+               + Sz(0)[i]*Sz(1)[(i+1)%y];
+            J2a += Sx(0)[(i+1)%y]*Sx(1)[i] + Sy(0)[(i+1)%y]*Sy(1)[i]
+               + Sz(0)[(i+1)%y]*Sz(1)[i];
          }
       }
       else
@@ -132,15 +139,21 @@ int main(int argc, char** argv)
             H_xx_x += Sx(0)[i]*Sx(0)[i+1];
             H_yy_x += Sy(0)[i]*Sy(0)[i+1];
             H_zz_x += Sz(0)[i]*Sz(0)[i+1];
+            J2d += Sx(0)[i]*Sx(1)[i+1] + Sy(0)[i]*Sy(1)[i+1]
+               + Sz(0)[i]*Sz(1)[i+1];
          }
          H_xx_x += Sx(0)[x-1]*Sx(y+1)[0];
          H_yy_x += Sy(0)[x-1]*Sy(y+1)[0];
          H_zz_x += Sz(0)[x-1]*Sz(y+1)[0];
+         J2d += Sx(0)[x-1]*Sx(y+2)[0] + Sy(0)[x-1]*Sy(y+2)[0]
+            + Sz(0)[x-1]*Sz(y+2)[0];
          for (int i = 0; i < x; ++i)
          {
             H_xx_y += Sx(0)[i]*Sx(1)[i];
             H_yy_y += Sy(0)[i]*Sy(1)[i];
             H_zz_y += Sz(0)[i]*Sz(1)[i];
+            J2a += Sx(0)[(i+1)%x]*Sx(1)[i] + Sy(0)[(i+1)%x]*Sy(1)[i]
+               + Sz(0)[(i+1)%x]*Sz(1)[i];
          }
       }
 
@@ -156,6 +169,9 @@ int main(int argc, char** argv)
       Lattice["H_J1z"] = Lattice["H_zz"];
       Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
       Lattice["H_J1"] = Lattice["H_xx"] + Lattice["H_yy"] + Lattice["H_zz"];
+      Lattice["H_J2d"] = sum_unit(J2d);
+      Lattice["H_J2a"] = sum_unit(J2a);
+      Lattice["H_J2"] = sum_unit(J2d+J2a);
 
       // Magnetic fields.
       UnitCellMPO H_x;

@@ -58,8 +58,12 @@ int main(int argc, char** argv)
          ("H_J1x"  , "nearest neighbor spin exchange in the x (infinite) direction")
          ("H_J1y"  , "nearest neighbor spin exchange in the y (rung) direction")
          ("H_J1yp" , "nearest neighbor spin exchange in the y (rung) direction, including periodic term")
-         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J2x")
-         ("H_J1p"  , "nearest neighbor spin exchange H_J1xp + H_J2x (periodic in y direction)")
+         ("H_J1"   , "nearest neighbor spin exchange H_J1x + H_J1y")
+         ("H_J1p"  , "nearest neighbor spin exchange H_J1x + H_J1yp (periodic in y direction)")
+         ("H_J1_x" , "alias for H_J1x")
+         ("H_J1_y" , "alias for H_J1y")
+         ("H_J1_yp", "alias for H_J1yp")
+         ("H_J1_p" , "alias for H_J1p")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -94,6 +98,10 @@ int main(int argc, char** argv)
       Lattice["H_J1yp"] = sum_unit(J1y + inner(S(0)[0], S(0)[Legs-1]));
       Lattice["H_J1"] = sum_unit(J1x+J1y);
       Lattice["H_J1p"] = sum_unit(J1x+J1y + inner(S(0)[0], S(0)[Legs-1]));
+      Lattice["H_J1_x"] = Lattice["H_J1x"];
+      Lattice["H_J1_y"] = Lattice["H_J1y"];
+      Lattice["H_J1_yp"] = Lattice["H_J1yp"];
+      Lattice["H_J1_p"] = Lattice["H_J1p"];
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

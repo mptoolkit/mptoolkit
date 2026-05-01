@@ -51,11 +51,11 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("Bosonic 2-leg ladder with flux");
+      OpDescriptions.set_description("Bose-Hubbard model (no symmetry)");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J"  , "nearest neighbor hopping")
-         ("H_U"  , "on-site Coulomb repulsion N*(N-1)/2\n")
+         ("H_U"  , "on-site Coulomb repulsion N*(N-1)/2")
          ("H_mu" , "chemical potential = -sum_unit(N(0))")
          ("N"    , "total particle number")
          ;

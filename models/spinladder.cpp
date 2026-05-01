@@ -52,14 +52,18 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.description("spin ladder");
+      OpDescriptions.description("Spin ladder");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_J1_x"  , "nearest neighbor spin exchange in the x (infinite) direction")
          ("H_J1_y"  , "nearest neighbor spin exchange in the y (rung) direction")
          ("H_J1_yp" , "nearest neighbor spin exchange in the y (rung) direction, including periodic term")
-         ("H_J1"    , "nearest neighbor spin exchange H_J1x + H_J2x")
-         ("H_J1_p"  , "nearest neighbor spin exchange H_J1xp + H_J2x (periodic in y direction)")
+         ("H_J1"    , "nearest neighbor spin exchange H_J1_x + H_J1_y")
+         ("H_J1_p"  , "nearest neighbor spin exchange H_J1_x + H_J1_yp (periodic in y direction)")
+         ("H_J1x"   , "alias for H_J1_x")
+         ("H_J1y"   , "alias for H_J1_y")
+         ("H_J1yp"  , "alias for H_J1_yp")
+         ("H_J1p"   , "alias for H_J1_p")
          ("H_xx_x"  , "nearest neighbor spin coupling Sx Sx in the x direction")
          ("H_yy_x"  , "nearest neighbor spin exchange Sy Sy in the x direction")
          ("H_zz_x"  , "nearest neighbor spin exchange Sz Sz in the x direction")
@@ -147,6 +151,10 @@ int main(int argc, char** argv)
       Lattice["H_J1_yp"] = Lattice["H_xx_yp"] + Lattice["H_yy_yp"] + Lattice["H_zz_yp"];
       Lattice["H_J1"] = Lattice["H_J1_x"] + Lattice["H_J1_y"];
       Lattice["H_J1_p"] = Lattice["H_J1_x"] + Lattice["H_J1_yp"];
+      Lattice["H_J1x"] = Lattice["H_J1_x"];
+      Lattice["H_J1y"] = Lattice["H_J1_y"];
+      Lattice["H_J1yp"] = Lattice["H_J1_yp"];
+      Lattice["H_J1p"] = Lattice["H_J1_p"];
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

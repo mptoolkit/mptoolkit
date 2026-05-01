@@ -50,11 +50,11 @@ int main(int argc, char** argv)
 
       // Descriptions of each operator
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Kondo Lattice Model");
+      OpDescriptions.set_description("U(1)xU(1) Kondo lattice model");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
          ("H_t"   , "nearest neighbor hopping")
-         ("H_t2"  , "nexxt-nearest neighbor hopping")
+         ("H_t2"  , "next-nearest neighbor hopping")
          ("H_U"   , "on-site Coulomb interaction")
          ("H_K"   , "Kondo coupling")
          ;
