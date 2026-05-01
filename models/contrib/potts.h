@@ -39,8 +39,10 @@ LatticeSite PottsSite(int qq)
       ("I"   , "identity")
       ("R"   , "reflection")
       ("P"   , "fermion parity")
-      ("Omega", "diagonal (rotation) operator")
-      ("Gamma", "transverse field")
+      ("Omega", "clock operator, diagonal in the Potts basis (alias Z)")
+      ("Gamma", "shift operator (alias X)")
+      ("Z"   , "alias for Omega")
+      ("X"   , "alias for Gamma")
       ;
 
    P = SiteOperator(Basis, q, LatticeCommute::Bosonic);
@@ -56,7 +58,7 @@ LatticeSite PottsSite(int qq)
       P(ss, ss) = 1.0;
       R(ss, ss) = 1.0;
       Omega(ss, ss) = std::exp(std::complex<double>(0.0, 1.0) * 2.0 * math_const::pi * double(s) / double(qq));
-      Gamma(ss, std::to_string((s+1)%qq)) = 1;
+      Gamma(std::to_string((s+1)%qq), ss) = 1;
    }
 
    Site.arg("q") = qq;
@@ -66,6 +68,8 @@ LatticeSite PottsSite(int qq)
    Site["R"] = R;
    Site["Omega"] = Omega;
    Site["Gamma"] = Gamma;
+   Site["Z"] = Omega;
+   Site["X"] = Gamma;
 
    Site.set_operator_descriptions(OpDescriptions);
 

@@ -52,8 +52,8 @@ int main(int argc, char** argv)
       OpDescriptions.set_description("q-state Potts model; after arXiv:1702.02675v1");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_J"    , "nearest neighbor coupling -sum_i Omega_i Omega_{i+1}")
-         ("H_g"    , "transverse field -sum_i Gamma_i")
+         ("H_J"    , "nearest neighbor coupling -sum_i sum_{k=1}^{q-1} Omega_i^k Omega_{i+1}^{q-k}")
+         ("H_g"    , "transverse field -sum_i sum_{k=1}^{q-1} Gamma_i^k")
          ;
       if (vm.count("help") || !vm.count("out"))
       {

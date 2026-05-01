@@ -1,0 +1,45 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: potts -q 3 -o lat
+    outputs:
+      lattice: lat
+    certify:
+      - lattice_info_text:
+          contains: "Description: q-state Potts model; after arXiv:1702.02675v1"
+      - lattice_info_text:
+          contains: "X          - alias for Gamma"
+      - lattice_info_text:
+          contains: "Z          - alias for Omega"
+
+  critical_ground:
+    from: lat
+    run: mp-idmrg-s3e -a -b -u 2 -w psi -H lat:H_J+H_g -m 16x16 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J+H_g"
+      - info_text:
+          contains: "Unit cell size = 2"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -4.871982248353835
+          abs: 2e-3
+
+tests:
+  critical_three_state_potts_idmrg_energy_matches_exact_two_site_density:
+    use: critical_ground
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J+H_g"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -4.871982248353835
+          abs: 2e-3
