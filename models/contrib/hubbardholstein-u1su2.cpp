@@ -52,10 +52,10 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.description("U(1)xSU(2) Hubbard-Holstein model");
+      OpDescriptions.description("U(1)xSU(2) Hubbard-Holstein model [contrib warning: H_t sign convention is unresolved]");
       OpDescriptions.author("Ian McCulloch", "ian@qusim.net");
       OpDescriptions.add_operators()
-         ("H_t"   , "nearest neighbour fermion hopping")
+         ("H_t"   , "nearest neighbour fermion hopping [contrib warning: sign convention is unresolved]")
          ("H_U"   , "on-site coulomb repulsion for the fermions")
          ("H_Us"  , "on-site coulomb repulsion for the fermions, symmetric version")
          ("H_w"   , "on-site phonon energy")

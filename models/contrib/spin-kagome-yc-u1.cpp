@@ -72,6 +72,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("width,w", prog_opt::value(&w), "width of the cylinder, should be even [default 4]")
+         ("verbose,v", "show diagnostic output")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -184,8 +185,11 @@ int main(int argc, char** argv)
            }
       }
 
-      std::cout << "UnitCell size is:" << " " << u << std::endl;
-      std::cout << "The number of J1 bonds per unit-cell:" << " " << num_bonds_j1 << ", and the number of J2 bonds per unit-cell: " << num_bonds_j2 << std::endl;
+      if (vm.count("verbose"))
+      {
+         std::cout << "UnitCell size is:" << " " << u << std::endl;
+         std::cout << "The number of J1 bonds per unit-cell:" << " " << num_bonds_j1 << ", and the number of J2 bonds per unit-cell: " << num_bonds_j2 << std::endl;
+      }
 
       Lattice["H_J1"] = sum_unit(H1);
       Lattice["H_J2"] = sum_unit(H2);

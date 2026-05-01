@@ -71,12 +71,12 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xU(1) Tasaki cylinder model");
+      OpDescriptions.set_description("U(1)xU(1) Tasaki cylinder model [contrib warning: hopping sign convention is unresolved]");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx", "nearest-neighbor hopping in y-direction")
-         ("H_ty", "nearest-neighbor hopping in x-direction")
-         ("H_t" , "nearest-neighbor hopping")
+         ("H_tx", "nearest-neighbor hopping in y-direction [contrib warning: sign convention is unresolved]")
+         ("H_ty", "nearest-neighbor hopping in x-direction [contrib warning: sign convention is unresolved]")
+         ("H_t" , "nearest-neighbor hopping [contrib warning: sign convention is unresolved]")
          ("H_U" , "on-site Coulomb interaction n_up*n_down")
          ("H_Us", "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
          ;

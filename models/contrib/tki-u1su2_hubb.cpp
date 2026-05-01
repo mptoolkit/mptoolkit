@@ -49,8 +49,9 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
+    OpDescriptions.description("U(1)xSU(2) Kondo lattice model [contrib warning: H_t sign convention is unresolved]");
     OpDescriptions.add_operators()
-      ("H_t"  , "nearest neighbour fermion hopping")
+      ("H_t"  , "nearest neighbour fermion hopping [contrib warning: sign convention is unresolved]")
       ("H_U"  , "on-site Coulomb interaction n_up*n_down")
       ("H_J1" , "nearest neighbour spin exchange")
       ("H_K"  , "Kondo coupling between fermion and spin")
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
     Lattice["H_K"]  = sum_unit(inner(S(0)[1], Pi(0)));
 
     // Information about the lattice
-    Lattice.set_description("U(1)xSU(2) Kondo lattice model");
+    Lattice.set_description("U(1)xSU(2) Kondo lattice model [contrib warning: H_t sign convention is unresolved]");
     Lattice.set_command_line(argc, argv);
     Lattice.set_operator_descriptions(OpDescriptions);
 

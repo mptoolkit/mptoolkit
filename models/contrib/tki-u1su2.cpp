@@ -49,10 +49,10 @@ int main(int argc, char** argv)
     prog_opt::notify(vm);
 
     OperatorDescriptions OpDescriptions;
-    OpDescriptions.description("U(1)xSU(2) p-wave Kondo lattice model");
+    OpDescriptions.description("U(1)xSU(2) p-wave Kondo lattice model [contrib warning: H_t sign convention is unresolved]");
     OpDescriptions.author("Jason Pillay", "pillayjason@hotmail.com");
     OpDescriptions.add_operators()
-      ("H_t"  , "nearest neighbour fermion hopping")
+      ("H_t"  , "nearest neighbour fermion hopping [contrib warning: sign convention is unresolved]")
       ("H_J1" , "nearest neighbour spin exchange")
       ("H_K"  , "Kondo coupling between fermion and spin")
       ;

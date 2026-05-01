@@ -51,10 +51,10 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xU(1) Tasaki model");
+      OpDescriptions.set_description("U(1)xU(1) Tasaki model [contrib warning: H_t sign convention is unresolved]");
       OpDescriptions.author("J Osborne", "j.osborne@uqconnect.edu.au");
       OpDescriptions.add_operators()
-         ("H_t" , "nearest-neighbor hopping")
+         ("H_t" , "nearest-neighbor hopping [contrib warning: sign convention is unresolved]")
          ("H_U" , "on-site Coulomb interaction n_up*n_down")
          ("H_Us", "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
          ;

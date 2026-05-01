@@ -117,6 +117,7 @@ int main(int argc, char** argv)
          ("help", "show this help message")
          ("Spin,S", prog_opt::value(&Spin), "magnitude of the spin [default 0.5]")
          ("width,w", prog_opt::value(&w), "width of the cylinder, should be even [default 4]")
+         ("verbose,v", "show diagnostic output")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -204,7 +205,10 @@ int main(int argc, char** argv)
          Hab += inner(S(0)[i*9+8], S(1)[l]);
       }
 
-      std::cout << "UnitCell size is:" << " " << u << std::endl;
+      if (vm.count("verbose"))
+      {
+         std::cout << "UnitCell size is:" << " " << u << std::endl;
+      }
 
       Lattice["H_aa"] = sum_unit(Haa);
       Lattice["H_ab"] = sum_unit(Hab);

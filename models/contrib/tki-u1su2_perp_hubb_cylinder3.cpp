@@ -51,8 +51,9 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
+      OpDescriptions.description("U(1)xSU(2) Kondo lattice cylinder model [contrib warning: H_t sign convention is unresolved]");
       OpDescriptions.add_operators()
-         ("H_t"  , "nearest neighbour fermion hopping")
+         ("H_t"  , "nearest neighbour fermion hopping [contrib warning: sign convention is unresolved]")
          ("H_U"  , "on-site Coulomb interaction n_up*n_down")
          ("H_J1" , "nearest neighbour spin exchange")
          ("H_K"  , "Diagonal Kondo coupling between fermion and spin")

@@ -46,6 +46,7 @@ int main(int argc, char** argv)
 	 ("unitell,u", prog_opt::value(&Length), "unit cell size")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
 	 ("seed,s", prog_opt::value(&Seed), "random seed")
+         ("verbose,v", "show generated field values")
          ;
 
       prog_opt::variables_map vm;
@@ -76,21 +77,27 @@ int main(int argc, char** argv)
 
       std::vector<double> Fields = {0.781016, 1.48551, 3.44303, 5.50825, 1.64421, 5.72713, 0.718131, 5.55603,
 				    -1.22152, 1.97702, 2.33431, -1.84989, -0.998605, -3.23945, 6.26837, -7.09259 };
-      TRACE(Fields.size());
+      if (vm.count("verbose"))
+      {
+         TRACE(Fields.size());
+      }
       double h = 8;
       {
 	 boost::mt19937 generator;
 	 generator.seed(0);
 	 boost::random::uniform_real_distribution<double> box(-h,+h);
 	 {
-	    std::cout << "# fields= {";
+	    if (vm.count("verbose"))
+	       std::cout << "# fields= {";
 	    for(size_t i=0; i<Fields.size(); i++)
 	    {
 	       Fields[i]= box(generator);
-	       std::cout << Fields[i] << " ";
+	       if (vm.count("verbose"))
+	          std::cout << Fields[i] << " ";
 	    }
 	 }
-	 std::cout << '}' << std::endl;
+	 if (vm.count("verbose"))
+	    std::cout << '}' << std::endl;
       }
 
       LatticeSite Site = SpinU1(Spin);

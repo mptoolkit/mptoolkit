@@ -84,7 +84,7 @@ int main(int argc, char** argv)
          print_copyright(std::cerr);
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
-         std::cout << OpDescriptions << '\n';
+         std::cerr << OpDescriptions << '\n';
          return 1;
       }
 
