@@ -1,0 +1,51 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: hubbard -o lat
+    outputs:
+      lattice: lat
+
+  up_empty:
+    from: lat
+    run: mp-construct -l lat -o psi up:empty
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_plain_hubbard_model:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: Fermi Hubbard model (no symmetry)"
+      - lattice_info_text:
+          contains: "Unit cell size: 1"
+      - lattice_info_text:
+          contains: "H_t        - nearest neighbor hopping = H_tup + H_tdown"
+
+  plain_hubbard_product_state_supports_exact_identity_moments:
+    use: up_empty
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 2.0
+          abs: 1e-12

@@ -1,0 +1,55 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_plain_spin_chain_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: Spin chain"
+      - lattice_info_text:
+          contains: "Unit cell size: 1"
+      - lattice_info_text:
+          contains: "H_J1       - nearest neighbor spin exchange = H_J1z + H_J1t"
+
+  plain_spin_chain_product_state_has_exact_identity_moments_and_local_sz:
+    use: neel2
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 2.0
+          abs: 1e-12

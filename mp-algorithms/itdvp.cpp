@@ -132,6 +132,10 @@ iTDVP::Canonicalize()
       return;
 
    PsiCanonical = InfiniteWavefunctionLeft::Construct(Psi, QShift, scalar_prod(LambdaR, herm(LambdaR)), Normalize ? 0.0 : LogAmplitude);
+   std::complex<double> ScaleLog = ProjectedScaleLog;
+   if (Normalize)
+      ScaleLog = std::complex<double>(0.0, ScaleLog.imag());
+   PsiCanonical.scale_log(ScaleLog);
    Canonicalized = true;
 }
 
@@ -300,6 +304,11 @@ iTDVP::EvolveLeft(std::complex<double> Tau)
 
       this->OrthogonalizeLeftmostSite();
 
+      // The tangent-space projection removes the component parallel to the
+      // state, which carries the extensive phase/amplitude density -i E Tau.
+      if (Sweep == EvolutionSweeps)
+         ProjectedScaleLog += -I * E * Tau;
+
       if (Verbose > 0)
       {
          if (Sweep > 1)
@@ -385,6 +394,11 @@ iTDVP::EvolveRight(std::complex<double> Tau)
       this->SweepRight(Tau);
 
       this->OrthogonalizeRightmostSite();
+
+      // The tangent-space projection removes the component parallel to the
+      // state, which carries the extensive phase/amplitude density -i E Tau.
+      if (Sweep == EvolutionSweeps)
+         ProjectedScaleLog += -I * E * Tau;
 
       if (Verbose > 0)
       {
@@ -935,6 +949,9 @@ iTDVP::UpdateHamiltonianLeft(std::complex<double> t, std::complex<double> dt)
    this->Canonicalize();
 
    std::tie(Psi, LambdaR) = get_left_canonical(PsiCanonical);
+   LogAmplitude = PsiCanonical.log_amplitude();
+   // The projected scale has now been embedded back into Psi via PsiCanonical.
+   ProjectedScaleLog = 0.0;
    C = Psi.end();
    --C;
 
@@ -992,6 +1009,9 @@ iTDVP::UpdateHamiltonianRight(std::complex<double> t, std::complex<double> dt)
    this->Canonicalize();
 
    std::tie(LambdaR, Psi) = get_right_canonical(PsiCanonical);
+   LogAmplitude = PsiCanonical.log_amplitude();
+   // The projected scale has now been embedded back into Psi via PsiCanonical.
+   ProjectedScaleLog = 0.0;
    C = Psi.begin();
 
    if (Verbose > 1)

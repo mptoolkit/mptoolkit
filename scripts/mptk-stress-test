@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: mptk-stress-test [options]
+
+Repeatedly run one declarative integration suite to look for intermittent
+failures.
+
+Options:
+  --bin-dir DIR       Directory containing MPToolkit binaries.
+                      Default: current working directory.
+  --suite NAME        Suite file, basename under tests/suites/, or basename
+                      without .yaml.
+                      Default: spinchain-aklt-spt-uc1-rerun
+  --test NAME         Restrict to a single test inside the suite.
+  --iterations N      Number of iterations to run.
+                      Default: 100
+  --forever           Run until interrupted.
+  --log-dir DIR       Directory for stress logs.
+                      Default: /tmp/mptk-stress-<suite>-<timestamp>-<pid>
+  --fail-fast         Stop after the first failure.
+  --keep-all-logs     Keep per-iteration logs for successful runs too.
+  --trace             Pass --trace through to the runner.
+  --explain           Pass --explain through to the runner.
+  --help, -h          Show this help text.
+
+Examples:
+  mptk-stress-test --bin-dir /home/ian/build/main-debug
+  mptk-stress-test --bin-dir /home/ian/build/main-debug --iterations 1000
+  mptk-stress-test --bin-dir /home/ian/build/main-debug --forever
+  mptk-stress-test --bin-dir /home/ian/build/main-debug --test rerunning_single_site_aklt_dmrg_preserves_exact_energy_and_spt_projective_phase
+EOF
+}
+
+script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd -- "${script_dir}/.." && pwd)
+
+bin_dir=$PWD
+suite_spec="spinchain-aklt-spt-uc1-rerun"
+test_name=""
+iterations=100
+iterations_set=0
+run_forever=0
+log_dir=""
+fail_fast=0
+keep_all_logs=0
+runner_flags=()
+interrupted=0
+summary_printed=0
+
+resolve_suite() {
+    local spec=$1
+
+    if [[ -f $spec ]]; then
+        printf '%s\n' "$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/$spec ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/${spec}.yaml ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/${spec}.yaml"
+        return 0
+    fi
+
+    printf 'Unknown suite: %s\n' "$spec" >&2
+    return 1
+}
+
+while (($#)); do
+    case "$1" in
+        --bin-dir)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
+            bin_dir=$2
+            shift 2
+            ;;
+        --suite)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --suite\n' >&2; exit 2; }
+            suite_spec=$2
+            shift 2
+            ;;
+        --test)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --test\n' >&2; exit 2; }
+            test_name=$2
+            shift 2
+            ;;
+        --iterations)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --iterations\n' >&2; exit 2; }
+            iterations=$2
+            iterations_set=1
+            shift 2
+            ;;
+        --forever)
+            run_forever=1
+            shift
+            ;;
+        --log-dir)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --log-dir\n' >&2; exit 2; }
+            log_dir=$2
+            shift 2
+            ;;
+        --fail-fast)
+            fail_fast=1
+            shift
+            ;;
+        --keep-all-logs)
+            keep_all_logs=1
+            shift
+            ;;
+        --trace|--explain)
+            runner_flags+=("$1")
+            shift
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            printf 'Unknown option: %s\n' "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+suite=$(resolve_suite "$suite_spec")
+suite_name=$(basename "$suite" .yaml)
+
+if (( run_forever && iterations_set )); then
+    printf '%s\n' '--forever cannot be combined with --iterations' >&2
+    exit 2
+fi
+
+if ! [[ $iterations =~ ^[0-9]+$ ]] || (( iterations < 1 )); then
+    printf 'Invalid --iterations value: %s\n' "$iterations" >&2
+    exit 2
+fi
+
+if [[ -z $log_dir ]]; then
+    timestamp=$(date +%Y%m%d-%H%M%S)
+    log_dir="/tmp/mptk-stress-${suite_name}-${timestamp}-$$"
+fi
+
+mkdir -p "$log_dir"
+summary_file="${log_dir}/summary.txt"
+failures_file="${log_dir}/failures.txt"
+touch "$summary_file" "$failures_file"
+
+print_summary() {
+    local end_epoch elapsed total
+
+    if (( summary_printed )); then
+        return
+    fi
+    summary_printed=1
+
+    end_epoch=$(date +%s)
+    elapsed=$((end_epoch - start_epoch))
+    total=$((passes + failures))
+
+    printf '\n'
+    printf 'Overall summary: %d total, %d passed, %d failed\n' \
+        "$total" "$passes" "$failures" | tee -a "$summary_file"
+    if (( interrupted )); then
+        printf 'Stopped by interrupt\n' | tee -a "$summary_file"
+    fi
+    printf 'Elapsed: %ds\n' "$elapsed" | tee -a "$summary_file"
+    if (( failures )); then
+        printf 'Failure logs:\n' | tee -a "$summary_file"
+        cat "$failures_file"
+    fi
+    printf 'Summary file: %s\n' "$summary_file"
+}
+
+handle_interrupt() {
+    interrupted=1
+}
+
+trap handle_interrupt INT TERM
+trap print_summary EXIT
+
+printf 'Suite: %s\n' "$suite" | tee -a "$summary_file"
+printf 'Bin dir: %s\n' "$bin_dir" | tee -a "$summary_file"
+if (( run_forever )); then
+    printf 'Iterations: forever\n' | tee -a "$summary_file"
+else
+    printf 'Iterations: %s\n' "$iterations" | tee -a "$summary_file"
+fi
+if [[ -n $test_name ]]; then
+    printf 'Test: %s\n' "$test_name" | tee -a "$summary_file"
+fi
+printf 'Log dir: %s\n' "$log_dir" | tee -a "$summary_file"
+printf '\n' | tee -a "$summary_file"
+
+passes=0
+failures=0
+start_epoch=$(date +%s)
+
+for ((i = 1; ; ++i)); do
+    if (( interrupted )); then
+        break
+    fi
+    if (( ! run_forever && i > iterations )); then
+        break
+    fi
+
+    log_file="${log_dir}/iter-$(printf '%04d' "$i").log"
+    cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    cmd+=("${runner_flags[@]}")
+    if [[ -n $test_name ]]; then
+        cmd+=("$test_name")
+    fi
+
+    if (( run_forever )); then
+        printf '[%s/forever] ' "$i"
+    else
+        printf '[%s/%s] ' "$i" "$iterations"
+    fi
+    if "${cmd[@]}" >"$log_file" 2>&1; then
+        passes=$((passes + 1))
+        printf 'PASS\n'
+        printf 'PASS %04d\n' "$i" >>"$summary_file"
+        if (( ! keep_all_logs )); then
+            rm -f "$log_file"
+        fi
+    else
+        rc=$?
+        if (( interrupted )) && (( rc == 130 || rc == 143 )); then
+            printf 'STOP\n'
+            rm -f "$log_file"
+            break
+        fi
+        failures=$((failures + 1))
+        printf 'FAIL (%s)\n' "$log_file"
+        printf 'FAIL %04d %s\n' "$i" "$log_file" | tee -a "$summary_file" >>"$failures_file"
+        if (( fail_fast )); then
+            break
+        fi
+    fi
+done
+
+if (( failures )); then
+    exit 1
+fi

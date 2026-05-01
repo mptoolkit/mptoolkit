@@ -1,0 +1,38 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  rand8:
+    from: lat
+    run: mp-random -l lat -u 8 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  rand8_dmrg_2site_s4:
+    from: rand8
+    run: mp-dmrg-2site -w psi -H lat:H_J1 -m 4 -s 4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.371801189963038
+          abs: 1e-10
+
+tests:
+  dmrg_2site_legacy_sweeps_path_converges_repeatably:
+    use: rand8_dmrg_2site_s4
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.371801189963038
+          abs: 1e-10

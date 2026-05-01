@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: mptk-test [--bin-dir DIR] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [--test NAME ...] [suite ...]
+
+Run MPToolkit declarative integration suites.
+
+If no suite is given, all files under tests/suites/*.yaml are run.
+Suite arguments may be:
+  - an absolute or relative path to a suite file
+  - a basename under tests/suites/
+  - a basename without the .yaml suffix
+
+The default binary directory is the current working directory, so this script is
+intended to be run from a build tree.
+EOF
+}
+
+script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd -- "${script_dir}/.." && pwd)
+
+bin_dir=$PWD
+work_root=""
+runner_flags=()
+suite_specs=()
+test_specs=()
+
+resolve_suite() {
+    local spec=$1
+
+    if [[ -f $spec ]]; then
+        printf '%s\n' "$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/$spec ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/$spec"
+        return 0
+    fi
+    if [[ -f ${repo_root}/tests/suites/${spec}.yaml ]]; then
+        printf '%s\n' "${repo_root}/tests/suites/${spec}.yaml"
+        return 0
+    fi
+
+    printf 'Unknown suite: %s\n' "$spec" >&2
+    return 1
+}
+
+while (($#)); do
+    case "$1" in
+        --bin-dir)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
+            bin_dir=$2
+            shift 2
+            ;;
+        --work-root)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --work-root\n' >&2; exit 2; }
+            work_root=$2
+            shift 2
+            ;;
+        --verbose|--explain|--trace|--dump-ir)
+            runner_flags+=("$1")
+            shift
+            ;;
+        --test)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --test\n' >&2; exit 2; }
+            test_specs+=("$2")
+            shift 2
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            suite_specs+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if ((${#suite_specs[@]})); then
+    suites=()
+    for spec in "${suite_specs[@]}"; do
+        suites+=("$(resolve_suite "$spec")")
+    done
+else
+    mapfile -t suites < <(find "${repo_root}/tests/suites" -maxdepth 1 -type f -name '*.yaml' | sort)
+fi
+
+if ((${#suites[@]} == 0)); then
+    printf 'No suites found\n' >&2
+    exit 1
+fi
+
+if ((${#test_specs[@]})) && ((${#suites[@]} != 1)); then
+    printf '%s\n' '--test requires exactly one suite' >&2
+    exit 2
+fi
+
+if [[ " ${runner_flags[*]} " == *" --dump-ir "* ]] && ((${#suites[@]} != 1)); then
+    printf '%s\n' '--dump-ir requires exactly one suite' >&2
+    exit 2
+fi
+
+status=0
+total_tests=0
+total_passed=0
+total_failed=0
+suite_errors=0
+failures=()
+first_suite=1
+for suite in "${suites[@]}"; do
+    cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    if [[ -n $work_root ]]; then
+        suite_name=$(basename "$suite" .yaml)
+        cmd+=(--work-root "${work_root}/${suite_name}")
+    fi
+    cmd+=("${runner_flags[@]}")
+    cmd+=("${test_specs[@]}")
+
+    if (( ! first_suite )); then
+        printf '\n'
+    fi
+    first_suite=0
+
+    printf '=== %s ===\n' "$(basename "$suite")"
+    if output=$("${cmd[@]}" 2>&1); then
+        suite_status=0
+    else
+        suite_status=$?
+        status=1
+    fi
+    printf '%s\n' "$output"
+
+    summary_line=$(printf '%s\n' "$output" | grep '^Summary: ' | tail -n 1 || true)
+    if [[ $summary_line =~ Summary:\ ([0-9]+)\ total,\ ([0-9]+)\ passed,\ ([0-9]+)\ failed ]]; then
+        total_tests=$((total_tests + BASH_REMATCH[1]))
+        total_passed=$((total_passed + BASH_REMATCH[2]))
+        total_failed=$((total_failed + BASH_REMATCH[3]))
+    fi
+
+    while IFS= read -r line; do
+        test_name=${line#FAIL }
+        failures+=("$(basename "$suite"):$test_name")
+    done < <(printf '%s\n' "$output" | grep '^FAIL ' || true)
+
+    if (( suite_status != 0 )) && ! printf '%s\n' "$output" | grep -q '^FAIL '; then
+        suite_errors=$((suite_errors + 1))
+        failures+=("$(basename "$suite"):(suite error)")
+    fi
+done
+
+printf '\n'
+printf 'Overall summary: %d total, %d passed, %d failed' \
+    "$total_tests" "$total_passed" "$total_failed"
+if (( suite_errors )); then
+    printf ', %d suite errors' "$suite_errors"
+fi
+printf '\n'
+if ((${#failures[@]})); then
+    printf 'Overall failures:\n'
+    for failure in "${failures[@]}"; do
+        printf -- '- %s\n' "$failure"
+    done
+fi
+
+exit "$status"

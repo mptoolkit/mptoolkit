@@ -1,0 +1,174 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-su2 -o lat
+    outputs:
+      lattice: lat
+
+  rand2_s0:
+    from: lat
+    run: mp-random -l lat -u 2 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  rand2_s1:
+    from: lat
+    run: mp-random -l lat -u 2 -q 1 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  rand3_shalf:
+    from: lat
+    run: mp-random -l lat -u 3 -q 1/2 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  rand3_s3half:
+    from: lat
+    run: mp-random -l lat -u 3 -q 3/2 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  singlet2:
+    from: rand2_s0
+    run: mp-dmrg -w psi -H lat:H_J1 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.75
+          abs: 1e-12
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: -0.75
+          abs: 1e-12
+
+  triplet2:
+    from: rand2_s1
+    run: mp-dmrg -w psi -H lat:H_J1 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 0.25
+          abs: 1e-12
+      - norm:
+          approx: 3.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: 2.25
+          abs: 1e-11
+
+  doublet3:
+    from: rand3_shalf
+    run: mp-dmrg -w psi -H lat:H_J1 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - norm:
+          approx: 2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: -2.0
+          abs: 1e-11
+      - expectation_real:
+          operator: "lat:inner(S(1), S(2))"
+          approx: -2.0
+          abs: 1e-11
+      - expectation_real:
+          operator: "lat:inner(S(0), S(2))"
+          approx: 1.0
+          abs: 1e-11
+
+  quartet3:
+    from: rand3_s3half
+    run: mp-dmrg -w psi -H lat:H_J1 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 0.5
+          abs: 1e-12
+      - norm:
+          approx: 4.0
+          abs: 1e-12
+
+tests:
+  scalar_singlet_sector_has_expected_energy_norm_and_bond_correlator:
+    use: singlet2
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.75
+          abs: 1e-12
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: -0.75
+          abs: 1e-12
+
+  triplet_sector_uses_the_current_reduced_state_convention:
+    use: triplet2
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 0.25
+          abs: 1e-12
+      - norm:
+          approx: 3.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: 2.25
+          abs: 1e-11
+
+  half_integer_doublet_sector_has_expected_energy_and_reduced_correlators:
+    use: doublet3
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - norm:
+          approx: 2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:inner(S(0), S(1))"
+          approx: -2.0
+          abs: 1e-11
+      - expectation_real:
+          operator: "lat:inner(S(1), S(2))"
+          approx: -2.0
+          abs: 1e-11
+      - expectation_real:
+          operator: "lat:inner(S(0), S(2))"
+          approx: 1.0
+          abs: 1e-11
+
+  different_total_spin_sectors_are_orthogonal_on_two_sites:
+    use:
+      psi1: singlet2.state
+      psi2: triplet2.state
+    expect:
+      - overlap_mag:
+          approx: 0.0
+          abs: 1e-12
+
+  different_total_spin_sectors_are_orthogonal_on_three_sites:
+    use:
+      psi1: doublet3.state
+      psi2: quartet3.state
+    expect:
+      - overlap_mag:
+          approx: 0.0
+          abs: 1e-12

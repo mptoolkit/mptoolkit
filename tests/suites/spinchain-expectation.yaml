@@ -1,0 +1,58 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  neel4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  local_sz_expectations_match_neel_state:
+    use: neel4
+    expect:
+      - expectation:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  complex_expectation_and_projection_options:
+    use: neel4
+    expect:
+      - expectation:
+          operator: "lat:i*Sz(0)"
+          approx: "0+0.5i"
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:i*Sz(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_imag:
+          operator: "lat:i*Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  compare_form_accepts_string_probe_names:
+    use: neel4
+    expect:
+      - probe: norm
+        compare:
+          kind: approx
+          value: 1.0
+          abs: 1e-12

@@ -1,0 +1,463 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  finite_neel4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  finite_neel4_tebd_identity:
+    from: finite_neel4
+    run: mp-tebd -w psi -H lat:sum_unit(I(0)) -o out -t 0-0.1i -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - norm:
+          approx: 0.67032004603564
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation:
+          operator: "lat:i*Sz(0)"
+          approx: "0+0.5i"
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_itebd_identity:
+    from: infinite_neel2
+    run: mp-itebd -w psi -H lat:sum_unit(I(0)) -o out -t 0-0.1i -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 0.67032004603564
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 0.67032004603564
+          abs: 1e-12
+
+  infinite_neel2_itebd_identity_real:
+    from: infinite_neel2
+    run: mp-itebd -w psi -H lat:sum_unit(I(0)) -o out -t 0.1 -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{parent.state}"
+          approx: 0.98006657784124
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{parent.state}"
+          approx: 0.19866933079506
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{parent.state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_itdvp_identity:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H lat:sum_unit(I(0)) -o out -t 0-0.1i -n 1 -s 1 -m 4
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{parent.state}"
+          approx: 0.81873075307798
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{parent.state}"
+          approx: 0.81873075307798
+          abs: 1e-12
+
+  infinite_neel2_itdvp_identity_real:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H lat:sum_unit(I(0)) -o out -t 0.1 -n 1 -s 1 -m 4
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{parent.state}"
+          approx: 0.98006657784124
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{parent.state}"
+          approx: 0.19866933079506
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{parent.state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_itdvp_time_dependent_imag:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H "lat:(1+i*t)*sum_unit(I(0))" -o out -t 0-0.1i -n 4 -s 1 -m 4
+    outputs:
+      state: out.b0.4
+      state_b0p1: out.b0.1
+      state_b0p2: out.b0.2
+      state_b0p3: out.b0.3
+      state_b0p4: out.b0.4
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*t)*sum_unit(I(0))"
+      - ioverlap_real:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+      - ioverlap_imag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+
+tests:
+  tebd_identity_updates_norm_and_beta:
+    use: finite_neel4_tebd_identity
+    expect:
+      - norm:
+          approx: 0.67032004603564
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+
+  itebd_identity_updates_beta_and_operator:
+    use: infinite_neel2_itebd_identity
+    expect:
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  itebd_real_time_identity_tracks_phase_per_unit_cell:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_itebd_identity_real.state
+    expect:
+      - attr_float:
+          state: "{psi2}"
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - ioverlap_real:
+          approx: 0.98006657784124
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: -0.19866933079506
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_product_state_expectations_and_self_overlap_match_exact_values:
+    use: infinite_neel2
+    expect:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation:
+          operator: "lat:i*Sz(0)"
+          approx: "0+0.5i"
+          abs: 1e-12
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+  itdvp_identity_updates_beta_and_operator:
+    use: infinite_neel2_itdvp_identity
+    expect:
+      - attr_float:
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  itdvp_real_time_identity_tracks_phase_per_unit_cell:
+    use:
+      psi1: infinite_neel2.state
+      psi2: infinite_neel2_itdvp_identity_real.state
+    expect:
+      - attr_float:
+          state: "{psi2}"
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - ioverlap_real:
+          approx: 0.98006657784124
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: -0.19866933079506
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  itdvp_time_dependent_imaginary_time_tracks_projected_amplitude:
+    use:
+      psi0: infinite_neel2.state
+      beta_0p1: infinite_neel2_itdvp_time_dependent_imag.state_b0p1
+      beta_0p2: infinite_neel2_itdvp_time_dependent_imag.state_b0p2
+      beta_0p3: infinite_neel2_itdvp_time_dependent_imag.state_b0p3
+      beta_0p4: infinite_neel2_itdvp_time_dependent_imag.state_b0p4
+    expect:
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81464731641141
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81464731641141
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64726466707803
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64726466707803
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50409022957483
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50409022957483
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38481214455298
+          abs: 1e-12
+      - ioverlap_imag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38481214455298
+          abs: 1e-12
+
+  imoments_cross_json_reuses_itebd_output:
+    use: infinite_neel2_itebd_identity
+    expect:
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: format
+          equals: "mptoolkit.imoments-cross.cumulants/v1"
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: unit_cell_size
+          equals: 2
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: log_amplitude
+          approx: -0.4
+          abs: 1e-12
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: cumulants[0].real
+          approx: -0.4
+          abs: 1e-12
+
+  imoments_cross_json_accepts_explicit_output_bindings:
+    use:
+      psi1: infinite_neel2_itebd_identity.state
+      psi2: infinite_neel2_itebd_identity.state
+    expect:
+      - imoments_cross_json:
+          operator: "lat:sum_unit(Sz(0))"
+          json_path: log_amplitude
+          approx: -0.4
+          abs: 1e-12

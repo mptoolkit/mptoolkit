@@ -1,0 +1,44 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spincylinder-su2 -o lat
+    outputs:
+      lattice: lat
+
+  rand4_s0:
+    from: lat
+    run: mp-random -l lat -u 4 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_default_su2_yc4_cylinder_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: SU(2) spin cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+
+  su2_cylinder_random_scalar_state_has_consistent_basic_metadata:
+    use: rand4_s0
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Length = 4"
+      - info_text:
+          contains: "Quantum number = 0"
+      - info_text:
+          contains: "WavefunctionType=Finite"

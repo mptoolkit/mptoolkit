@@ -1,0 +1,246 @@
+recipes:
+  norm:
+    probe: mp-norm {state}
+    extract: last_float
+
+  expectation:
+    probe: mp-expectation {state} {operator}
+    extract: last_complex
+
+  expectation_real:
+    probe: mp-expectation --real {state} {operator}
+    extract: last_float
+
+  expectation_imag:
+    probe: mp-expectation --imag {state} {operator}
+    extract: last_float
+
+  attr_float:
+    probe: mp-attr {state} {attribute}
+    extract: last_float
+
+  attr_text:
+    probe: mp-attr {state} {attribute}
+    extract: last_text
+
+  info_text:
+    probe: mp-info {state}
+    extract: full_text
+
+  history_text:
+    probe: mp-history {state}
+    extract: full_text
+
+  file_text:
+    probe: /bin/sed -n 1,80p {path}
+    extract: full_text
+
+  lattice_info_text:
+    probe: mp-lattice-info {lattice}
+    defaults:
+      lattice: lat
+    extract: full_text
+
+  show_finite_operator_text:
+    probe: mp-show-operator -f {operator}
+    extract: full_text
+
+  show_product_operator_text:
+    probe: mp-show-operator -p {operator}
+    extract: full_text
+
+  overlap_real:
+    probe: mp-overlap --real --quiet {psi1} {psi2}
+    extract: last_float
+
+  overlap_imag:
+    probe: mp-overlap --imag --quiet {psi1} {psi2}
+    extract: last_float
+
+  overlap_mag:
+    probe: mp-overlap --mag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ioverlap_real:
+    probe: mp-ioverlap --real --quiet {psi1} {psi2}
+    extract: last_float
+
+  ioverlap_imag:
+    probe: mp-ioverlap --imag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ioverlap_mag:
+    probe: mp-ioverlap --mag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_overlap_real:
+    probe: mp-ibc-overlap --real --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_overlap_imag:
+    probe: mp-ibc-overlap --imag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_overlap_mag:
+    probe: mp-ibc-overlap --mag --quiet {psi1} {psi2}
+    extract: last_float
+
+  ibc_correlation_real:
+    probe: mp-ibc-correlation --quiet --real -w {prefix} -t {timestep} -n {num_steps} --xmin {xmin} -x {xmax}
+    defaults:
+      num_steps: 0
+      xmin: 0
+      xmax: 0
+      x: 0
+      time: "-0.0"
+    extract:
+      line_pattern:
+        pattern: "{time} {x} %(float:value)"
+        capture: value
+
+  aux_algebra_commutator_real:
+    probe: mp-aux-algebra -w {state} -l {lattice} --quiet {operator1} {operator2}
+    defaults:
+      lattice: lat
+    extract:
+      line_pattern:
+        pattern: "0 1 %(float:real) %(float:imag)"
+        capture: real
+
+  aux_algebra_commutator_imag:
+    probe: mp-aux-algebra -w {state} -l {lattice} --quiet {operator1} {operator2}
+    defaults:
+      lattice: lat
+    extract:
+      line_pattern:
+        pattern: "0 1 %(float:real) %(float:imag)"
+        capture: imag
+
+  allcorrelation_real:
+    probe: mp-allcorrelation --quiet --real {state} {operator1} {operator2}
+    defaults:
+      site1: 0
+      site2: 1
+    extract:
+      line_pattern:
+        pattern: "{site1} {site2} %(float:value)"
+        capture: value
+
+  icorrelation_real:
+    probe: mp-icorrelation --quiet --real --left {left} -n {length} {state} {operator1} {operator2}
+    defaults:
+      left: 0
+      distance: 0
+      length: 4
+    extract:
+      line_pattern:
+        pattern: "{left} {distance} %(float:value)"
+        capture: value
+
+  icorrelation_connected_real:
+    probe: mp-icorrelation --quiet --real --connected --left {left} -n {length} {state} {operator1} {operator2}
+    defaults:
+      left: 0
+      distance: 0
+      length: 4
+    extract:
+      line_pattern:
+        pattern: "{left} {distance} %(float:value)"
+        capture: value
+
+  ispectrum_first_real:
+    probe: mp-ispectrum --quiet -c {state}
+    extract:
+      line_pattern:
+        pattern: "0 0 %(float:real) %(float:imag)"
+        capture: real
+
+  ispectrum_first_imag:
+    probe: mp-ispectrum --quiet -c {state}
+    extract:
+      line_pattern:
+        pattern: "0 0 %(float:real) %(float:imag)"
+        capture: imag
+
+  iexpectation_cross_real:
+    probe: mp-iexpectation-cross -q {sector} --real {psi1} {operator} {psi2}
+    defaults:
+      sector: 0
+    extract: last_float
+
+  iexpectation_cross_imag:
+    probe: mp-iexpectation-cross -q {sector} --imag {psi1} {operator} {psi2}
+    defaults:
+      sector: 0
+    extract: last_float
+
+  imoments_cross_json:
+    probe: mp-imoments-cross -q {sector} --json --cumulants {psi1} {operator} {psi2}
+    defaults:
+      sector: 0
+      json_path: ""
+    extract:
+      json_path: "{json_path}"
+
+  imoments_real:
+    probe: mp-imoments --quiet --real --power {power} {state} {operator}
+    defaults:
+      power: 1
+      moment: 1
+      degree: 1
+    extract:
+      line_pattern:
+        pattern: "{moment} {degree} %(float:value)"
+        capture: value
+
+  imoments_cumulant_real:
+    probe: mp-imoments --quiet --real --power {power} --cumulants {state} {operator}
+    defaults:
+      power: 1
+      cumulant: 1
+    extract:
+      line_pattern:
+        pattern: "{cumulant} %(float:value)"
+        capture: value
+
+  ies_first_angle:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: angle
+
+  ies_first_eigenvalue:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: eigenvalue
+
+  ies_first_entropy:
+    probe: mp-ies --quiet {state} {operator}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: entropy
+
+  ies_cross_first_angle:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: angle
+
+  ies_cross_first_eigenvalue:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: eigenvalue
+
+  ies_cross_first_entropy:
+    probe: mp-ies-cross --quiet {psi1} {psi2}
+    extract:
+      line_pattern:
+        pattern: "0 0 1 %(float:angle) %(float:eigenvalue) %(float:entropy)"
+        capture: entropy

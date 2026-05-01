@@ -1,0 +1,59 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spincylinder-u1 -o lat
+    outputs:
+      lattice: lat
+
+  neel_yc4:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_default_yc4_spin_cylinder_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) spin cylinder"
+      - lattice_info_text:
+          contains: "SymmetryList: Sz:U(1)"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+
+  cylinder_product_state_supports_exact_identity_moments:
+    use: neel_yc4
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 1.0
+          abs: 1e-12

@@ -1,0 +1,92 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lattices:
+    steps:
+      - run: bosehubbard-u1 -N 5 -o lat5
+        outputs:
+          lattice5: lat5
+      - run: bosehubbard-u1 -N 2 -o lat2
+        outputs:
+          lattice2: lat2
+
+  occupancies_0120_on_lat5:
+    from: lattices
+    run: mp-construct -l lat5 -o psi --finite 0:1:2:0
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat5:N(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat5:N(1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat5:N(2)"
+          approx: 2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat5:N(3)"
+          approx: 0.0
+          abs: 1e-12
+
+  occupancies_0120_on_lat2:
+    from: occupancies_0120_on_lat5
+    run: mp-change-lattice lat5 lat2 psi psi2
+    outputs:
+      state: psi2
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(2)"
+          approx: 2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(3)"
+          approx: 0.0
+          abs: 1e-12
+      - info_text:
+          contains: "Quantum number = 3"
+
+tests:
+  change_lattice_preserves_state_inside_the_shared_local_subspace:
+    use: occupancies_0120_on_lat2
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(2)"
+          approx: 2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat2:N(3)"
+          approx: 0.0
+          abs: 1e-12

@@ -1,0 +1,130 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_neel2:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+
+  ibc_neel2:
+    from: infinite_neel2
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+    certify:
+      - ibc_overlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+  ibc_neel2_tdvp_identity:
+    from: ibc_neel2
+    steps:
+      - run: cp ibc out.b-0.0
+        outputs:
+          initial_state_negzero: out.b-0.0
+      - run: cp ibc out.b0.0
+        outputs:
+          initial_state_zero: out.b0.0
+      - run: mp-ibc-tdvp -w ibc -H "lat:sum_unit(I(0))" -o out -t 0-0.1i -n 1 -s 1 -m 4
+        outputs:
+          state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 3"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          state: "{state}"
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(I(0))"
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  ibc_tdvp_identity_updates_beta_and_keeps_the_simple_overlap:
+    use:
+      psi1: ibc_neel2.state
+      psi2: ibc_neel2_tdvp_identity.state
+    expect:
+      - ibc_overlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          state: "{psi2}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+
+  ibc_correlation_reads_the_seed_and_evolved_prefix_files:
+    use: ibc_neel2_tdvp_identity
+    expect:
+      - ibc_correlation_real:
+          prefix: out
+          timestep: "0-0.1i"
+          num_steps: 1
+          xmax: 2
+          x: 0
+          time: "-0.0"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_correlation_real:
+          prefix: out
+          timestep: "0-0.1i"
+          num_steps: 1
+          xmax: 2
+          x: 2
+          time: "-0.0"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_correlation_real:
+          prefix: out
+          timestep: "0-0.1i"
+          num_steps: 1
+          xmax: 2
+          x: 0
+          time: "0.1"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_correlation_real:
+          prefix: out
+          timestep: "0-0.1i"
+          num_steps: 1
+          xmax: 2
+          x: 2
+          time: "0.1"
+          approx: 1.0
+          abs: 1e-12

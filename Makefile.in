@@ -266,7 +266,7 @@ default : tools
 
 dist_files = config.h.in configure configure.ac aclocal.m4 Makefile.in  generate-testreport.sh \
              depend.sh install-sh stamp-h.in README TODO mkinstalldirs \
-             $(SRCDIRS)
+             docs tests $(SRCDIRS)
 
 cxxsrcglob = *.cpp $(patsubst %,%/*.cpp, $(subst :, ,$(VPATH))) \
 	     $(patsubst %,%/*.cpp, $(subst :, ,$(GPATH)))
@@ -278,7 +278,7 @@ nodep-targets = clean mrproper dep uninstall dist distclean maintainer-clean dis
 
 dep : $(cxx_depend)
 
-.PHONY: clean mrproper dep test all install uninstall dist-clean \
+.PHONY: clean mrproper dep test test-integration all install uninstall dist-clean \
         maintaner-clean install-dirs dist-dir tar-dir tar install-models install-tools \
         tools models default install_tools install_models models-install models_install \
         tools-install tools_install
@@ -335,6 +335,9 @@ depclean :
 
 test : $(alltests)
 	$(SRCDIR)/generate-testreport.sh $(alltests:%=./%)
+
+test-integration : tools models
+	$(SRCDIR)/scripts/mptk-test --bin-dir "$(CURDIR)" $(SUITE)
 
 test_tensor : $(tensor_tests)
 	$(SRCDIR)/generate-testreport.sh $(tensor_tests:%=./%)

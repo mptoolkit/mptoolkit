@@ -1,0 +1,51 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: bosehubbard-u1-trap -o lat
+    outputs:
+      lattice: lat
+
+  vacuum:
+    from: lat
+    run: mp-construct -l lat -o psi 0
+    outputs:
+      state: psi
+    certify:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  lattice_info_reports_the_trapped_u1_bose_hubbard_model:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) Bose-Hubbard model"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1)"
+      - lattice_info_text:
+          contains: "H_trap     - harmonic trap, n(x)*(x-(L+1)/2)^2"
+
+  trapped_bose_hubbard_vacuum_supports_exact_identity_moments:
+    use: vacuum
+    expect:
+      - ioverlap_real:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - imoments_real:
+          operator: "lat:sum_unit(I(0))"
+          power: 1
+          moment: 1
+          degree: 1
+          approx: 1.0
+          abs: 1e-12

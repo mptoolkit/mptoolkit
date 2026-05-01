@@ -1,0 +1,39 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  product4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 0.5:0.5:-0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  info_reports_basic_finite_wavefunction_structure:
+    use: product4
+    expect:
+      - info_text:
+          contains: "Finite wavefunction in the left canonical basis."
+      - info_text:
+          contains: "Length = 4"
+      - info_text:
+          contains: "Quantum number = 0"
+      - info_text:
+          contains: "Norm = 1"
+
+  history_records_the_construct_command:
+    use: product4
+    expect:
+      - history_text:
+          contains: "mp-construct -l lat -o psi --finite 0.5:0.5:-0.5:-0.5"

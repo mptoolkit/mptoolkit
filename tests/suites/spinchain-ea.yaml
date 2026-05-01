@@ -1,0 +1,126 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  infinite_up1:
+    from: lat
+    run: mp-construct -l lat -o psi 0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  ea_sm_k0:
+    from: infinite_up1
+    run: mp-ea-create "lat:Sm(0)" psi -k 0 -o ea.k0
+    outputs:
+      state: ea.k0
+    certify:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "EA"
+      - attr_float:
+          attribute: WindowSize
+          approx: 1.0
+          abs: 1e-12
+      - info_text:
+          contains: "ExpIK = (1,0)"
+
+  ea_sm_k1:
+    from: ea_sm_k0
+    run: mp-ea-change-k ea.k0 ea.k1 -k 1
+    outputs:
+      state: ea.k1
+    certify:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "EA"
+      - attr_text:
+          attribute: ExpIK
+          contains: "(-1,"
+
+  ea_sm_extended:
+    from: ea_sm_k0
+    run: mp-ea-extend ea.k0 ea_ext
+    outputs:
+      state: ea_ext
+    certify:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "EA"
+      - attr_float:
+          attribute: WindowSize
+          approx: 2.0
+          abs: 1e-12
+
+  ibc_wavepacket_sm_sma:
+    from: ea_sm_k0
+    run: mp-ibc-wavepacket -w ea --sma 0 -s 0.2 -o wp
+    outputs:
+      state: wp
+    certify:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "IBC"
+      - attr_float:
+          attribute: WindowSize
+          approx: 17.0
+          abs: 1e-12
+      - ibc_overlap_mag:
+          psi1: "{state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+tests:
+  ea_create_builds_a_single_site_excitation_ansatz_state:
+    use: ea_sm_k0
+    expect:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "EA"
+      - attr_float:
+          attribute: WindowSize
+          approx: 1.0
+          abs: 1e-12
+
+  ea_change_k_updates_the_expik_phase:
+    use: ea_sm_k1
+    expect:
+      - attr_text:
+          attribute: ExpIK
+          contains: "(-1,"
+      - attr_float:
+          attribute: WindowSize
+          approx: 1.0
+          abs: 1e-12
+
+  ea_extend_increases_the_window_size:
+    use: ea_sm_extended
+    expect:
+      - attr_float:
+          attribute: WindowSize
+          approx: 2.0
+          abs: 1e-12
+
+  ibc_wavepacket_sma_builds_a_normalized_ibc_state:
+    use: ibc_wavepacket_sm_sma
+    expect:
+      - attr_text:
+          attribute: WavefunctionType
+          equals: "IBC"
+      - ibc_overlap_mag:
+          psi1: "{state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12

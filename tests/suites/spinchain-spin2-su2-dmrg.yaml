@@ -1,0 +1,78 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: spinchain-spin2-su2 -o lat
+    outputs:
+      lattice: lat
+
+  rand2_s0:
+    from: lat
+    run: mp-random -l lat -u 2 -q 0 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  rand2_s4:
+    from: lat
+    run: mp-random -l lat -u 2 -q 4 -o psi -s 1 --quiet
+    outputs:
+      state: psi
+
+  bond0_singlet:
+    from: rand2_s0
+    run: mp-dmrg -w psi -H lat:H_p0 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 1.04
+          abs: 1e-12
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  bond0_nonet:
+    from: rand2_s4
+    run: mp-dmrg -w psi -H lat:H_p0 -m 10x4 --flush
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 0.04
+          abs: 1e-12
+      - norm:
+          approx: 9.0
+          abs: 1e-12
+
+tests:
+  spin2_projector_h_p0_has_expected_shifted_energy_in_the_scalar_sector:
+    use: bond0_singlet
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 1.04
+          abs: 1e-12
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
+  spin2_projector_h_p0_has_expected_shifted_energy_in_the_total_spin_4_sector:
+    use: bond0_nonet
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: 0.04
+          abs: 1e-12
+      - norm:
+          approx: 9.0
+          abs: 1e-12
+
+  spin2_total_spin_0_and_total_spin_4_sectors_are_orthogonal:
+    use:
+      psi1: bond0_singlet.state
+      psi2: bond0_nonet.state
+    expect:
+      - overlap_mag:
+          approx: 0.0
+          abs: 1e-12

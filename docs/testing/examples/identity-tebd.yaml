@@ -1,0 +1,135 @@
+# Illustrative example.
+# Some recipe names and command details are placeholders for the proposal stage.
+
+version: 0
+
+defaults:
+  env:
+    LC_ALL: C
+    OMP_NUM_THREADS: "1"
+    MP_BINPATH: "{scratch}/tmp"
+  capture:
+    strip_ansi: true
+    whitespace: flexible
+  isolation:
+    fixture_cache: immutable
+    step_inputs: copy
+
+recipes:
+  norm:
+    probe: mp-norm {state}
+    extract: last_float
+
+  tebd_step:
+    action: mp-tebd -w {input} -H {hamiltonian} -o {output_prefix} -t {time} -n {steps} -s {save_every}
+    defaults:
+      input: null
+      hamiltonian: null
+      output_prefix: "{scratch}/psi"
+      time: null
+      steps: 1
+      save_every: 1
+    outputs:
+      state:
+        discover:
+          kind: glob
+          pattern: "{output_prefix}*"
+          select: newest
+
+  beta_from_info:
+    probe: mp-info {state}
+    extract:
+      line_pattern:
+        pattern: "Beta = %(float:beta)"
+        capture: beta
+
+  prepare_product_up:
+    action: make-product-state --sites {sites} --state up --output {output}
+    defaults:
+      sites: null
+      output: "{scratch}/psi"
+    outputs:
+      state:
+        discover:
+          kind: path
+          path: "{output}"
+
+fixtures:
+  psi_up_20:
+    build:
+      recipe: prepare_product_up
+      with:
+        sites: 20
+    certify:
+      - probe:
+          recipe: norm
+          with:
+            state: "{fixture.state}"
+        compare:
+          kind: approx
+          value: 1.0
+          abs: 1e-12
+
+  psi_up_20_id_beta_0p1:
+    from: psi_up_20
+    build:
+      recipe: tebd_step
+      with:
+        input: "{parent.state}"
+        hamiltonian: "sum_unit(I(0))"
+        time: "0-0.1i"
+        output_prefix: "{scratch}/psi"
+    certify:
+      - probe:
+          recipe: norm
+          with:
+            state: "{fixture.state}"
+        compare:
+          kind: approx
+          value: 0.1353352832366127
+          abs: 1e-12
+      - probe:
+          recipe: beta_from_info
+          with:
+            state: "{fixture.state}"
+        compare:
+          kind: approx
+          value: 0.1
+          abs: 1e-12
+
+tests:
+  tebd_identity_preserves_expected_amplitude:
+    use:
+      - psi_up_20
+    steps:
+      - run:
+          recipe: tebd_step
+          with:
+            input: "{fixtures.psi_up_20.state}"
+            hamiltonian: "sum_unit(I(0))"
+            time: "0-0.1i"
+            output_prefix: "{scratch}/psi"
+        save_as:
+          state: psi1
+    expect:
+      - probe:
+          recipe: norm
+          with:
+            state: "{state.psi1}"
+        compare:
+          kind: approx
+          value: 0.1353352832366127
+          abs: 1e-12
+
+  derived_fixture_can_be_reused:
+    use:
+      - psi_up_20_id_beta_0p1
+    expect:
+      - probe:
+          recipe: norm
+          with:
+            state: "{fixtures.psi_up_20_id_beta_0p1.state}"
+        compare:
+          kind: approx
+          value: 0.1353352832366127
+          abs: 1e-12
