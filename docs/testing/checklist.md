@@ -330,6 +330,7 @@ coverage without exploding the matrix.
 - [x] `spinchain-spin2-su2`
   Includes AKLT ground-state and SPT projective-commutator checks.
 - [x] `spinladder.cpp`
+- [x] `spinladder-u1.cpp`
 - [x] `spinladder-su2.cpp`
 - [x] `spinladder-z2.cpp`
 - [x] `spincylinder.cpp`
@@ -404,13 +405,14 @@ coverage. This list is the completion target for supported models.
 - [x] `spinchain-u1.cpp`
 - [x] `spinchain-z2.cpp`
 - [x] `spinchain.cpp`
+- [x] `spinladder-u1.cpp`
+- [x] `spinladder-su2.cpp`
+- [x] `spinladder-z2.cpp`
+- [x] `spinladder.cpp`
 - [x] `spincylinder-su2.cpp`
 - [x] `spincylinder-u1.cpp`
 - [x] `spincylinder-z2.cpp`
 - [x] `spincylinder.cpp`
-- [x] `spinladder-su2.cpp`
-- [x] `spinladder-z2.cpp`
-- [x] `spinladder.cpp`
 - [x] `spinlessfermion-u1.cpp`
 - [x] `spinlessfermionladder-u1u1.cpp`
 

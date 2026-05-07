@@ -119,6 +119,11 @@ fixtures:
     outputs:
       lattice: lat
 
+  spinladder_u1:
+    run: spinladder-u1 -o lat
+    outputs:
+      lattice: lat
+
   spinladder_z2:
     run: spinladder-z2 -o lat
     outputs:
@@ -339,6 +344,8 @@ tests:
           contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
       - lattice_info_text:
           contains: "H_B1xy     - nearest neighbor biquadratic XY spin exchange (Sx.Sx + Sy.Sy)^2"
+      - lattice_info_text:
+          contains: "H_ITF      - Ising transverse-field model, H_ITF = -H_ZZ + H_X"
 
   spinchain_u1_contract:
     use: spinchain_u1
@@ -358,7 +365,7 @@ tests:
       - lattice_info_text:
           contains: "SymmetryList: Z:Z2"
       - lattice_info_text:
-          contains: "H_ITF      - Ising transverse-field model, equivalent to -4*H_zz + 2*H_x"
+          contains: "H_ITF      - Ising transverse-field model, H_ITF = -H_ZZ + H_X"
 
   spinchain_su2_contract:
     use: spinchain_su2
@@ -387,6 +394,18 @@ tests:
           contains: "Description: Spin ladder"
       - lattice_info_text:
           contains: "H_J1_x     - nearest neighbor spin exchange in the x (infinite) direction"
+      - lattice_info_text:
+          contains: "H_J1p      - alias for H_J1_p"
+
+  spinladder_u1_contract:
+    use: spinladder_u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1) spin ladder"
+      - lattice_info_text:
+          contains: "SymmetryList: Sz:U(1)"
+      - lattice_info_text:
+          contains: "H_J1t_x    - nearest neighbor spin exchange transverse component in the x (infinite) direction"
       - lattice_info_text:
           contains: "H_J1p      - alias for H_J1_p"
 

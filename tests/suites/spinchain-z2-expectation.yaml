@@ -45,6 +45,10 @@ tests:
     expect:
       - lattice_info_text:
           contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
+      - lattice_info_text:
+          contains: "H_ZZ       - nearest neighbor Pauli coupling Z Z"
+      - lattice_info_text:
+          contains: "H_ITF      - Ising transverse-field model, H_ITF = -H_ZZ + H_X"
 
   z2_spin_half_product_state_has_expected_local_sx_and_parity:
     use: sx_neel2
@@ -71,4 +75,8 @@ tests:
       - expectation_real:
           operator: "lat:Sx(0)*Sx(1)"
           approx: -0.25
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(0)*X(1)"
+          approx: -1.0
           abs: 1e-12

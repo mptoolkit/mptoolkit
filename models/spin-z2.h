@@ -41,6 +41,26 @@ LatticeSite SpinZ2(half_int Spin)
 
    PRECONDITION(Spin >= 0)("Spin must be >= 0")(Spin);
 
+   OperatorDescriptions OpDescriptions;
+   OpDescriptions.add_operators()
+      ("I"   , "identity")
+      ("R"   , "reflection")
+      ("P"   , "fermion parity")
+      ("Sx"  , "x-component of spin")
+      ("Sy"  , "y-component of spin")
+      ("Sz"  , "z-component of spin")
+      ("Sz2" , "square of the z-component of spin")
+      ;
+
+   if (Spin == 0.5)
+   {
+      OpDescriptions.add_operators()
+         ("X", "Pauli Sigma-X")
+         ("Y", "Pauli Sigma-Y")
+         ("Z", "Pauli Sigma-Z")
+         ;
+   }
+
    half_int Base = 0.5; // lowest possible quantum number
    if (Spin.is_integral())
    {
@@ -139,5 +159,6 @@ LatticeSite SpinZ2(half_int Spin)
    Site["Y"] = 2*Sy;
    Site["Z"] = 2*Sz;
    Site["Sz2"] = Sz * Sz;
+   Site.set_operator_descriptions(OpDescriptions);
    return Site;
 }

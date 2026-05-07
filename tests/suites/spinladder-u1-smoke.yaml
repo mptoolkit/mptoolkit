@@ -5,7 +5,7 @@ imports:
 
 fixtures:
   lat:
-    run: spinchain -o lat
+    run: spinladder-u1 -o lat
     outputs:
       lattice: lat
 
@@ -23,39 +23,41 @@ fixtures:
           psi2: "{state}"
           approx: 0.0
           abs: 1e-12
+      - ioverlap_mag:
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
 
 tests:
-  lattice_info_reports_the_plain_spin_chain_geometry:
+  lattice_info_reports_the_default_two_leg_u1_ladder_geometry:
     use: lat
     expect:
       - lattice_info_text:
-          contains: "Description: Spin chain"
+          contains: "Description: U(1) spin ladder"
       - lattice_info_text:
-          contains: "Unit cell size: 1"
+          contains: "SymmetryList: Sz:U(1)"
       - lattice_info_text:
-          contains: "H_J1       - nearest neighbor spin exchange = H_J1z + H_J1t"
+          contains: "Unit cell size: 2"
       - lattice_info_text:
-          contains: "H_J2       - next-nearest neighbor spin exchange = H_J2z + H_J2t"
+          contains: "H_J1t_x    - nearest neighbor spin exchange transverse component in the x (infinite) direction"
       - lattice_info_text:
-          contains: "H_ZZ       - nearest neighbor Pauli coupling Z Z"
-      - lattice_info_text:
-          contains: "H_ITF      - Ising transverse-field model, H_ITF = -H_ZZ + H_X"
+          contains: "H_J1p      - alias for H_J1_p"
 
-  plain_spin_chain_product_state_has_exact_identity_moments_and_local_sz:
+  u1_ladder_product_state_supports_exact_identity_moments:
     use: neel2
     expect:
       - ioverlap_real:
           psi2: "{state}"
           approx: 1.0
           abs: 1e-12
-      - expectation_real:
-          operator: "lat:Sz(0)"
-          approx: 0.5
+      - ioverlap_imag:
+          psi2: "{state}"
+          approx: 0.0
           abs: 1e-12
       - imoments_real:
           operator: "lat:sum_unit(I(0))"
           power: 1
           moment: 1
           degree: 1
-          approx: 2.0
+          approx: 1.0
           abs: 1e-12

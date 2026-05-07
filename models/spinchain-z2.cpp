@@ -65,7 +65,11 @@ int main(int argc, char** argv)
          ("H_J2" , "next-nearest neighbor spin exchange = H_J2z + H_J2t")
          ("H_B1" , "nearest neighbor biquadratic spin exchange (S.S)^2")
          ("H_mu" , "single-ion anisotropy, H_mu = sum_i Sz(i)^2")
-         ("H_ITF", "Ising transverse-field model, equivalent to -4*H_zz + 2*H_x")
+         ("H_XX" , "nearest neighbor Pauli coupling X X", "spin 1/2", [&Spin]()->bool {return Spin==0.5;})
+         ("H_YY" , "nearest neighbor Pauli coupling Y Y", "spin 1/2", [&Spin]()->bool {return Spin==0.5;})
+         ("H_ZZ" , "nearest neighbor Pauli coupling Z Z", "spin 1/2", [&Spin]()->bool {return Spin==0.5;})
+         ("H_X"  , "Pauli field in the X direction", "spin 1/2", [&Spin]()->bool {return Spin==0.5;})
+         ("H_ITF", "Ising transverse-field model, H_ITF = -H_ZZ + H_X", "spin 1/2", [&Spin]()->bool {return Spin==0.5;})
          ("H_AKLT" , "AKLT Hamiltonian H_J1 + (1/3)*H_B1", "spin 1", [&Spin]()->bool {return Spin==1;})
          ;
 
@@ -109,7 +113,17 @@ int main(int argc, char** argv)
 
       Lattice["H_mu"] = sum_unit(Sz(0)*Sz(0));
 
-      Lattice["H_ITF"] = -4*Lattice["H_zz"] + 2*Lattice["H_x"];
+      if (Spin == 0.5)
+      {
+         UnitCellOperator X(Cell, "X"), Y(Cell, "Y"), Z(Cell, "Z");
+
+         Lattice["H_XX"] = sum_unit(X(0)*X(1));
+         Lattice["H_YY"] = sum_unit(Y(0)*Y(1));
+         Lattice["H_ZZ"] = sum_unit(Z(0)*Z(1));
+         Lattice["H_X"] = sum_unit(X(0));
+
+         Lattice["H_ITF"] = -Lattice["H_ZZ"] + Lattice["H_X"];
+      }
 
       if (Spin == 1)
       {
