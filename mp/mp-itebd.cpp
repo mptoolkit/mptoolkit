@@ -180,8 +180,8 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
    for (auto x : decomp.b())
    {
       std::vector<SimpleOperator> Terms;
-      Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-2]));
-      for (int i = 1; i < BondH.size()-2; i += 2)
+      Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-1]));
+      for (int i = 1; i < BondH.size()-1; i += 2)
       {
          Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
       }
