@@ -741,8 +741,8 @@ using namespace UP;
 struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, UnitCellMPO> ElementType;
-   typedef boost::function<ElementType(ElementType)> unary_func_type;
-   typedef boost::function<ElementType(ElementType, ElementType)> binary_func_type;
+   typedef std::function<ElementType(ElementType)> unary_func_type;
+   typedef std::function<ElementType(ElementType, ElementType)> binary_func_type;
 
    typedef std::stack<ElementType>            ElemStackType;
    typedef std::stack<unary_func_type>         UnaryFuncStackType;

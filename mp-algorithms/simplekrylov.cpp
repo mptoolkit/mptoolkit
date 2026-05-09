@@ -22,7 +22,6 @@
 #include "tensor/tensor_eigen.h"
 #include "matrixproduct/wavefunc-utils.h"
 #include "lanczos-exponential.h"
-#include <boost/none.hpp>
 #include <fstream>
 
 using MessageLogger::Logger;
@@ -107,9 +106,9 @@ SimpleKrylov::SetupLogFiles(std::string const& Prefix, bool Truncate)
    std::ios_base::openmode Mode = Truncate ? (std::ios_base::out | std::ios_base::trunc)
       : (std::ios_base::out | std::ios_base::app);
 
-   SweepLog = boost::shared_ptr<std::ofstream>(new std::ofstream((Prefix + ".sweep").c_str(), Mode));
+   SweepLog = std::make_shared<std::ofstream>((Prefix + ".sweep").c_str(), Mode);
    SweepLog->precision(12);
-   StepLog = boost::shared_ptr<std::ofstream>(new std::ofstream((Prefix + ".step").c_str(), Mode));
+   StepLog = std::make_shared<std::ofstream>((Prefix + ".step").c_str(), Mode);
    StepLog->precision(12);
 
    Logger("SweepLog").SetStream(*SweepLog);
@@ -160,12 +159,12 @@ MatrixOperator const& SimpleKrylov::k0() const
 {
    if (!k0Cache)
       k0Cache = triple_prod(Psi1_Psi0.Left(), Psi0.Center(), herm(Psi1_Psi0.Right()));
-   return k0Cache.get();
+   return *k0Cache;
 }
 
 void SimpleKrylov::Invalidatek0()
 {
-   k0Cache = boost::none;
+   k0Cache = std::nullopt;
 }
 
 double SimpleKrylov::Solve(int NumIterations, double ErrBound)

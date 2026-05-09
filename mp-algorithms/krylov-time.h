@@ -27,7 +27,6 @@
 #include "matrixproduct/operatorstack.h"
 #include "common/math_const.h"
 #include <fstream>
-#include <boost/shared_ptr.hpp>
 
 struct TruncationInfo
 {

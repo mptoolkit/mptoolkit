@@ -25,8 +25,6 @@
 #include <boost/spirit/include/classic_symbols.hpp>
 #include <boost/spirit/include/classic_refactoring.hpp>
 #include <boost/spirit/include/classic_distinct.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
 #include <iostream>
@@ -155,7 +153,7 @@ complex cabs(complex x)
 }
 
 
-typedef boost::function<element_type(element_type)> unary_func_type;
+typedef std::function<element_type(element_type)> unary_func_type;
 
 struct ElementConj : boost::static_visitor<element_type>
 {
@@ -207,7 +205,7 @@ struct unary_funcs : symbols<unary_func_type>
 // binary functions
 //
 
-typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+typedef std::function<element_type(element_type, element_type)> binary_func_type;
 
 template <typename Visitor>
 struct apply_binary_math

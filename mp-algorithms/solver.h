@@ -26,7 +26,7 @@
 #include "matrixproduct/operatorstack.h"
 #include "common/conflist.h"
 #include <fstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 struct TruncationInfo
 {
@@ -120,7 +120,7 @@ struct DMRG
 
    // Log files are not serialized, but initialized by CreateLogFiles or
    // RestoreLogFiles
-   boost::shared_ptr<std::ofstream> EnergyLog, DiagLog, SweepLog, CpuLog, DensityLog;
+   std::shared_ptr<std::ofstream> EnergyLog, DiagLog, SweepLog, CpuLog, DensityLog;
 };
 
 PStream::opstream& operator<<(PStream::opstream& out, DMRG const& d);

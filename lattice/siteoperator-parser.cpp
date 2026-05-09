@@ -76,8 +76,8 @@ struct eval_function
 
 struct SiteOperatorParser : public grammar<SiteOperatorParser>
 {
-   typedef boost::function<element_type(element_type)> unary_func_type;
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   typedef std::function<element_type(element_type)> unary_func_type;
+   typedef std::function<element_type(element_type, element_type)> binary_func_type;
 
    typedef std::stack<element_type>            ElementStackType;
    typedef std::stack<unary_func_type>         UnaryFuncStackType;

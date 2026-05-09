@@ -28,7 +28,6 @@
 #include "lanczos-ortho.h"
 #include "common/conflist.h"
 #include <fstream>
-#include <boost/shared_ptr.hpp>
 
 //typedef OperatorStack<MPMatrix> SuperblockOperator;
 

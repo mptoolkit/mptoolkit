@@ -129,8 +129,7 @@ void Solver::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
       remove(EnergyLogFile.c_str());
    else if (EnergyLogLevel > 0)
    {
-      EnergyLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(EnergyLogFile.c_str(), Mode));
+      EnergyLog = std::make_shared<std::ofstream>(EnergyLogFile.c_str(), Mode);
       EnergyLog->precision(15);
       (*EnergyLog) << "#TotSweepNum #SweepNum #LSize #RSize "
                    << "#NStates #NMult #Trunc #DOS_norm #DOS_overlap #GF_real #Local_resid\n";
@@ -144,8 +143,7 @@ void Solver::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
       remove(SweepLogFile.c_str());
    else if (SweepLogLevel > 0)
    {
-      SweepLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(SweepLogFile.c_str(), Mode));
+      SweepLog = std::make_shared<std::ofstream>(SweepLogFile.c_str(), Mode);
       SweepLog->precision(15);
       (*SweepLog) << "#TotSweepNum #SweepNum #NIter #AvNStates #MaxNStates "
                   << "#NMult #Freq #Broad #DOS_norm #DOS_overlap #DOS_func #GF_real #Trunc "
@@ -160,8 +158,7 @@ void Solver::CreateLogFiles(std::string const& BasePath, ConfList const& Conf)
       remove(DensityLogFile.c_str());
    else if (DensityLogLevel > 0)
    {
-      DensityLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(DensityLogFile.c_str(), Mode));
+      DensityLog = std::make_shared<std::ofstream>(DensityLogFile.c_str(), Mode);
       DensityLog->precision(15);
       Logger("DensityLog").SetStream(*DensityLog);
    }
@@ -179,8 +176,7 @@ void Solver::RestoreLogFiles(std::string const& BasePath, ConfList const& Conf)
    Logger("EnergyLog").SetThreshold(EnergyLogLevel);
    if (EnergyLogLevel > 0)
    {
-      EnergyLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(EnergyLogFile.c_str(), std::ios_base::out | std::ios_base::app));
+      EnergyLog = std::make_shared<std::ofstream>(EnergyLogFile.c_str(), std::ios_base::out | std::ios_base::app);
       EnergyLog->precision(15);
       Logger("EnergyLog").SetStream(*EnergyLog);
    }
@@ -190,8 +186,7 @@ void Solver::RestoreLogFiles(std::string const& BasePath, ConfList const& Conf)
    Logger("SweepLog").SetThreshold(SweepLogLevel);
    if (SweepLogLevel > 0)
    {
-      SweepLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(SweepLogFile.c_str(), std::ios_base::out | std::ios_base::app));
+      SweepLog = std::make_shared<std::ofstream>(SweepLogFile.c_str(), std::ios_base::out | std::ios_base::app);
       SweepLog->precision(15);
       Logger("SweepLog").SetStream(*SweepLog);
    }
@@ -201,8 +196,7 @@ void Solver::RestoreLogFiles(std::string const& BasePath, ConfList const& Conf)
    Logger("DensityLog").SetThreshold(DensityLogLevel);
    if (DensityLogLevel > 0)
    {
-      DensityLog = boost::shared_ptr<std::ofstream>
-         (new std::ofstream(DensityLogFile.c_str(), std::ios_base::out | std::ios_base::app));
+      DensityLog = std::make_shared<std::ofstream>(DensityLogFile.c_str(), std::ios_base::out | std::ios_base::app);
       DensityLog->precision(15);
       Logger("DensityLog").SetStream(*DensityLog);
    }

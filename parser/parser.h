@@ -30,8 +30,6 @@
 #include "parser/visitor_actions.h"
 #include "lattice/function.h"
 
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>
@@ -40,8 +38,6 @@
 
 //#include <boost/spirit/include/qi_core.hpp>
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
 #include <boost/variant/get.hpp>
@@ -516,10 +512,10 @@ complex csqrt(complex x)
 }
 
 
-//typedef boost::function<element_type(element_type)> unary_func_type;
+//typedef std::function<element_type(element_type)> unary_func_type;
 
 template <typename element_type>
-struct unary_funcs : symbols<boost::function<element_type(element_type)> >
+struct unary_funcs : symbols<std::function<element_type(element_type)> >
 {
    unary_funcs()
    {
@@ -562,7 +558,7 @@ struct unary_funcs_mpo : unary_funcs<element_type>
 template <typename element_type, typename Visitor>
 struct apply_binary_math
 {
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   typedef std::function<element_type(element_type, element_type)> binary_func_type;
 
    apply_binary_math(Visitor const& f_) : f(f_) {}
 
@@ -589,9 +585,9 @@ make_apply_binary_math(F const& f)
 // the standard binary functions are put in a table
 
 template <typename element_type>
-struct binary_funcs : symbols<boost::function<element_type(element_type, element_type)> >
+struct binary_funcs : symbols<std::function<element_type(element_type, element_type)> >
 {
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   typedef std::function<element_type(element_type, element_type)> binary_func_type;
    binary_funcs()
    {
       this->add.operator()
@@ -693,7 +689,7 @@ struct push_imag
 template <typename element_type>
 struct push_unary
 {
-   typedef boost::function<element_type(element_type)> unary_func_type;
+   typedef std::function<element_type(element_type)> unary_func_type;
    push_unary(std::stack<unary_func_type>& s_) : s(s_) {}
 
    void operator()(unary_func_type f) const
@@ -707,7 +703,7 @@ struct push_unary
 template <typename element_type>
 struct eval_unary
 {
-   typedef boost::function<element_type(element_type)> unary_func_type;
+   typedef std::function<element_type(element_type)> unary_func_type;
    eval_unary(std::stack<unary_func_type>& s_, std::stack<element_type >& eval_) : s(s_), eval(eval_) {}
 
    void operator()(char const* beg, char const* end) const
@@ -725,7 +721,7 @@ struct eval_unary
 template <typename element_type>
 struct push_binary
 {
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   typedef std::function<element_type(element_type, element_type)> binary_func_type;
    push_binary(std::stack<binary_func_type>& s_) : s(s_) {}
 
    void operator()(binary_func_type f) const
@@ -739,7 +735,7 @@ struct push_binary
 template <typename element_type>
 struct eval_binary
 {
-   typedef boost::function<element_type(element_type, element_type)> binary_func_type;
+   typedef std::function<element_type(element_type, element_type)> binary_func_type;
    eval_binary(std::stack<binary_func_type>& s_, std::stack<element_type >& eval_) : s(s_), eval(eval_) {}
 
    void operator()(char const* beg, char const* end) const
