@@ -140,7 +140,7 @@ debugobj = backtrace.o debughandler.o
 
 simplecommonobj = poolallocator.o backtrace.o debughandler.o catchsegv.o
 
-expokitobj = zgpadm.o exponential.o tensor_exponential.o
+expokitobj = exponential.o tensor_exponential.o
 
 objects = $(quantumnumbersobj) \
           $(dmrgobj)           \
@@ -414,7 +414,7 @@ testsiteoperator : eigen.o
 testsitebasis : eigen.o
 testcomplexsiteoperator : eigen.o
 testmpstate : eigen.o
-testexponential : eigen.o zgpadm.o exponential.o
+testexponential : eigen.o exponential.o
 
 #
 # dependencies for mp-algorithms tests

@@ -21,27 +21,106 @@
 // The main thing we want to do is see if it works for small inputs.
 
 #include "linearalgebra/exponential.h"
-#include "linearalgebra/scalarmatrix.h"
 
+#include <cmath>
+#include <complex>
+#include <limits>
 
 using namespace LinearAlgebra;
 
+namespace
+{
+
+using Complex = std::complex<double>;
+
+void CheckClose(Complex Actual, Complex Expected, double Tolerance)
+{
+   CHECK_COMPARE(std::abs(Actual - Expected), <, Tolerance)(Actual)(Expected);
+}
+
+void CheckFiniteBounded(Complex Value, double Bound)
+{
+   CHECK(std::isfinite(Value.real()))(Value);
+   CHECK(std::isfinite(Value.imag()))(Value);
+   CHECK_COMPARE(std::abs(Value), <, Bound)(Value);
+}
+
+void CheckRelativeClose(Complex Actual, Complex Expected, double Tolerance)
+{
+   CHECK(std::isfinite(Actual.real()))(Actual);
+   CHECK(std::isfinite(Actual.imag()))(Actual);
+   CHECK_COMPARE(std::abs((Actual / Expected) - Complex(1.0)), <, Tolerance)(Actual)(Expected);
+}
+
+} // namespace
+
 int main()
 {
-   int const sz = 100;
-   Matrix<std::complex<double> > M(sz,sz,0.0);
+   double const Tolerance = 1e-10;
 
-   M = ScalarMatrix<double>(sz, sz, 1.0);
-
-   double x = 1.0;
-   double e = exp(1/x);
-   double r = norm_frob(Exponentiate(1.0, Matrix<std::complex<double> >((1/x) * M)));
-   while (norm_frob(r/std::sqrt(double(sz)) - e) < 1e-10)
    {
-      x = x * 2;
-      e = exp(1/x);
-      r = norm_frob(Exponentiate(1.0, Matrix<std::complex<double> >((1/x) * M)));
-      TRACE(x)(e);
+      Matrix<Complex> M(3, 3, 0.0);
+      M(0,0) = 0.25;
+      M(1,1) = -0.5;
+      M(2,2) = 1.0;
+
+      Matrix<Complex> Result = Exponentiate(2.0, M);
+      CheckClose(Result(0,0), std::exp(0.5), Tolerance);
+      CheckClose(Result(1,1), std::exp(-1.0), Tolerance);
+      CheckClose(Result(2,2), std::exp(2.0), Tolerance);
+      CheckClose(Result(0,1), 0.0, Tolerance);
    }
-   TRACE(x)(e)(r);
+
+   {
+      Matrix<Complex> M(2, 2, 0.0);
+      M(0,1) = 2.0;
+
+      Matrix<Complex> Result = Exponentiate(1.0, M);
+      CheckClose(Result(0,0), 1.0, Tolerance);
+      CheckClose(Result(0,1), 2.0, Tolerance);
+      CheckClose(Result(1,0), 0.0, Tolerance);
+      CheckClose(Result(1,1), 1.0, Tolerance);
+   }
+
+   {
+      double const Theta = 0.25;
+      Matrix<Complex> M(2, 2, 0.0);
+      M(0,1) = -Theta;
+      M(1,0) = Theta;
+
+      Matrix<Complex> Result = Exponentiate(1.0, M);
+      CheckClose(Result(0,0), std::cos(Theta), Tolerance);
+      CheckClose(Result(0,1), -std::sin(Theta), Tolerance);
+      CheckClose(Result(1,0), std::sin(Theta), Tolerance);
+      CheckClose(Result(1,1), std::cos(Theta), Tolerance);
+   }
+
+   {
+      double const Theta = 1e80;
+      Matrix<Complex> M(2, 2, 0.0);
+      M(0,1) = -Theta;
+      M(1,0) = Theta;
+
+      Matrix<Complex> Result = Exponentiate(1.0, M);
+      CheckFiniteBounded(Result(0,0), 2.0);
+      CheckFiniteBounded(Result(0,1), 2.0);
+      CheckFiniteBounded(Result(1,0), 2.0);
+      CheckFiniteBounded(Result(1,1), 2.0);
+   }
+
+   {
+      double const Value = 0.75 * std::numeric_limits<double>::max();
+      Matrix<Complex> M(3, 3, 0.0);
+      M(0,2) = Value;
+      M(1,2) = -Value;
+
+      Matrix<Complex> Result = Exponentiate(1.0, M);
+      CheckClose(Result(0,0), 1.0, Tolerance);
+      CheckClose(Result(1,1), 1.0, Tolerance);
+      CheckClose(Result(2,2), 1.0, Tolerance);
+      CheckClose(Result(0,1), 0.0, Tolerance);
+      CheckClose(Result(1,0), 0.0, Tolerance);
+      CheckRelativeClose(Result(0,2), Value, Tolerance);
+      CheckRelativeClose(Result(1,2), -Value, Tolerance);
+   }
 }
