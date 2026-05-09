@@ -33,8 +33,8 @@
 #include "linearalgebra/coefficient_operations.h"
 #include "quantumnumbers/quantumnumber.h"
 #include "pstream/pstream.h"
-#include <boost/mpl/assert.hpp>
 #include <cmath>
+#include <type_traits>
 
 // first, we declare some new operations that extend the LinearAlgebra operations
 namespace LinearAlgebra
@@ -380,8 +380,9 @@ class IrredTensor
       using StructureType = Structure;
       using MatrixType = typename Structure::template value<T>;
 
-      BOOST_MPL_ASSERT((boost::is_same<value_type,
-                        typename LinearAlgebra::interface<MatrixType>::value_type>));
+      static_assert(std::is_same<value_type,
+                    typename LinearAlgebra::interface<MatrixType>::value_type>::value,
+                    "tensor value_type must match matrix value_type");
 
       typedef typename iterator<MatrixType>::type iterator;
       typedef typename inner_iterator<MatrixType>::type inner_iterator;

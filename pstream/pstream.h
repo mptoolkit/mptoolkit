@@ -224,8 +224,8 @@
 
 #include "pstreamfwd.h"
 #include "common/trace.h"
-#include <boost/type_traits.hpp>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <map>
@@ -257,7 +257,7 @@ struct pstreambuf_traits;
 template <typename T>
 struct pstream_type_traits
 {
-   static bool const is_fundamental = boost::is_fundamental<T>::value;
+   static bool const is_fundamental = std::is_fundamental<T>::value;
 };
 
 class VersionTag;
