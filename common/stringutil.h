@@ -35,6 +35,7 @@
 #include <sstream>
 #include <algorithm>
 #include <string_view>
+#include <typeinfo>
 #include <vector>
 #include "common/trace.h"
 
