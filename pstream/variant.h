@@ -18,7 +18,7 @@
 // ENDHEADER
 /* -*- C++ -*- $Id$
 
-  Seralization of boost::variant
+  Serialization of variant types
 */
 
 #if !defined(VARIANT_H_JSDCHWUI4357784Y7WEHOLWEHO)
@@ -32,6 +32,9 @@
 #include <boost/mpl/identity.hpp>
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/empty.hpp>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace PStream
 {
@@ -45,12 +48,27 @@ ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::variant<BOOST_VA
 template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
 ipstream& operator>>(ipstream& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
 
+template <int format, typename... T>
+opstreambuf<format>& operator<<(opstreambuf<format>& out, std::variant<T...> const& x);
+
+template <int format, typename... T>
+ipstreambuf<format>& operator>>(ipstreambuf<format>& in, std::variant<T...>& x);
+
+template <typename... T>
+ipstream& operator>>(ipstream& in, std::variant<T...>& x);
+
 // Helper function to load a variant with a given type, specified by the Which parameter.
 template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
 void load_variant(ipstreambuf<format>& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
 
 template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
 void load_variant(ipstream& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x);
+
+template <int format, typename... T>
+void load_variant(ipstreambuf<format>& in, int Which, std::variant<T...>& x);
+
+template <typename... T>
+void load_variant(ipstream& in, int Which, std::variant<T...>& x);
 
 //
 // implementation
@@ -149,6 +167,10 @@ template <BOOST_VARIANT_ENUM_PARAMS(typename T)>
 struct variant_size<boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>> : public std::integral_constant<std::size_t, boost::mpl::size<typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types>::value>
 {};
 
+template <typename... T>
+struct variant_size<std::variant<T...>> : public std::integral_constant<std::size_t, sizeof...(T)>
+{};
+
 template <int format, BOOST_VARIANT_ENUM_PARAMS(typename T)>
 ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) >& x)
 {
@@ -197,6 +219,105 @@ void load_variant(ipstream& in, int Which, boost::variant<BOOST_VARIANT_ENUM_PAR
       PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<types>());
    }
    variant_load<types>::load(in, Which, x);
+}
+
+template <std::size_t I, typename Variant, bool Done = (I == std::variant_size<Variant>::value)>
+struct std_variant_load;
+
+template <std::size_t I, typename Variant>
+struct std_variant_load<I, Variant, false>
+{
+   template <int format>
+   static void load(ipstreambuf<format>& in, int Which, Variant& x)
+   {
+      if (Which == static_cast<int>(I))
+      {
+         using value_type = std::variant_alternative_t<I, Variant>;
+         value_type Value;
+         in >> Value;
+         x.template emplace<I>(std::move(Value));
+      }
+      else
+         std_variant_load<I+1, Variant>::load(in, Which, x);
+   }
+
+   static void load(ipstream& in, int Which, Variant& x)
+   {
+      if (Which == static_cast<int>(I))
+      {
+         using value_type = std::variant_alternative_t<I, Variant>;
+         value_type Value;
+         in >> Value;
+         x.template emplace<I>(std::move(Value));
+      }
+      else
+         std_variant_load<I+1, Variant>::load(in, Which, x);
+   }
+};
+
+template <std::size_t I, typename Variant>
+struct std_variant_load<I, Variant, true>
+{
+   template <int format>
+   static void load(ipstreambuf<format>&, int, Variant&)
+   {
+   }
+
+   static void load(ipstream&, int, Variant&)
+   {
+   }
+};
+
+template <int format, typename... T>
+opstreambuf<format>& operator<<(opstreambuf<format>& out, std::variant<T...> const& x)
+{
+   if (x.valueless_by_exception())
+   {
+      PANIC("Cannot serialize valueless std::variant")(tracer::typeid_name<std::variant<T...>>());
+   }
+   out << static_cast<int>(x.index());
+   std::visit([&out](auto const& Value) { out << Value; }, x);
+   return out;
+}
+
+template <int format, typename... T>
+ipstreambuf<format>& operator>>(ipstreambuf<format>& in, std::variant<T...>& x)
+{
+   int Which;
+   in >> Which;
+   load_variant(in, Which, x);
+   return in;
+}
+
+template <typename... T>
+ipstream& operator>>(ipstream& in, std::variant<T...>& x)
+{
+   int Which;
+   in >> Which;
+   load_variant(in, Which, x);
+   return in;
+}
+
+template <int format, typename... T>
+void load_variant(ipstreambuf<format>& in, int Which, std::variant<T...>& x)
+{
+   using variant_type = std::variant<T...>;
+   if (Which < 0 || static_cast<std::size_t>(Which) >= std::variant_size<variant_type>::value)
+   {
+      PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<variant_type>());
+   }
+   std_variant_load<0, variant_type>::load(in, Which, x);
+}
+
+template <typename... T>
+void load_variant(ipstream& in, int Which, std::variant<T...>& x)
+{
+   using variant_type = std::variant<T...>;
+   if (Which < 0 || static_cast<std::size_t>(Which) >= std::variant_size<variant_type>::value)
+   {
+      PANIC("Variant out of bounds for type list")(Which)(tracer::typeid_name<variant_type>());
+   }
+   std_variant_load<0, variant_type>::load(in, Which, x);
 }
 
 } // namespace PStream

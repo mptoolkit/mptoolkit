@@ -268,7 +268,7 @@ struct push_sum_k
 
    void operator()(char const* Start, char const* End) const
    {
-      std::complex<double> k = boost::get<std::complex<double> >(eval.top());
+      std::complex<double> k = std::get<std::complex<double> >(eval.top());
       eval.pop();
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
@@ -569,7 +569,7 @@ struct push_coarse_grain
                                     + " canot coarse-grain to zero or negative size!",
                                     Start, End);
 
-      eval.push(boost::apply_visitor(coarse_grain_element<ElementType>(Sites), Op));
+      eval.push(std::visit(coarse_grain_element<ElementType>(Sites), Op));
    }
 
    InfiniteLattice const& Lattice;

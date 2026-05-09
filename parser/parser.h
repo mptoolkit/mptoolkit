@@ -48,6 +48,9 @@
 #include <functional>
 #include <string>
 #include <complex>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace Parser
 {
@@ -183,6 +186,130 @@ distinct_directive<> const keyword_d("0-9a-zA-Z_");
 
 typedef std::complex<double> complex;
 
+template <typename Visitor, typename = void>
+struct has_visit_result_type : std::false_type
+{};
+
+template <typename Visitor>
+struct has_visit_result_type<Visitor, std::void_t<typename std::decay_t<Visitor>::result_type>> : std::true_type
+{};
+
+template <typename Visitor, typename... Variants>
+decltype(auto) apply_std_variant_visitor(Visitor&& visitor, Variants&&... variants)
+{
+   if constexpr (has_visit_result_type<Visitor>::value)
+   {
+      using result_type = typename std::decay_t<Visitor>::result_type;
+      return std::visit([&visitor](auto&&... args) -> result_type
+                        {
+                           return std::forward<Visitor>(visitor)(std::forward<decltype(args)>(args)...);
+                        },
+                        std::forward<Variants>(variants)...);
+   }
+   else
+   {
+      return std::visit(std::forward<Visitor>(visitor), std::forward<Variants>(variants)...);
+   }
+}
+
+template <typename Visitor, typename... T>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T...>& variant)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), variant);
+}
+
+template <typename Visitor, typename... T>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T...> const& variant)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), variant);
+}
+
+template <typename Visitor, typename... T1, typename... T2>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T1...>& x, std::variant<T2...>& y)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), x, y);
+}
+
+template <typename Visitor, typename... T1, typename... T2>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T1...> const& x, std::variant<T2...> const& y)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), x, y);
+}
+
+template <typename Visitor, typename... T1, typename... T2>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T1...>& x, std::variant<T2...> const& y)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), x, y);
+}
+
+template <typename Visitor, typename... T1, typename... T2>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, std::variant<T1...> const& x, std::variant<T2...>& y)
+{
+   return apply_std_variant_visitor(std::forward<Visitor>(visitor), x, y);
+}
+
+template <typename Visitor, typename Variant>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, Variant&& variant)
+{
+   return boost::apply_visitor(std::forward<Visitor>(visitor), std::forward<Variant>(variant));
+}
+
+template <typename Visitor, typename Variant1, typename Variant2>
+decltype(auto) apply_variant_visitor(Visitor&& visitor, Variant1&& x, Variant2&& y)
+{
+   return boost::apply_visitor(std::forward<Visitor>(visitor),
+                               std::forward<Variant1>(x),
+                               std::forward<Variant2>(y));
+}
+
+template <typename T, typename... U>
+T* variant_get(std::variant<U...>* variant)
+{
+   return std::get_if<T>(variant);
+}
+
+template <typename T, typename... U>
+T const* variant_get(std::variant<U...> const* variant)
+{
+   return std::get_if<T>(variant);
+}
+
+template <typename T, typename... U>
+T& variant_get(std::variant<U...>& variant)
+{
+   return std::get<T>(variant);
+}
+
+template <typename T, typename... U>
+T const& variant_get(std::variant<U...> const& variant)
+{
+   return std::get<T>(variant);
+}
+
+template <typename T, typename Variant>
+T* variant_get(Variant* variant)
+{
+   return boost::get<T>(variant);
+}
+
+template <typename T, typename Variant>
+T const* variant_get(Variant const* variant)
+{
+   return boost::get<T>(variant);
+}
+
+template <typename T, typename Variant>
+T& variant_get(Variant& variant)
+{
+   return boost::get<T>(variant);
+}
+
+template <typename T, typename Variant>
+T const& variant_get(Variant const& variant)
+{
+   return boost::get<T>(variant);
+}
+
 // name_of function, for getting a friendly name of components of element_type's
 
 template <typename T>
@@ -202,7 +329,15 @@ inline
 std::string
 name_of(boost::variant<BOOST_VARIANT_ENUM_PARAMS(T) > const& x)
 {
-   return boost::apply_visitor(NameOf(), x);
+   return apply_variant_visitor(NameOf(), x);
+}
+
+template <typename... T>
+inline
+std::string
+name_of(std::variant<T...> const& x)
+{
+   return apply_variant_visitor(NameOf(), x);
 }
 
 template <>
@@ -217,9 +352,9 @@ int pop_int(std::stack<ElementType>& eval)
 {
    if (eval.empty())
       throw ParserError("expected an integer, but the stack is empty!");
-   if (!boost::get<complex>(&eval.top()))
+   if (!variant_get<complex>(&eval.top()))
       throw ParserError("expected an integer, got a " + name_of(eval.top()));
-   complex x = boost::get<complex>(eval.top());
+   complex x = variant_get<complex>(eval.top());
    eval.pop();
    return as_int(x);
 }
@@ -229,9 +364,9 @@ double pop_real(std::stack<ElementType>& eval)
 {
    if (eval.empty())
       throw ParserError("expected an integer, but the stack is empty!");
-   if (!boost::get<complex>(&eval.top()))
+   if (!variant_get<complex>(&eval.top()))
       throw ParserError("expected an integer, got a " + name_of(eval.top()));
-   complex x = boost::get<complex>(eval.top());
+   complex x = variant_get<complex>(eval.top());
    eval.pop();
    return as_real(x);
 }
@@ -268,7 +403,7 @@ struct apply_unary_math
 
    element_type operator()(element_type const& x) const
    {
-      return element_type(boost::apply_visitor(f, x));
+      return element_type(apply_variant_visitor(f, x));
    }
 
    Visitor f;
@@ -347,10 +482,10 @@ struct eval_filegrid
       {
          element_type X = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z), Args);
          element_type Xw1(1-xw);
-         X = boost::apply_visitor(binary_multiplication<element_type>(), X, Xw1);
+         X = apply_variant_visitor(binary_multiplication<element_type>(), X, Xw1);
          element_type Xw(xw);
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Xw);
-         R = boost::apply_visitor(binary_addition<element_type>(), R, X);
+         R = apply_variant_visitor(binary_multiplication<element_type>(), R, Xw);
+         R = apply_variant_visitor(binary_addition<element_type>(), R, X);
       }
 
       // Linear interpolation in the Y direction.  R = f(y)*yw + f(y+1)*(1-yw)
@@ -362,16 +497,16 @@ struct eval_filegrid
          {
             element_type XY = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z), Args);
             element_type Xw1(1-xw);
-            XY = boost::apply_visitor(binary_multiplication<element_type>(), XY, Xw1);
+            XY = apply_variant_visitor(binary_multiplication<element_type>(), XY, Xw1);
             element_type Xw(xw);
-            Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Xw);
-            Y = boost::apply_visitor(binary_addition<element_type>(), Y, XY);
+            Y = apply_variant_visitor(binary_multiplication<element_type>(), Y, Xw);
+            Y = apply_variant_visitor(binary_addition<element_type>(), Y, XY);
          }
          element_type Yw1(1-yw);
-         Y = boost::apply_visitor(binary_multiplication<element_type>(), Y, Yw1);
+         Y = apply_variant_visitor(binary_multiplication<element_type>(), Y, Yw1);
          element_type Yw(yw);
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Yw);
-         R = boost::apply_visitor(binary_addition<element_type>(), R, Y);
+         R = apply_variant_visitor(binary_multiplication<element_type>(), R, Yw);
+         R = apply_variant_visitor(binary_addition<element_type>(), R, Y);
       }
 
       // Linear interpolation in the Z direction.  R = f(z)*zw + f(z+1)*(1-zw)
@@ -387,37 +522,37 @@ struct eval_filegrid
                // nested interpolation in X,Y,Z directions
                element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
                element_type Xw1(1-xw);
-               XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+               XZ = apply_variant_visitor(binary_multiplication<element_type>(), XZ, Xw1);
                element_type Xw(xw);
-               Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
-               Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
+               Z = apply_variant_visitor(binary_multiplication<element_type>(), Z, Xw);
+               Z = apply_variant_visitor(binary_addition<element_type>(), Z, XZ);
 
                element_type XYZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y+1, z+1), Args);
-               XYZ = boost::apply_visitor(binary_multiplication<element_type>(), XYZ, Xw1);
-               YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Xw);
-               YZ = boost::apply_visitor(binary_addition<element_type>(), YZ, XYZ);
+               XYZ = apply_variant_visitor(binary_multiplication<element_type>(), XYZ, Xw1);
+               YZ = apply_variant_visitor(binary_multiplication<element_type>(), YZ, Xw);
+               YZ = apply_variant_visitor(binary_addition<element_type>(), YZ, XYZ);
             }
             element_type Yw1(1-yw);
-            YZ = boost::apply_visitor(binary_multiplication<element_type>(), YZ, Yw1);
+            YZ = apply_variant_visitor(binary_multiplication<element_type>(), YZ, Yw1);
             element_type Yw(yw);
-            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Yw);
-            Z = boost::apply_visitor(binary_addition<element_type>(), Z, YZ);
+            Z = apply_variant_visitor(binary_multiplication<element_type>(), Z, Yw);
+            Z = apply_variant_visitor(binary_addition<element_type>(), Z, YZ);
          }
          else if (xw < 1)
          {
             // nested interpolation in X,Z directions
             element_type XZ = ParseOperator(Lattice, LookupFileGrid(Filename, x+1, y, z+1), Args);
             element_type Xw1(1-xw);
-            XZ = boost::apply_visitor(binary_multiplication<element_type>(), XZ, Xw1);
+            XZ = apply_variant_visitor(binary_multiplication<element_type>(), XZ, Xw1);
             element_type Xw(xw);
-            Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Xw);
-            Z = boost::apply_visitor(binary_addition<element_type>(), Z, XZ);
+            Z = apply_variant_visitor(binary_multiplication<element_type>(), Z, Xw);
+            Z = apply_variant_visitor(binary_addition<element_type>(), Z, XZ);
          }
          element_type Zw1(1-zw);
-         Z = boost::apply_visitor(binary_multiplication<element_type>(), Z, Zw1);
+         Z = apply_variant_visitor(binary_multiplication<element_type>(), Z, Zw1);
          element_type Zw(zw);
-         R = boost::apply_visitor(binary_multiplication<element_type>(), R, Zw);
-         R = boost::apply_visitor(binary_addition<element_type>(), R, Z);
+         R = apply_variant_visitor(binary_multiplication<element_type>(), R, Zw);
+         R = apply_variant_visitor(binary_addition<element_type>(), R, Z);
       }
 
       eval.push(R);
@@ -568,7 +703,7 @@ struct apply_binary_math
 
    element_type operator()(element_type const& x, element_type const& y) const
    {
-      return element_type(boost::apply_visitor(f, x, y));
+      return element_type(apply_variant_visitor(f, x, y));
    }
 
    Visitor f;
@@ -766,7 +901,7 @@ struct invoke_binary
          eval.pop();
          element_type lhs = eval.top();
          eval.pop();
-         eval.push(boost::apply_visitor(f, lhs, rhs));
+         eval.push(apply_variant_visitor(f, lhs, rhs));
       }
       catch (ParserError const& p)
       {
@@ -798,7 +933,7 @@ struct do_negate
       {
          element_type lhs = eval.top();
          eval.pop();
-         eval.push(boost::apply_visitor(negate_element<element_type>(), lhs));
+         eval.push(apply_variant_visitor(negate_element<element_type>(), lhs));
       }
       catch (ParserError const& p)
       {
@@ -834,7 +969,7 @@ struct push_prod
          std::string q = identifier_stack.top();
          identifier_stack.pop();
 
-         eval.push(boost::apply_visitor(ternary_product<element_type>(q), op1, op2));
+         eval.push(apply_variant_visitor(ternary_product<element_type>(q), op1, op2));
       }
       catch (ParserError const& p)
       {
@@ -881,7 +1016,7 @@ struct push_parameter
 
    void operator()(char const*, char const*) const
    {
-      ParamStack.top().push_back(Function::Parameter(boost::get<complex>(eval.top())));
+      ParamStack.top().push_back(Function::Parameter(variant_get<complex>(eval.top())));
       eval.pop();
    }
 
@@ -900,7 +1035,7 @@ struct push_named_parameter
    void operator()(char const*, char const*) const
    {
       ParamStack.top().push_back(Function::Parameter(IdentifierStack.top(),
-                                                     boost::get<complex>(eval.top())));
+                                                     variant_get<complex>(eval.top())));
       IdentifierStack.pop();
       eval.pop();
    }
