@@ -106,7 +106,7 @@ class LatticeSite
       { return pImpl->Operators.find(s); }
 
       bool operator_exists(std::string const& s) const
-      { return pImpl->Operators.find(s) != pImpl->Operators.end(); }
+      { return pImpl->Operators.contains(s); }
 
       operator_type& operator[](std::string const& s) { return pImpl.mutate()->Operators[s]; }
       operator_type const& operator[](std::string const& s) const;
@@ -140,7 +140,7 @@ class LatticeSite
       { return pImpl->Functions.find(s); }
 
       bool function_exists(std::string const& s) const
-      { return pImpl->Functions.find(s) != pImpl->Functions.end(); }
+      { return pImpl->Functions.contains(s); }
 
       function_type& func(std::string const& s) { return pImpl.mutate()->Functions[s]; }
 

@@ -299,7 +299,7 @@ InfiniteLattice::set_operator_descriptions(OperatorDescriptions const& Desc)
 bool
 InfiniteLattice::operator_exists(std::string const& s) const
 {
-   return (Operators_.find(s) != Operators_.end());
+   return Operators_.contains(s);
 }
 
 bool

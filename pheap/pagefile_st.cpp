@@ -450,7 +450,7 @@ void PageFileImpl::deallocate(size_t Page)
    FreeList.insert(Page);
 
    // optimize the free list by removing pages from the free list that are at the end of the file
-   while (FreeList.count(NumAllocatedPages-1))
+   while (FreeList.contains(NumAllocatedPages-1))
    {
       FreeList.erase(--NumAllocatedPages);
    }
@@ -497,7 +497,7 @@ size_t PageFileImpl::AllocatePage()
 
 bool PageFileImpl::IsOnFreeList(size_t Page)
 {
-   return FreeList.count(Page) == 1;
+   return FreeList.contains(Page);
 }
 
 void PageFileImpl::set_checkpoint_limit_kb(unsigned long Size)

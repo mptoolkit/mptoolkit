@@ -153,7 +153,7 @@ class FiniteLattice
       { return Functions_.find(s); }
 
       bool function_exists(std::string const& s) const
-      { return Functions_.find(s) != Functions_.end(); }
+      { return Functions_.contains(s); }
 
       // lookup
       function_type& func(std::string const& s) { return Functions_[s]; }

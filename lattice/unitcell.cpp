@@ -228,7 +228,7 @@ UnitCell::assign_operator(std::string const& Name, operator_type Op, int Offset)
 bool
 UnitCell::operator_exists(std::string const& s) const
 {
-   if (Operators.find(s) != Operators.end())
+   if (Operators.contains(s))
       return true;
    if (Sites->size() == 1 && Sites->front().operator_exists(s))
       return true;

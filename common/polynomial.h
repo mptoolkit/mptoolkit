@@ -60,7 +60,7 @@ class Polynomial
       coefficient_type coefficient(int n) const;
 
       // returns true if this Polynomial has a term at degree n
-      bool has_term(int n) const { return data_.find(n) != data_.end(); }
+      bool has_term(int n) const { return data_.contains(n); }
 
       // bracket operator P[n] gives the coefficient of the term x^n,
       // as an lvalue.

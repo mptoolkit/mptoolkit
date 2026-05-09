@@ -80,7 +80,7 @@ class OperatorDescriptions
          OperatorDescProxy const& operator()(std::string const& Name,
                                              std::string const& Desc) const
          {
-            if (Index.find(Name) == Index.end())
+            if (!Index.contains(Name))
             {
                Index[Name] = Descriptions.size();
                Descriptions.push_back(std::make_tuple(Name, Desc, "", ftype()));
@@ -96,7 +96,7 @@ class OperatorDescriptions
                                              std::string const& Desc,
                                              std::string const& Condition) const
          {
-            if (Index.find(Name) == Index.end())
+            if (!Index.contains(Name))
             {
                Index[Name] = Descriptions.size();
                Descriptions.push_back(std::make_tuple(Name, Desc, Condition, ftype()));
@@ -113,7 +113,7 @@ class OperatorDescriptions
                                              std::string const& Condition,
                                              std::function<bool()> Test) const
          {
-            if (Index.find(Name) == Index.end())
+            if (!Index.contains(Name))
             {
                Index[Name] = Descriptions.size();
                Descriptions.push_back(std::make_tuple(Name, Desc, Condition, Test));

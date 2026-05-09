@@ -73,10 +73,10 @@ void BufferAllocator::deallocate(unsigned char const* Buf)
    std::lock_guard<std::mutex> Lock(PageBufferMutex);
    void* Buffer = static_cast<void*>(const_cast<unsigned char*>(Buf));
 
-   CHECK(FreeBuffers.count(Buffer) == 0);
+   CHECK(!FreeBuffers.contains(Buffer));
 
    // see if this buffer was allocated using mmap()
-   if (MappedBuffers.count(Buf))
+   if (MappedBuffers.contains(Buf))
    {
       int Ret = munmap(Buffer, PageSize);  // this should never fail
       CHECK(Ret == 0);

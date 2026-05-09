@@ -34,6 +34,8 @@
 #if !defined(CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP)
 #define CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP
 
+#include <bit>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 
@@ -152,9 +154,7 @@ struct ConstructHelper
 inline
 double nans(char const*)
 {
-   unsigned long long x = 0x7ff7ffffffffffffULL;
-   char const* c = static_cast<char const*>(static_cast<void const*>(&x));
-   return *static_cast<double const*>(static_cast<void const*>(c));
+   return std::bit_cast<double>(std::uint64_t{0x7ff7ffffffffffffULL});
 }
 
 template <typename T>

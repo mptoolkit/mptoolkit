@@ -84,7 +84,7 @@ ConfList::ConfList(std::string const& file)
             Value = ExpandEnvironment(Value);
             if (Name.length() > 0)
             {
-               if (Data.find(Name) != Data.end())
+               if (Data.contains(Name))
                {
                   std::cerr << "warning: configuration file " << file << ": option "
                             << Name << " is redefined (was " << Data[Name]

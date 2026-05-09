@@ -34,6 +34,7 @@
 #include <cctype>
 #include <sstream>
 #include <algorithm>
+#include <string_view>
 #include <vector>
 #include "common/trace.h"
 
@@ -47,13 +48,13 @@ inline void RemoveWhiteSpace(std::string& s)
 }
 
 inline
-bool StartsWith(std::string const& s, std::string const& prefix)
+bool StartsWith(std::string_view s, std::string_view prefix)
 {
-   return s.compare(0, prefix.size(), prefix) == 0;
+   return s.starts_with(prefix);
 }
 
 inline
-bool IEquals(std::string const& x, std::string const& y)
+bool IEquals(std::string_view x, std::string_view y)
 {
    if (x.size() != y.size())
       return false;
@@ -69,21 +70,21 @@ bool IEquals(std::string const& x, std::string const& y)
 }
 
 inline
-void ReplaceAll(std::string& s, std::string const& from, std::string const& to)
+void ReplaceAll(std::string& s, std::string_view from, std::string_view to)
 {
    if (from.empty())
       return;
 
    std::string::size_type pos = 0;
-   while ((pos = s.find(from, pos)) != std::string::npos)
+   while ((pos = s.find(from.data(), pos, from.size())) != std::string::npos)
    {
-      s.replace(pos, from.size(), to);
+      s.replace(pos, from.size(), to.data(), to.size());
       pos += to.size();
    }
 }
 
 inline
-std::string TrimCopy(std::string const& s)
+std::string TrimCopy(std::string_view s)
 {
    auto const is_not_space = [](unsigned char c) { return !std::isspace(c); };
    auto first = std::find_if(s.begin(), s.end(), is_not_space);
@@ -109,19 +110,19 @@ std::string ToLowerCopy(std::string s)
 }
 
 inline
-std::vector<std::string> SplitCompress(std::string const& s, std::string const& separators)
+std::vector<std::string> SplitCompress(std::string_view s, std::string_view separators)
 {
    std::vector<std::string> result;
-   std::string::size_type begin = 0;
+   std::string_view::size_type begin = 0;
    while (begin < s.size())
    {
       begin = s.find_first_not_of(separators, begin);
-      if (begin == std::string::npos)
+      if (begin == std::string_view::npos)
          break;
 
-      std::string::size_type end = s.find_first_of(separators, begin);
-      result.push_back(s.substr(begin, end - begin));
-      if (end == std::string::npos)
+      std::string_view::size_type end = s.find_first_of(separators, begin);
+      result.emplace_back(s.substr(begin, end - begin));
+      if (end == std::string_view::npos)
          break;
       begin = end + 1;
    }
@@ -130,7 +131,7 @@ std::vector<std::string> SplitCompress(std::string const& s, std::string const& 
 }
 
 template <typename Range>
-std::string JoinStrings(Range const& strings, std::string const& separator)
+std::string JoinStrings(Range const& strings, std::string_view separator)
 {
    std::ostringstream out;
    for (auto i = strings.begin(); i != strings.end(); ++i)

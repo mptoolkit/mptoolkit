@@ -223,7 +223,7 @@ class UnitCell
       { return Functions.find(s); }
 
       bool function_exists(std::string const& s) const
-      { return Functions.find(s) != Functions.end(); }
+      { return Functions.contains(s); }
 
       // lookup
       function_type& func(std::string const& s) { return Functions[s]; }

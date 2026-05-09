@@ -325,7 +325,7 @@ PHeapObject::PHeapObject(Descriptor* Desc, id_type ID, int InitialReferenceCount
 PHeapObject* PHeapObject::Create(Private::PointerToObject* Obj, id_type ID)
 {
    std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
-   CHECK(GlobalHeap().count(ID) == 0);
+   CHECK(!GlobalHeap().contains(ID));
    return GlobalHeap()[ID] = new PHeapObject(Obj, ID);
 }
 
@@ -584,7 +584,7 @@ PHeapObject* AddReference(id_type ID)
 {
    {
       std::lock_guard<std::mutex> Lock(GlobalHeapMutex());
-      if (GlobalHeap().count(ID) != 0)
+      if (GlobalHeap().contains(ID))
       {
          PHeapObject* Obj = GlobalHeap()[ID];
          Obj->AddReference();
@@ -682,7 +682,7 @@ void ShutdownPersistent(PHeapObject* MainObject)
    // Look for any objects in the global heap that are not going to be saved
    for (GlobalHeapType::const_iterator I = GlobalHeap().begin(); I != GlobalHeap().end(); ++I)
    {
-      if (HeapRecords.count(I->first) == 0)
+      if (!HeapRecords.contains(I->first))
       {
          I->second->EmergencyDelete();
       }
@@ -808,7 +808,7 @@ PHeapObject* ImportHeap(BlockFileSystem* FS_, PageId MetaPage)
    for (HeapType::const_iterator I = HeapRecords.begin(); I != HeapRecords.end(); ++I)
    {
       // if the object is not present, allocate it.
-      if (GlobalHeap().count(I->first) == 0)
+      if (!GlobalHeap().contains(I->first))
       {
          // copy the Descriptor into MyFileSystem.  Do it as a two-stage
          // CreateLocked() / FinalizeCreate() so that we can drop the GlobalHeapMutex
