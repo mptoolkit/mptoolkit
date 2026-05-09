@@ -99,7 +99,7 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    #pragma omp parallel for reduction(+:DeltaLogAmplitude)
    for (unsigned i = 0; i < Sz; i += 2)
    {
-      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], LogAmplitude, UOdd[i/2], SInfo);
+      TruncationInfo Info = DoTEBD(Psi[i], Psi[i+1], Lambda[i/2], DeltaLogAmplitude, UOdd[i/2], SInfo);
       if (Verbose > 0)
       {
          std::cout << "Bond=" << i
