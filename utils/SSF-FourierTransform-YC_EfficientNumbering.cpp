@@ -54,8 +54,8 @@ int main(int argc, char** argv)
 
    cout.precision(16);
 
-   int w = ConvertString<int>(argv[1]);
-   int GridSize = ConvertString<int>(argv[2]);
+   int w = ConvertStringStrict<int>(argv[1]);
+   int GridSize = ConvertStringStrict<int>(argv[2]);
    string DataFile = argv[3]; 
 
    vector<int> n1, n2;

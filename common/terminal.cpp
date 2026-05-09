@@ -130,7 +130,7 @@ color parse_code(std::string s)
       return color::Reset;
    else if (s[0] >= '0' && s[0] <= '9')
    {
-      return color(ConvertString<int>(s));
+      return color(ConvertStringStrict<int>(s));
    }
    else
    {
