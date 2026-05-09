@@ -116,7 +116,7 @@ if test "x$with_pbs" != xno; then
    fi
    save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
    AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
-   AC_TRY_LINK_FUNC([pbs_connect],
+   AC_LINK_IFELSE([AC_LANG_CALL([], [pbs_connect])],
       [acx_pbs_ok=yes
        AC_SUBST([LIBPBS], "$pbs_lib")
        AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])

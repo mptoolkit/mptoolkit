@@ -3,7 +3,7 @@ dnl -*- Autoconf -*-
 AC_DEFUN([ACX_GMP],
  [
   AC_ARG_WITH(gmp,
-    AC_HELP_STRING([--with-gmp=DIR],[top directory for GnuMP]))
+    AS_HELP_STRING([--with-gmp=DIR],[top directory for GnuMP]))
 
   acx_gmp_dir=
   gmp_search_dir=
@@ -19,19 +19,19 @@ AC_DEFUN([ACX_GMP],
   acx_save_CPPFLAGS="$CPPFLAGS"
   acx_save_LDFLAGS="$LDFLAGS"
   if test x"$acx_gmp_dir" = x; then
-   AC_TRY_LINK([
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
-], [], acx_gmp=yes; gmp_search_dir= )
+]], [[]])], [acx_gmp=yes; gmp_search_dir=])
   fi
   for try_dir in $gmp_search_dir; do
    CPPFLAGS="$acx_save_CPPFLAGS -I$try_dir/include"
    LDFLAGS="$acx_save_LDFLAGS -L$try_dir/lib"
-   AC_TRY_LINK([
+   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <cstddef> // workaround for bug https://gcc.gnu.org/gcc-4.9/porting_to.html
 #include "gmp.h"
-], [],
-      acx_gmp_dir="$try_dir" ; break)
+]], [[]])],
+      [acx_gmp_dir="$try_dir" ; break])
   done
   CPPFLAGS="$acx_save_CPPFLAGS"
   LDFLAGS="$acx_save_LDFLAGS"
@@ -93,7 +93,7 @@ dnl check convention for returning complex parameters from fortran functions
 dnl
 AC_DEFUN(
  [ACX_FORTRAN_COMPLEX_RETURN],
- [AC_REQUIRE([ACX_BLAS])
+ [AC_REQUIRE([AX_BLAS])
   AC_CACHE_CHECK(
   [convention for returning complex values from Fortran functions],
   [acx_cv_fortran_complex_return],
@@ -149,7 +149,7 @@ int main()
 dnl check for ARPACK
 AC_DEFUN([ACX_ARPACK],
 [
-        AC_REQUIRE([ACX_LAPACK])
+        AC_REQUIRE([AX_LAPACK])
 
         AC_ARG_WITH(arpack,
                 [AS_HELP_STRING([--with-arpack=<lib>],
@@ -177,7 +177,7 @@ AC_DEFUN([ACX_ARPACK],
                 AC_F77_FUNC(znaupd)
                 save_LIBS="$LIBS"; LIBS="$LIBARPACK $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
                 acx_arpack_ok=no
-                AC_TRY_LINK_FUNC([$znaupd], [acx_arpack_ok=yes], [LIBARPACK=""])
+                AC_LINK_IFELSE([AC_LANG_CALL([], [$znaupd])], [acx_arpack_ok=yes], [LIBARPACK=""])
                 LIBS="$save_LIBS"
                 AC_MSG_RESULT($acx_arpack_ok)
                 if test "x$acx_want_arpack" = "xyes" -a "x$acx_arpack_ok" != "xyes"; then
