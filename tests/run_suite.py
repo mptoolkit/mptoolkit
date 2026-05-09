@@ -726,7 +726,8 @@ class SuiteRunner:
         trace: bool = False,
     ):
         self.suite = suite
-        self.bin_dir = bin_dir
+        self.bin_dir = bin_dir.resolve()
+        self.repo_root = Path(__file__).resolve().parents[1]
         self.work_root = work_root
         self.verbose = verbose
         self.explain = explain
@@ -757,6 +758,7 @@ class SuiteRunner:
     def make_base_context(self) -> dict[str, Any]:
         return {
             "bin_dir": str(self.bin_dir),
+            "repo_root": str(self.repo_root),
             "work_root": str(self.work_root),
         }
 

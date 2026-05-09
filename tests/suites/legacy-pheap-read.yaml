@@ -1,0 +1,38 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  old_su2_lattice:
+    run: tar -xzf {repo_root}/tests/data/legacy-pheap/old-su2-lattice.tar.gz
+    outputs:
+      lattice: lat
+
+  xxz_u1_infinite_wavefunction:
+    run: tar -xzf {repo_root}/tests/data/legacy-pheap/xxz-u1-infinite-wavefunction.tar.gz
+    outputs:
+      state: psi
+
+tests:
+  old_su2_lattice_reads_historical_infinitempo_variant_layout:
+    use: old_su2_lattice
+    expect:
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "Unit cell size: 8"
+      - lattice_info_text:
+          contains: "H_J1"
+
+  old_u1_infinite_wavefunction_reads_historical_file_format:
+    use: xxz_u1_infinite_wavefunction
+    expect:
+      - info_text:
+          contains: "Infinite wavefunction in the left canonical basis."
+      - info_text:
+          contains: "Symmetry list = Sz:U(1)"
+      - info_text:
+          contains: "File format version 6"
+      - info_text:
+          contains: "Hamiltonian=lat:H_J1t-0.999*H_J1z"
