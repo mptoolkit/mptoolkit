@@ -330,6 +330,157 @@ fixtures:
           approx: 0.5
           abs: 1e-12
 
+  infinite_upup2_itebd_site1_sx:
+    from: infinite_upup2
+    run: mp-itebd -w psi -H "lat:sum_unit(sites=2,Sx(1))" -o out -t 0.1 -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.49750208263901
+          abs: 1e-12
+
+  infinite_upup2_itdvp_site1_sx:
+    from: infinite_upup2
+    run: mp-itdvp -w psi -H "lat:sum_unit(sites=2,Sx(1))" -o out -t 0.1 -n 1 -s 1 -m 4
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.49750208263901
+          abs: 1e-12
+
+  infinite_upup3:
+    from: lat_plain
+    run: mp-construct -l lat -o psi 0.5:0.5:0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup3_itebd_sites3_identity:
+    from: infinite_upup3
+    run: mp-itebd -w psi -H "lat:sum_unit(sites=3,I(0))" -o out -t 0.1 -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup4:
+    from: lat_plain
+    run: mp-construct -l lat -o psi 0.5:0.5:0.5:0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup4_itebd_site3_sx:
+    from: infinite_upup4
+    run: mp-itebd -w psi -H "lat:sum_unit(sites=4,Sx(3))" -o out -t 0.1 -n 1 -s 1
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: 0.49750208263901
+          abs: 1e-12
+
+  infinite_upup4_itdvp_site3_sx:
+    from: infinite_upup4
+    run: mp-itdvp -w psi -H "lat:sum_unit(sites=4,Sx(3))" -o out -t 0.1 -n 1 -s 1 -m 4
+    outputs:
+      state:
+        glob: out*
+        select: newest
+    certify:
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: 0.49750208263901
+          abs: 1e-12
+
 tests:
   tebd_identity_updates_norm_and_beta:
     use: finite_neel4_tebd_identity
@@ -399,6 +550,57 @@ tests:
     use:
       psi1: infinite_upup2_itebd_site0_sx.state
       psi2: infinite_upup2_itdvp_site0_sx.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+
+  itebd_site_dependent_two_site_drive_on_second_site_matches_itdvp:
+    use:
+      psi1: infinite_upup2_itebd_site1_sx.state
+      psi2: infinite_upup2_itdvp_site1_sx.state
+    expect:
+      - ioverlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ioverlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  itebd_identity_three_site_unit_cell_preserves_product_state:
+    use: infinite_upup3_itebd_sites3_identity
+    expect:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
+          abs: 1e-12
+
+  itebd_site_dependent_four_site_drive_matches_itdvp:
+    use:
+      psi1: infinite_upup4_itebd_site3_sx.state
+      psi2: infinite_upup4_itdvp_site3_sx.state
     expect:
       - ioverlap_real:
           approx: 1.0

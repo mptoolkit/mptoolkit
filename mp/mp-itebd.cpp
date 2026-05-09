@@ -128,6 +128,22 @@ struct HamiltonianGates
    std::vector<SimpleOperator> EvenContinuation;
 };
 
+SimpleOperator BondIdentity(OperatorComponent const& Left, OperatorComponent const& Right)
+{
+   return tensor_prod(SimpleOperator::make_identity(Left.LocalBasis1()),
+                      SimpleOperator::make_identity(Right.LocalBasis1()));
+}
+
+SimpleOperator ExponentiateBond(std::complex<double> Factor,
+                                SimpleOperator const& BondTerm,
+                                OperatorComponent const& Left,
+                                OperatorComponent const& Right)
+{
+   if (BondTerm.is_null())
+      return BondIdentity(Left, Right);
+   return Exponentiate(Factor * BondTerm);
+}
+
 // Construct the 2-body gates from the Hamiltonian.
 // We assume that the Hamiltonian has already been converted to an appropriate size unit cell.
 HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<double> Timestep, LTSDecomposition const& decomp)
@@ -168,7 +184,8 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
       std::vector<SimpleOperator> Terms;
       for (int i = 0; i < BondH.size(); i += 2)
       {
-         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+         Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                          HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
       }
       EvenU.push_back(std::move(Terms));
    }
@@ -180,10 +197,12 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
    for (auto x : decomp.b())
    {
       std::vector<SimpleOperator> Terms;
-      Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[BondH.size()-1]));
+      Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[BondH.size()-1],
+                                       HamMPO[BondH.size()-1], HamMPO[0]));
       for (int i = 1; i < BondH.size()-1; i += 2)
       {
-         Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+         Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                          HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
       }
       OddU.push_back(std::move(Terms));
    }
@@ -196,7 +215,8 @@ HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<dou
       double x = decomp.a().front() + decomp.a().back();
       for (int i = 0; i < BondH.size(); i += 2)
       {
-         EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
+         EvenContinuation.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                                     HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
       }
    }
 
