@@ -68,7 +68,7 @@ T getenv_or_default(std::string const& str, T const& Default)
    {
       char const* Str = getenv(str.c_str());
       if (Str != NULL)
-         return ConvertString<T>(Str);
+         return ConvertStringStrict<T>(Str);
    }
    catch (std::runtime_error const&)
    {
