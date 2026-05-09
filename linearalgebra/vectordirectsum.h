@@ -50,7 +50,7 @@ struct VectorDirectSum<S, T, LOCAL_VECTOR(Sv, Si),  LOCAL_VECTOR(Tv, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + size(y));
+      result_type R(LinearAlgebra::size(x) + LinearAlgebra::size(y));
       zero_all(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -58,7 +58,7 @@ struct VectorDirectSum<S, T, LOCAL_VECTOR(Sv, Si),  LOCAL_VECTOR(Tv, Ti)>
          set_element(R, I.index(), *I);
          ++I;
       }
-      size_type xSize = size(x);
+      size_type xSize = LinearAlgebra::size(x);
       typename const_iterator<T>::type J = iterate(y);
       while (J)
       {
@@ -82,7 +82,7 @@ struct VectorDirectSum<S, T, DENSE_VECTOR(Sv, Si),  DENSE_VECTOR(Tv, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + size(y));
+      result_type R(LinearAlgebra::size(x) + LinearAlgebra::size(y));
       typename iterator<result_type>::type K = iterate(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -114,7 +114,7 @@ struct VectorDirectSum<S, T, LOCAL_VECTOR(Val, Si),  LOCAL_VECTOR(Val, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + size(y));
+      result_type R(LinearAlgebra::size(x) + LinearAlgebra::size(y));
       zero_all(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -122,7 +122,7 @@ struct VectorDirectSum<S, T, LOCAL_VECTOR(Val, Si),  LOCAL_VECTOR(Val, Ti)>
          set_element(R, I.index(), *I);
          ++I;
       }
-      size_type xSize = size(x);
+      size_type xSize = LinearAlgebra::size(x);
       typename const_iterator<T>::type J = iterate(y);
       while (J)
       {
@@ -144,7 +144,7 @@ struct VectorDirectSum<S, T, DENSE_VECTOR(Val, Si),  DENSE_VECTOR(Val, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + size(y));
+      result_type R(LinearAlgebra::size(x) + LinearAlgebra::size(y));
       typename iterator<result_type>::type K = iterate(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -177,7 +177,7 @@ struct DirectSumInterface<S, T, LOCAL_VECTOR(Sv, Si),  AnyScalar<Tv> >
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + 1);
+      result_type R(LinearAlgebra::size(x) + 1);
       zero_all(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -185,7 +185,7 @@ struct DirectSumInterface<S, T, LOCAL_VECTOR(Sv, Si),  AnyScalar<Tv> >
          set_element(R, I.index(), *I);
          ++I;
       }
-      set_element(R, size(x), y);
+      set_element(R, LinearAlgebra::size(x), y);
       return R;
    }
 };
@@ -199,7 +199,7 @@ struct DirectSumInterface<S, T, LOCAL_VECTOR(Val, Si),  AnyScalar<Val> >
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + 1);
+      result_type R(LinearAlgebra::size(x) + 1);
       zero_all(R);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
@@ -207,7 +207,7 @@ struct DirectSumInterface<S, T, LOCAL_VECTOR(Val, Si),  AnyScalar<Val> >
          set_element(R, I.index(), *I);
          ++I;
       }
-      set_element(R, size(x), y);
+      set_element(R, LinearAlgebra::size(x), y);
       return R;
    }
 };
@@ -220,14 +220,14 @@ struct DirectSumInterface<S, T, DENSE_VECTOR(Val, Si),  AnyScalar<Val> >
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(x) + 1);
+      result_type R(LinearAlgebra::size(x) + 1);
       typename const_iterator<S>::type I = iterate(x);
       while (I)
       {
          set_element(R, I.index(), *I);
          ++I;
       }
-      set_element(R, size(x), y);
+      set_element(R, LinearAlgebra::size(x), y);
       return R;
    }
 };
@@ -244,7 +244,7 @@ struct DirectSumInterface<S, T, AnyScalar<Sv>, LOCAL_VECTOR(Tv, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(y) + 1);
+      result_type R(LinearAlgebra::size(y) + 1);
       zero_all(R);
       set_element(R, 0, x);
       typename const_iterator<T>::type I = iterate(y);
@@ -269,7 +269,7 @@ struct DirectSumInterface<S, T, AnyScalar<Sv>, DENSE_VECTOR(Tv, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(y) + 1);
+      result_type R(LinearAlgebra::size(y) + 1);
       set_element(R, 0, x);
       typename const_iterator<T>::type I = iterate(y);
       while (I)
@@ -290,7 +290,7 @@ struct DirectSumInterface<S, T, AnyScalar<Val>, LOCAL_VECTOR(Val, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(y) + 1);
+      result_type R(LinearAlgebra::size(y) + 1);
       zero_all(R);
       set_element(R, 0, x);
       typename const_iterator<T>::type I = iterate(y);
@@ -311,7 +311,7 @@ struct DirectSumInterface<S, T, AnyScalar<Val>, DENSE_VECTOR(Val, Ti)>
    typedef T const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      result_type R(size(y) + 1);
+      result_type R(LinearAlgebra::size(y) + 1);
       set_element(R, 0, x);
       typename const_iterator<T>::type I = iterate(y);
       while (I)

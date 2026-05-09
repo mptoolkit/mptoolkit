@@ -1423,7 +1423,7 @@ SimpleOperator CompressBasis2_LinDep(OperatorComponent& A)
          if (Resid < 1E-14)
          {
             // linear dependency
-            for (int c = 0; c < int(size(x)); ++c)
+            for (int c = 0; c < int(LinearAlgebra::size(x)); ++c)
             {
                Trans[Candidates[c]][i] = x[c];
             }

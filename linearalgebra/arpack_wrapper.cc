@@ -140,7 +140,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
       for (int k = 0; k < n; ++k)
       {
          e[k] = 1.0;
-         Mult(data(e), data(Out));
+         Mult(LinearAlgebra::data(e), LinearAlgebra::data(Out));
          Mat(LinearAlgebra::all, k) = Out;
          e[k] = 0.0;
       }
@@ -277,9 +277,9 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
    {
       CompareEigenvalues C(which);
       // a simple exchange sort
-      for (unsigned i = 0; i < Result.size()-1; ++i)
+      for (unsigned i = 0; i < LinearAlgebra::size(Result)-1; ++i)
       {
-         for (unsigned j = i+1; j < Result.size(); ++j)
+         for (unsigned j = i+1; j < LinearAlgebra::size(Result); ++j)
          {
             if (C(Result[j], Result[i]))
             {
@@ -299,7 +299,7 @@ DiagonalizeARPACK(MultFunc Mult, int n, int NumEigen, WhichEigenvalues which, st
    }
 
    // If we ended up with more eigenvalues than we wanted, resize the arrays.
-   if (Result.size() > NumEigen)
+   if (LinearAlgebra::size(Result) > NumEigen)
    {
       LinearAlgebra::Vector<std::complex<double>> R2 = Result[LinearAlgebra::range(0,NumEigen)];
       std::swap(Result, R2);

@@ -146,7 +146,7 @@ struct TransposeInterface<MatrixMemProxy<T, Orient>, Concepts::StrideMatrix<Tv, 
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef MatrixMemProxy<T, Orient> argument_type;
    result_type operator()(argument_type const& m) const
-      { return result_type(data(m), size2(m), stride2(m), size1(m), stride1(m)); }
+      { return result_type(LinearAlgebra::data(m), size2(m), stride2(m), size1(m), stride1(m)); }
 };
 
 // defaults for some operations
@@ -159,7 +159,7 @@ struct SwapSortOrderInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
    typedef MatrixMemProxy<Tv const, typename SwapOrientation<Orient>::type> result_type;
    typedef T const& argument_type;
    result_type operator()(argument_type m) const
-      { return result_type(data(m), size1(m), stride1(m), size2(m), stride2(m)); }
+      { return result_type(LinearAlgebra::data(m), size1(m), stride1(m), size2(m), stride2(m)); }
 };
 
 template <typename T, typename Tv, typename Orient, typename Ti>
@@ -168,7 +168,7 @@ struct SwapSortOrderInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
    typedef MatrixMemProxy<Tv, typename SwapOrientation<Orient>::type> result_type;
    typedef T& argument_type;
    result_type operator()(argument_type m) const
-      { return result_type(data(m), size1(m), stride1(m), size2(m), stride2(m)); }
+      { return result_type(LinearAlgebra::data(m), size1(m), stride1(m), size2(m), stride2(m)); }
 };
 
 // hack Real for STRIDE_MATRIX
@@ -179,7 +179,7 @@ struct RealInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x)),
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x)),
                            size1(x), 2 * stride1(x),
                            size2(x), 2 * stride2(x)); }
 };
@@ -190,7 +190,7 @@ struct RealInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x)),
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x)),
                            size1(x), 2 * stride1(x),
                            size2(x), 2 * stride2(x)); }
 };
@@ -203,7 +203,7 @@ struct ImagInterface<T, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
    typedef MatrixMemProxy<Tv const, To> result_type;
    typedef T const& argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x))+1,
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x))+1,
                            size1(x), 2 * stride1(x),
                            size2(x), 2 * stride2(x)); }
 };
@@ -214,7 +214,7 @@ struct ImagInterface<T&, Concepts::StrideMatrix<std::complex<Tv>, To, Ti>>
    typedef MatrixMemProxy<Tv, To> result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x))+1,
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x))+1,
                            size1(x), 2 * stride1(x),
                            size2(x), 2 * stride2(x)); }
 };

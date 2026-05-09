@@ -572,7 +572,7 @@ void SingularDecompositionBase::Diagonalize(std::vector<RawDMType> const& M, Whi
       }
 
       int CurrentDegree = degree(this->Lookup(i));
-      for (unsigned j = 0; j < size(D); ++j)
+      for (unsigned j = 0; j < LinearAlgebra::size(D); ++j)
       {
          double Weight = D[j]*D[j];
          EigenInfoList.push_back(EigenInfo(Weight, i, j, this->Lookup(i)));

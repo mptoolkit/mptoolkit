@@ -507,7 +507,7 @@ struct VectorBracketInterface<T, Slice, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type const& v, Slice const& s) const
    {
-      return result_type(data(v) + s.start(), s.size(), s.stride());
+      return result_type(LinearAlgebra::data(v) + s.start(), s.size(), s.stride());
    }
 };
 
@@ -520,7 +520,7 @@ struct VectorBracketInterface<T&, Slice, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, Slice const& s) const
    {
-      return result_type(data(v) + s.start(), s.size(), s.stride());
+      return result_type(LinearAlgebra::data(v) + s.start(), s.size(), s.stride());
    }
 };
 
@@ -533,7 +533,7 @@ struct VectorBracketInterface<T, Slice, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type const& v, Slice const& s) const
    {
-      return result_type(data(v) + stride(v) * s.start(), s.size(),
+      return result_type(LinearAlgebra::data(v) + stride(v) * s.start(), s.size(),
                          stride(v) * s.stride());
    }
 };
@@ -547,7 +547,7 @@ struct VectorBracketInterface<T&, Slice, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, Slice const& s) const
    {
-      return result_type(data(v) +  stride(v) * s.start(), s.size(),
+      return result_type(LinearAlgebra::data(v) +  stride(v) * s.start(), s.size(),
                          stride(v) * s.stride());
    }
 };
@@ -565,7 +565,7 @@ struct VectorBracketInterface<T, Range, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type const& v, Range const& r) const
    {
-      return result_type(data(v) + r.first(), r.size());
+      return result_type(LinearAlgebra::data(v) + r.first(), r.size());
    }
 };
 
@@ -578,7 +578,7 @@ struct VectorBracketInterface<T&, Range, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, Range const& r) const
    {
-      return result_type(data(v) + r.first(), r.size());
+      return result_type(LinearAlgebra::data(v) + r.first(), r.size());
    }
 };
 
@@ -591,7 +591,7 @@ struct VectorBracketInterface<T, Range, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type const& v, Range const& r) const
    {
-      return result_type(data(v) + stride(v) * r.first(), r.size(), stride(v));
+      return result_type(LinearAlgebra::data(v) + stride(v) * r.first(), r.size(), stride(v));
    }
 };
 
@@ -604,7 +604,7 @@ struct VectorBracketInterface<T&, Range, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, Range const& r) const
    {
-      return result_type(data(v) + stride(v) * r.first(), r.size(), stride(v));
+      return result_type(LinearAlgebra::data(v) + stride(v) * r.first(), r.size(), stride(v));
    }
 };
 
@@ -619,7 +619,7 @@ struct RealInterface<T, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv const, boost::mpl::int_<2> > result_type;
    typedef T argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x)), size(x)); }
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x)), LinearAlgebra::size(x)); }
 };
 
 template <typename T, typename Tv, typename Ti>
@@ -628,7 +628,7 @@ struct RealInterface<T&, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv, boost::mpl::int_<2> > result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x)), size(x)); }
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x)), LinearAlgebra::size(x)); }
 };
 
 // Real for STRIDE_VECTOR
@@ -639,7 +639,7 @@ struct RealInterface<T, STRIDE_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T const& argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x)), size(x), 2 * stride(x)); }
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x)), LinearAlgebra::size(x), 2 * stride(x)); }
 };
 
 template <typename T, typename Tv, typename Ti>
@@ -648,7 +648,7 @@ struct RealInterface<T&, STRIDE_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x)), size(x), 2 * stride(x)); }
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x)), LinearAlgebra::size(x), 2 * stride(x)); }
 };
 
 // Imag for CONTIGUOUS_VECTOR
@@ -659,7 +659,7 @@ struct ImagInterface<T, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv const, boost::mpl::int_<2> > result_type;
    typedef T argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x))+1, size(x)); }
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x))+1, LinearAlgebra::size(x)); }
 };
 
 template <typename T, typename Tv, typename Ti>
@@ -668,7 +668,7 @@ struct ImagInterface<T&, CONTIGUOUS_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv, boost::mpl::int_<2> > result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x))+1, size(x)); }
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x))+1, LinearAlgebra::size(x)); }
 };
 
 // Imag for STRIDE_VECTOR
@@ -679,7 +679,7 @@ struct ImagInterface<T, STRIDE_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv const, tagVariable> result_type;
    typedef T argument_type;
    result_type operator()(T const& x) const
-      { return result_type(reinterpret_cast<Tv const*>(data(x))+1, size(x), 2 * stride(x)); }
+      { return result_type(reinterpret_cast<Tv const*>(LinearAlgebra::data(x))+1, LinearAlgebra::size(x), 2 * stride(x)); }
 };
 
 template <typename T, typename Tv, typename Ti>
@@ -688,7 +688,7 @@ struct ImagInterface<T&, STRIDE_VECTOR(std::complex<Tv>, Ti)>
    typedef VectorMemProxy<Tv, tagVariable> result_type;
    typedef T& argument_type;
    result_type operator()(T& x) const
-      { return result_type(reinterpret_cast<Tv*>(data(x))+1, size(x), 2 * stride(x)); }
+      { return result_type(reinterpret_cast<Tv*>(LinearAlgebra::data(x))+1, LinearAlgebra::size(x), 2 * stride(x)); }
 };
 
 } // namespace LinearAlgebra

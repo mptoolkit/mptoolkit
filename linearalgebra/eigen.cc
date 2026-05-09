@@ -140,8 +140,8 @@ struct ImplementLinearSolveSPD<M1, M2,
       //   DEBUG_PRECONDITION(is_symmetric(m));
       //   DEBUG_PRECONDITION(min(EigenvaluesSymmetric(m)) > 0.0);
 
-      Private::LinearSolveSPD(size1(TempM), size2(TempRhs), data(TempM), leading_dimension(TempM),
-                              data(TempRhs), stride2(TempRhs) );
+      Private::LinearSolveSPD(size1(TempM), size2(TempRhs), LinearAlgebra::data(TempM), leading_dimension(TempM),
+                              LinearAlgebra::data(TempRhs), stride2(TempRhs) );
       return TempRhs;
    }
 };
@@ -167,8 +167,8 @@ void ImplementLinearSolveHPD(M1& m, M2& rhs)
    //   DEBUG_PRECONDITION(is_hermitian(m));
    //   DEBUG_PRECONDITION(min(EigenvaluesHermitian(m)) > 0.0);
 
-   Private::LinearSolveHPD(size1(m), size2(rhs), data(m), leading_dimension(m),
-                           data(rhs), stride2(rhs) );
+   Private::LinearSolveHPD(size1(m), size2(rhs), LinearAlgebra::data(m), leading_dimension(m),
+                           LinearAlgebra::data(rhs), stride2(rhs) );
 }
 
 template <typename M1, typename M2, typename T1, typename T2>
@@ -253,8 +253,8 @@ void ImplementLinearSolve(M1& m, M2& rhs)
    //   DEBUG_PRECONDITION(is_hermitian(m));
    //   DEBUG_PRECONDITION(min(EigenvaluesHermitian(m)) > 0.0);
 
-   Private::LinearSolve(size1(m), size2(rhs), data(m), leading_dimension(m),
-                        data(rhs), stride2(rhs) );
+   Private::LinearSolve(size1(m), size2(rhs), LinearAlgebra::data(m), leading_dimension(m),
+                        LinearAlgebra::data(rhs), stride2(rhs) );
 }
 
 template <typename M1, typename M2, typename T1, typename T2>
@@ -288,7 +288,7 @@ inline
 void ImplementLeastSquares(M& m, V& rhs)
 {
    //PRECONDITION_EQUAL(size1(m), size2(m));
-   PRECONDITION_EQUAL(size(rhs), size1(m));
+   PRECONDITION_EQUAL(LinearAlgebra::size(rhs), size1(m));
 
    // we require column major here.
    PRECONDITION(is_blas_matrix(m));
@@ -297,8 +297,8 @@ void ImplementLeastSquares(M& m, V& rhs)
    //   DEBUG_PRECONDITION(is_hermitian(m));
    //   DEBUG_PRECONDITION(min(EigenvaluesHermitian(m)) > 0.0);
 
-   Private::LeastSquares(size1(m), size2(m), 1, data(m), leading_dimension(m),
-                         data(rhs), size(rhs) );
+   Private::LeastSquares(size1(m), size2(m), 1, LinearAlgebra::data(m), leading_dimension(m),
+                         LinearAlgebra::data(rhs), LinearAlgebra::size(rhs) );
 }
 
 template <typename M, typename V, typename T1, typename T2>
@@ -341,7 +341,7 @@ struct ImplementDiagonalizeSymmetric<M, Concepts::ContiguousMatrix<double, RowMa
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(difference_type(stride1(m)), difference_type(size2(m)));
-      Private::DiagonalizeSymmetric(size1(m), data(m), stride1(m), data(Result));
+      Private::DiagonalizeSymmetric(size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Result));
       return Result;
    }
 };
@@ -365,7 +365,7 @@ struct ImplementDiagonalizeSymmetric<M, Concepts::StrideMatrix<double, RowMajor,
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(int(stride1(m)),int(size2(m)));
-      Private::DiagonalizeSymmetric(size1(m), data(m), stride1(m), data(Result));
+      Private::DiagonalizeSymmetric(size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Result));
       return Result;
    }
 };
@@ -404,7 +404,7 @@ struct ImplementDiagonalizeHermitian<
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(stride1(m), size2(m));
-      Private::DiagonalizeHermitian(size1(m), data(m), stride1(m), data(Result));
+      Private::DiagonalizeHermitian(size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Result));
       return Result;
    }
 };
@@ -431,7 +431,7 @@ struct ImplementDiagonalizeHermitian<
       result_type Result(size1(m));
       DEBUG_CHECK_EQUAL(stride2(m),1);
       DEBUG_CHECK_EQUAL(std::size_t(stride1(m)),size2(m));
-      Private::DiagonalizeHermitian(size1(m), data(m), stride1(m), data(Result));
+      Private::DiagonalizeHermitian(size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Result));
       return Result;
    }
 };
@@ -468,8 +468,8 @@ struct ImplementDiagonalize<M, L&, R&,
       Matrix<std::complex<double>, RowMajor> Right(Size, Size);
       Vector<std::complex<double> > Eigen(Size);
 
-      Private::Diagonalize(Size, data(Temp), Size, data(Eigen),
-                           data(Left), Size, data(Right), Size);
+      Private::Diagonalize(Size, LinearAlgebra::data(Temp), Size, LinearAlgebra::data(Eigen),
+                           LinearAlgebra::data(Left), Size, LinearAlgebra::data(Right), Size);
 
       r = conj(Left);    // interchange and conjugate, since we took the transpose matrix
       l = conj(Right);
@@ -497,7 +497,7 @@ struct ImplementSingularValues<A, D, Concepts::MatrixExpression<double, Ai>, VEC
       Matrix<double> Acopy(a);
       Vector<double> Dres(min_mn);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), nullptr, LinearAlgebra::data(Dres), nullptr);
       assign(d, Dres);
    }
 };
@@ -520,7 +520,7 @@ struct ImplementSingularValues<A, D, Concepts::MatrixExpression<std::complex<dou
       Matrix<std::complex<double>> Acopy(a);
       Vector<double> Dres(min_mn);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), nullptr);
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), nullptr, LinearAlgebra::data(Dres), nullptr);
       assign(d, Dres);
    }
 };
@@ -554,8 +554,8 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       Vector<double> Dres(min_mn);
       Matrix<double> Vtres(min_mn, m);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
-                                          data(Ures), data(Dres), data(Vtres));
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy),
+                                          LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
       for (unsigned i = 0; i < min_mn; ++i)
       {
@@ -596,8 +596,8 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       Vector<double> Dres(min_mn);
       Matrix<std::complex<double> > Vtres(min_mn, m);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
-                                          data(Ures), data(Dres), data(Vtres));
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy),
+                                          LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
@@ -635,7 +635,7 @@ struct ImplementSingularValueDecompositionLeft<A, U, D,
       Matrix<std::complex<double> > Ures(n, min_mn);
       Vector<double> Dres(min_mn);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), nullptr);
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
@@ -671,7 +671,7 @@ struct ImplementSingularValueDecompositionRight<A, D, Vt,
       Vector<double> Dres(min_mn);
       Matrix<std::complex<double> > Vtres(min_mn, m);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), nullptr, LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
@@ -714,8 +714,8 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
       Vector<double> Dres(min_mn);
       Matrix<Real> Vtres(min_mn, m);
 
-      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy),
-                                          data(Ures), data(Dres), data(Vtres));
+      Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy),
+                                          LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
@@ -775,8 +775,8 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
       Vector<double> Dres(max_mn);
       Matrix<Real> Vtres(n, n);
 
-      Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy),
-                                              data(Ures), data(Dres), data(Vtres));
+      Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy),
+                                              LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
       // randomize signs
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
@@ -900,9 +900,9 @@ struct ImplementSingularValueDecompositionLeftFull<A, U, D,
       //TRACE(m)(n);
 
       if (m < n)
-         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), nullptr);
       else
-         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), data(Ures), data(Dres), nullptr);
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), LinearAlgebra::data(Ures), LinearAlgebra::data(Dres), nullptr);
 
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < m; ++i)
@@ -969,9 +969,9 @@ struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
       Matrix<std::complex<double> > Vtres(n, n);
 
       if (n < m)
-         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+         Private::SingularValueDecomposition(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), nullptr, LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
       else
-         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), data(Acopy), nullptr, data(Dres), data(Vtres));
+         Private::SingularValueDecompositionFull(size1(Acopy), size2(Acopy), LinearAlgebra::data(Acopy), nullptr, LinearAlgebra::data(Dres), LinearAlgebra::data(Vtres));
 
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < n; ++i)
@@ -1022,21 +1022,21 @@ struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
       DEBUG_PRECONDITION(is_symmetric(b))(b);
       DEBUG_PRECONDITION(min(EigenvaluesSymmetric(b)) > 0.0);  // B must be positive-definite
 
-      try_resize(eigenval, size(Which));
-      try_resize(eigenvec, size(Which), N);
+      try_resize(eigenval, LinearAlgebra::size(Which));
+      try_resize(eigenvec, LinearAlgebra::size(Which), N);
 
-      if (size(Which) == 0) return;   // corner case: no eigenvalues requested
+      if (LinearAlgebra::size(Which) == 0) return;   // corner case: no eigenvalues requested
 
       Matrix<double> Acopy(a);
       Matrix<double> Bcopy(b);
 
-      Vector<double> EVal(size(Which));
-      Matrix<double> EVec(size(Which), N);
+      Vector<double> EVal(LinearAlgebra::size(Which));
+      Matrix<double> EVec(LinearAlgebra::size(Which), N);
 
-      Private::GeneralizedEigenSymmetric(N, data(Acopy), N, data(Bcopy), N,
+      Private::GeneralizedEigenSymmetric(N, LinearAlgebra::data(Acopy), N, LinearAlgebra::data(Bcopy), N,
                                          Which.first()+1, Which.last(),
-                                         data(EVal),
-                                         data(EVec), N,
+                                         LinearAlgebra::data(EVal),
+                                         LinearAlgebra::data(EVec), N,
                                          abstol);
 
       assign(eigenval, EVal);
@@ -1065,21 +1065,21 @@ struct ImplementGeneralizedEigenSymmetric<A, B, Eigenval, Eigenvec,
       DEBUG_PRECONDITION(is_hermitian(b))(b);
       DEBUG_PRECONDITION(min(EigenvaluesHermitian(b)) > 0.0);  // B must be positive-definite
 
-      try_resize(eigenval, size(Which));
-      try_resize(eigenvec, size(Which), N);
+      try_resize(eigenval, LinearAlgebra::size(Which));
+      try_resize(eigenvec, LinearAlgebra::size(Which), N);
 
-      if (size(Which) == 0) return;   // corner case: no eigenvalues requested
+      if (LinearAlgebra::size(Which) == 0) return;   // corner case: no eigenvalues requested
 
       Matrix<std::complex<double> > Acopy(a);
       Matrix<std::complex<double> > Bcopy(b);
 
-      Vector<double> EVal(size(Which));
-      Matrix<std::complex<double> > EVec(size(Which), N);
+      Vector<double> EVal(LinearAlgebra::size(Which));
+      Matrix<std::complex<double> > EVec(LinearAlgebra::size(Which), N);
 
-      Private::GeneralizedEigenHermitian(N, data(Acopy), N, data(Bcopy), N,
+      Private::GeneralizedEigenHermitian(N, LinearAlgebra::data(Acopy), N, LinearAlgebra::data(Bcopy), N,
                                          Which.first()+1, Which.last(),
-                                         data(EVal),
-                                         data(EVec), N,
+                                         LinearAlgebra::data(EVal),
+                                         LinearAlgebra::data(EVec), N,
                                          abstol);
 
       assign(eigenval, EVal);
@@ -1101,7 +1101,7 @@ struct ImplementTridiagonalizeHermitian<M&, Concepts::ContiguousMatrix<std::comp
       Matrix<double> Result(size1(m), size2(m), 0.0);
       Vector<double> Diag(size1(m));
       Vector<double> Sub(size1(m));
-      Private::TridiagonalizeHermitian(size1(m), data(m), size1(m), data(Diag), data(Sub));
+      Private::TridiagonalizeHermitian(size1(m), LinearAlgebra::data(m), size1(m), LinearAlgebra::data(Diag), LinearAlgebra::data(Sub));
       for (int i = 0; i < int(size1(m))-1; ++i)
       {
          Result(i,i) = Diag[i];
@@ -1124,7 +1124,7 @@ struct ImplementCholeskyFactorizeUpper<M&, Concepts::ContiguousMatrix<std::compl
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::CholeskyLower(size1(m), data(m), size1(m));
+      Private::CholeskyLower(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1135,7 +1135,7 @@ struct ImplementCholeskyFactorizeUpper<M&, Concepts::ContiguousMatrix<std::compl
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::CholeskyUpper(size1(m), data(m), size1(m));
+      Private::CholeskyUpper(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1146,7 +1146,7 @@ struct ImplementCholeskyFactorizeLower<M&, Concepts::ContiguousMatrix<std::compl
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::CholeskyUpper(size1(m), data(m), size1(m));
+      Private::CholeskyUpper(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1157,7 +1157,7 @@ struct ImplementCholeskyFactorizeLower<M&, Concepts::ContiguousMatrix<std::compl
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::CholeskyLower(size1(m), data(m), size1(m));
+      Private::CholeskyLower(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1174,7 +1174,7 @@ struct ImplementSingularFactorize<M, Concepts::MatrixExpression<std::complex<dou
       result_type X(m);
       CHECK_EQUAL(size1(X), size2(X));
       Vector<double> Eigenvalues(size1(X));
-      Private::DiagonalizeHermitian(size1(X), data(X), stride1(X), data(Eigenvalues));
+      Private::DiagonalizeHermitian(size1(X), LinearAlgebra::data(X), stride1(X), LinearAlgebra::data(Eigenvalues));
       for (unsigned i = 0; i < size1(X); ++i)
       {
          X(i, all) *= std::sqrt(std::max(0.0, Eigenvalues[i]));
@@ -1192,7 +1192,7 @@ struct ImplementSingularFactorize<M, Concepts::MatrixExpression<double, Mi>>
       result_type X(M);
       CHECK_EQUAL(size1(X), size2(X));
       Vector<double> Eigenvalues(size1(X));
-      Private::DiagonalizeHermitian(size1(X), data(X), stride1(X), data(Eigenvalues));
+      Private::DiagonalizeHermitian(size1(X), LinearAlgebra::data(X), stride1(X), LinearAlgebra::data(Eigenvalues));
       for (unsigned i = 0; i < size1(X); ++i)
       {
          X(i, all) *= std::sqrt(std::max(0.0, Eigenvalues[i]));
@@ -1215,7 +1215,7 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor,
       int s2 = size2(m);
       int sz = std::min(s1, s2);
       Vector<double> Tau(sz);
-      Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+      Private::LQ_Factorize(size2(m), size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Tau));
 
       // Convert the product of elementary reflectors into the Q matrix
       // NOTE: There is an alternative approach, which is to keep the matrix as it is
@@ -1224,7 +1224,7 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor,
       Matrix<double> Q(s1, s1, 0.0);
       Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
 
-      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+      Private::LQ_Construct(s1, s1, sz, LinearAlgebra::data(Q), stride1(Q), LinearAlgebra::data(Tau));
 
       // Zero the unused parts of m, which now becomes upper-triangular
       for (int i = 0; i < s1; ++i)
@@ -1249,7 +1249,7 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
       int s2 = size2(m);
       int sz = std::min(s1, s2);
       Vector<std::complex<double>> Tau(sz);
-      Private::LQ_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+      Private::LQ_Factorize(size2(m), size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Tau));
 
       // Convert the product of elementary reflectors into the Q matrix
       // NOTE: There is an alternative approach, which is to keep the matrix as it is
@@ -1258,7 +1258,7 @@ struct ImplementQRFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
       Matrix<std::complex<double>> Q(s1, s1, 0.0);
       Q(LinearAlgebra::all, LinearAlgebra::range(0,sz)) = m(LinearAlgebra::range(0,s1), LinearAlgebra::range(0,sz));
 
-      Private::LQ_Construct(s1, s1, sz, data(Q), stride1(Q), data(Tau));
+      Private::LQ_Construct(s1, s1, sz, LinearAlgebra::data(Q), stride1(Q), LinearAlgebra::data(Tau));
 
       // Zero the unused parts of m, which now becomes upper-triangular
       for (int i = 0; i < s1; ++i)
@@ -1287,12 +1287,12 @@ struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<double, RowMajor,
       int s2 = size2(m);
       int sz = std::min(s1, s2);
       Vector<double> Tau(sz);
-      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+      Private::QR_Factorize(size2(m), size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Tau));
 
       // Convert the product of elementary reflectors into the Q matrix
       Matrix<double> Q(s2, s2, 0.0);
       Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
-      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+      Private::QR_Construct(s2, s2, sz, LinearAlgebra::data(Q), stride1(Q), LinearAlgebra::data(Tau));
 
       // Zero the unused parts of m, which now becomes lower-triangular
       for (int i = 0; i < sz; ++i)
@@ -1316,12 +1316,12 @@ struct ImplementLQFactorizeFull<M&, Concepts::ContiguousMatrix<std::complex<doub
       int s2 = size2(m);
       int sz = std::min(s1, s2);
       Vector<std::complex<double>> Tau(sz);
-      Private::QR_Factorize(size2(m), size1(m), data(m), stride1(m), data(Tau));
+      Private::QR_Factorize(size2(m), size1(m), LinearAlgebra::data(m), stride1(m), LinearAlgebra::data(Tau));
 
       // Convert the product of elementary reflectors into the Q matrix
       Matrix<std::complex<double>> Q(s2, s2, 0.0);
       Q(LinearAlgebra::range(0,sz), LinearAlgebra::all) = m(LinearAlgebra::range(0,sz), LinearAlgebra::range(0,s2));
-      Private::QR_Construct(s2, s2, sz, data(Q), stride1(Q), data(Tau));
+      Private::QR_Construct(s2, s2, sz, LinearAlgebra::data(Q), stride1(Q), LinearAlgebra::data(Tau));
 
       // Zero the unused parts of m, which now becomes lower-triangular
       for (int i = 0; i < sz; ++i)
@@ -1403,7 +1403,7 @@ struct ImplementInvertHPD<M&, Concepts::ContiguousMatrix<std::complex<double>, O
       CHECK_EQUAL(size1(m), size2(m));
       // We don't care here whether M is row- or column-major, it all sorts itself
       // out in the wash
-      Private::InvertHPD(size1(m), data(m), size1(m));
+      Private::InvertHPD(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1434,7 +1434,7 @@ struct ImplementInvertGeneral<M&, Concepts::ContiguousMatrix<std::complex<double
       CHECK_EQUAL(size1(m), size2(m));
       // We don't care here whether M is row- or column-major, it all sorts itself
       // out in the wash
-      Private::InvertGeneral(size1(m), data(m), size1(m));
+      Private::InvertGeneral(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1473,7 +1473,7 @@ EigenvaluesComplex(M const& m)
    DEBUG_CHECK_EQUAL(size1(m), size2(m));
    Matrix<std::complex<double> > Temp(m);
    Vector<std::complex<double>> Result(size1(Temp));
-   Private::EigenvaluesComplex(size1(Temp), data(Temp), size1(Temp), data(Result));
+   Private::EigenvaluesComplex(size1(Temp), LinearAlgebra::data(Temp), size1(Temp), LinearAlgebra::data(Result));
    return Result;
 }
 
@@ -1488,7 +1488,7 @@ struct ImplementInvertLowerTriangular<M&, Concepts::ContiguousMatrix<std::comple
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::InvertUpperTriangular(size1(m), data(m), size1(m));
+      Private::InvertUpperTriangular(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1499,7 +1499,7 @@ struct ImplementInvertLowerTriangular<M&, Concepts::ContiguousMatrix<std::comple
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::InvertLowerTriangular(size1(m), data(m), size1(m));
+      Private::InvertLowerTriangular(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1510,7 +1510,7 @@ struct ImplementInvertUpperTriangular<M&, Concepts::ContiguousMatrix<std::comple
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::InvertLowerTriangular(size1(m), data(m), size1(m));
+      Private::InvertLowerTriangular(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 
@@ -1521,7 +1521,7 @@ struct ImplementInvertUpperTriangular<M&, Concepts::ContiguousMatrix<std::comple
    void operator()(M& m) const
    {
       CHECK_EQUAL(size1(m), size2(m));
-      Private::InvertUpperTriangular(size1(m), data(m), size1(m));
+      Private::InvertUpperTriangular(size1(m), LinearAlgebra::data(m), size1(m));
    }
 };
 

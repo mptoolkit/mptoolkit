@@ -56,7 +56,7 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
    result_type operator()(first_argument_type out, second_argument_type V) const
    {
       typedef typename PStream::opstreambuf<Format>::size_type st;
-      st Size = size(V);
+      st Size = LinearAlgebra::size(V);
 #if !defined(PSTREAMIO_OLD_FORMAT)
       out << VectorFormats::Dense;
 #endif
@@ -87,7 +87,7 @@ struct SerializeOutInterface<PStream::opstreambuf<Format>&,
       PANIC("Cannot serialize sparse vectors with PSTREAMIO_OLD_FORMAT");
 #endif
       typedef typename PStream::opstreambuf<Format>::size_type st;
-      st Size = size(V), Nnz = nnz(V);
+      st Size = LinearAlgebra::size(V), Nnz = nnz(V);
       out << VectorFormats::Coordinate;
       out << Size << Nnz;
 

@@ -107,16 +107,16 @@ AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
    if (blas_trans_col(lhs) == 'T')
    {
       BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  0, data(lhs), leading_dimension(lhs));
+                  1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  0, LinearAlgebra::data(lhs), leading_dimension(lhs));
    }
    else
    {
       BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  0, data(lhs), leading_dimension(lhs));
+                  1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  0, LinearAlgebra::data(lhs), leading_dimension(lhs));
    }
 }
 
@@ -159,9 +159,9 @@ struct AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  0, data(lhs), stride1(lhs));
+                  1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  0, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -203,9 +203,9 @@ struct AssignProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  0, data(lhs), stride2(lhs));
+                  1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  0, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 
@@ -271,16 +271,16 @@ struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
       if (blas_trans_col(lhs) == 'T')
       {
          BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                     1, data(m2), leading_dimension(m2),
-                     data(m1), leading_dimension(m1),
-                     1, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m2), leading_dimension(m2),
+                     LinearAlgebra::data(m1), leading_dimension(m1),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
       else
       {
          BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                     1, data(m1), leading_dimension(m1),
-                     data(m2), leading_dimension(m2),
-                     1, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m1), leading_dimension(m1),
+                     LinearAlgebra::data(m2), leading_dimension(m2),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
    }
 };
@@ -323,9 +323,9 @@ struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  1, data(lhs), stride1(lhs));
+                  1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  1, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -367,9 +367,9 @@ struct AddProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  1, data(lhs), stride2(lhs));
+                  1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  1, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 
@@ -435,16 +435,16 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
       if (blas_trans_col(lhs) == 'T')
       {
          BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                     -1, data(m2), leading_dimension(m2),
-                     data(m1), leading_dimension(m1),
-                     1, data(lhs), leading_dimension(lhs));
+                     -1, LinearAlgebra::data(m2), leading_dimension(m2),
+                     LinearAlgebra::data(m1), leading_dimension(m1),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
       else
       {
          BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                     -1, data(m1), leading_dimension(m1),
-                     data(m2), leading_dimension(m2),
-                     1, data(lhs), leading_dimension(lhs));
+                     -1, LinearAlgebra::data(m1), leading_dimension(m1),
+                     LinearAlgebra::data(m2), leading_dimension(m2),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
    }
 };
@@ -487,9 +487,9 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  -1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  1, data(lhs), stride1(lhs));
+                  -1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  1, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -531,9 +531,9 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<double, double>,
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::dgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  -1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  1, data(lhs), stride2(lhs));
+                  -1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  1, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 
@@ -603,16 +603,16 @@ struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::com
       if (blas_trans_col(lhs) == 'T')
       {
          BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                     1, data(m2), leading_dimension(m2),
-                     data(m1), leading_dimension(m1),
-                     0, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m2), leading_dimension(m2),
+                     LinearAlgebra::data(m1), leading_dimension(m1),
+                     0, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
       else
       {
          BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                     1, data(m1), leading_dimension(m1),
-                     data(m2), leading_dimension(m2),
-                     0, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m1), leading_dimension(m1),
+                     LinearAlgebra::data(m2), leading_dimension(m2),
+                     0, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
    }
 };
@@ -656,9 +656,9 @@ struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::com
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  0, data(lhs), stride1(lhs));
+                  1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  0, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -700,9 +700,9 @@ struct AssignProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::com
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  0, data(lhs), stride2(lhs));
+                  1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  0, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 
@@ -771,16 +771,16 @@ struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::comple
       if (blas_trans_col(lhs) == 'T')
       {
          BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                     1, data(m2), leading_dimension(m2),
-                     data(m1), leading_dimension(m1),
-                     1, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m2), leading_dimension(m2),
+                     LinearAlgebra::data(m1), leading_dimension(m1),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
       else
       {
          BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                     1, data(m1), leading_dimension(m1),
-                     data(m2), leading_dimension(m2),
-                     1, data(lhs), leading_dimension(lhs));
+                     1, LinearAlgebra::data(m1), leading_dimension(m1),
+                     LinearAlgebra::data(m2), leading_dimension(m2),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
    }
 };
@@ -823,9 +823,9 @@ struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::comple
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  1, data(lhs), stride1(lhs));
+                  1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  1, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -867,9 +867,9 @@ struct AddProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::comple
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  1, data(lhs), stride2(lhs));
+                  1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  1, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 
@@ -935,16 +935,16 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::c
       if (blas_trans_col(lhs) == 'T')
       {
          BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                     -1, data(m2), leading_dimension(m2),
-                     data(m1), leading_dimension(m1),
-                     1, data(lhs), leading_dimension(lhs));
+                     -1, LinearAlgebra::data(m2), leading_dimension(m2),
+                     LinearAlgebra::data(m1), leading_dimension(m1),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
       else
       {
          BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                     -1, data(m1), leading_dimension(m1),
-                     data(m2), leading_dimension(m2),
-                     1, data(lhs), leading_dimension(lhs));
+                     -1, LinearAlgebra::data(m1), leading_dimension(m1),
+                     LinearAlgebra::data(m2), leading_dimension(m2),
+                     1, LinearAlgebra::data(lhs), leading_dimension(lhs));
       }
    }
 };
@@ -987,9 +987,9 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::c
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_row(m2), blas_trans_row(m1), size2(m2), size1(m1), size2(m1),
-                  -1, data(m2), leading_dimension(m2),
-                  data(m1), leading_dimension(m1),
-                  1, data(lhs), stride1(lhs));
+                  -1, LinearAlgebra::data(m2), leading_dimension(m2),
+                  LinearAlgebra::data(m1), leading_dimension(m1),
+                  1, LinearAlgebra::data(lhs), stride1(lhs));
    }
 };
 
@@ -1031,9 +1031,9 @@ struct SubtractProduct2<LHS, M1, M2, Multiplication<std::complex<double>, std::c
       // else
       DEBUG_CHECK(is_blas_matrix(m1) && is_blas_matrix(m2));
       BLAS::zgemm(blas_trans_col(m1), blas_trans_col(m2), size1(m1), size2(m2), size2(m1),
-                  -1, data(m1), leading_dimension(m1),
-                  data(m2), leading_dimension(m2),
-                  1, data(lhs), stride2(lhs));
+                  -1, LinearAlgebra::data(m1), leading_dimension(m1),
+                  LinearAlgebra::data(m2), leading_dimension(m2),
+                  1, LinearAlgebra::data(lhs), stride2(lhs));
    }
 };
 

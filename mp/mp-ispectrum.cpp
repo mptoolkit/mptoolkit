@@ -384,7 +384,7 @@ int main(int argc, char** argv)
                                        MaxEigen, LeftEigenvectorsPtr,
                                        RightEigenvectorsPtr, Tol, KrylovLength, Verbose);
 
-         for (int i = 0; i < int(size(EValues)); ++i)
+         for (int i = 0; i < int(LinearAlgebra::size(EValues)); ++i)
          {
             PrintFormat(*qI, EValues[i], i, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
                         ShowArgument, ShowRadians, ScaleFactor);

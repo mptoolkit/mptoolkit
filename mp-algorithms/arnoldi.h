@@ -195,7 +195,7 @@ std::complex<double> Arnoldi(VectorType& Guess, MultiplyFunctor MatVecMultiply, 
             //         case ClosestUnity : ThetaMag = -norm_frob(1.0 - Theta); break;
       }
 
-      for (unsigned i = 1; i < size(Eigen); ++i)
+      for (unsigned i = 1; i < LinearAlgebra::size(Eigen); ++i)
       {
          double NextMag = 0;
          switch (Mode)

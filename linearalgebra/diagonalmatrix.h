@@ -80,8 +80,8 @@ class DiagonalMatrix : public MatrixBase<DiagonalMatrix<T> >
       explicit DiagonalMatrix(diagonal_type const& diag)
          : data_(diag) {}
 
-      size_type size1() const { return size(data_); }
-      size_type size2() const { return size(data_); }
+      size_type size1() const { return LinearAlgebra::size(data_); }
+      size_type size2() const { return LinearAlgebra::size(data_); }
 
       DiagonalMatrix& operator=(DiagonalMatrix const& x)
       {

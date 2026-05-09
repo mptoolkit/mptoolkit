@@ -236,7 +236,7 @@ int main(int argc, char** argv)
                LinearAlgebra::Vector<std::complex<double>> Eig =
                   LinearAlgebra::EigenvaluesComplex(v(i,i));
 
-               for (unsigned j = 0; j < size(Eig); ++j)
+               for (unsigned j = 0; j < LinearAlgebra::size(Eig); ++j)
                {
                   EValues.push_back({v.Basis1()[i], Eig[j]});
                }

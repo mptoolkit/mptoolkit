@@ -143,8 +143,8 @@ class IndirectVector : public VectorBase<IndirectVector<VecType, IndexType> >
          : Vec_(Vec), IndexVec_(IndexVec)
       {
          using LinearAlgebra::size;
-         DEBUG_PRECONDITION(size(IndexVec) == 0U || min(IndexVec) >= 0);
-         DEBUG_PRECONDITION(size(IndexVec) == 0U || size_type(max(IndexVec)) < size(Vec));
+         DEBUG_PRECONDITION(LinearAlgebra::size(IndexVec) == 0U || min(IndexVec) >= 0);
+         DEBUG_PRECONDITION(LinearAlgebra::size(IndexVec) == 0U || size_type(max(IndexVec)) < LinearAlgebra::size(Vec));
       }
 
       template <typename OtherVec, typename OtherIndex>
@@ -170,7 +170,7 @@ class IndirectVector : public VectorBase<IndirectVector<VecType, IndexType> >
          using LinearAlgebra::size;
          typedef typename interface<VecType>::value_type value_type;
          // TODO: the vector type should be something better here!
-         std::vector<value_type> Temp(size(x));
+         std::vector<value_type> Temp(LinearAlgebra::size(x));
          noalias(Temp) = x;
 
          assign(*this, Temp);
@@ -299,7 +299,7 @@ struct Size<IndirectVector<VecType, IndexType> >
 {
    typedef size_type result_type;
    typedef IndirectVector<VecType, IndexType> const& argument_type;
-   result_type operator()(argument_type v) const { return size(v.index_vector()); }
+   result_type operator()(argument_type v) const { return LinearAlgebra::size(v.index_vector()); }
 };
 
 // get_element

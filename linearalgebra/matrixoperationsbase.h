@@ -436,8 +436,8 @@ struct MatrixInnerProd<S, T, Func, Concepts::ContiguousMatrix<Sv, Orient, Si>,
 
    result_type operator()(S const& x, T const& y) const
    {
-      return iter_inner_prod(VecPtrIterator<Sv const>(data(x), size1(x)*size2(x), 0),
-                             VecPtrIterator<Tv const>(data(y), size1(y)*size2(y), 0),
+      return iter_inner_prod(VecPtrIterator<Sv const>(LinearAlgebra::data(x), size1(x)*size2(x), 0),
+                             VecPtrIterator<Tv const>(LinearAlgebra::data(y), size1(y)*size2(y), 0),
                              f_);
    }
    Func f_;
@@ -1172,7 +1172,7 @@ struct FlattenRowsInterface<T, Concepts::ContiguousMatrix<Tv, RowMajor, Ti>>
    typedef VectorMemProxy<Tv const> result_type;
    result_type operator()(T const& m) const
    {
-      return result_type(data(m), size1(m) * size2(m));
+      return result_type(LinearAlgebra::data(m), size1(m) * size2(m));
    }
 };
 
@@ -1182,7 +1182,7 @@ struct FlattenColsInterface<T, Concepts::ContiguousMatrix<Tv, ColMajor, Ti>>
    typedef VectorMemProxy<Tv const> result_type;
    result_type operator()(T const& m) const
    {
-      return result_type(data(m), size1(m) * size2(m));
+      return result_type(LinearAlgebra::data(m), size1(m) * size2(m));
    }
 };
 
