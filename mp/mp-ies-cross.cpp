@@ -30,7 +30,6 @@
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
-#include <boost/algorithm/string/predicate.hpp>
 #include <fstream>
 #include "common/formatting.h"
 #include <tuple>

@@ -29,6 +29,7 @@
 #include "linearalgebra/scalar.h"
 #include "parser/visitor_actions.h"
 #include "lattice/function.h"
+#include "common/stringutil.h"
 
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
@@ -47,7 +48,6 @@
 #include <functional>
 #include <string>
 #include <complex>
-#include<boost/algorithm/string.hpp>
 
 namespace Parser
 {
@@ -302,7 +302,7 @@ struct eval_filegrid
    void operator()(char const* Start, char const* End) const
    {
       auto Filename = IdentifierStack.top();
-      boost::trim(Filename);
+      Trim(Filename);
       IdentifierStack.pop();
 
       int n = NumParameterStack.top();

@@ -29,16 +29,17 @@
 #include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
+#include "common/stringutil.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "linearalgebra/arpack_wrapper.h"
-#include <boost/algorithm/string/predicate.hpp>
 #include <fstream>
 #include "common/formatting.h"
 #include <tuple>
+#include <vector>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -277,8 +278,8 @@ int main(int argc, char** argv)
             std::cerr << "mp-aux-matrix: error: argument to --product is not of the form file=operator\n";
             exit(1);
          }
-         ProductOpFile.push_back(boost::trim_copy(std::string(ProductOperators[i].begin(), I)));
-         ProductOpStr.push_back(boost::trim_copy(std::string(I+1, ProductOperators[i].end())));
+         ProductOpFile.push_back(TrimCopy(std::string(ProductOperators[i].begin(), I)));
+         ProductOpStr.push_back(TrimCopy(std::string(I+1, ProductOperators[i].end())));
       }
       std::vector<std::string> TriangularOpFile;
       std::vector<std::string> TriangularOpStr;
@@ -290,8 +291,8 @@ int main(int argc, char** argv)
             std::cerr << "mp-aux-matrix: error: argument to --triangular is not of the form file=operator\n";
             exit(1);
          }
-         TriangularOpFile.push_back(boost::trim_copy(std::string(TriangularOperators[i].begin(), I)));
-         TriangularOpStr.push_back(boost::trim_copy(std::string(I+1, TriangularOperators[i].end())));
+         TriangularOpFile.push_back(TrimCopy(std::string(TriangularOperators[i].begin(), I)));
+         TriangularOpStr.push_back(TrimCopy(std::string(I+1, TriangularOperators[i].end())));
       }
       std::vector<std::string> FiniteOpFile;
       std::vector<std::string> FiniteOpStr;
@@ -303,8 +304,8 @@ int main(int argc, char** argv)
             std::cerr << "mp-aux-matrix: error: argument to --finite is not of the form file=operator\n";
             exit(1);
          }
-         FiniteOpFile.push_back(boost::trim_copy(std::string(FiniteOperators[i].begin(), I)));
-         FiniteOpStr.push_back(boost::trim_copy(std::string(I+1, FiniteOperators[i].end())));
+         FiniteOpFile.push_back(TrimCopy(std::string(FiniteOperators[i].begin(), I)));
+         FiniteOpStr.push_back(TrimCopy(std::string(I+1, FiniteOperators[i].end())));
       }
 
       // If the -f option hasn't been supplied, make sure that the output files don't already exist
@@ -399,8 +400,7 @@ int main(int argc, char** argv)
          }
          else
          {
-            std::vector<std::string> Which;
-            boost::split(Which, WhichEigenvalues, boost::is_any_of(", \n\t"), boost::token_compress_on);
+            std::vector<std::string> Which = SplitCompress(WhichEigenvalues, ", \n\t");
             for (std::string s : Which)
             {
                int n = boost::lexical_cast<int>(s);
@@ -468,7 +468,7 @@ int main(int argc, char** argv)
 
          LinearWavefunction* Psi2 = &Psi1;
          // Do we have time reversal or reflection?
-         if (boost::starts_with(OpStr, "r&"))
+         if (StartsWith(OpStr, "r&"))
          {
             OpStr = std::string(OpStr.begin()+2, OpStr.end());
             if (PsiR.empty())
@@ -486,7 +486,7 @@ int main(int argc, char** argv)
             }
             Psi2 = &PsiR;
          }
-         else if (boost::starts_with(OpStr,"c&"))
+         else if (StartsWith(OpStr,"c&"))
          {
             OpStr = std::string(OpStr.begin()+2, OpStr.end());
             if (PsiC.empty())
@@ -495,7 +495,7 @@ int main(int argc, char** argv)
             }
             Psi2 = &PsiC;
          }
-         else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
+         else if (StartsWith(OpStr,"rc&") || StartsWith(OpStr,"cr&"))
          {
             OpStr = std::string(OpStr.begin()+3, OpStr.end());
             if (PsiR.empty())

@@ -35,7 +35,6 @@
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
 #include "linearalgebra/arpack_wrapper.h"
-#include <boost/algorithm/string/predicate.hpp>
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/statistics.h"
 #include <tuple>

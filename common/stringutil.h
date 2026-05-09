@@ -31,8 +31,10 @@
 #include <stdexcept>
 #include <string>
 #include <ctype.h>
+#include <cctype>
 #include <sstream>
 #include <algorithm>
+#include <vector>
 #include "common/trace.h"
 
 //
@@ -42,6 +44,102 @@ inline void RemoveWhiteSpace(std::string& s)
 {
    while (s.length() > 1 && isspace(s[0])) s.erase(0, 1);
    while (s.length() > 1 && isspace(s[s.length()-1])) s.erase(s.length()-1, 1);
+}
+
+inline
+bool StartsWith(std::string const& s, std::string const& prefix)
+{
+   return s.compare(0, prefix.size(), prefix) == 0;
+}
+
+inline
+bool IEquals(std::string const& x, std::string const& y)
+{
+   if (x.size() != y.size())
+      return false;
+
+   for (std::string::size_type i = 0; i < x.size(); ++i)
+   {
+      if (std::tolower(static_cast<unsigned char>(x[i])) !=
+          std::tolower(static_cast<unsigned char>(y[i])))
+         return false;
+   }
+
+   return true;
+}
+
+inline
+void ReplaceAll(std::string& s, std::string const& from, std::string const& to)
+{
+   if (from.empty())
+      return;
+
+   std::string::size_type pos = 0;
+   while ((pos = s.find(from, pos)) != std::string::npos)
+   {
+      s.replace(pos, from.size(), to);
+      pos += to.size();
+   }
+}
+
+inline
+std::string TrimCopy(std::string const& s)
+{
+   auto const is_not_space = [](unsigned char c) { return !std::isspace(c); };
+   auto first = std::find_if(s.begin(), s.end(), is_not_space);
+   auto last = std::find_if(s.rbegin(), s.rend(), is_not_space).base();
+
+   if (first >= last)
+      return std::string();
+
+   return std::string(first, last);
+}
+
+inline
+void Trim(std::string& s)
+{
+   s = TrimCopy(s);
+}
+
+inline
+std::string ToLowerCopy(std::string s)
+{
+   std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+   return s;
+}
+
+inline
+std::vector<std::string> SplitCompress(std::string const& s, std::string const& separators)
+{
+   std::vector<std::string> result;
+   std::string::size_type begin = 0;
+   while (begin < s.size())
+   {
+      begin = s.find_first_not_of(separators, begin);
+      if (begin == std::string::npos)
+         break;
+
+      std::string::size_type end = s.find_first_of(separators, begin);
+      result.push_back(s.substr(begin, end - begin));
+      if (end == std::string::npos)
+         break;
+      begin = end + 1;
+   }
+
+   return result;
+}
+
+template <typename Range>
+std::string JoinStrings(Range const& strings, std::string const& separator)
+{
+   std::ostringstream out;
+   for (auto i = strings.begin(); i != strings.end(); ++i)
+   {
+      if (i != strings.begin())
+         out << separator;
+      out << *i;
+   }
+   return out.str();
 }
 
 //

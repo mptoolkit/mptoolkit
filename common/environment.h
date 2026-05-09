@@ -20,18 +20,18 @@
 #if !defined(ENVIRONMENT_H_KHCJKSHDUY478Y5478YOPEW)
 #define ENVIRONMENT_H_KHCJKSHDUY478Y5478YOPEW
 
+#include "common/stringutil.h"
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include <stdlib.h> // for getenv
 
 inline
 std::string quote_shell(std::string s)
 {
-   if (!boost::all(s, !boost::is_any_of(" \t()[]*\\\"")))
+   if (s.find_first_of(" \t()[]*\\\"") != std::string::npos)
    {
-      boost::replace_all(s, std::string("\\"), std::string("\\\\"));
-      boost::replace_all(s, std::string("\""), std::string("\\\""));
+      ReplaceAll(s, std::string("\\"), std::string("\\\\"));
+      ReplaceAll(s, std::string("\""), std::string("\\\""));
       return '"' + s + '"';
    }
    // else

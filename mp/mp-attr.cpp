@@ -22,8 +22,8 @@
 #include "pheap/pheap.h"
 #include "mp/copyright.h"
 #include "common/environment.h"
+#include "common/stringutil.h"
 #include "interface/inittemp.h"
-#include <boost/algorithm/string.hpp>
 
 int main(int argc, char** argv)
 {
@@ -50,13 +50,13 @@ int main(int argc, char** argv)
       if (Delim == a.end() && (arg >= argc || argv[arg][0] != '='))
       {
          Attrib = a;
-         boost::trim(Attrib);
+         Trim(Attrib);
       }
       else
       {
          // attribute = value
          Attrib = std::string(static_cast<std::string const&>(a).begin(), Delim);
-         boost::trim(Attrib);
+         Trim(Attrib);
          if (Delim == a.end())
          {
             // in this case, the first character of the next argument must be '='
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
             Delim = a.begin();
          }
          std::string Value(Delim, static_cast<std::string const&>(a).end());
-         boost::trim(Value);
+         Trim(Value);
          AttributesToSet[Attrib] = Value;
       }
       AttributesToPrint.push_back(Attrib);

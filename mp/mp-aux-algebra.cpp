@@ -27,12 +27,12 @@
 #include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
 #include "common/environment.h"
+#include "common/stringutil.h"
 #include "common/unique.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
 #include "lattice/infinite-parser.h"
-#include <boost/algorithm/string/predicate.hpp>
 #include "common/statistics.h"
 #include <tuple>
 #include "parser/matrix-parser.h"
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
          std::string OpStr = OperatorStr[i];
          LinearWavefunction* Psi2 = &Psi1;
          // Do we have time reversal or reflection?
-         if (boost::starts_with(OpStr, "r&"))
+         if (StartsWith(OpStr, "r&"))
          {
             OpStr = std::string(OpStr.begin()+2, OpStr.end());
             if (PsiR.empty())
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
             }
             Psi2 = &PsiR;
          }
-         else if (boost::starts_with(OpStr,"c&"))
+         else if (StartsWith(OpStr,"c&"))
          {
             OpStr = std::string(OpStr.begin()+2, OpStr.end());
             if (PsiC.empty())
@@ -191,7 +191,7 @@ int main(int argc, char** argv)
             }
             Psi2 = &PsiC;
          }
-         else if (boost::starts_with(OpStr,"rc&") || boost::starts_with(OpStr,"cr&"))
+         else if (StartsWith(OpStr,"rc&") || StartsWith(OpStr,"cr&"))
          {
             OpStr = std::string(OpStr.begin()+3, OpStr.end());
             if (PsiR.empty())

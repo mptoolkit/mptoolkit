@@ -22,7 +22,7 @@
 #include "mpo/infinite_mpo_actions.h"
 #include "parser/parser.h"
 #include "unitcell-parser.h"
-#include <boost/algorithm/string.hpp>
+#include "common/stringutil.h"
 #include <boost/math/special_functions/round.hpp>
 
 //
@@ -981,7 +981,7 @@ ParseOperatorStringAndLattice(std::string const& Str)
    }
 
    std::string LatticeFile = std::string(Str.begin(), Delim);
-   boost::trim(LatticeFile);
+   Trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
    ++Delim;

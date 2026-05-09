@@ -22,7 +22,7 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 #include "mp-algorithms/davidson.h"
-#include <boost/algorithm/string.hpp>
+#include "common/stringutil.h"
 
 #include "mps/packunpack.h"
 
@@ -76,7 +76,7 @@ struct MPSMultiplyShift
 LocalEigensolver::Solver
 LocalEigensolver::SolverFromStr(std::string Str)
 {
-   Str = boost::to_lower_copy(Str);
+   Str = ToLowerCopy(Str);
    if (Str == "lanczos")
       return Solver::Lanczos;
    else if (Str == "arnoldi")

@@ -20,6 +20,7 @@
 // *** OBSOLETE ***
 
 #include "operator-parser.h"
+#include "common/stringutil.h"
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/spirit/include/classic_chset.hpp>
 #include <boost/spirit/include/classic_symbols.hpp>
@@ -690,7 +691,7 @@ ParseLatticeAndOperator(std::string const& str)
    }
 
    std::string Lattice = std::string(str.begin(), Delim);
-   boost::trim(Lattice);
+   Trim(Lattice);
    pvalue_ptr<OperatorList> System = pheap::ImportHeap(Lattice);
 
    ++Delim;

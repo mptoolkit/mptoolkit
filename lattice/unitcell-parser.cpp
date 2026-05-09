@@ -21,7 +21,7 @@
 #include "siteoperator-parser.h"
 #include "infinite-parser.h"
 #include "parser/parser.h"
-#include <boost/algorithm/string.hpp>
+#include "common/stringutil.h"
 #include <boost/math/special_functions/round.hpp>
 
 InfiniteLattice const* ILattice = NULL;
@@ -1302,7 +1302,7 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
    }
 
    std::string LatticeFile = std::string(Str.begin(), Delim);
-   boost::trim(LatticeFile);
+   Trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
    InfiniteLattice const* OldILattice = ILattice;

@@ -26,10 +26,10 @@
 #include "config.h"
 
 #include "common/blas_vendor.h"
+#include "common/stringutil.h"
 #include <iostream>
 #include <iomanip>
 #include <boost/version.hpp>
-#include <boost/algorithm/string.hpp>
 #include <time.h>
 
 #include <complex>
@@ -166,7 +166,8 @@ void print_copyright(std::ostream& out, std::string const& Category, std::string
 // The basename() function is useful in help messages for printing the program name
 std::string basename(std::string const& FName)
 {
-   return std::string(boost::find_last(FName, "/").begin(), FName.end());
+   auto const pos = FName.find_last_of('/');
+   return pos == std::string::npos ? std::string() : FName.substr(pos);
 }
 
 // Escape an argument for bash (eg, to print the command-line arguments)
@@ -177,9 +178,9 @@ EscapeArgument(std::string const& s)
    {
       std::string Result = s;
       // escape some special characters explicitly
-      boost::algorithm::replace_all(Result, "\\", "\\\\");
-      boost::algorithm::replace_all(Result, "\"", "\\\"");
-      boost::algorithm::replace_all(Result, "$", "\\$");
+      ReplaceAll(Result, "\\", "\\\\");
+      ReplaceAll(Result, "\"", "\\\"");
+      ReplaceAll(Result, "$", "\\$");
       return '"' + Result + '"';
    }
    else
