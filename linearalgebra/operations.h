@@ -33,6 +33,7 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/mpl/logical.hpp>
 #include <boost/mpl/equal_to.hpp>
+#include <type_traits>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/or.hpp>
 #include <boost/mpl/not.hpp>
@@ -1057,7 +1058,7 @@ struct UnaryComposer
    typedef typename T2::argument_type argument_type;
    typedef typename T2::result_type T2Result;
 
-   typedef typename std::result_of<T1(T2Result)>::type result_type;
+   typedef std::invoke_result_t<T1, T2Result> result_type;
 
    result_type operator()(typename T2::argument_type const& x) const
    { return first(second(x)); }
@@ -1071,7 +1072,7 @@ struct UnaryComposer
 };
 
 // this is a 'new' version.  It won't work because it doesn't have a result_type.
-// We need to remove all references to result_type and use std::result_of instead,
+// We need to remove all references to result_type and use std::invoke_result instead,
 // but we also need a method to remove proxies.
 template <typename T1, typename T2, typename Enable = void>
 struct UnaryComposerX

@@ -225,6 +225,7 @@
 #include "pstreamfwd.h"
 #include "common/trace.h"
 #include <iostream>
+#include <iterator>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -582,9 +583,15 @@ class ipstreambuf : public generic_ipstreambuf
 //
 
 template <typename T>
-class opstream_iterator : public std::iterator<std::output_iterator_tag, T, void, void, void>
+class opstream_iterator
 {
    public:
+      using iterator_category = std::output_iterator_tag;
+      using value_type = T;
+      using difference_type = void;
+      using pointer = void;
+      using reference = void;
+
       opstream_iterator(opstream& out_) : out(&out_) {}
       opstream_iterator(opstream_iterator const& os) : out(os.out) {}
 
@@ -603,9 +610,15 @@ class opstream_iterator : public std::iterator<std::output_iterator_tag, T, void
 };
 
 template <int Format, typename T>
-class opstreambuf_iterator : public std::iterator<std::output_iterator_tag, T, void, void, void>
+class opstreambuf_iterator
 {
    public:
+      using iterator_category = std::output_iterator_tag;
+      using value_type = T;
+      using difference_type = void;
+      using pointer = void;
+      using reference = void;
+
       opstreambuf_iterator(opstreambuf<Format>& out_) : out(&out_) {}
       opstreambuf_iterator(opstreambuf_iterator<Format, T> const& os) : out(os.out) {}
 
@@ -637,9 +650,15 @@ class opstreambuf_iterator : public std::iterator<std::output_iterator_tag, T, v
 //
 
 template <typename T>
-class ipstream_iterator : public std::iterator<std::input_iterator_tag, T, ptrdiff_t, T const*, T const&>
+class ipstream_iterator
 {
    public:
+      using iterator_category = std::input_iterator_tag;
+      using value_type = T;
+      using difference_type = ptrdiff_t;
+      using pointer = T const*;
+      using reference = T const&;
+
       ipstream_iterator(ipstream& in_) : in(&in_) {}
       ipstream_iterator(ipstream_iterator const& is) : in(is.in) {}
 
@@ -655,9 +674,15 @@ class ipstream_iterator : public std::iterator<std::input_iterator_tag, T, ptrdi
 };
 
 template <int Format, typename T>
-class ipstreambuf_iterator : public std::iterator<std::input_iterator_tag, T, ptrdiff_t, T const*, T const&>
+class ipstreambuf_iterator
 {
    public:
+      using iterator_category = std::input_iterator_tag;
+      using value_type = T;
+      using difference_type = ptrdiff_t;
+      using pointer = T const*;
+      using reference = T const&;
+
       ipstreambuf_iterator(ipstreambuf<Format>& in_) : in(&in_) {}
       ipstreambuf_iterator(ipstreambuf_iterator const& is) : in(is.in) {}
 

@@ -28,6 +28,7 @@
 
 #include "vectortransformiterator.h"
 #include "matrixiterators.h"
+#include <type_traits>
 
 namespace LinearAlgebra
 {
@@ -38,7 +39,7 @@ template <typename Base, typename Func>
 class MatrixTransformInnerIterator
 {
    public:
-      typedef typename std::result_of<Func(typename Base::value_type&)>::type reference;
+      typedef std::invoke_result_t<Func, typename Base::value_type&> reference;
       typedef typename make_value<reference>::type value_type;
       typedef typename boost::mpl::if_<
          boost::is_reference<reference>,

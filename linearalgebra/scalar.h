@@ -33,6 +33,7 @@
 #include <complex>
 #include <cmath>
 #include <cstdlib>
+#include <type_traits>
 
 namespace LinearAlgebra
 {
@@ -287,7 +288,7 @@ struct TransformInterface<T, F, AnyScalar<S> >
    typedef T argument_type;
    typedef T first_argument_type;
    typedef F second_argument_type;
-   typedef typename std::result_of<F(T)>::type result_type;
+   typedef std::invoke_result_t<F, T> result_type;
    //   typedef typename F::result_type result_type;
    result_type operator()(T const& x, F const& f) const { return f(x); }
    result_type operator()(T const& x) const { return F()(x); }
@@ -300,7 +301,7 @@ struct TransformInterface<T&, F, AnyScalar<S> >
    typedef T& argument_type;
    typedef T& first_argument_type;
    typedef F second_argument_type;
-   typedef typename std::result_of<F(T&)>::type result_type;
+   typedef std::invoke_result_t<F, T&> result_type;
    result_type operator()(T& x, F const& f) const { return f(x); }
    result_type operator()(T& x) const { return F()(x); }
 };
