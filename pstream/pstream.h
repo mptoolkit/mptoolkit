@@ -257,7 +257,7 @@ struct pstreambuf_traits;
 template <typename T>
 struct pstream_type_traits
 {
-   static bool const is_fundamental = std::is_fundamental<T>::value;
+   static bool const is_fundamental = std::is_fundamental_v<T>;
 };
 
 class VersionTag;

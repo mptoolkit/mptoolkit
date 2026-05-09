@@ -515,13 +515,13 @@ fsup(int Offset1, int Offset2, ProductMPO const& Op)
 BasicFiniteMPO
 fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
 {
-   if (std::get_if<BasicTriangularMPO>(&Op))
+   if (auto const* p = std::get_if<BasicTriangularMPO>(&Op))
    {
-      return fsup(Offset1, Offset2, std::get<BasicTriangularMPO>(Op));
+      return fsup(Offset1, Offset2, *p);
    }
-   else if (std::get_if<ProductMPO>(&Op))
+   else if (auto const* p = std::get_if<ProductMPO>(&Op))
    {
-      return fsup(Offset1, Offset2, std::get<ProductMPO>(Op));
+      return fsup(Offset1, Offset2, *p);
    }
    else
    {

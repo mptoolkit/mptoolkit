@@ -380,8 +380,8 @@ class IrredTensor
       using StructureType = Structure;
       using MatrixType = typename Structure::template value<T>;
 
-      static_assert(std::is_same<value_type,
-                    typename LinearAlgebra::interface<MatrixType>::value_type>::value,
+      static_assert(std::is_same_v<value_type,
+                    typename LinearAlgebra::interface<MatrixType>::value_type>,
                     "tensor value_type must match matrix value_type");
 
       typedef typename iterator<MatrixType>::type iterator;

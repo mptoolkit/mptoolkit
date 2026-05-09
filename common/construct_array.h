@@ -127,7 +127,7 @@ struct DestroyHelper
 };
 
 template <typename T>
-struct DestroyHelper<T, typename std::enable_if<elide_destruction<T>::value>::type>
+struct DestroyHelper<T, std::enable_if_t<elide_destruction<T>::value>>
 {
    static void apply(T const* buf, size_t Size) { }
 };
@@ -176,7 +176,7 @@ struct DebugInit<std::complex<double> >
 };
 
 template <typename T>
-struct ConstructHelper<T, typename std::enable_if<elide_construction<T>::value>::type>
+struct ConstructHelper<T, std::enable_if_t<elide_construction<T>::value>>
 {
    static void apply(T* buf, size_t Size) { }
    static void apply(T* buf, size_t Size, T const& x)

@@ -285,7 +285,7 @@ std::complex<double> conj(std::complex<double> x)
 template
 <typename T>
 inline
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+std::enable_if_t<std::is_arithmetic_v<T>, T>
 herm(T x)
 {
    return x;
@@ -312,7 +312,7 @@ std::complex<double> herm(std::complex<double> x)
 template
 <typename T>
 inline
-typename std::enable_if<std::is_arithmetic<T>::value, T>::type
+std::enable_if_t<std::is_arithmetic_v<T>, T>
 transpose(T x)
 {
    return x;
