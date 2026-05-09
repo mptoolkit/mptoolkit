@@ -216,6 +216,73 @@ ConvertString<std::string>(std::string const& str)
 }
 
 //
+// ConvertStringStrict is for user-facing or persisted text where malformed
+// trailing characters should be rejected.
+//
+
+template <class T>
+T
+ConvertStringStrict(const char* str)
+{
+   CHECK(str != NULL);
+   std::istringstream Stream(str);
+   Stream.exceptions(std::ios_base::badbit|std::ios_base::failbit);
+   T Temp;
+   try
+   {
+      Stream >> Temp;
+      Stream.exceptions(std::ios_base::badbit);
+      Stream >> std::ws;
+   }
+   catch (std::ios_base::failure& f)
+   {
+      throw std::runtime_error(std::string(f.what()) + " converting " + str + " to " + typeid(T).name());
+   }
+   if (!Stream.eof())
+      throw std::runtime_error("trailing characters converting " + std::string(str) + " to " + typeid(T).name());
+   return Temp;
+}
+
+template <class T>
+T
+ConvertStringStrict(std::string const& str)
+{
+   std::istringstream Stream(str);
+   Stream.exceptions(std::ios_base::badbit|std::ios_base::failbit);
+   T Temp;
+   try
+   {
+      Stream >> Temp;
+      Stream.exceptions(std::ios_base::badbit);
+      Stream >> std::ws;
+   }
+   catch (std::ios_base::failure& f)
+   {
+      throw std::runtime_error(std::string(f.what()) + " converting " + str + " to " + typeid(T).name());
+   }
+   if (!Stream.eof())
+      throw std::runtime_error("trailing characters converting " + str + " to " + typeid(T).name());
+   return Temp;
+}
+
+template <>
+inline
+std::string
+ConvertStringStrict<std::string>(char const* str)
+{
+   CHECK(str != NULL);
+   return str;
+}
+
+template <>
+inline
+std::string
+ConvertStringStrict<std::string>(std::string const& str)
+{
+   return str;
+}
+
+//
 // ConvertToString is the inverse of ConvertString - conversion of some type to a string via a ostringstream
 //
 
