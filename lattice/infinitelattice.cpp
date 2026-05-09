@@ -417,6 +417,12 @@ operator<<(PStream::opstream& out, InfiniteLattice const& L)
 PStream::ipstream&
 operator>>(PStream::ipstream& in, InfiniteLattice& L)
 {
+   if (in.container_version() == 1)
+   {
+      PANIC("This lattice file uses the pre-2015 pheap version-1 container format."
+            "  Please reconstruct the lattice.")(in.container_version());
+   }
+
    PStream::VersionSentry Sentry(in, LatticeVersion, in.read<int>());
 
    if (Sentry.version() > 6)

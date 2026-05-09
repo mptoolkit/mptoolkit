@@ -443,6 +443,9 @@ class ipstream
       // reads an id from the stream.  Default version raises an exception/abort
       virtual id_type get_id();
 
+      // Version of an outer storage container, if this stream has one.
+      virtual int container_version() const { return 0; }
+
       generic_ipstreambuf* get_buffer() const { return Buffer; }
 
       template <typename T>
