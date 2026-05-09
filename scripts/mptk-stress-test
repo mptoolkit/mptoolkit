@@ -10,7 +10,8 @@ Repeatedly run one declarative integration suite to look for intermittent
 failures.
 
 Options:
-  --bin-dir DIR       Directory containing MPToolkit binaries.
+  --bin-dir DIR       Directory containing MPToolkit binaries, or a build-tree
+                      root with binaries below common runtime subdirectories.
                       Default: current working directory.
   --suite NAME        Suite file, basename under tests/suites/, or basename
                       without .yaml.

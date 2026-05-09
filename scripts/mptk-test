@@ -15,7 +15,9 @@ Suite arguments may be:
   - a basename without the .yaml suffix
 
 The default binary directory is the current working directory, so this script is
-intended to be run from a build tree.
+intended to be run from a build tree. The binary directory may either contain
+the executables directly, or be a build-tree root with tools/models under common
+runtime subdirectories.
 EOF
 }
 

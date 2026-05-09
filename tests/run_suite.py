@@ -37,6 +37,20 @@ DEFAULT_OVERLAY = {
         }
     }
 }
+BIN_PATH_SUBDIRS = (
+    "",
+    "bin",
+    "tools",
+    "models",
+    "bin/tools",
+    "bin/models",
+)
+MULTI_CONFIG_SUBDIRS = (
+    "Debug",
+    "Release",
+    "RelWithDebInfo",
+    "MinSizeRel",
+)
 
 
 class SuiteError(RuntimeError):
@@ -57,6 +71,25 @@ def is_relative_to(path: Path, root: Path) -> bool:
 
 def ensure_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
+
+
+def executable_search_dirs(root: Path) -> list[Path]:
+    dirs: list[Path] = []
+    seen: set[str] = set()
+
+    for subdir in BIN_PATH_SUBDIRS:
+        base = root / subdir if subdir else root
+        candidates = [base]
+        candidates.extend(base / config for config in MULTI_CONFIG_SUBDIRS)
+
+        for candidate in candidates:
+            key = str(candidate.resolve(strict=False))
+            if key in seen:
+                continue
+            seen.add(key)
+            dirs.append(candidate)
+
+    return dirs
 
 
 def deep_copy(value: Any) -> Any:
@@ -727,6 +760,7 @@ class SuiteRunner:
     ):
         self.suite = suite
         self.bin_dir = bin_dir.resolve()
+        self.bin_path_dirs = executable_search_dirs(self.bin_dir)
         self.repo_root = Path(__file__).resolve().parents[1]
         self.work_root = work_root
         self.verbose = verbose
@@ -768,6 +802,14 @@ class SuiteRunner:
         recipe_env = render_value(deep_copy(recipe.get("env", {})), context)
         env.update({key: str(value) for key, value in default_env.items()})
         env.update({key: str(value) for key, value in recipe_env.items()})
+        bin_path_entries = [
+            str(path.resolve())
+            for path in self.bin_path_dirs
+            if path.is_dir()
+        ]
+        if bin_path_entries:
+            existing_path = env.get("PATH", "")
+            env["PATH"] = os.pathsep.join(bin_path_entries + [existing_path])
         if "MP_BINPATH" in env:
             ensure_directory(Path(env["MP_BINPATH"]))
         return env
@@ -790,10 +832,17 @@ class SuiteRunner:
         else:
             raise SuiteError("Command must render to a string or a list of strings")
         if argv and "/" not in argv[0]:
-            candidate = self.bin_dir / argv[0]
-            if candidate.exists():
+            candidate = self.resolve_executable(argv[0])
+            if candidate is not None:
                 argv = [str(candidate)] + argv[1:]
         return argv
+
+    def resolve_executable(self, program: str):
+        for directory in self.bin_path_dirs:
+            candidate = directory / program
+            if candidate.exists() and os.access(candidate, os.X_OK):
+                return candidate.resolve()
+        return None
 
     def render_command_text(self, command: list[str]) -> str:
         return shlex.join(command)

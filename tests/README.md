@@ -38,6 +38,10 @@ cd /path/to/mptoolkit-source
 scripts/mptk-test --bin-dir /path/to/mptoolkit-build spinchain-tebd
 ```
 
+`--bin-dir` may point at the legacy flat build directory, or at a build output
+root containing executables under `bin/`, `tools/`, `models/`,
+`bin/tools/`, or `bin/models/`.
+
 Run the lower-level Python runner directly when debugging a single suite:
 
 ```bash
