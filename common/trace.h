@@ -279,7 +279,6 @@ void show_backtrace_handler(char const* Msg)
 #include <cstdlib>
 #include <vector>
 #include <string>
-#include <boost/type_traits.hpp>
 
 #if defined(MULTITHREAD)
 #include <thread>

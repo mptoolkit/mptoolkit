@@ -85,8 +85,7 @@
 #include <cmath>
 #include <stdlib.h>
 #include <functional>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_arithmetic.hpp>
+#include <type_traits>
 #include "common/environment.h"
 
 namespace numerics
@@ -286,7 +285,7 @@ std::complex<double> conj(std::complex<double> x)
 template
 <typename T>
 inline
-typename boost::enable_if<boost::is_arithmetic<T>, T>::type
+typename std::enable_if<std::is_arithmetic<T>::value, T>::type
 herm(T x)
 {
    return x;
@@ -313,7 +312,7 @@ std::complex<double> herm(std::complex<double> x)
 template
 <typename T>
 inline
-typename boost::enable_if<boost::is_arithmetic<T>, T>::type
+typename std::enable_if<std::is_arithmetic<T>::value, T>::type
 transpose(T x)
 {
    return x;

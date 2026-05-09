@@ -34,10 +34,8 @@
 #if !defined(CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP)
 #define CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP
 
-#include <boost/type_traits.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/mpl/bool.hpp>
 #include <memory>
+#include <type_traits>
 
 namespace ext
 {
@@ -96,23 +94,23 @@ struct elide_destruction;
 
 #if defined(NDEBUG)
 template <typename T>
-struct elide_construction : boost::has_trivial_constructor<T> {};
+struct elide_construction : std::is_trivially_default_constructible<T> {};
 
 template <typename T>
-struct elide_destruction : boost::has_trivial_destructor<T> {};
+struct elide_destruction : std::is_trivially_destructible<T> {};
 
 template <typename T>
-struct elide_construction<std::complex<T> > : boost::has_trivial_constructor<T> {};
+struct elide_construction<std::complex<T> > : std::is_trivially_default_constructible<T> {};
 
 template <typename T>
-struct elide_destruction<std::complex<T> > : boost::has_trivial_destructor<T> {};
+struct elide_destruction<std::complex<T> > : std::is_trivially_destructible<T> {};
 #else
 
 template <typename T>
-struct elide_construction : boost::mpl::false_ {};
+struct elide_construction : std::false_type {};
 
 template <typename T>
-struct elide_destruction : boost::mpl::false_ {};
+struct elide_destruction : std::false_type {};
 #endif
 
 
@@ -129,7 +127,7 @@ struct DestroyHelper
 };
 
 template <typename T>
-struct DestroyHelper<T, typename boost::enable_if<elide_destruction<T> >::type>
+struct DestroyHelper<T, typename std::enable_if<elide_destruction<T>::value>::type>
 {
    static void apply(T const* buf, size_t Size) { }
 };
@@ -178,7 +176,7 @@ struct DebugInit<std::complex<double> >
 };
 
 template <typename T>
-struct ConstructHelper<T, typename boost::enable_if<elide_construction<T> >::type>
+struct ConstructHelper<T, typename std::enable_if<elide_construction<T>::value>::type>
 {
    static void apply(T* buf, size_t Size) { }
    static void apply(T* buf, size_t Size, T const& x)

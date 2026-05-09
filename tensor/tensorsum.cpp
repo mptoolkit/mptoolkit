@@ -18,7 +18,6 @@
 // ENDHEADER
 
 #include "tensorsum.h"
-#include <boost/type_traits.hpp>
 
 namespace Tensor
 {
