@@ -25,8 +25,9 @@
   This ensures that MyInitFunc() is called before any other static data members of any translation units that
   #include your header.
 
-  2003-10-17 Ian McCulloch: Allow functors now, with a default of DoNothing for the ExitFunc.
-                            You can supply the functors to the constructor, if you want.
+  In C++20, stateless lambdas can also be used directly as non-type template arguments:
+
+     NiftyCounter::nifty_counter<[] { RegisterSomething(); }> Counter;
 */
 
 #if !defined(MPTOOLKIT_COMMON_NIFTYCOUNTER_H)
@@ -39,7 +40,8 @@ typedef void(*InitFuncType)();
 
 void DoNothing();
 
-template <InitFuncType Init, InitFuncType Exit = DoNothing>
+template <auto Init, auto Exit = DoNothing>
+requires requires { Init(); Exit(); }
 class nifty_counter
 {
    public:
@@ -54,11 +56,8 @@ class nifty_counter
       }
 
    private:
-      static int count;
+      static constinit inline int count = 0;
 };
-
-template <InitFuncType InitFunc, InitFuncType ExitFunc>
-int nifty_counter<InitFunc, ExitFunc>::count = 0;
 
 } // namespace NiftyCounter
 
