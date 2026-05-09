@@ -179,7 +179,7 @@ DistributeStates(std::map<QuantumNumbers::QuantumNumber, int> Weights, std::map<
          std::vector<QuantumNumbers::QuantumNumber> ToAdd;
          for (auto a : Avail)
          {
-            int AddedThisSector = Result.count(a.first) == 0 ? 0 : Result[a.first];
+            int AddedThisSector = Result.contains(a.first) ? Result[a.first] : 0;
             if (AddedThisSector < ExtraStatesPerSector && AddedThisSector < a.second)
             {
                for (int i = 0; i < std::min(a.second, ExtraStatesPerSector) - AddedThisSector; ++i)
@@ -241,7 +241,7 @@ MakeExpansionBasis(QuantumNumbers::SymmetryList const& SL, std::map<QuantumNumbe
       // with respect to the density matrix mixing.
       if (n.second > 0)
       {
-         if (KeptStateDimension.count(n.first))
+         if (KeptStateDimension.contains(n.first))
             Weights[n.first] = std::max(KeptStateDimension.at(n.first), 1);
          else
             Weights[n.first] = 1;

@@ -401,7 +401,7 @@ void UpdateKeepList(KeepListType& KeepList,
       {
          // No kept state, go through the discard list and resurrect a state
          StatesListType::iterator Piv = DiscardStates.begin();
-         while (Piv != DiscardStates.end() && qn.count(FullBasis[Piv->Subspace]) == 0)
+         while (Piv != DiscardStates.end() && !qn.contains(FullBasis[Piv->Subspace]))
             ++Piv;
          if (Piv == DiscardStates.end())
          {

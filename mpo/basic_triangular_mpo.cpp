@@ -1062,7 +1062,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
    std::map<int, std::pair<int, std::complex<double> > > ToCollapseOnto;
    while (i < Size-1)
    {
-      if (ToDelete.count(i))
+      if (ToDelete.contains(i))
       {
          ++i;
          continue;
@@ -1085,7 +1085,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
          int j = i+1;
          while (j < Size-1)
          {
-            if (ToDelete.count(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
+            if (ToDelete.contains(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
             {
                ++j;
                continue;
@@ -1142,7 +1142,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
    BasisList NewBasis(Op.GetSymmetryList());
    for (int i = 0; i < Size; ++i)
    {
-      if (ToDelete.count(i) == 0)
+      if (!ToDelete.contains(i))
       {
          NewBasisMapping[i] = NewBasis.size();
          NewBasis.push_back(Op.Basis1()[i]);
@@ -1160,7 +1160,7 @@ bool remove_redundant_by_row(OperatorComponent& Op)
          if (!iterate_at(ConstOp.data(), i, j))
             continue;
 
-         if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
+         if (ToCollapseOnto.contains(j))
          {
             Result(NewBasisMapping[i], NewBasisMapping[ToCollapseOnto[j].first]) += ToCollapseOnto[j].second * ConstOp(i,j);
          }
@@ -1188,7 +1188,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
    std::map<int, std::pair<int, std::complex<double> > > ToCollapseOnto;
    while (i > 0)
    {
-      if (ToDelete.count(i))
+      if (ToDelete.contains(i))
       {
          --i;
          continue;
@@ -1215,7 +1215,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
          int j = i-1;
          while (j > 0)
          {
-            if (ToDelete.count(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
+            if (ToDelete.contains(j) || norm_frob_sq(ConstOp(j,j) - Diag) >= std::numeric_limits<double>::epsilon() * 1000)
             {
                --j;
                continue;
@@ -1271,7 +1271,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
    BasisList NewBasis(Op.GetSymmetryList());
    for (int i = 0; i < Size; ++i)
    {
-      if (ToDelete.count(i) == 0)
+      if (!ToDelete.contains(i))
       {
          NewBasisMapping[i] = NewBasis.size();
          NewBasis.push_back(Op.Basis1()[i]);
@@ -1289,7 +1289,7 @@ bool remove_redundant_by_column(OperatorComponent& Op)
          if (!iterate_at(ConstOp.data(), j, i))
             continue;
 
-         if (ToCollapseOnto.find(j) != ToCollapseOnto.end())
+         if (ToCollapseOnto.contains(j))
          {
             DEBUG_CHECK(NewBasisMapping[ToCollapseOnto[j].first] > NewBasisMapping[i]);
             Result(NewBasisMapping[ToCollapseOnto[j].first], NewBasisMapping[i])

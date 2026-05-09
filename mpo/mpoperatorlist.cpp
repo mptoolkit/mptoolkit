@@ -41,7 +41,7 @@ OperatorList::OperatorList(Lattice const& L_) : L(L_)
 OperatorList::OperatorType&
 OperatorList::operator[](std::string const& s)
 {
-   if (Data.find(s) == Data.end())
+   if (!Data.contains(s))
       Data[s] = this->DoConstruct(s);
    return Data[s];
 }
@@ -107,7 +107,7 @@ OperatorList::operator[](std::string const& Operator) const
 
 bool OperatorList::HasOperator(std::string const& Operator) const
 {
-   if (Data.find(Operator) != Data.end())
+   if (Data.contains(Operator))
       return true;
 
    std::string::const_iterator I = find(Operator.begin(), Operator.end(), '(');

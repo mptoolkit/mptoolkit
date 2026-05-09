@@ -140,7 +140,7 @@ void DestroyHelper<T, Enable>::apply(T const* buf, size_t Size)
    // destroy in reverse order to construction
    for ( ; Size != 0; --Size)
    {
-     buf[Size-1].~T();
+      std::destroy_at(const_cast<T*>(buf + (Size - 1)));
    }
 }
 
@@ -187,23 +187,7 @@ struct ConstructHelper<T, std::enable_if_t<elide_construction<T>::value>>
 template <typename T, typename Enable>
 void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
 {
-   size_t i = 0;
-   try
-   {
-      for ( ; i < Size; ++i)
-      {
-         new (buf+i) T;
-      }
-   }
-   catch (...)
-   {
-      // if buf[i]'s constructor threw, then destuct all of the previous objects
-      for ( ; i != 0; --i)
-      {
-         buf[i-1].~T();
-      }
-      throw;
-   }
+   std::uninitialized_default_construct_n(buf, Size);
 }
 #else
 template <typename T, typename Enable>
@@ -216,23 +200,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
 template <typename T, typename Enable>
 void ConstructHelper<T, Enable>::apply(T* buf, size_t Size, T const& x)
 {
-   size_t i = 0;
-   try
-   {
-      for ( ; i < Size; ++i)
-      {
-         new (buf+i) T(x);
-      }
-   }
-   catch (...)
-   {
-      // if buf[i]'s constructor threw, then destuct all of the previous objects
-      for ( ; i != 0; --i)
-      {
-         buf[i-1].~T();
-      }
-      throw;
-   }
+   std::uninitialized_fill_n(buf, Size, x);
 }
 } // namespace Private
 

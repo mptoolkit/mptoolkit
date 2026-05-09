@@ -535,7 +535,7 @@ void AppendSymmetryNameType(NameTypeMapType& NameTypeMap, SymmetryList const& L)
 {
    for (int i = 0; i < L.NumSymmetries(); ++i)
    {
-      if (NameTypeMap.count(L.SymmetryName(i)) != 0)
+      if (NameTypeMap.contains(L.SymmetryName(i)))
       {
          CHECK(NameTypeMap[L.SymmetryName(i)] == L.SymmetryType(i));
       }

@@ -164,7 +164,7 @@ void zero_unused_elements(GenericMPO& Op)
                if (!Current.iterate_at(i,j))
                   continue;
 
-               if (RowsToKeep.count(i))
+               if (RowsToKeep.contains(i))
                   NextKeep.insert(j);
                else
                {
@@ -202,7 +202,7 @@ void zero_unused_elements(GenericMPO& Op)
                if (!Current.iterate_at(i,j))
                   continue;
 
-               if (ColumnsToKeep.count(j))
+               if (ColumnsToKeep.contains(j))
                   NextKeep.insert(i);
                else
                {

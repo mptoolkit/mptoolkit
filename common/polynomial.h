@@ -102,14 +102,7 @@ class Polynomial
       template <typename F>
       void erase_if(F f)
       {
-         auto i = data_.begin();
-         while (i != data_.end())
-         {
-            if (f(*i))
-               i = data_.erase(i);
-            else
-               ++i;
-         }
+         std::erase_if(data_, f);
       }
 
       std::map<int, coefficient_type> data_;
