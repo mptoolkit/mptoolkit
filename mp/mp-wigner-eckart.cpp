@@ -228,13 +228,13 @@ wigner_project(FiniteWavefunctionLeft const& Psi, SymmetryList const& FinalSL)
 }
 
 // functor to use the visitor pattern with wavefunction types
-struct ApplyWignerEckart : public boost::static_visitor<WavefunctionTypes>
+struct ApplyWignerEckart
 {
    ApplyWignerEckart(SymmetryList const& FinalSL_)
       : FinalSL(FinalSL_) {}
 
    template <typename T>
-   T operator()(T const& Psi) const
+   WavefunctionTypes operator()(T const& Psi) const
    {
       return wigner_project(Psi, FinalSL);
    }
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
          Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
       Result.AppendHistoryCommand(EscapeCommandline(argc, argv));
-      Result.Wavefunction() = boost::apply_visitor(ApplyWignerEckart(FinalSL), InputPsi->Wavefunction());
+      Result.Wavefunction() = std::visit(ApplyWignerEckart(FinalSL), InputPsi->Wavefunction());
       Result.SetDefaultAttributes();
 
       pvalue_ptr<MPWavefunction> OutputPsi = new MPWavefunction(Result);

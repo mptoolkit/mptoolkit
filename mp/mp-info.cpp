@@ -269,7 +269,7 @@ void ShowLocalBasisInfo(CanonicalWavefunctionBase const& Psi, std::ostream& out)
    out << std::endl;
 }
 
-struct ShowWavefunctionBasicInfo : public boost::static_visitor<void>
+struct ShowWavefunctionBasicInfo
 {
    template <typename T>
    void operator()(T const& Psi) const
@@ -279,7 +279,7 @@ struct ShowWavefunctionBasicInfo : public boost::static_visitor<void>
 };
 
 
-struct ShowWavefunction : public boost::static_visitor<void>
+struct ShowWavefunction
 {
    void operator()(InfiniteWavefunctionLeft const& Psi) const;
    void operator()(InfiniteWavefunctionRight const& Psi) const;
@@ -520,7 +520,7 @@ int main(int argc, char** argv)
 
       if (ShowBasic)
       {
-         boost::apply_visitor(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
+         std::visit(ShowWavefunctionBasicInfo(), Psi->Wavefunction());
          std::cout << "File format version " << Psi->version() << "\n\n";
 
          std::cout << "Attributes:\n" << Psi->Attributes();
@@ -528,7 +528,7 @@ int main(int argc, char** argv)
          std::cout << "\nLast history entry:\n" << Psi->History().back() << "\n\n";
       }
 
-      boost::apply_visitor(ShowWavefunction(), Psi->Wavefunction());
+      std::visit(ShowWavefunction(), Psi->Wavefunction());
 
    }
    catch (prog_opt::error& e)

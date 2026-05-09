@@ -22,7 +22,6 @@
 #include "infinite-parser.h"
 #include "parser/parser.h"
 #include "common/stringutil.h"
-#include <boost/math/special_functions/round.hpp>
 
 InfiniteLattice const* ILattice = NULL;
 

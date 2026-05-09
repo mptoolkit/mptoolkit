@@ -35,38 +35,38 @@
 // InfiniteWavefunctionLeft in version 2 format (no separate version number)
 //
 // Version 3:
-// boost::variant<InfiniteWavefunctionLeft>
+// std::variant<InfiniteWavefunctionLeft>
 // AttributeList
 //
 // Version 4:
 // Psi
 // AttributeList
 // HistoryLog
-// where type of Psi is boost::variant<InfiniteWavefunctionLeft>
+// where type of Psi is std::variant<InfiniteWavefunctionLeft>
 //
 // Version 5:
 // Psi
 // AttributeList
 // HistoryLog
-// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction>
+// where type of Psi is std::variant<InfiniteWavefunctionLeft, IBCWavefunction>
 //
 // Version 6:
 // Psi
 // AttributeList
 // HistoryLog
-// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
+// where type of Psi is std::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft>
 //
 // Version 7:
 // Psi
 // AttributeList
 // HistoryLog
-// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
+// where type of Psi is std::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight>
 //
 // Version 8:
 // Psi
 // AttributeList
 // HistoryLog
-// where type of Psi is boost::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
+// where type of Psi is std::variant<InfiniteWavefunctionLeft, IBCWavefunction, FiniteWavefunctionLeft, InfiniteWavefunctionRight, EAWavefunction>
 //
 // For future versions, it is possible to *add* entries to the WavefunctionTypes variant freely, without increasing the
 // overall version number.  Technically this was possible since version 3, but prior to version 8 the streaming code didn't allow
@@ -125,7 +125,7 @@ void read_version(PStream::ipstream& in, MPWavefunction& Psi, int Version)
    if (Version <= 8)
    {
       int which = in.read<int>();
-      if (which >= PStream::variant_size<WavefunctionTypes>::value)
+      if (which < 0 || static_cast<std::size_t>(which) >= PStream::variant_size<WavefunctionTypes>::value)
       {
          std::cerr << "error loading wavefunction: this wavefunction type (" << which << ") is not recognized.\n"
             "This probably means this version of the toolkit is too old.\n";
@@ -155,7 +155,7 @@ operator<<(PStream::opstream& out, MPWavefunction const& Psi)
    return out;
 }
 
-struct ApplyCheckStructure : boost::static_visitor<void>
+struct ApplyCheckStructure
 {
    template <typename T>
    void operator()(T const& x) const
@@ -167,18 +167,18 @@ struct ApplyCheckStructure : boost::static_visitor<void>
 void
 MPWavefunction::check_structure() const
 {
-   boost::apply_visitor(ApplyCheckStructure(), this->Wavefunction());
+   std::visit(ApplyCheckStructure(), this->Wavefunction());
 }
 
 void
 MPWavefunction::debug_check_structure() const
 {
 #if !defined(NDEBUG)
-   boost::apply_visitor(ApplyCheckStructure(), this->Wavefunction());
+   std::visit(ApplyCheckStructure(), this->Wavefunction());
 #endif
 }
 
-struct DoSetDefaultAttributes : public boost::static_visitor<void>
+struct DoSetDefaultAttributes
 {
    DoSetDefaultAttributes(AttributeList& A_) : A(A_) {}
 
@@ -194,7 +194,7 @@ struct DoSetDefaultAttributes : public boost::static_visitor<void>
 void
 MPWavefunction::SetDefaultAttributes()
 {
-   boost::apply_visitor(DoSetDefaultAttributes(Attr_), Psi_);
+   std::visit(DoSetDefaultAttributes(Attr_), Psi_);
 }
 
 namespace
@@ -213,5 +213,5 @@ struct get_WF_type
 std::string
 MPWavefunction::Type() const
 {
-   return boost::apply_visitor(get_WF_type(), Psi_);
+   return std::visit(get_WF_type(), Psi_);
 }

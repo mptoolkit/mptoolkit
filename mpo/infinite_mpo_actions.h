@@ -55,7 +55,7 @@ std::string name_of<ProductMPO>(ProductMPO const&)
 }
 
 template <>
-struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct ElementExp<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex c) const
    {
@@ -79,7 +79,7 @@ struct ElementExp<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
 };
 
 template <>
-struct ElementAbs<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct ElementAbs<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex c) const
    {
@@ -108,7 +108,7 @@ struct ElementAbs<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement
 // Default for ElementConj is OK
 
 template <>
-struct negate_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct negate_element<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex c) const
    {
@@ -134,7 +134,7 @@ struct negate_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEle
 #if 0
 // not needed - the default version is OK
 template <>
-struct unary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct unary_power<InfiniteMPOElement>
 {
    unary_power(int n_) : n(n_) {}
 
@@ -158,7 +158,7 @@ struct unary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElemen
 #endif
 
 template <>
-struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_power<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
    {
@@ -173,7 +173,7 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
          throw ParserError("cannot take a fractional or complex power " + formatting::format_complex(y)
                            + " of a BasicTriangularMPO");
       if (i < 0)
-         throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+         throw ParserError("cannot take negative power " + std::to_string(i)
                            + " of a BasicTriangularMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
@@ -186,7 +186,7 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
          throw ParserError("cannot take a fractional or complex power " + formatting::format_complex(y)
                            + " of a ProductMPO");
       if (i < 0)
-         throw ParserError("cannot take negative power " + boost::lexical_cast<std::string>(i)
+         throw ParserError("cannot take negative power " + std::to_string(i)
                            + " of a ProductMPO");
       return i == 0 ? InfiniteMPOElement(complex(1.0,0.0)) : pow(x, i);
    }
@@ -199,7 +199,7 @@ struct binary_power<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEleme
 };
 
 template <>
-struct binary_addition<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_addition<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
    {
@@ -236,7 +236,7 @@ struct binary_addition<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
 };
 
 template <>
-struct binary_subtraction<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_subtraction<InfiniteMPOElement>
 {
    InfiniteMPOElement operator()(complex const& x, complex const& y) const
    {
@@ -277,7 +277,7 @@ struct binary_subtraction<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
 };
 
 template <>
-struct binary_multiplication<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_multiplication<InfiniteMPOElement>
 {
    // Multiplication is defined for:
    // complex*complex
@@ -339,7 +339,7 @@ struct binary_multiplication<InfiniteMPOElement> : boost::static_visitor<Infinit
 };
 
 template <>
-struct binary_division<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_division<InfiniteMPOElement>
 {
    // division is defined for:
    // complex/complex
@@ -371,7 +371,7 @@ struct binary_division<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
 };
 
 template <>
-struct binary_dot_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_dot_product<InfiniteMPOElement>
 {
    // dot() is defined for:
    // complex,complex
@@ -430,7 +430,7 @@ struct binary_dot_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMP
 };
 
 template <>
-struct binary_inner_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_inner_product<InfiniteMPOElement>
 {
    // inner() is defined for:
    // complex,complex
@@ -489,7 +489,7 @@ struct binary_inner_product<InfiniteMPOElement> : boost::static_visitor<Infinite
 };
 
 template <>
-struct binary_outer_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_outer_product<InfiniteMPOElement>
 {
    // outer() is defined for:
    // complex,complex
@@ -548,7 +548,7 @@ struct binary_outer_product<InfiniteMPOElement> : boost::static_visitor<Infinite
 };
 
 template <>
-struct binary_cross_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_cross_product<InfiniteMPOElement>
 {
    // cross() is defined for:
    // complex,complex        (result is zero)
@@ -601,7 +601,7 @@ struct binary_cross_product<InfiniteMPOElement> : boost::static_visitor<Infinite
 };
 
 template <>
-struct binary_commutator<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct binary_commutator<InfiniteMPOElement>
 {
    // commutator is defined for:
    // complex,complex        (result is zero)
@@ -637,7 +637,7 @@ struct binary_commutator<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
 };
 
 template <>
-struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct ternary_product<InfiniteMPOElement>
 {
    // prod(x,y,q) is defined for:
    // complex*complex        (we ignore the quantum number, since we can't parse it)
@@ -730,7 +730,7 @@ struct ternary_product<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOEl
 };
 
 template <>
-struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct ternary_product_q<InfiniteMPOElement>
 {
    // prod(x,y,q) is defined for:
    // complex*complex        (we ignore the quantum number, since we can't parse it)
@@ -804,7 +804,7 @@ struct ternary_product_q<InfiniteMPOElement> : boost::static_visitor<InfiniteMPO
 };
 
 template <>
-struct coarse_grain_element<InfiniteMPOElement> : boost::static_visitor<InfiniteMPOElement>
+struct coarse_grain_element<InfiniteMPOElement>
 {
    coarse_grain_element(int N_) : N(N_) {}
 

@@ -147,13 +147,13 @@ FiniteWavefunctionLeft ReorderSymmetry(FiniteWavefunctionLeft const& Psi, Symmet
    return Result;
 }
 
-struct ApplyReorderSymmetry : public boost::static_visitor<WavefunctionTypes>
+struct ApplyReorderSymmetry
 {
    ApplyReorderSymmetry(SymmetryList const& FinalSL_)
       : FinalSL(FinalSL_) {}
 
    template <typename T>
-   T operator()(T const& Psi) const
+   WavefunctionTypes operator()(T const& Psi) const
    {
       return ReorderSymmetry(Psi, FinalSL);
    }
@@ -236,7 +236,7 @@ int main(int argc, char** argv)
          Result = MPWavefunction(InputPsi->Attributes(), InputPsi->History());
       }
 
-      Result.Wavefunction() = boost::apply_visitor(ApplyReorderSymmetry(FinalSL), InputPsi->Wavefunction());
+      Result.Wavefunction() = std::visit(ApplyReorderSymmetry(FinalSL), InputPsi->Wavefunction());
       Result.check_structure();
 
       Result.AppendHistoryCommand(EscapeCommandline(argc, argv));

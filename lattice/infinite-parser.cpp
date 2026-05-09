@@ -23,7 +23,6 @@
 #include "parser/parser.h"
 #include "unitcell-parser.h"
 #include "common/stringutil.h"
-#include <boost/math/special_functions/round.hpp>
 
 //
 // TODO: we can allow invoking complex-valued unit cell functions and operator functions,

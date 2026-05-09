@@ -32,7 +32,7 @@
 namespace prog_opt = boost::program_options;
 
 // functor to use the visitor pattern with wavefunction types
-struct ApplyReflect : public boost::static_visitor<void>
+struct ApplyReflect
 {
    template <typename T>
    void operator()(T& Psi) const
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
          Psi = pheap::ImportHeap(InputFile);
       }
 
-      boost::apply_visitor(ApplyReflect(), Psi.mutate()->Wavefunction());
+      std::visit(ApplyReflect(), Psi.mutate()->Wavefunction());
 
       Psi.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
 

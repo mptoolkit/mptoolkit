@@ -30,17 +30,17 @@
 #include "ibc.h"
 #include "ea.h"
 #include "finitewavefunctionleft.h"
-#include <boost/variant.hpp>
 #include "pstream/pstream.h"
 #include "pstream/variant.h"
 #include "interface/attributes.h"
 #include "interface/history.h"
+#include <variant>
 
-typedef boost::variant<InfiniteWavefunctionLeft,
-                       IBCWavefunction,
-                       FiniteWavefunctionLeft,
-                       InfiniteWavefunctionRight,
-                       EAWavefunction> WavefunctionTypes;
+using WavefunctionTypes = std::variant<InfiniteWavefunctionLeft,
+                                       IBCWavefunction,
+                                       FiniteWavefunctionLeft,
+                                       InfiniteWavefunctionRight,
+                                       EAWavefunction>;
 
 class InvalidWavefunction : public std::runtime_error
 {
@@ -88,7 +88,7 @@ class MPWavefunction
 
       // returns true if the MPWavefunction contains the given type
       template <typename T>
-      bool is() const { return bool(boost::get<T>(&Psi_)); }
+      bool is() const { return bool(std::get_if<T>(&Psi_)); }
 
       // returns a string indicating the type of wavefunction
       std::string Type() const;
@@ -133,7 +133,7 @@ class MPWavefunction
 template <typename T>
 T& MPWavefunction::get()
 {
-   T* Result = boost::get<T>(&Psi_);
+   T* Result = std::get_if<T>(&Psi_);
    if (!Result)
    {
       throw InvalidWavefunction(T::Type, this->Type());
@@ -144,7 +144,7 @@ T& MPWavefunction::get()
 template <typename T>
 T const& MPWavefunction::get() const
 {
-   T const* Result = boost::get<T>(&Psi_);
+   T const* Result = std::get_if<T>(&Psi_);
    if (!Result)
    {
       throw InvalidWavefunction(T::Type, this->Type());
