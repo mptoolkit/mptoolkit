@@ -37,6 +37,7 @@
 #include <boost/mpl/not.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/type_traits/is_const.hpp>
 #include <boost/utility/enable_if.hpp>
 
 #include <boost/mpl/print.hpp>

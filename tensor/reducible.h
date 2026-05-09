@@ -32,6 +32,7 @@
 #include "tensorproduct.h"
 #include <set>
 #include "common/set_operations.h"
+#include "common/stringutil.h"
 #include <boost/iterator/transform_iterator.hpp>
 
 namespace Tensor

@@ -57,7 +57,7 @@ int main(int argc, char** argv)
          ("out,o", prog_opt::value(&FName), "Output file (required)")
          ("beta,b", prog_opt::value(&Beta), FormatDefault("Inverse temperature for monte-carlo sampling", Beta).c_str())
          ("seed,s", prog_opt::value(&RandSeed),
-          ("Random seed [range 0.."+boost::lexical_cast<std::string>(std::numeric_limits<unsigned>::max())+"]").c_str())
+          ("Random seed [range 0.."+ConvertToString(std::numeric_limits<unsigned>::max())+"]").c_str())
          ("infinite,i", prog_opt::bool_switch(&Infinite), "Construct an infinite wavefunction")
          ("force,f", prog_opt::bool_switch(&Force), "Allow overwriting output files")
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "increase verbosity (can be used more than once)")

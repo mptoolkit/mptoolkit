@@ -25,9 +25,9 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include "common/stringutil.h"
 #include "common/terminal.h"
 #include "common/math_const.h"
-#include <boost/program_options.hpp>
 #include "mp/copyright.h"
 
 using namespace std;
@@ -54,8 +54,8 @@ int main(int argc, char** argv)
 
    cout.precision(16);
 
-   int w = boost::lexical_cast<int>(argv[1]);  
-   int GridSize = boost::lexical_cast<int>(argv[2]);
+   int w = ConvertString<int>(argv[1]);
+   int GridSize = ConvertString<int>(argv[2]);
    string DataFile = argv[3]; 
 
    vector<int> n1, n2;

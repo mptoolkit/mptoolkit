@@ -198,6 +198,23 @@ ConvertString(std::string const& str)
    return Temp;
 }
 
+template <>
+inline
+std::string
+ConvertString<std::string>(char const* str)
+{
+   CHECK(str != NULL);
+   return str;
+}
+
+template <>
+inline
+std::string
+ConvertString<std::string>(std::string const& str)
+{
+   return str;
+}
+
 //
 // ConvertToString is the inverse of ConvertString - conversion of some type to a string via a ostringstream
 //

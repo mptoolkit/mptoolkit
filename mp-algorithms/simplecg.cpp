@@ -21,6 +21,7 @@
 #include "linearalgebra/eigen.h"
 #include "tensor/tensor_eigen.h"
 #include "common/messagelogger.h"
+#include "common/stringutil.h"
 #include "tensor/regularize.h"
 
 using MessageLogger::Logger;
@@ -106,13 +107,13 @@ Solver::~Solver()
 
 CenterWavefunction& Solver::Wavefunction()
 {
-   x.AttributesMutable()["GreensFunction"] = boost::lexical_cast<std::string>(this->GreensFunction());
+   x.AttributesMutable()["GreensFunction"] = ConvertToString(this->GreensFunction());
    return x;
 }
 
 CenterWavefunction const& Solver::Wavefunction() const
 {
-   x.AttributesMutable()["GreensFunction"] = boost::lexical_cast<std::string>(this->GreensFunction());
+   x.AttributesMutable()["GreensFunction"] = ConvertToString(this->GreensFunction());
    return x;
 }
 

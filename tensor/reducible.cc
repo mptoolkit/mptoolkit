@@ -251,7 +251,7 @@ std::string show_projections(ReducibleTensor<T, B1, B2, S> const& Op)
         I != Op.end(); ++I)
    {
       Result += "Components that transform as "
-         + boost::lexical_cast<std::string>(I->first)
+         + ConvertToString(I->first)
          + ":\n";
       Result += show_projections(I->second);
    }

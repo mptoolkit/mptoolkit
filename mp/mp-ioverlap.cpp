@@ -55,7 +55,7 @@ void PrintFormat(QuantumNumber const& q, int n, std::complex<double> x,
                  bool ShowCorrLength, bool ShowRate, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
-   std::string SectorStr = boost::lexical_cast<std::string>(q);
+   std::string SectorStr = ConvertToString(q);
    std::complex<double> Value = std::pow(x, ScaleFactor);
    if (ShowSector)
       std::cout << std::setw(11) << SectorStr << ' ';

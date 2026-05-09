@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/su2.h"
 
@@ -30,7 +31,7 @@ SpinSU2(half_int Spin, std::string const& Sym = "S")
    SiteOperator S, Sn, R, P, I, Q, T, F;
    LatticeSite Site("SU(2) Spin "+to_string_fraction(Spin));
 
-   std::string SpinName = boost::lexical_cast<std::string>(Spin);
+   std::string SpinName = ConvertToString(Spin);
    Basis.push_back(SpinName, QN(Spin));
 
    OperatorDescriptions OpDescriptions;

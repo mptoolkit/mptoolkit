@@ -22,7 +22,6 @@
 
 #include "common/stringutil.h"
 #include <string>
-#include <boost/lexical_cast.hpp>
 #include <stdlib.h> // for getenv
 
 inline
@@ -69,9 +68,9 @@ T getenv_or_default(std::string const& str, T const& Default)
    {
       char const* Str = getenv(str.c_str());
       if (Str != NULL)
-         return boost::lexical_cast<T>(Str);
+         return ConvertString<T>(Str);
    }
-   catch (boost::bad_lexical_cast&)
+   catch (std::runtime_error const&)
    {
    }
    catch (...)

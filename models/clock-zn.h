@@ -20,8 +20,8 @@
 #if !defined(MPTOOLKIT_MODELS_CONTRIB_CLOCK_ZN_H)
 #define MPTOOLKIT_MODELS_CONTRIB_CLOCK_ZN_H
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
-#include <boost/lexical_cast.hpp>
 #include <complex>
 #include <stdexcept>
 #include <string>
@@ -31,7 +31,7 @@ QuantumNumbers::QuantumNumber
 ZnClockQuantumNumber(SymmetryList const& Symmetry, int q, int charge)
 {
    int CanonicalCharge = ((charge % q) + q) % q;
-   return QuantumNumbers::QuantumNumber(Symmetry, boost::lexical_cast<std::string>(CanonicalCharge));
+   return QuantumNumbers::QuantumNumber(Symmetry, ConvertToString(CanonicalCharge));
 }
 
 inline
@@ -40,9 +40,9 @@ LatticeSite ZnClockSite(int q)
    if (q < 2 || q > 12)
       throw std::runtime_error("Z_q clock site supports q=2..12");
 
-   SymmetryList Symmetry("Q:Z_" + boost::lexical_cast<std::string>(q));
+   SymmetryList Symmetry("Q:Z_" + ConvertToString(q));
    SiteBasis Basis(Symmetry);
-   LatticeSite Site("Z_" + boost::lexical_cast<std::string>(q) + " clock");
+   LatticeSite Site("Z_" + ConvertToString(q) + " clock");
 
    for (int s = 0; s < q; ++s)
    {

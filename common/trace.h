@@ -288,8 +288,6 @@ void show_backtrace_handler(char const* Msg)
 #include <cxxabi.h>
 #endif
 
-#include <boost/lexical_cast.hpp>
-
 #if defined(MULTITHREAD)
 #include <pthread.h>
 #endif

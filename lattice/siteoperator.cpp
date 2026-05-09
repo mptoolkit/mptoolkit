@@ -18,7 +18,7 @@
 // ENDHEADER
 
 #include "siteoperator.h"
-#include <boost/lexical_cast.hpp>
+#include "common/stringutil.h"
 
 extern PStream::VersionTag LatticeVersion;
 
@@ -111,7 +111,7 @@ SiteProductBasis::SiteProductBasis(SiteBasis const& B1, SiteBasis const& B2)
       ProductBasis<BasisList, BasisList>::source_type s = ProductBasis_.rmap(i);
       std::string Label = B1.Label(s.first) + " x "
          + B2.Label(s.second) + " ["
-         + boost::lexical_cast<std::string>(ProductBasis_[i]) + ']';
+         + ConvertToString(ProductBasis_[i]) + ']';
       Basis_.push_back(Label, ProductBasis_[i]);
    }
 }

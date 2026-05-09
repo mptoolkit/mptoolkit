@@ -403,7 +403,7 @@ int main(int argc, char** argv)
             std::vector<std::string> Which = SplitCompress(WhichEigenvalues, ", \n\t");
             for (std::string s : Which)
             {
-               int n = boost::lexical_cast<int>(s);
+               int n = ConvertString<int>(s);
                if (n < 1 || n > int(EValues.size()))
                {
                   std::cerr << "mp-aux-matrix: density matrix index must be in range 1.."

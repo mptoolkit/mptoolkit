@@ -74,7 +74,7 @@ void PrintHeading(std::ostream& out, bool ShowRadians)
 
 void PrintFormat(std::ostream& out, int n, EValueRecord const& x, std::complex<double> Normalizer, bool ShowRadians)
 {
-   std::string SectorStr = boost::lexical_cast<std::string>(x.q);
+   std::string SectorStr = ConvertToString(x.q);
    out << std::left << std::setw(7) << n << ' ';
    out << std::left << std::setw(11) << SectorStr << ' ';
    out << std::left << std::setw(6) << degree(x.q) << ' ';
@@ -288,7 +288,7 @@ int main(int argc, char** argv)
                   if (!SplitOutputPrefix.empty())
                   {
                      OutFile.close();
-                     OutFile.open(SplitOutputPrefix + "-q" + boost::lexical_cast<std::string>(EValues[k].q) + ".dat",
+                     OutFile.open(SplitOutputPrefix + "-q" + ConvertToString(EValues[k].q) + ".dat",
                                   std::ios::out | std::ios::trunc);
                      OutFile.precision(getenv_or_default("MP_PRECISION", 14));
                      if (!Quiet)

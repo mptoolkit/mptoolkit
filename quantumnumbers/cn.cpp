@@ -58,7 +58,7 @@ SymmetryBase* CnSymmetryFactory::AttemptCreate(std::string const& Type)
 }
 
 Cn::Cn(int N_, std::string const& s)
-  : N(N_), x((boost::lexical_cast<int>(s) + 10*N_) % N_)
+  : N(N_), x((ConvertString<int>(s) + 10*N_) % N_)
 {
 }
 

@@ -28,6 +28,7 @@
 
 #include "pheap/pheaperror.h"
 #include "common/proccontrol.h"
+#include "common/stringutil.h"
 #include "pstream/pfilestream.h"
 #include "common/inttype.h"
 #include <sys/types.h>
@@ -220,7 +221,7 @@ uint64 PageFileImpl::open(std::string const& FileName_, bool ReadOnly_)
    if (Version > 2)
    {
       throw pheap::PHeapFileError(FileName_, "file version mismatch, version is " +
-                                  boost::lexical_cast<std::string>(Version) + " but expected version <= 2\n"
+                                  ConvertToString(Version) + " but expected version <= 2\n"
                                   "Probably this file was created with a newer version of the software.");
    }
 

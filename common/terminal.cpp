@@ -36,7 +36,6 @@
 #endif
 
 #include <map>
-#include <boost/lexical_cast.hpp>
 
 namespace terminal
 {
@@ -131,7 +130,7 @@ color parse_code(std::string s)
       return color::Reset;
    else if (s[0] >= '0' && s[0] <= '9')
    {
-      return color(boost::lexical_cast<int>(s));
+      return color(ConvertString<int>(s));
    }
    else
    {
