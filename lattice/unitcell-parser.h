@@ -38,6 +38,7 @@
 #include "lattice/unitcell_mpo.h"
 #include "lattice/infinitelattice.h"
 #include "common/sha256.h"
+#include <boost/variant.hpp>
 
 extern InfiniteLattice const* ILattice;
 

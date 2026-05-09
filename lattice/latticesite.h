@@ -40,8 +40,8 @@
 #include "siteoperator.h"
 #include "function.h"
 #include "operator_descriptions.h"
-#include <boost/variant.hpp>
 #include <map>
+#include <variant>
 
 using QuantumNumbers::SymmetryList;
 
@@ -51,6 +51,7 @@ class LatticeSite
       typedef SiteOperator                operator_type;
       typedef Function::OperatorFunction  function_type;
       typedef Function::Argument         argument_type;
+      typedef std::variant<operator_type, std::complex<double> > element_type;
 
    private:
       typedef std::map<std::string, operator_type>    OperatorListType;
@@ -147,11 +148,11 @@ class LatticeSite
       function_type const& func(std::string const& s) const;
 
       // evaluate a function
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(Function::OperatorFunction const& Func,
                     Function::ParameterList const& Params) const;
 
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(std::string const& Func,
                     Function::ParameterList const& Params) const;
 

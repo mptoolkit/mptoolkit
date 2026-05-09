@@ -58,6 +58,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <variant>
 
 class UnitCell
 {
@@ -69,6 +70,7 @@ class UnitCell
       typedef UnitCellMPO                operator_type;
       typedef Function::OperatorFunction function_type;
       typedef Function::Argument         argument_type;
+      typedef std::variant<operator_type, std::complex<double> > element_type;
 
    private:
       typedef std::map<std::string, operator_type>    OperatorListType;
@@ -231,17 +233,17 @@ class UnitCell
       function_type func(std::string const& s) const;
 
       // evaluate a function
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(Function::OperatorFunction const& Func, int Cell,
                     Function::ParameterList const& Params) const;
 
       // Evaluate a function.  If Func is not a UnitCell function and
       // the UnitCell.size() == 1, then evaluate Func as a SiteOperator function.
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(std::string const& Func, int Cell,
                     Function::ParameterList const& Params) const;
 
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_local_function(std::string const& Func, int Cell, int Site,
                           Function::ParameterList const& Params) const;
 

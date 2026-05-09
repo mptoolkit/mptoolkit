@@ -162,15 +162,18 @@ struct ParseSiteExpression
    LatticeSite const& Site;
 };
 
-boost::variant<SiteOperator, std::complex<double> >
+LatticeSite::element_type
 LatticeSite::eval_function(Function::OperatorFunction const& Func,
                            Function::ParameterList const& Params) const
 {
    Function::ArgumentList Args = GetArguments(Func.args(), Params, ParseSiteExpression(*this));
-   return ParseSiteElement(*this, Func.definition(), Args);
+   SiteElementType Parsed = ParseSiteElement(*this, Func.definition(), Args);
+   if (SiteOperator* Op = boost::get<SiteOperator>(&Parsed))
+      return *Op;
+   return boost::get<std::complex<double> >(Parsed);
 }
 
-boost::variant<SiteOperator, std::complex<double> >
+LatticeSite::element_type
 LatticeSite::eval_function(std::string const& Func,
                            Function::ParameterList const& Params) const
 {
