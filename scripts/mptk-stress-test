@@ -14,7 +14,7 @@ Options:
                       root with binaries below common runtime subdirectories.
                       Default: current working directory.
   --config CONFIG     Prefer binaries from this CMake configuration when
-                      searching a multi-config build tree.
+                      searching per-configuration output directories.
   --suite NAME        Suite file, basename under tests/suites/, or basename
                       without .yaml.
                       Default: spinchain-aklt-spt-uc1-rerun

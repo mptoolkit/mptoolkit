@@ -1461,7 +1461,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run MPToolkit integration test suite")
     parser.add_argument("suite", type=Path, help="Path to YAML suite file")
     parser.add_argument("--bin-dir", type=Path, required=True, help="Directory containing MPToolkit binaries")
-    parser.add_argument("--config", help="Prefer binaries from this CMake configuration when searching a multi-config build tree")
+    parser.add_argument("--config", help="Prefer binaries from this CMake configuration when searching per-configuration output directories")
     parser.add_argument("--work-root", type=Path, help="Working directory for fixture and test outputs")
     parser.add_argument("--verbose", action="store_true", help="Print executed commands")
     parser.add_argument("--explain", action="store_true", help="Explain fixture dependencies, files, and resolved commands")

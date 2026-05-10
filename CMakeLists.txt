@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 
 project(MPToolkit LANGUAGES C CXX Fortran)
 
+if(CMAKE_CONFIGURATION_TYPES)
+  message(FATAL_ERROR
+    "MPToolkit's CMake bootstrap currently supports only single-config generators. "
+    "Use Ninja or Unix Makefiles with -DCMAKE_BUILD_TYPE=Release or Debug.")
+endif()
+
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()

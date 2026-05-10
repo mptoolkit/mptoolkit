@@ -41,9 +41,9 @@ scripts/mptk-test --bin-dir /path/to/mptoolkit-build spinchain-tebd
 `--bin-dir` may point at the legacy flat build directory, or at a build output
 root containing executables under `bin/`, `tools/`, `models/`,
 `models/contrib/`, `bin/tools/`, `bin/models/`, or `bin/models/contrib/`.
-For multi-config CMake build trees, pass `--config Release`, `--config Debug`,
-or another configuration name to prefer that configuration's output
-directories.
+For CMake build trees with per-configuration output directories, pass
+`--config Release`, `--config Debug`, or another configuration name to prefer
+that configuration's outputs.
 
 Run the lower-level Python runner directly when debugging a single suite:
 
@@ -61,7 +61,7 @@ Useful runner flags:
 - `--explain`: show fixture dependencies, scratch directories, and resolved
   commands
 - `--config CONFIG`: prefer binaries from that CMake configuration when
-  resolving tools in a multi-config build tree
+  resolving tools in per-configuration output directories
 - `--work-root DIR`: keep fixture and test outputs under `DIR` instead of a
   temporary directory
 - `--dump-ir`: print the normalized suite representation for one suite
