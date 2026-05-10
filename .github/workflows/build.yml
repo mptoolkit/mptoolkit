@@ -1,25 +1,40 @@
-name: C/C++ CI
+name: CMake CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "cxx20-migration" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "cxx20-migration" ]
 
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
        sudo apt-get -y update
-       sudo apt-get -y install libboost-all-dev libarpack2-dev
-    - name: configure
-      run: CXXFLAGS=-O0 ./configure --with-openmp
-    - name: make
-      run: make
-    - name: make models
-      run: make models
+       sudo apt-get -y install \
+         g++ \
+         gfortran \
+         libarpack2-dev \
+         libboost-program-options-dev \
+         libgmp-dev \
+         libopenblas-dev \
+         ninja-build \
+         python3-yaml
+    - name: Configure
+      run: |
+        cmake -S . -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DMPTK_WITH_OPENMP=ON \
+          -DMPTK_FORTRAN_COMPLEX_RETURN=auto
+    - name: Build CTest targets
+      run: cmake --build build --target testexponential --parallel 2
+    - name: Run CTest
+      working-directory: build
+      run: ctest --output-on-failure
+    - name: Build and run integration suites
+      run: cmake --build build --target test-integration --parallel 2
