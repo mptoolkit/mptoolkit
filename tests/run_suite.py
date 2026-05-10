@@ -841,8 +841,9 @@ class SuiteRunner:
             if path.is_dir()
         ]
         if bin_path_entries:
-            existing_path = env.get("PATH", "")
-            env["PATH"] = os.pathsep.join(bin_path_entries + [existing_path])
+            existing_path = env.get("PATH")
+            path_list = bin_path_entries + ([existing_path] if existing_path else [])
+            env["PATH"] = os.pathsep.join(path_list)
         if "MP_BINPATH" in env:
             ensure_directory(Path(env["MP_BINPATH"]))
         return env
