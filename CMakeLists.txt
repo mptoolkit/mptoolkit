@@ -513,10 +513,26 @@ mptk_set_runtime_output(testexponential tests)
 add_test(NAME linearalgebra.testexponential COMMAND testexponential)
 set_tests_properties(linearalgebra.testexponential PROPERTIES TIMEOUT 30)
 
+set(MPTK_INTEGRATION_SUITES
+  spinchain-smoke
+  supported-model-contract
+)
+set(MPTK_INTEGRATION_DEPENDS tools models)
+if(MPTK_BUILD_CONTRIB_MODELS)
+  list(APPEND MPTK_INTEGRATION_SUITES
+    bosehubbard-flux-2leg-u1-smoke
+    bosehubbard-flux-3leg-u1-smoke
+  )
+  list(APPEND MPTK_INTEGRATION_DEPENDS contrib-models)
+endif()
+
 add_custom_target(test-integration
-  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test" --bin-dir "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test"
+          --bin-dir "${CMAKE_BINARY_DIR}"
+          --config "$<CONFIG>"
+          ${MPTK_INTEGRATION_SUITES}
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  DEPENDS tools models
+  DEPENDS ${MPTK_INTEGRATION_DEPENDS}
   USES_TERMINAL
 )
 

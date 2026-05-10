@@ -42,8 +42,10 @@ BIN_PATH_SUBDIRS = (
     "bin",
     "tools",
     "models",
+    "models/contrib",
     "bin/tools",
     "bin/models",
+    "bin/models/contrib",
 )
 MULTI_CONFIG_SUBDIRS = (
     "Debug",
