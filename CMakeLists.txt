@@ -53,7 +53,10 @@ if(NOT TARGET LAPACK::LAPACK)
 endif()
 
 add_library(ARPACK::ARPACK UNKNOWN IMPORTED)
-set_target_properties(ARPACK::ARPACK PROPERTIES IMPORTED_LOCATION "${ARPACK_LIBRARY}")
+set_target_properties(ARPACK::ARPACK PROPERTIES
+  IMPORTED_LOCATION "${ARPACK_LIBRARY}"
+  INTERFACE_LINK_LIBRARIES "LAPACK::LAPACK;BLAS::BLAS"
+)
 
 add_library(GMP::GMP UNKNOWN IMPORTED)
 set_target_properties(GMP::GMP PROPERTIES
@@ -392,11 +395,10 @@ function(mptk_set_runtime_output target subdir)
 endfunction()
 
 function(mptk_add_executable target source subdir)
-  add_executable("${target}" "${source}"
-    $<TARGET_OBJECTS:mptoolkit_core_objects>
-    ${ARGN}
-  )
-  target_link_libraries("${target}" PRIVATE mptoolkit_algorithms)
+  add_executable("${target}" "${source}" ${ARGN})
+  # Core contains static symmetry registrars, so link the object library
+  # directly; a static archive can drop otherwise unreferenced registrars.
+  target_link_libraries("${target}" PRIVATE mptoolkit_core_objects mptoolkit_algorithms)
   mptk_set_runtime_output("${target}" "${subdir}")
 endfunction()
 
@@ -505,9 +507,7 @@ add_custom_target(mptoolkit DEPENDS tools models)
 
 enable_testing()
 
-add_executable(testexponential linearalgebra/test/testexponential.cpp
-  $<TARGET_OBJECTS:mptoolkit_core_objects>
-)
+add_executable(testexponential linearalgebra/test/testexponential.cpp)
 target_link_libraries(testexponential PRIVATE mptoolkit_core)
 mptk_set_runtime_output(testexponential tests)
 add_test(NAME linearalgebra.testexponential COMMAND testexponential)
