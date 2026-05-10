@@ -6,6 +6,11 @@ endif()
 
 project(MPToolkit LANGUAGES C CXX Fortran)
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -15,15 +20,21 @@ option(MPTK_WITH_PSTREAM "Enable persistent stream support" ON)
 option(MPTK_BUILD_CONTRIB_MODELS "Build models/contrib generators" OFF)
 set(MPTK_BLAS_VENDOR "auto" CACHE STRING "BLAS vendor for version reporting: auto, generic, OpenBLAS, or MKL")
 set_property(CACHE MPTK_BLAS_VENDOR PROPERTY STRINGS auto generic OpenBLAS MKL)
-set(MPTK_FORTRAN_COMPLEX_RETURN "register" CACHE STRING "Fortran complex return convention: register or first_arg")
-set_property(CACHE MPTK_FORTRAN_COMPLEX_RETURN PROPERTY STRINGS register first_arg)
+set(MPTK_FORTRAN_COMPLEX_RETURN "auto" CACHE STRING "Fortran complex return convention: auto, register, or first_arg")
+set_property(CACHE MPTK_FORTRAN_COMPLEX_RETURN PROPERTY STRINGS auto register first_arg)
+
+if(NOT MPTK_WITH_PSTREAM)
+  message(FATAL_ERROR "MPTK_WITH_PSTREAM=OFF is not supported by the current source tree; PStream serialization is required")
+endif()
 
 include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
 include(CheckIncludeFileCXX)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(TestBigEndian)
 
+find_package(Git QUIET)
 find_package(Boost 1.47 REQUIRED COMPONENTS program_options)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
@@ -106,12 +117,67 @@ endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang|Intel")
   set(HAVE_PRETTYFUNC TRUE)
 endif()
+string(TOLOWER "${CMAKE_CXX_COMPILER_ID}" MPTK_CONFIG_COMPILER_VENDOR)
 
 if(MPTK_WITH_PSTREAM)
   set(USE_PSTREAM TRUE)
 endif()
 
-if(MPTK_FORTRAN_COMPLEX_RETURN STREQUAL "first_arg")
+if(MPTK_FORTRAN_COMPLEX_RETURN STREQUAL "auto")
+  if(CMAKE_CROSSCOMPILING)
+    message(FATAL_ERROR "MPTK_FORTRAN_COMPLEX_RETURN=auto cannot run the BLAS probe while cross compiling; set it to register or first_arg")
+  endif()
+
+  set(MPTK_REQUIRED_INCLUDES_SAVE "${CMAKE_REQUIRED_INCLUDES}")
+  set(MPTK_REQUIRED_LIBRARIES_SAVE "${CMAKE_REQUIRED_LIBRARIES}")
+  set(CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}")
+  set(CMAKE_REQUIRED_LIBRARIES ${BLAS_LIBRARIES})
+
+  check_cxx_source_runs("
+    #define FORTRAN_COMPLEX_RETURN_FIRST_ARG
+    #include \"common/blas1f.h\"
+    #include <complex>
+    #include <vector>
+    using complex = std::complex<double>;
+    int main()
+    {
+      std::vector<complex> v1(10, complex(2.0, 2.0));
+      std::vector<complex> v2(10, 1.0);
+      complex res = BLAS::zdotu(10, v1.data(), 1, v2.data(), 1);
+      return std::abs(res - complex(20.0, 20.0)) < 1E-10 ? 0 : 1;
+    }
+  " MPTK_FORTRAN_COMPLEX_RETURN_FIRST_ARG_WORKS)
+
+  check_cxx_source_runs("
+    #define FORTRAN_COMPLEX_RETURN_IN_REGISTER
+    #include \"common/blas1f.h\"
+    #include <complex>
+    #include <vector>
+    using complex = std::complex<double>;
+    int main()
+    {
+      std::vector<complex> v1(10, complex(2.0, 2.0));
+      std::vector<complex> v2(10, 1.0);
+      complex res = BLAS::zdotu(10, v1.data(), 1, v2.data(), 1);
+      return std::abs(res - complex(20.0, 20.0)) < 1E-10 ? 0 : 1;
+    }
+  " MPTK_FORTRAN_COMPLEX_RETURN_IN_REGISTER_WORKS)
+
+  set(CMAKE_REQUIRED_INCLUDES "${MPTK_REQUIRED_INCLUDES_SAVE}")
+  set(CMAKE_REQUIRED_LIBRARIES "${MPTK_REQUIRED_LIBRARIES_SAVE}")
+
+  if(MPTK_FORTRAN_COMPLEX_RETURN_FIRST_ARG_WORKS)
+    set(MPTK_FORTRAN_COMPLEX_RETURN_RESOLVED "first_arg")
+  elseif(MPTK_FORTRAN_COMPLEX_RETURN_IN_REGISTER_WORKS)
+    set(MPTK_FORTRAN_COMPLEX_RETURN_RESOLVED "register")
+  else()
+    message(FATAL_ERROR "Cannot determine how Fortran returns complex BLAS values; set MPTK_FORTRAN_COMPLEX_RETURN explicitly")
+  endif()
+else()
+  set(MPTK_FORTRAN_COMPLEX_RETURN_RESOLVED "${MPTK_FORTRAN_COMPLEX_RETURN}")
+endif()
+
+if(MPTK_FORTRAN_COMPLEX_RETURN_RESOLVED STREQUAL "first_arg")
   set(FORTRAN_COMPLEX_RETURN_FIRST_ARG TRUE)
 else()
   set(FORTRAN_COMPLEX_RETURN_IN_REGISTER TRUE)
@@ -144,6 +210,29 @@ else()
 endif()
 set(MPTK_CONFIG_CXXFLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${MPTK_BUILD_TYPE_UPPER}}")
 string(STRIP "${MPTK_CONFIG_CXXFLAGS}" MPTK_CONFIG_CXXFLAGS)
+
+set(MPTK_GIT_VERSION_ESCAPED "")
+if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" rev-parse --symbolic-full-name --abbrev-ref HEAD
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE MPTK_GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --dirty --always --tags
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE MPTK_GIT_TAG_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(MPTK_GIT_BRANCH AND MPTK_GIT_TAG_VERSION)
+    set(MPTK_GIT_VERSION "${MPTK_GIT_BRANCH}:${MPTK_GIT_TAG_VERSION}")
+    string(REPLACE "\\" "\\\\" MPTK_GIT_VERSION_ESCAPED "${MPTK_GIT_VERSION}")
+    string(REPLACE "\"" "\\\"" MPTK_GIT_VERSION_ESCAPED "${MPTK_GIT_VERSION_ESCAPED}")
+  endif()
+endif()
 
 configure_file(cmake/config.h.in config.h @ONLY)
 
@@ -258,6 +347,10 @@ set(MPTK_ALGORITHM_SOURCES
 add_library(mptoolkit_config INTERFACE)
 target_compile_features(mptoolkit_config INTERFACE cxx_std_20)
 target_compile_definitions(mptoolkit_config INTERFACE HAVE_CONFIG_H)
+target_compile_definitions(mptoolkit_config INTERFACE _FILE_OFFSET_BITS=64)
+if(MPTK_GIT_VERSION_ESCAPED)
+  target_compile_definitions(mptoolkit_config INTERFACE "GIT_VERSION_STRING=\"${MPTK_GIT_VERSION_ESCAPED}\"")
+endif()
 target_include_directories(mptoolkit_config INTERFACE
   "${CMAKE_CURRENT_BINARY_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -427,5 +520,40 @@ add_custom_target(test-integration
   USES_TERMINAL
 )
 
-install(TARGETS ${MPTK_TOOL_TARGETS} RUNTIME DESTINATION bin)
-install(TARGETS ${MPTK_MODEL_TARGETS} RUNTIME DESTINATION bin)
+install(TARGETS ${MPTK_TOOL_TARGETS}
+  RUNTIME DESTINATION bin
+  COMPONENT tools
+)
+install(TARGETS ${MPTK_MODEL_TARGETS}
+  RUNTIME DESTINATION bin
+  COMPONENT models
+  EXCLUDE_FROM_ALL
+)
+if(MPTK_BUILD_CONTRIB_MODELS AND MPTK_CONTRIB_MODEL_TARGETS)
+  install(TARGETS ${MPTK_CONTRIB_MODEL_TARGETS}
+    RUNTIME DESTINATION bin
+    COMPONENT contrib-models
+    EXCLUDE_FROM_ALL
+  )
+endif()
+
+add_custom_target(install-tools
+  COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component tools
+  DEPENDS tools
+  USES_TERMINAL
+)
+add_custom_target(install-models
+  COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component models
+  DEPENDS models
+  USES_TERMINAL
+)
+if(MPTK_BUILD_CONTRIB_MODELS)
+  add_custom_target(install-contrib-models
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component contrib-models
+    DEPENDS contrib-models
+    USES_TERMINAL
+  )
+  add_custom_target(install-all-models DEPENDS install-models install-contrib-models)
+else()
+  add_custom_target(install-all-models DEPENDS install-models)
+endif()

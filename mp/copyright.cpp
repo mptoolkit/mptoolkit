@@ -40,6 +40,8 @@
 
 #if defined(SVN_VERSION)
 #define VERSION_ PACKAGE_VERSION " (subversion tree rev " AS_STRING(SVN_VERSION) ")"
+#elif defined(GIT_VERSION_STRING)
+#define VERSION_ PACKAGE_VERSION " (git version " GIT_VERSION_STRING ")"
 #elif defined(GIT_VERSION)
 #define VERSION_ PACKAGE_VERSION " (git version " AS_STRING(GIT_VERSION) ")"
 #else

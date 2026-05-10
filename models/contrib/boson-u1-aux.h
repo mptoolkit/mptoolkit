@@ -23,13 +23,15 @@
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
+#include <string>
+
 // default maximum number of bosons per site
 //int const DefaultMaxN = 5; // Already defined in boson-u1.sh
 
 void SetMatElementU1Aux(SiteOperator& s, int n1, int n2, double x)
 {
-   std::string q1 = boost::lexical_cast<std::string>(n1);
-   std::string q2 = boost::lexical_cast<std::string>(n2);
+   std::string q1 = std::to_string(n1);
+   std::string q2 = std::to_string(n2);
 
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
@@ -47,12 +49,12 @@ LatticeSite BosonU1Aux(int MaxN, std::string const& Sym1 = "N")
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
    {
-      std::string q = boost::lexical_cast<std::string>(n);
+      std::string q = std::to_string(n);
 //      Basis.push_back(q, QN(n));
       Basis.push_back(q, QN(-n));
    }
 
-   LatticeSite Site("Boson, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
+   LatticeSite Site("Boson, maximum number of particles per site = " + std::to_string(MaxN));
 
    OperatorDescriptions OpDescriptions;
    OpDescriptions.add_operators()
@@ -117,9 +119,8 @@ LatticeSite BosonU1Aux(int MaxN, std::string const& Sym1 = "N")
       SiteOperator X(Basis, QN(0), LatticeCommute::Bosonic);
       SetMatElementU1Aux(X, n, n, 1);
 //      SetMatElementU1Aux(X, -n, -n, 1);
-      std::string OpName = std::string("P_")
-        + boost::lexical_cast<std::string>(n);
-      X.set_description("projector onto occupation number " + boost::lexical_cast<std::string>(n));
+      std::string OpName = std::string("P_") + std::to_string(n);
+      X.set_description("projector onto occupation number " + std::to_string(n));
       Site[OpName] = X;
    }
 
