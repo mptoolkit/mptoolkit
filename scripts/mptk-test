@@ -4,7 +4,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: mptk-test [--bin-dir DIR] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [--test NAME ...] [suite ...]
+Usage: mptk-test [--bin-dir DIR] [--config CONFIG] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [--test NAME ...] [suite ...]
 
 Run MPToolkit declarative integration suites.
 
@@ -25,6 +25,7 @@ script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "${script_dir}/.." && pwd)
 
 bin_dir=$PWD
+config=""
 work_root=""
 runner_flags=()
 suite_specs=()
@@ -55,6 +56,11 @@ while (($#)); do
         --bin-dir)
             [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
             bin_dir=$2
+            shift 2
+            ;;
+        --config)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --config\n' >&2; exit 2; }
+            config=$2
             shift 2
             ;;
         --work-root)
@@ -115,6 +121,9 @@ failures=()
 first_suite=1
 for suite in "${suites[@]}"; do
     cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    if [[ -n $config ]]; then
+        cmd+=(--config "$config")
+    fi
     if [[ -n $work_root ]]; then
         suite_name=$(basename "$suite" .yaml)
         cmd+=(--work-root "${work_root}/${suite_name}")

@@ -13,6 +13,8 @@ Options:
   --bin-dir DIR       Directory containing MPToolkit binaries, or a build-tree
                       root with binaries below common runtime subdirectories.
                       Default: current working directory.
+  --config CONFIG     Prefer binaries from this CMake configuration when
+                      searching a multi-config build tree.
   --suite NAME        Suite file, basename under tests/suites/, or basename
                       without .yaml.
                       Default: spinchain-aklt-spt-uc1-rerun
@@ -40,6 +42,7 @@ script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "${script_dir}/.." && pwd)
 
 bin_dir=$PWD
+config=""
 suite_spec="spinchain-aklt-spt-uc1-rerun"
 test_name=""
 iterations=100
@@ -77,6 +80,11 @@ while (($#)); do
         --bin-dir)
             [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
             bin_dir=$2
+            shift 2
+            ;;
+        --config)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --config\n' >&2; exit 2; }
+            config=$2
             shift 2
             ;;
         --suite)
@@ -211,6 +219,9 @@ for ((i = 1; ; ++i)); do
 
     log_file="${log_dir}/iter-$(printf '%04d' "$i").log"
     cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    if [[ -n $config ]]; then
+        cmd+=(--config "$config")
+    fi
     cmd+=("${runner_flags[@]}")
     if [[ -n $test_name ]]; then
         cmd+=("$test_name")

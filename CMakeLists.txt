@@ -514,7 +514,7 @@ add_test(NAME linearalgebra.testexponential COMMAND testexponential)
 set_tests_properties(linearalgebra.testexponential PROPERTIES TIMEOUT 30)
 
 add_custom_target(test-integration
-  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test" --bin-dir "${CMAKE_BINARY_DIR}"
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test" --bin-dir "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   DEPENDS tools models
   USES_TERMINAL

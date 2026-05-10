@@ -73,14 +73,42 @@ def ensure_directory(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
-def executable_search_dirs(root: Path) -> list[Path]:
+def normalize_config(config: str | None) -> str | None:
+    if config is None:
+        return None
+    config = config.strip()
+    if not config:
+        return None
+    for known_config in MULTI_CONFIG_SUBDIRS:
+        if config.lower() == known_config.lower():
+            return known_config
+    return config
+
+
+def ordered_multi_config_subdirs(config: str | None) -> list[str]:
+    config = normalize_config(config)
+    if config is None:
+        return list(MULTI_CONFIG_SUBDIRS)
+    return [config] + [
+        known_config for known_config in MULTI_CONFIG_SUBDIRS
+        if known_config != config
+    ]
+
+
+def executable_search_dirs(root: Path, config: str | None = None) -> list[Path]:
     dirs: list[Path] = []
     seen: set[str] = set()
+    active_config = normalize_config(config)
+    config_subdirs = ordered_multi_config_subdirs(config)
 
     for subdir in BIN_PATH_SUBDIRS:
         base = root / subdir if subdir else root
-        candidates = [base]
-        candidates.extend(base / config for config in MULTI_CONFIG_SUBDIRS)
+        if active_config is None:
+            candidates = [base]
+            candidates.extend(base / config_subdir for config_subdir in config_subdirs)
+        else:
+            candidates = [base / config_subdir for config_subdir in config_subdirs]
+            candidates.append(base)
 
         for candidate in candidates:
             key = str(candidate.resolve(strict=False))
@@ -754,13 +782,15 @@ class SuiteRunner:
         suite: dict[str, Any],
         bin_dir: Path,
         work_root: Path,
+        config: str | None = None,
         verbose: bool = False,
         explain: bool = False,
         trace: bool = False,
     ):
         self.suite = suite
         self.bin_dir = bin_dir.resolve()
-        self.bin_path_dirs = executable_search_dirs(self.bin_dir)
+        self.config = normalize_config(config)
+        self.bin_path_dirs = executable_search_dirs(self.bin_dir, self.config)
         self.repo_root = Path(__file__).resolve().parents[1]
         self.work_root = work_root
         self.verbose = verbose
@@ -792,6 +822,7 @@ class SuiteRunner:
     def make_base_context(self) -> dict[str, Any]:
         return {
             "bin_dir": str(self.bin_dir),
+            "config": self.config or "",
             "repo_root": str(self.repo_root),
             "work_root": str(self.work_root),
         }
@@ -1428,6 +1459,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run MPToolkit integration test suite")
     parser.add_argument("suite", type=Path, help="Path to YAML suite file")
     parser.add_argument("--bin-dir", type=Path, required=True, help="Directory containing MPToolkit binaries")
+    parser.add_argument("--config", help="Prefer binaries from this CMake configuration when searching a multi-config build tree")
     parser.add_argument("--work-root", type=Path, help="Working directory for fixture and test outputs")
     parser.add_argument("--verbose", action="store_true", help="Print executed commands")
     parser.add_argument("--explain", action="store_true", help="Explain fixture dependencies, files, and resolved commands")
@@ -1454,6 +1486,7 @@ def main(argv: list[str]) -> int:
                 suite=suite,
                 bin_dir=args.bin_dir,
                 work_root=work_root,
+                config=args.config,
                 verbose=args.verbose,
                 explain=args.explain,
                 trace=args.trace,
