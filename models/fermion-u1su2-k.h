@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
@@ -28,7 +29,7 @@ LatticeSite FermionU1SU2_K(half_int k,
                            std::string const& Sym1 = "N", std::string const& Sym2 = "S",
                            std::string const& Sym3 = "K")
 {
-   SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2),"+Sym3+":Z_"+boost::lexical_cast<std::string>(NN));
+   SymmetryList Symmetry(Sym1+":U(1),"+Sym2+":SU(2),"+Sym3+":Z_"+ConvertToString(NN));
    QuantumNumbers::QNConstructor<QuantumNumbers::U1,QuantumNumbers::SU2,
       QuantumNumbers::Zn<NN>> QN(Symmetry);
    SiteBasis Basis(Symmetry);

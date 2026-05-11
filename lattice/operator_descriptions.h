@@ -37,14 +37,14 @@
 #include <iostream>
 #include <iomanip>
 #include <functional>
-#include <boost/optional.hpp>
+#include <optional>
 
 class OperatorDescriptions
 {
    public:
       // tuple of: name, description, conditional description, conductional function (optional)
-      typedef boost::optional<std::function<bool()>> ftype;
-      typedef std::tuple<std::string, std::string, std::string, boost::optional<std::function<bool()>>> value_type;
+      typedef std::optional<std::function<bool()>> ftype;
+      typedef std::tuple<std::string, std::string, std::string, ftype> value_type;
       typedef std::vector<value_type> data_type;
 
       typedef data_type::const_iterator const_iterator;

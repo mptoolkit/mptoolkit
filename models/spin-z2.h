@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/z2.h"
 
@@ -25,7 +26,7 @@
 
 std::string StateName(half_int s, bool Symmetric)
 {
-   std::string Result = boost::lexical_cast<std::string>(s);
+   std::string Result = ConvertToString(s);
    Result += Symmetric ? 's' : 'a';
    return Result;
 }

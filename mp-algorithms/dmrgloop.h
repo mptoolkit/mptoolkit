@@ -23,6 +23,7 @@
 #include "common/conflist.h"
 #include "stateslist.h"
 #include "common/proccontrol.h"
+#include "common/stringutil.h"
 #include "matrixproduct/mpwavefunction.h"
 
 template <typename SolverType>
@@ -173,7 +174,7 @@ template <typename SolverType>
 void DMRGLoop<SolverType>::SaveWavefunction() const
 {
    std::string FileName = BasePath_ + FileName_
-      + ".psi."+boost::lexical_cast<std::string>(SweepRecNum_+1);
+      + ".psi."+ConvertToString(SweepRecNum_+1);
    pvalue_ptr<MPWavefunction> OutPsi(new LinearWavefunction(Solver_.Wavefunction().AsLinearWavefunction()));
    pheap::ExportHeap(FileName, OutPsi);
 }

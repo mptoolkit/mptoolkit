@@ -29,7 +29,7 @@
 #define INTSIZE_H_CH879Q34Y89FYIOHF89EY8942YRJEOI
 
 #include <iostream>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <limits>
 
 namespace inttype
@@ -44,14 +44,14 @@ namespace inttype
 // format indicates.
 //
 
-using boost::int8_t;
-using boost::uint8_t;
-using boost::int16_t;
-using boost::uint16_t;
-using boost::int32_t;
-using boost::uint32_t;
-using boost::int64_t;
-using boost::uint64_t;
+using std::int8_t;
+using std::uint8_t;
+using std::int16_t;
+using std::uint16_t;
+using std::int32_t;
+using std::uint32_t;
+using std::int64_t;
+using std::uint64_t;
 
 template <typename T>
 struct StrongType

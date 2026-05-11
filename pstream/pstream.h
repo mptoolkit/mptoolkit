@@ -224,8 +224,9 @@
 
 #include "pstreamfwd.h"
 #include "common/trace.h"
-#include <boost/type_traits.hpp>
 #include <iostream>
+#include <iterator>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <map>
@@ -257,7 +258,7 @@ struct pstreambuf_traits;
 template <typename T>
 struct pstream_type_traits
 {
-   static bool const is_fundamental = boost::is_fundamental<T>::value;
+   static bool const is_fundamental = std::is_fundamental_v<T>;
 };
 
 class VersionTag;
@@ -442,6 +443,9 @@ class ipstream
       // reads an id from the stream.  Default version raises an exception/abort
       virtual id_type get_id();
 
+      // Version of an outer storage container, if this stream has one.
+      virtual int container_version() const { return 0; }
+
       generic_ipstreambuf* get_buffer() const { return Buffer; }
 
       template <typename T>
@@ -582,9 +586,15 @@ class ipstreambuf : public generic_ipstreambuf
 //
 
 template <typename T>
-class opstream_iterator : public std::iterator<std::output_iterator_tag, T, void, void, void>
+class opstream_iterator
 {
    public:
+      using iterator_category = std::output_iterator_tag;
+      using value_type = T;
+      using difference_type = void;
+      using pointer = void;
+      using reference = void;
+
       opstream_iterator(opstream& out_) : out(&out_) {}
       opstream_iterator(opstream_iterator const& os) : out(os.out) {}
 
@@ -603,9 +613,15 @@ class opstream_iterator : public std::iterator<std::output_iterator_tag, T, void
 };
 
 template <int Format, typename T>
-class opstreambuf_iterator : public std::iterator<std::output_iterator_tag, T, void, void, void>
+class opstreambuf_iterator
 {
    public:
+      using iterator_category = std::output_iterator_tag;
+      using value_type = T;
+      using difference_type = void;
+      using pointer = void;
+      using reference = void;
+
       opstreambuf_iterator(opstreambuf<Format>& out_) : out(&out_) {}
       opstreambuf_iterator(opstreambuf_iterator<Format, T> const& os) : out(os.out) {}
 
@@ -637,9 +653,15 @@ class opstreambuf_iterator : public std::iterator<std::output_iterator_tag, T, v
 //
 
 template <typename T>
-class ipstream_iterator : public std::iterator<std::input_iterator_tag, T, ptrdiff_t, T const*, T const&>
+class ipstream_iterator
 {
    public:
+      using iterator_category = std::input_iterator_tag;
+      using value_type = T;
+      using difference_type = ptrdiff_t;
+      using pointer = T const*;
+      using reference = T const&;
+
       ipstream_iterator(ipstream& in_) : in(&in_) {}
       ipstream_iterator(ipstream_iterator const& is) : in(is.in) {}
 
@@ -655,9 +677,15 @@ class ipstream_iterator : public std::iterator<std::input_iterator_tag, T, ptrdi
 };
 
 template <int Format, typename T>
-class ipstreambuf_iterator : public std::iterator<std::input_iterator_tag, T, ptrdiff_t, T const*, T const&>
+class ipstreambuf_iterator
 {
    public:
+      using iterator_category = std::input_iterator_tag;
+      using value_type = T;
+      using difference_type = ptrdiff_t;
+      using pointer = T const*;
+      using reference = T const&;
+
       ipstreambuf_iterator(ipstreambuf<Format>& in_) : in(&in_) {}
       ipstreambuf_iterator(ipstreambuf_iterator const& is) : in(is.in) {}
 

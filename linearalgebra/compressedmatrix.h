@@ -221,7 +221,7 @@ struct Size1<CompressedMatrix<VecOfVec, RowMajor> >
 {
    typedef size_type result_type;
    typedef CompressedMatrix<VecOfVec, RowMajor> const& argument_type;
-   result_type operator()(argument_type x) const { return size(x.vec()); }
+   result_type operator()(argument_type x) const { return LinearAlgebra::size(x.vec()); }
 };
 
 template <typename VecOfVec>
@@ -240,7 +240,7 @@ struct Size2<CompressedMatrix<VecOfVec, ColMajor> >
 {
    typedef size_type result_type;
    typedef CompressedMatrix<VecOfVec, ColMajor> const& argument_type;
-   result_type operator()(argument_type x) const { return size(x.vec()); }
+   result_type operator()(argument_type x) const { return LinearAlgebra::size(x.vec()); }
 };
 
 template <typename VecOfVec>

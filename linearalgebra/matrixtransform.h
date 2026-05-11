@@ -32,6 +32,7 @@
 #include "matrixtranspose.h"
 #include "matrixtransformiterator.h"
 #include <boost/mpl/assert.hpp>
+#include <type_traits>
 
 #include "matrix.h" // for a temp-matrix type
 
@@ -43,8 +44,8 @@ class MatrixTransformProxy
 {
    public:
 
-      typedef typename std::decay<typename std::remove_reference<BaseProxyReference>::type>::type BaseType;
-      typedef typename std::result_of<F(typename BaseType::value_type)>::type reference;
+      typedef std::decay_t<std::remove_reference_t<BaseProxyReference>> BaseType;
+      typedef std::invoke_result_t<F, typename BaseType::value_type> reference;
       //      typedef typename F::result_type reference;
       typedef typename make_const_reference<reference>::type const_reference;
       typedef typename make_value<const_reference>::type value_type;

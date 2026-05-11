@@ -344,7 +344,7 @@ struct Size1<SparseMatrix<T, RowMajor, InnerType, OuterType> >
 {
    typedef size_type result_type;
    typedef SparseMatrix<T, RowMajor, InnerType, OuterType> const& argument_type;
-   result_type operator()(argument_type x) const { return size(x.vec()); }
+   result_type operator()(argument_type x) const { return LinearAlgebra::size(x.vec()); }
 };
 
 template <typename T, typename InnerType, typename OuterType>
@@ -374,7 +374,7 @@ struct Size2<SparseMatrix<T, ColMajor, InnerType, OuterType> >
 {
    typedef size_type result_type;
    typedef SparseMatrix<T, ColMajor, InnerType, OuterType> const& argument_type;
-   result_type operator()(argument_type x) const { return size(x.vec()); }
+   result_type operator()(argument_type x) const { return LinearAlgebra::size(x.vec()); }
 };
 
 // nnz

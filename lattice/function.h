@@ -36,7 +36,6 @@
 #include <string>
 #include <vector>
 #include <ostream>
-#include <boost/optional.hpp>
 #include "common/formatting.h"
 
 namespace Function

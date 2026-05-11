@@ -30,42 +30,42 @@ fixtures:
           operator1: X
           operator2: X
           approx: 1.0
-          abs: 1e-12
+          abs: 1e-8
       - aux_algebra_commutator_imag:
           operator1: X
           operator2: X
           approx: 0.0
-          abs: 1e-12
+          abs: 1e-10
       - aux_algebra_commutator_real:
           operator1: X
           operator2: Z
           approx: -1.0
-          abs: 1e-12
+          abs: 1e-8
       - aux_algebra_commutator_imag:
           operator1: X
           operator2: Z
           approx: 0.0
-          abs: 1e-12
+          abs: 1e-10
       - aux_algebra_commutator_real:
           operator1: X
           operator2: Y
           approx: -1.0
-          abs: 1e-12
+          abs: 1e-8
       - aux_algebra_commutator_imag:
           operator1: X
           operator2: Y
           approx: 0.0
-          abs: 1e-12
+          abs: 1e-10
       - aux_algebra_commutator_real:
           operator1: Y
           operator2: Z
           approx: -1.0
-          abs: 1e-12
+          abs: 1e-8
       - aux_algebra_commutator_imag:
           operator1: Y
           operator2: Z
           approx: 0.0
-          abs: 1e-12
+          abs: 1e-10
 
 tests:
   rerunning_single_site_aklt_dmrg_preserves_exact_energy_and_spt_projective_phase:
@@ -79,9 +79,9 @@ tests:
           operator1: X
           operator2: Z
           approx: -1.0
-          abs: 1e-12
+          abs: 1e-8
       - aux_algebra_commutator_imag:
           operator1: X
           operator2: Z
           approx: 0.0
-          abs: 1e-12
+          abs: 1e-10

@@ -25,8 +25,6 @@
 #include "mps/density.h"
 #include "mps/truncation.h"
 #include "pstream/optional.h"
-#include <boost/optional.hpp>
-#include <boost/none.hpp>
 #include "linearalgebra/matrix_utility.h"
 #include "common/statistics.h"
 #include "common/environment.h"

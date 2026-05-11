@@ -144,7 +144,7 @@ abs(IrredTensor<std::complex<double>, BasisList, BasisList> const& m)
       LinearAlgebra::Matrix<std::complex<double>> L, R;
       LinearAlgebra::Vector<std::complex<double>> v;
       v = LinearAlgebra::Diagonalize(M, L, R);
-      for (int i = 0; i < size(v); ++i)
+      for (int i = 0; i < LinearAlgebra::size(v); ++i)
       {
          v[i] = abs(v[i]);
       }

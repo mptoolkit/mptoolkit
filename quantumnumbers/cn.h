@@ -31,8 +31,8 @@
 #define CN_H_HSDJFH3485789UYHFUIY457UHFUU57YUIY
 
 #include "common/niftycounter.h"
+#include "common/stringutil.h"
 #include "quantumnumber.h"
-#include <boost/lexical_cast.hpp>
 
 namespace QuantumNumbers
 {
@@ -56,7 +56,7 @@ class Cn
       int* Convert(int* OutIter) const
       { *OutIter = x; return OutIter+1; }
 
-      std::string Type() { return "C_" + boost::lexical_cast<std::string>(N); }
+      std::string Type() { return "C_" + ConvertToString(N); }
 
       static int Size() { return 1; }
 
@@ -81,7 +81,7 @@ class CnProjection
       int* Convert(int* OutIter) const
       { return OutIter; }
 
-      std::string Type() const { return "C_" + boost::lexical_cast<std::string>(N); }
+      std::string Type() const { return "C_" + ConvertToString(N); }
       static char const* Suffix() { return ""; }
 
       static int Size() { return 0; }
@@ -103,7 +103,7 @@ struct CnFactory
     ProjectionType MakeProjection(int const* p) const { return ProjectionType(N, p); }
     ProjectionType MakeProjection(std::string const& s) const { return ProjectionType(N, s); }
 
-   std::string Type() const { return "C_" + boost::lexical_cast<std::string>(N); }
+   std::string Type() const { return "C_" + ConvertToString(N); }
    std::string ProjectionSuffix() const { return ProjectionType::Suffix(); }
 
    int N;

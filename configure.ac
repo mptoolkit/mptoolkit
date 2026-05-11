@@ -45,12 +45,12 @@ if test "x$enable_debug" != "xyes" ; then
    fi
 fi
 
-dnl C++14 support
-AX_CXX_COMPILE_STDCXX_14(noext,mandatory)
+dnl C++17 support
+AX_CXX_COMPILE_STDCXX_17(noext,mandatory)
 
-dnl we have C++14 as mandatory, but set it in config.h too
-dnl AC_DEFINE(HAVE_CXX14,1, [define if the compiler supports C++14 syntax])
-AC_SUBST(HAVE_CXX14)
+dnl we have C++17 as mandatory, but set it in config.h too
+dnl AC_DEFINE(HAVE_CXX17,1, [define if the compiler supports C++17 syntax])
+AC_SUBST(HAVE_CXX17)
 
 AX_CXX_VAR_PRETTYFUNC
 
@@ -116,7 +116,7 @@ if test "x$with_pbs" != xno; then
    fi
    save_LIBS="$LIBS"; LIBS="$pbs_lib $LIBS"
    AC_MSG_CHECKING([for pbs_connect in "$pbs_lib"])
-   AC_TRY_LINK_FUNC([pbs_connect],
+   AC_LINK_IFELSE([AC_LANG_CALL([], [pbs_connect])],
       [acx_pbs_ok=yes
        AC_SUBST([LIBPBS], "$pbs_lib")
        AC_DEFINE([CONFIG_PBS_WALLTIME], [], [Define if you want PBS walltime integration])

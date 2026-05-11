@@ -89,6 +89,20 @@ resize(T& v, size_type n)
 template <typename T>
 struct is_resizable : is_defined<Resize<T&> > {};
 
+template <typename T, typename TInterface = typename interface<T>::type>
+struct DataInterface;
+
+template <typename T>
+struct Data;
+
+template <typename T>
+typename Data<T>::result_type
+data(T const& x);
+
+template <typename T>
+typename Data<T&>::result_type
+data(T& x);
+
 // try_resize - attempts a resize.  If T is resizable, then
 // forward directly to resize().  Otherwise assert that the
 // new size is the same as the old size and do nothing.
@@ -106,7 +120,7 @@ inline
 typename boost::disable_if<is_defined<Resize<T&> >, void>::type
 try_resize(T& v, size_type n)
 {
-   PRECONDITION_EQUAL(size(v), n);
+   PRECONDITION_EQUAL(LinearAlgebra::size(v), n);
 }
 
 // most unary operations are easy, we
@@ -246,8 +260,8 @@ struct GetVectorElementInterface<T, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
-      DEBUG_PRECONDITION(n < size(v))(n)(size(v));
-      return *(data(v) + n*stride(v));
+      DEBUG_PRECONDITION(n < LinearAlgebra::size(v))(n)(LinearAlgebra::size(v));
+      return *(LinearAlgebra::data(v) + n*stride(v));
    }
 };
 
@@ -260,8 +274,8 @@ struct GetVectorElementInterface<T&, STRIDE_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
-      DEBUG_PRECONDITION(n < size(v))(n)(size(v));
-      return *(data(v) + n*stride(v));
+      DEBUG_PRECONDITION(n < LinearAlgebra::size(v))(n)(LinearAlgebra::size(v));
+      return *(LinearAlgebra::data(v) + n*stride(v));
    }
 };
 
@@ -274,8 +288,8 @@ struct GetVectorElementInterface<T, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
-      DEBUG_PRECONDITION(n < size(v))(n)(size(v));
-      return *(data(v) + n);
+      DEBUG_PRECONDITION(n < LinearAlgebra::size(v))(n)(LinearAlgebra::size(v));
+      return *(LinearAlgebra::data(v) + n);
    }
 };
 
@@ -288,8 +302,8 @@ struct GetVectorElementInterface<T&, CONTIGUOUS_VECTOR(Tv, Ti)>
 
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
-      DEBUG_PRECONDITION(n < size(v))(n)(size(v));
-      return *(data(v) + n);
+      DEBUG_PRECONDITION(n < LinearAlgebra::size(v))(n)(LinearAlgebra::size(v));
+      return *(LinearAlgebra::data(v) + n);
    }
 };
 
@@ -1118,7 +1132,7 @@ struct StreamInsert<T, VECTOR_EXPRESSION(S,U)>
 // stride(x) returns the stride.
 //
 
-template <typename T, typename TInterface = typename interface<T>::type>
+template <typename T, typename TInterface>
 struct DataInterface
 {
 };
@@ -1205,7 +1219,7 @@ struct EqualInterface<T, U, TolType, ANY_VECTOR(Tv,Ti), ANY_VECTOR(Uv, Ui)>
 
    bool operator()(T const& x, U const& y) const
    {
-      return (size(x) == size(y)) && norm_inf(x-y)
+      return (LinearAlgebra::size(x) == LinearAlgebra::size(y)) && norm_inf(x-y)
          <= Tol_ + 2 * std::numeric_limits<TolType>::epsilon() * (norm_inf(x) + norm_inf(y));
    }
 
@@ -1238,8 +1252,8 @@ struct AssignInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), DENSE_VECTOR(S2, U2) >
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      try_resize(x, size(y));
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      try_resize(x, LinearAlgebra::size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       iter_assign(Iterate<LHS&>()(x), Iterate<RHS>()(y));
    }
 };
@@ -1252,8 +1266,8 @@ struct AssignInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, U2
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      try_resize(x, size(y));
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      try_resize(x, LinearAlgebra::size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       zero_all(x);
       typename Iterate<RHS>::result_type r = iterate(y);
       typename Iterate<LHS&>::result_type l = iterate(x);
@@ -1273,8 +1287,8 @@ struct AssignInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), INJECTIVE_VECTOR(S2, U2)
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      try_resize(x, size(y));
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      try_resize(x, LinearAlgebra::size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       zero_all(x);
       typename Iterate<RHS>::result_type r = iterate(y);
       typename Iterate<LHS&>::result_type l = iterate(x);
@@ -1294,8 +1308,8 @@ struct AssignInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR(S
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      try_resize(x, size(y));
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      try_resize(x, LinearAlgebra::size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       zero_all(x);
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
@@ -1314,8 +1328,8 @@ struct AssignInterface<LHS&, RHS, INJECTIVE_VECTOR(S1, U1), INJECTIVE_VECTOR(S2,
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      try_resize(x, size(y));
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      try_resize(x, LinearAlgebra::size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       zero_all(x);
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
@@ -1352,7 +1366,7 @@ struct AddInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), DENSE_VECTOR(S2, U2) >
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       iter_add(iterate(x), iterate(y));
    }
 };
@@ -1365,7 +1379,7 @@ struct AddInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, U2) >
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       typename Iterate<RHS>::result_type r = iterate(y);
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
@@ -1384,7 +1398,7 @@ struct AddInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, 
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {
@@ -1420,7 +1434,7 @@ struct SubtractInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), DENSE_VECTOR(S2, U2) >
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       iter_subtract(iterate(x), iterate(y));
    }
 };
@@ -1433,7 +1447,7 @@ struct SubtractInterface<LHS&, RHS, DENSE_VECTOR(S1, U1), COMPRESSED_VECTOR(S2, 
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      DEBUG_PRECONDITION_EQUAL(size(x), size(y));
+      DEBUG_PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       typename Iterate<RHS>::result_type r = iterate(y);
       typename Iterate<LHS&>::result_type l = iterate(x);
       while (r)
@@ -1452,7 +1466,7 @@ struct SubtractInterface<LHS&, RHS, COMPRESSED_VECTOR(S1, U1), COMPRESSED_VECTOR
    typedef RHS const& second_argument_type;
    result_type operator()(first_argument_type x, second_argument_type y) const
    {
-      PRECONDITION_EQUAL(size(x), size(y));
+      PRECONDITION_EQUAL(LinearAlgebra::size(x), LinearAlgebra::size(y));
       typename Iterate<RHS>::result_type r = iterate(y);
       while (r)
       {

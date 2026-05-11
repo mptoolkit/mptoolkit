@@ -110,7 +110,7 @@
 
 #include "config.h"
 #include "endian.h"
-#include <boost/cstdint.hpp>
+#include <cstdint>
 namespace CurrentFormat
 {
 
@@ -120,17 +120,17 @@ const EndianType Endianness = BigEndian;
 const EndianType Endianness = LittleEndian;
 #endif // defined(WORDS_BIGENDIAN)
 
-typedef boost::int8_t char8;
-typedef boost::uint8_t uchar8;
+typedef std::int8_t char8;
+typedef std::uint8_t uchar8;
 
-typedef boost::int16_t int16;
-typedef boost::uint16_t uint16;
+typedef std::int16_t int16;
+typedef std::uint16_t uint16;
 
-typedef boost::int32_t int32;
-typedef boost::uint32_t uint32;
+typedef std::int32_t int32;
+typedef std::uint32_t uint32;
 
-typedef boost::int64_t int64;
-typedef boost::uint64_t uint64;
+typedef std::int64_t int64;
+typedef std::uint64_t uint64;
 
 #if !defined(SIZEOF_FLOAT) || !defined(SIZEOF_DOUBLE) || !defined(SIZEOF_INT) || !defined(SIZEOF_LONG)
 #error "SIZEOF_XXX macros are not defined in config.h, problem with configure script?"

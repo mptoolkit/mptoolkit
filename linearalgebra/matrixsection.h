@@ -59,10 +59,10 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
          : m_(m), r_(r), c_(c)
       {
          using LinearAlgebra::size1; using LinearAlgebra::size2;
-         DEBUG_PRECONDITION(size(r) == 0 || min(r) >= 0);
-         DEBUG_PRECONDITION(size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
-         DEBUG_PRECONDITION(size(c) == 0 || min(c) >= 0);
-         DEBUG_PRECONDITION(size(c) == 0 || size_type(max(c)) < size2(m))(size2(m));
+         DEBUG_PRECONDITION(LinearAlgebra::size(r) == 0 || min(r) >= 0);
+         DEBUG_PRECONDITION(LinearAlgebra::size(r) == 0 || size_type(max(r)) < size1(m))(size1(m));
+         DEBUG_PRECONDITION(LinearAlgebra::size(c) == 0 || min(c) >= 0);
+         DEBUG_PRECONDITION(LinearAlgebra::size(c) == 0 || size_type(max(c)) < size2(m))(size2(m));
       }
 
       MatrixSection& operator=(MatrixSection const& x)
@@ -87,8 +87,8 @@ class MatrixSection : public MatrixBase<MatrixSection<MatType, RowIndex, ColInde
          return *this;
       }
 
-      size_type size1() const { return size(r_); }
-      size_type size2() const { return size(c_); }
+      size_type size1() const { return LinearAlgebra::size(r_); }
+      size_type size2() const { return LinearAlgebra::size(c_); }
 
       const_matrix_reference base() const { return m_; }
       matrix_reference base() { return m_; }
@@ -473,7 +473,7 @@ struct MatrixRowInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_RANGE_CHECK_OPEN(n, 0U, size1(v));
-      return result_type(data(v) + n * stride1(v), size2(v), stride2(v));
+      return result_type(LinearAlgebra::data(v) + n * stride1(v), size2(v), stride2(v));
    }
 };
 
@@ -487,7 +487,7 @@ struct MatrixRowInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_RANGE_CHECK_OPEN(n, 0U, size1(v));
-      return result_type(data(v) + n * stride1(v), size2(v), stride2(v));
+      return result_type(LinearAlgebra::data(v) + n * stride1(v), size2(v), stride2(v));
    }
 };
 
@@ -501,7 +501,7 @@ struct MatrixColInterface<T, Concepts::StrideMatrix<Tv, Orient, Ti>>
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_RANGE_CHECK_OPEN(n, 0U, size2(v));
-      return result_type(data(v) + n * stride2(v), size1(v), stride1(v));
+      return result_type(LinearAlgebra::data(v) + n * stride2(v), size1(v), stride1(v));
    }
 };
 
@@ -515,7 +515,7 @@ struct MatrixColInterface<T&, Concepts::StrideMatrix<Tv, Orient, Ti>>
    result_type operator()(first_argument_type v, second_argument_type n) const
    {
       DEBUG_RANGE_CHECK_OPEN(n, 0U, size2(v));
-      return result_type(data(v) + n * stride2(v), size1(v), stride1(v));
+      return result_type(LinearAlgebra::data(v) + n * stride2(v), size1(v), stride1(v));
    }
 };
 

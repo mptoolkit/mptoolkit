@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
-#include <boost/type_traits.hpp>
+#include <type_traits>
 
 template <typename BasisT>
 inline
@@ -218,8 +218,8 @@ tensor_accumulate(FwdIter first, FwdIter last,
            SumBasis<Basis2T> const& B2)
 {
    typedef typename std::iterator_traits<FwdIter>::value_type ResultType;
-   BOOST_STATIC_ASSERT((boost::is_same<typename ResultType::Basis1Type, Basis1T>::value));
-   BOOST_STATIC_ASSERT((boost::is_same<typename ResultType::Basis2Type, Basis2T>::value));
+   static_assert(std::is_same_v<typename ResultType::Basis1Type, Basis1T>, "basis 1 type mismatch");
+   static_assert(std::is_same_v<typename ResultType::Basis2Type, Basis2T>, "basis 2 type mismatch");
 
    FwdIter F = first;
    int b = 0;
@@ -257,7 +257,7 @@ typename std::iterator_traits<FwdIter>::value_type
 tensor_row_accumulate(FwdIter first, FwdIter last, SumBasis<Basis2T> const& B2)
 {
    typedef typename std::iterator_traits<FwdIter>::value_type ResultType;
-   BOOST_STATIC_ASSERT((boost::is_same<typename ResultType::Basis2Type, Basis2T>::value));
+   static_assert(std::is_same_v<typename ResultType::Basis2Type, Basis2T>, "basis 2 type mismatch");
 
    CHECK_EQUAL(first->Basis2(), B2.Basis(0));
    FwdIter F = first;
@@ -296,7 +296,7 @@ typename std::iterator_traits<FwdIter>::value_type
 tensor_col_accumulate(FwdIter first, FwdIter last, SumBasis<Basis1T> const& B1)
 {
    typedef typename std::iterator_traits<FwdIter>::value_type ResultType;
-   BOOST_STATIC_ASSERT((boost::is_same<typename ResultType::Basis1Type, Basis1T>::value));
+   static_assert(std::is_same_v<typename ResultType::Basis1Type, Basis1T>, "basis 1 type mismatch");
 
    if (first == last) return ResultType();
 

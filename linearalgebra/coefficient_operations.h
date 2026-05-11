@@ -34,7 +34,7 @@
 #include "matrixoperations.h"
 #include "coefficient_multiply.h"
 #include "coefficient_multiply_cull.h"
-#include <boost/utility/result_of.hpp>
+#include <type_traits>
 
 namespace LinearAlgebra
 {
@@ -108,11 +108,7 @@ struct interface<CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested> >
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
    //   typedef typename make_value<typename Nested::result_type>::type value_type;
-   typedef typename make_value<
-      typename boost::result_of<
-         Nested(value1_type, value2_type)
-      >::type
-   >::type value_type;
+   typedef typename make_value<std::invoke_result_t<Nested, value1_type, value2_type>>::type value_type;
 
    using type = Concepts::MatrixExpression<value_type,
                                            CoefficientMatrixProductProxy<T1, T2, CoeffFunc, Nested>>;
@@ -343,11 +339,7 @@ struct interface<CoefficientMatrixProductCullProxy<T1, T2, CoeffFunc, Nested, Fl
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
    //   typedef typename make_value<typename Nested::result_type>::type value_type;
-   typedef typename make_value<
-      typename boost::result_of<
-         Nested(value1_type, value2_type)
-      >::type
-   >::type value_type;
+   typedef typename make_value<std::invoke_result_t<Nested, value1_type, value2_type>>::type value_type;
 
    using type = Concepts::MatrixExpression<value_type,
                                            CoefficientMatrixProductCullProxy<T1, T2,

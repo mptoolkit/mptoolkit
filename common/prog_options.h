@@ -25,7 +25,6 @@
 
 #include "common/prog_opt_accum.h"
 #include <string>
-#include <boost/lexical_cast.hpp>
 #include <sstream>
 
 template <typename T>

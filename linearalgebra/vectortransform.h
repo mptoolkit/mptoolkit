@@ -234,7 +234,7 @@ struct Size<VectorTransformProxy<Base, F> >
    typedef VectorTransformProxy<Base, F> const& argument_type;
    result_type operator()(argument_type x) const
    {
-      return size(x.base());
+      return LinearAlgebra::size(x.base());
    }
 };
 

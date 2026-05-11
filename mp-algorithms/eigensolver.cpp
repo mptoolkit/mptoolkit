@@ -22,7 +22,7 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 #include "mp-algorithms/davidson.h"
-#include <boost/algorithm/string.hpp>
+#include "common/stringutil.h"
 
 #include "mps/packunpack.h"
 
@@ -76,7 +76,7 @@ struct MPSMultiplyShift
 LocalEigensolver::Solver
 LocalEigensolver::SolverFromStr(std::string Str)
 {
-   Str = boost::to_lower_copy(Str);
+   Str = ToLowerCopy(Str);
    if (Str == "lanczos")
       return Solver::Lanczos;
    else if (Str == "arnoldi")
@@ -188,7 +188,7 @@ LinearSolveDirect(StateComponent& x, Func F, StateComponent const& Rhs, int Verb
    LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
    Pack.pack(Rhs, v.data());
 
-   LinearAlgebra::Matrix<double> vv(size(v),1);
+   LinearAlgebra::Matrix<double> vv(LinearAlgebra::size(v),1);
    vv(LinearAlgebra::all,0) = real(v);
    LinearAlgebra::Vector<std::complex<double>> xx = LinearAlgebra::LinearSolve(HMat, vv)(LinearAlgebra::all, 0);
 
@@ -343,7 +343,7 @@ LocalEigensolver::Solve(StateComponent& C,
              LinearAlgebra::Vector<std::complex<double>> v(Pack.size());
             Pack.pack(D, v.data());
             LinearAlgebra::Vector<double> Diag = real(v);
-            for (int i = 0; i < size(Diag); ++i)
+            for (int i = 0; i < LinearAlgebra::size(Diag); ++i)
             {
                if (norm_frob(Diag[i] - HMat(i,i)) > 1E-10)
                {

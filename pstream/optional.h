@@ -18,20 +18,21 @@
 // ENDHEADER
 /* -*- C++ -*- $Id$
 
-  Seralization of boost::optional
+  Serialization of std::optional
 */
 
 #if !defined(OPTIONAL_H_JSDCHWUI4357784Y7WEHOLWEHO)
 #define OPTIONAL_H_JSDCHWUI4357784Y7WEHOLWEHO
 
 #include "pstream.h"
-#include <boost/optional.hpp>
+#include <optional>
+#include <utility>
 
 namespace PStream
 {
 
 template <int format, typename T>
-opstreambuf<format>& operator<<(opstreambuf<format>& out, boost::optional<T> const& x)
+opstreambuf<format>& operator<<(opstreambuf<format>& out, std::optional<T> const& x)
 {
    bool b = bool(x);
    out << b;
@@ -41,17 +42,17 @@ opstreambuf<format>& operator<<(opstreambuf<format>& out, boost::optional<T> con
 }
 
 template <int format, typename T>
-ipstreambuf<format>& operator>>(ipstreambuf<format>& in, boost::optional<T>& x)
+ipstreambuf<format>& operator>>(ipstreambuf<format>& in, std::optional<T>& x)
 {
    bool b; in >> b;
    if (b)
    {
       T n;
       in >> n;
-      x = n;
+      x.emplace(std::move(n));
    }
    else
-      x = boost::optional<T>();
+      x.reset();
    return in;
 }
 

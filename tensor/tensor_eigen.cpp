@@ -387,7 +387,7 @@ SingularValuesRegular(IrredTensor<LinearAlgebra::Matrix<std::complex<double>>, V
          }
       }
    }
-   std::sort(data(Result), data(Result)+Dim, std::greater<>());
+   std::sort(LinearAlgebra::data(Result), LinearAlgebra::data(Result)+Dim, std::greater<>());
    return Result;
 }
 

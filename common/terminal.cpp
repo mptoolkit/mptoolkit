@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "terminal.h"
+#include "common/stringutil.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <string>
@@ -35,11 +36,6 @@
 #endif
 
 #include <map>
-#include <vector>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
 
 namespace terminal
 {
@@ -134,13 +130,13 @@ color parse_code(std::string s)
       return color::Reset;
    else if (s[0] >= '0' && s[0] <= '9')
    {
-      return color(boost::lexical_cast<int>(s));
+      return color(ConvertStringStrict<int>(s));
    }
    else
    {
       // search for a named color
       auto i = ColorNames.begin();
-      while (i != ColorNames.end() && !boost::iequals(s, i->second))
+      while (i != ColorNames.end() && !IEquals(s, i->second))
          ++i;
       if (i == ColorNames.end())
          return color::Reset;
@@ -150,8 +146,7 @@ color parse_code(std::string s)
 
 std::string parse_color_codes(std::string const& s)
 {
-   std::vector<std::string> codes;
-   boost::split(codes, s, boost::is_any_of(","), boost::token_compress_on);
+   std::vector<std::string> codes = SplitCompress(s, ",");
    std::string Result;
    for (auto const& c : codes)
    {

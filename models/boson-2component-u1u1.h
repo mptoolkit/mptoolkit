@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
@@ -26,8 +27,8 @@
 
 void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
-   std::string q1 = boost::lexical_cast<std::string>(n1);
-   std::string q2 = boost::lexical_cast<std::string>(n2);
+   std::string q1 = ConvertToString(n1);
+   std::string q2 = ConvertToString(n2);
 
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
@@ -52,7 +53,7 @@ LatticeSite Boson2ComponentU1U1(int MaxN, std::string const& Sym1 = "NA", std::s
    SiteOperator B_A, BH_A, N_A, N2_A;
    SiteOperator B_B, BH_B, N_B, N2_B;
    SiteOperator P, R, Q, I;
-   LatticeSite Site("2-component bosons, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
+   LatticeSite Site("2-component bosons, maximum number of particles per site = " + ConvertToString(MaxN));
 
    OperatorDescriptions OpDescriptions;
    OpDescriptions.add_operators()

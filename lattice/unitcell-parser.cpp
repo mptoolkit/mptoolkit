@@ -21,8 +21,7 @@
 #include "siteoperator-parser.h"
 #include "infinite-parser.h"
 #include "parser/parser.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/math/special_functions/round.hpp>
+#include "common/stringutil.h"
 
 InfiniteLattice const* ILattice = NULL;
 
@@ -515,13 +514,13 @@ fsup(int Offset1, int Offset2, ProductMPO const& Op)
 BasicFiniteMPO
 fsup(int Offset1, int Offset2, InfiniteMPOElement const& Op)
 {
-   if (boost::get<BasicTriangularMPO>(&Op))
+   if (auto const* p = std::get_if<BasicTriangularMPO>(&Op))
    {
-      return fsup(Offset1, Offset2, boost::get<BasicTriangularMPO>(Op));
+      return fsup(Offset1, Offset2, *p);
    }
-   else if (boost::get<ProductMPO>(&Op))
+   else if (auto const* p = std::get_if<ProductMPO>(&Op))
    {
-      return fsup(Offset1, Offset2, boost::get<ProductMPO>(Op));
+      return fsup(Offset1, Offset2, *p);
    }
    else
    {
@@ -741,8 +740,8 @@ using namespace UP;
 struct UnitCellParser : public grammar<UnitCellParser>
 {
    typedef boost::variant<complex, UnitCellMPO> ElementType;
-   typedef boost::function<ElementType(ElementType)> unary_func_type;
-   typedef boost::function<ElementType(ElementType, ElementType)> binary_func_type;
+   typedef std::function<ElementType(ElementType)> unary_func_type;
+   typedef std::function<ElementType(ElementType, ElementType)> binary_func_type;
 
    typedef std::stack<ElementType>            ElemStackType;
    typedef std::stack<unary_func_type>         UnaryFuncStackType;
@@ -1302,7 +1301,7 @@ ParseUnitCellOperatorAndLattice(std::string const& Str)
    }
 
    std::string LatticeFile = std::string(Str.begin(), Delim);
-   boost::trim(LatticeFile);
+   Trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
    InfiniteLattice const* OldILattice = ILattice;

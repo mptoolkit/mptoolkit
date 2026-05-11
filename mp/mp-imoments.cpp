@@ -33,7 +33,6 @@
 #include "wavefunction/momentum_operations.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
-#include <boost/algorithm/string.hpp>
 #include "common/openmp.h"
 
 namespace prog_opt = boost::program_options;

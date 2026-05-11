@@ -47,8 +47,6 @@
 #include "config.h"
 #endif
 #include <boost/variant.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits.hpp>
 #include <tuple>
 #include <deque>
 #include <algorithm>

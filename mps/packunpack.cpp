@@ -80,7 +80,7 @@ PackMatrixOperator::pack(MatrixOperator const& m, value_type* Iter) const
          DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
          // normalization correction is sqrt(degree(B1[I->r]))
          VecProxy(Iter+I->Offset, I->Size)
-            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
+            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(LinearAlgebra::data(*J), I->Size);
       }
       else
       {
@@ -99,7 +99,7 @@ PackMatrixOperator::unpack(value_type const* Iter) const
         I != OffsetArray_.end(); ++I)
    {
       LinearAlgebra::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
-      std::memcpy(data(m), Iter+I->Offset, I->Size * sizeof(value_type));
+      std::memcpy(LinearAlgebra::data(m), Iter+I->Offset, I->Size * sizeof(value_type));
       // reverse the normalization correction
       Result(I->r, I->c) = (1.0 / std::sqrt(double(degree(B1_[I->r])))) * m;
    }
@@ -166,7 +166,7 @@ PackStateComponent::pack(StateComponent const& m, value_type* Iter) const
          DEBUG_CHECK_EQUAL(I->Size, size1(*J)*size2(*J));
          // normalization correction is sqrt(degree(B1[I->r]))
          VecProxy(Iter+I->Offset, I->Size)
-            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(data(*J), I->Size);
+            = std::sqrt(double(degree(B1_[I->r]))) * ConstVecProxy(LinearAlgebra::data(*J), I->Size);
       }
       else
       {
@@ -185,7 +185,7 @@ PackStateComponent::unpack(value_type const* Iter) const
         I != OffsetArray_.end(); ++I)
    {
       LinearAlgebra::Matrix<value_type> m(B1_.dim(I->r), B2_.dim(I->c));
-      std::memcpy(data(m), Iter+I->Offset, I->Size * sizeof(value_type));
+      std::memcpy(LinearAlgebra::data(m), Iter+I->Offset, I->Size * sizeof(value_type));
       // reverse the normalization correction
       Result[I->q](I->r, I->c) = (1.0 / std::sqrt(double(degree(B1_[I->r])))) * m;
    }

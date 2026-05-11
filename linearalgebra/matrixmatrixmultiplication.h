@@ -26,7 +26,7 @@
 #define MATRIXMATRIXMULTIPLICATION_H_HJUIGH579879RHEOP
 
 #include "matrixproductoperations.h"
-#include <boost/utility/result_of.hpp>
+#include <type_traits>
 
 namespace LinearAlgebra
 {
@@ -63,10 +63,11 @@ class MatrixProductProxy
 
       typedef NestedMult functor_type;
 
-      typedef typename std::result_of<functor_type(typename matrix1_type::value_type,
-                                                   typename matrix2_type::value_type)>::type reference;
+      typedef std::invoke_result_t<functor_type,
+                                   typename matrix1_type::value_type,
+                                   typename matrix2_type::value_type> reference;
 
-      typedef typename std::decay<reference>::type value_type;
+      typedef std::decay_t<reference> value_type;
 
       size_type size1() const { return Size1<matrix1_type>()(x_); }
       size_type size2() const { return Size2<matrix2_type>()(y_); }
@@ -100,11 +101,7 @@ struct interface<MatrixProductProxy<T1, T2, Nested> >
    typedef typename interface<T1>::value_type value1_type;
    typedef typename interface<T2>::value_type value2_type;
    //   typedef typename make_value<typename Nested::result_type>::type value_type;
-   typedef typename make_value<
-      typename boost::result_of<
-         Nested(value1_type, value2_type)
-      >::type
-   >::type value_type;
+   typedef typename make_value<std::invoke_result_t<Nested, value1_type, value2_type>>::type value_type;
 
    typedef Concepts::MatrixExpression<value_type, void> type;
 };

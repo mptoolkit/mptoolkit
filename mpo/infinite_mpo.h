@@ -30,15 +30,15 @@
 #include "zero_mpo.h"
 #include "basic_triangular_mpo.h"
 #include "product_mpo.h"
-#include <boost/variant.hpp>
+#include <variant>
 
-typedef boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO>
+typedef std::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO>
 InfiniteMPOElement;
 
 class InfiniteMPO
 {
    public:
-      typedef boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> operator_type;
+      typedef std::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> operator_type;
 
       InfiniteMPO() : Operator(ZeroMPO()) {}
 

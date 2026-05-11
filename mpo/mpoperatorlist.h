@@ -22,7 +22,6 @@
 
 #include "linear_operator.h"
 #include "lattice.h"
-#include <boost/lexical_cast.hpp>
 
 class OperatorList
 {

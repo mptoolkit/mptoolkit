@@ -38,6 +38,7 @@
 #include <string>
 #include <algorithm>
 #include <cstdio>
+#include "common/stringutil.h"
 #include "common/terminal.h"
 
 enum class ShowColor { Never, Auto, Always };
@@ -121,7 +122,7 @@ FormatSpec::printf(T x) const
       std::snprintf(buf, bufsz, this->to_string().c_str(), int(x));
       break;
    case 's' :
-      snprintf(buf, bufsz, this->to_string().c_str(), boost::lexical_cast<std::string>(x).c_str());
+      snprintf(buf, bufsz, this->to_string().c_str(), ConvertToString(x).c_str());
       break;
    }
    return std::string(buf);

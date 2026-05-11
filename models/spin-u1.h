@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 
@@ -32,7 +33,7 @@ LatticeSite SpinU1(half_int Spin, std::string const& Sym = "Sz")
    std::map<half_int, std::string> SpinBasis;
    for (half_int s = -Spin; s <= Spin; ++s)
    {
-      SpinBasis[s] = boost::lexical_cast<std::string>(s);
+      SpinBasis[s] = ConvertToString(s);
       Basis.push_back(SpinBasis[s], QN(s));
    }
 

@@ -31,22 +31,22 @@
 #if !defined(VALUE_WITH_ZERO_H_SCJKHUTY3879Y3879YT894037OY)
 #define VALUE_WITH_ZERO_H_SCJKHUTY3879Y3879YT894037OY
 
-#include <boost/optional.hpp>
 #include <boost/mpl/assert.hpp>
 #include "interface.h"
+#include <optional>
 
 namespace LinearAlgebra
 {
 
 template <typename T>
-class value_with_zero // : private boost::optional<T>
+class value_with_zero
 {
    public:
       BOOST_MPL_ASSERT_NOT((has_zero<T>));
 
       value_with_zero() {}
 
-      value_with_zero(T const& x) : value(boost::optional<T>(x)) {}
+      value_with_zero(T const& x) : value(x) {}
 
       value_with_zero(value_with_zero const& rhs)
          : value(rhs.value) {}
@@ -72,16 +72,15 @@ class value_with_zero // : private boost::optional<T>
          value_with_zero& operator=(Expr const& expr)
          { value = expr; return *this; }
 
-      T& get() { return value.get(); }
-      T const& get() const { return value.get(); }
+      T& get() { return *value; }
+      T const& get() const { return *value; }
 
-      bool is_initialized() const { return value.is_initialized(); }
+      bool is_initialized() const { return value.has_value(); }
 
       operator T const&() const { DEBUG_PRECONDITION(!this->is_zero());
       DEBUG_PRECONDITION(this->is_initialized()); return this->get(); }
       operator T&() { return this->get(); }
 
-   //      bool is_zero() const { return !static_cast<boost::optional<T> const&>(*this); }
       bool is_zero() const { return !this->is_initialized(); }
 
       value_with_zero& operator+=(T const& x)
@@ -153,7 +152,7 @@ class value_with_zero // : private boost::optional<T>
       }
 
    private:
-      boost::optional<T> value;
+      std::optional<T> value;
 
    template <typename U> friend class value_with_zero;
 };

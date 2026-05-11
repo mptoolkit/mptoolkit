@@ -100,7 +100,7 @@ int main(int argc, char** argv)
          ("help,h", "show this help message")
          ("out,o", prog_opt::value(&FName), "Output file (required)")
          ("seed,s", prog_opt::value<unsigned int>(),
-          ("Random seed [range 0.."+boost::lexical_cast<std::string>(RAND_MAX)+"]").c_str())
+          ("Random seed [range 0.."+ConvertToString(RAND_MAX)+"]").c_str())
          ("max-states,m", prog_opt::value(&m), FormatDefault("Number of states", m).c_str())
          ("localdimension,d", prog_opt::value(&d), FormatDefault("Local dimension", d).c_str())
          ;

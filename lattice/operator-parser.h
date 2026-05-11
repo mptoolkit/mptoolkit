@@ -29,7 +29,6 @@
 #define OPERATOR_PARSER_H_JDSHCIUYY876Y76Y743YT66IUREYT473YTRKH
 
 #include "matrixproduct/mpoperatorlist.h"
-#include <boost/algorithm/string.hpp>
 #include <utility>
 
 //

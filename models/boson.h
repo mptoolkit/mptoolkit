@@ -20,13 +20,14 @@
 #if !defined(MPTOOLKIT_MODELS_BOSON_H)
 #define MPTOOLKIT_MODELS_BOSON_H
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "models/boson-u1.h"    // for DefaultMaxN
 
 void SetMatElement(SiteOperator& s, int n1, int n2, double x)
 {
-   std::string q1 = boost::lexical_cast<std::string>(n1);
-   std::string q2 = boost::lexical_cast<std::string>(n2);
+   std::string q1 = ConvertToString(n1);
+   std::string q2 = ConvertToString(n2);
 
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
@@ -42,12 +43,12 @@ LatticeSite Boson(int MaxN)
    QuantumNumbers::QuantumNumber QNum(Symmetry); // no symmetries, only one quantum number
    SiteBasis Basis(Symmetry);
    SiteOperator B, BH, P, R, N, N2, Q, I, U;
-   LatticeSite Site("Boson, maximum number of particles per site = " + boost::lexical_cast<std::string>(MaxN));
+   LatticeSite Site("Boson, maximum number of particles per site = " + ConvertToString(MaxN));
 
    // Setup the site basis
    for (int n = 0; n <= MaxN; ++n)
    {
-      std::string q = boost::lexical_cast<std::string>(n);
+      std::string q = ConvertToString(n);
       Basis.push_back(q, QNum);
    }
 
@@ -84,7 +85,7 @@ LatticeSite Boson(int MaxN)
       SiteOperator X(Basis, QNum, LatticeCommute::Bosonic);
       SetMatElement(X, n, n, 1);
       std::string OpName = std::string("P_")
-        + boost::lexical_cast<std::string>(n);
+        + ConvertToString(n);
       Site[OpName] = X;
    }
 

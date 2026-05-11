@@ -205,7 +205,7 @@ struct Data<MatrixTransposeProxy<M> >
    typedef typename Fwd::result_type result_type;
    typedef MatrixTransposeProxy<M> argument_type;
    result_type operator()(MatrixTransposeProxy<M> const& x) const
-   { return data(x.base()); }
+   { return LinearAlgebra::data(x.base()); }
 };
 
 template <typename M>
@@ -215,7 +215,7 @@ struct Data<MatrixTransposeProxy<M>&>
    typedef typename Fwd::result_type result_type;
    typedef MatrixTransposeProxy<M>& argument_type;
    result_type operator()(MatrixTransposeProxy<M>& x) const
-   { return data(x.base()); }
+   { return LinearAlgebra::data(x.base()); }
 };
 
 // interface

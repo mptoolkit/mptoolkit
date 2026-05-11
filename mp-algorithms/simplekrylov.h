@@ -25,8 +25,8 @@
 #include "matrixproduct/mpwavefunction.h"
 #include "matrixproduct/centerwavefunction.h"
 #include "matrixproduct/operatorstack.h"
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+#include <optional>
 
 struct SimpleKrylov
 {
@@ -110,7 +110,7 @@ struct SimpleKrylov
    SplitOperator Ham;                 // the fixed operator
    CenterWavefunction Psi1;             // the fixed right hand side
 
-   mutable boost::optional<MatrixOperator> k0Cache;
+   mutable std::optional<MatrixOperator> k0Cache;
 
    bool UsePsi1HPsi0;  // if true, use Psi1_H_Psi0 to get the second Krylov vector
 
@@ -124,7 +124,7 @@ struct SimpleKrylov
 
    MatrixOperator OldPsi1Center;  // Set to Psi1.Center() at the start of Solve()
 
-   boost::shared_ptr<std::ofstream> SweepLog, StepLog;
+   std::shared_ptr<std::ofstream> SweepLog, StepLog;
 
    // some global statistics
    int TotalSweepNumber;          // this is incremented every sweep

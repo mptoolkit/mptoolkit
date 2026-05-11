@@ -32,7 +32,7 @@
 namespace prog_opt = boost::program_options;
 
 // functor to use the visitor pattern with wavefunction types
-struct ApplyConj : public boost::static_visitor<void>
+struct ApplyConj
 {
    template <typename T>
    void operator()(T& Psi) const
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
          Psi = pheap::ImportHeap(InputFile);
       }
 
-      boost::apply_visitor(ApplyConj(), Psi.mutate()->Wavefunction());
+      std::visit(ApplyConj(), Psi.mutate()->Wavefunction());
 
       Psi.mutate()->AppendHistoryCommand(EscapeCommandline(argc, argv));
       Psi.mutate()->SetDefaultAttributes();

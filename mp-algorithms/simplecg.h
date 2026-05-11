@@ -26,7 +26,7 @@
 #include "common/math_const.h"
 #include "common/conflist.h"
 #include <fstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 double const Minus1OverPi = -math_const::r_1_pi;
 
@@ -159,7 +159,7 @@ struct Solver
 
    // Log files are not serialized, but initialized by CreateLogFiles or
    // RestoreLogFiles
-   boost::shared_ptr<std::ofstream> EnergyLog, DiagLog, SweepLog, CpuLog, DensityLog;
+   std::shared_ptr<std::ofstream> EnergyLog, DiagLog, SweepLog, CpuLog, DensityLog;
 
    // Following items are not persistent, but loaded from the configuration
 

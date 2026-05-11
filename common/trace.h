@@ -279,7 +279,6 @@ void show_backtrace_handler(char const* Msg)
 #include <cstdlib>
 #include <vector>
 #include <string>
-#include <boost/type_traits.hpp>
 
 #if defined(MULTITHREAD)
 #include <thread>
@@ -288,8 +287,6 @@ void show_backtrace_handler(char const* Msg)
 #ifdef __GNUC__
 #include <cxxabi.h>
 #endif
-
-#include <boost/lexical_cast.hpp>
 
 #if defined(MULTITHREAD)
 #include <pthread.h>

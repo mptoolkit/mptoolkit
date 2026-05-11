@@ -48,7 +48,7 @@ struct ImplementExponentiate<M, Concepts::ContiguousMatrix<std::complex<double>,
       }
 
       result_type R(size1(m), size2(m));
-      Private::Exponentiate(t, size1(m), data(m), size1(m), data(R), size1(R));
+      Private::Exponentiate(t, size1(m), LinearAlgebra::data(m), size1(m), LinearAlgebra::data(R), size1(R));
       return R;
    }
 };

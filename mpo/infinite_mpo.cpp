@@ -30,13 +30,13 @@
 // Streaming versions:
 //
 // No explicit versioning information, check the LatticeVersion for <= 4
-// boost::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> Operator
-// std::string                                                     Description
+// std::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> Operator
+// std::string                                                    Description
 //
 // Version 2:
 // Explicit version support.
-// boost::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> Operator
-// std::string                                                              Description
+// std::variant<std::complex<double>, ZeroMPO, BasicTriangularMPO, ProductMPO> Operator
+// std::string                                                             Description
 
 PStream::VersionTag
 InfiniteMPO::VersionT(2);
@@ -62,9 +62,9 @@ operator>>(PStream::ipstream& in, InfiniteMPO& Op)
 
    if (Version == 1)
    {
-      boost::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> x;
+      std::variant<std::complex<double>, BasicTriangularMPO, ProductMPO> x;
       in >> x;
-      Op.Operator = x;
+      std::visit([&Op](auto const& Value) { Op.Operator = Value; }, x);
       in >> Op.Description;
       return in;
    }
@@ -90,37 +90,37 @@ InfiniteMPO::name() const
 bool
 InfiniteMPO::is_triangular() const
 {
-   return bool(boost::get<BasicTriangularMPO>(&this->op()));
+   return bool(std::get_if<BasicTriangularMPO>(&this->op()));
 }
 
 BasicTriangularMPO const&
 InfiniteMPO::as_basic_triangular_mpo() const
 {
-   return boost::get<BasicTriangularMPO>(this->op());
+   return std::get<BasicTriangularMPO>(this->op());
 }
 
 bool
 InfiniteMPO::is_product() const
 {
-   return bool(boost::get<ProductMPO>(&this->op()));
+   return bool(std::get_if<ProductMPO>(&this->op()));
 }
 
 ProductMPO const&
 InfiniteMPO::as_product_mpo() const
 {
-   return boost::get<ProductMPO>(this->op());
+   return std::get<ProductMPO>(this->op());
 }
 
 bool
 InfiniteMPO::is_complex() const
 {
-   return bool(boost::get<std::complex<double> >(&this->op()));
+   return bool(std::get_if<std::complex<double> >(&this->op()));
 }
 
 std::complex<double>
 InfiniteMPO::as_complex() const
 {
-   return boost::get<std::complex<double> >(this->op());
+   return std::get<std::complex<double> >(this->op());
 }
 
 GenericMPO const&
@@ -166,18 +166,18 @@ InfiniteMPO& operator-=(InfiniteMPO& x, InfiniteMPO const& y)
 
 InfiniteMPO operator+(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_addition<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_addition<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 InfiniteMPO operator-(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_subtraction<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_subtraction<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 
 InfiniteMPO operator-(InfiniteMPO const& x)
 {
-   return boost::apply_visitor(negate_element<InfiniteMPOElement>(), x.op());
+   return std::visit(negate_element<InfiniteMPOElement>(), x.op());
 }
 
 InfiniteMPO operator*(double a, InfiniteMPO const& x)
@@ -203,78 +203,78 @@ InfiniteMPO operator*(InfiniteMPO const& x, std::complex<double> a)
 InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y,
                  QuantumNumbers::QuantumNumber const& q)
 {
-   return boost::apply_visitor(ternary_product_q<InfiniteMPOElement>(q), x.op(), y.op());
+   return std::visit(ternary_product_q<InfiniteMPOElement>(q), x.op(), y.op());
 }
 
 InfiniteMPO prod(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 InfiniteMPO operator*(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_multiplication<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 InfiniteMPO commutator(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_commutator<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_commutator<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 // dot product - takes into account the multiplicity to rescale the result
 InfiniteMPO dot(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_dot_product<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_dot_product<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 // inner product - equivalent to dot(adjoint(x),y)
 InfiniteMPO inner(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_inner_product<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_inner_product<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 // cross product (if it exists)
 InfiniteMPO cross(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_cross_product<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_cross_product<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 InfiniteMPO outer(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_outer_product<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_outer_product<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 // power of an operator.  Requires n > 1.
 InfiniteMPO pow(InfiniteMPO const& x, int n)
 {
-   return boost::apply_visitor(unary_power<InfiniteMPOElement>(n), x.op());
+   return std::visit(unary_power<InfiniteMPOElement>(n), x.op());
 }
 
 InfiniteMPO pow(InfiniteMPO const& x, InfiniteMPO const& y)
 {
-   return boost::apply_visitor(binary_power<InfiniteMPOElement>(), x.op(), y.op());
+   return std::visit(binary_power<InfiniteMPOElement>(), x.op(), y.op());
 }
 
 // Exponential - only defined for complex
 InfiniteMPO exp(InfiniteMPO const& x)
 {
-   return boost::apply_visitor(ElementExp<InfiniteMPOElement>(), x.op());
+   return std::visit(ElementExp<InfiniteMPOElement>(), x.op());
 }
 
 // Conjugate
 InfiniteMPO conj(InfiniteMPO const& x)
 {
-   return boost::apply_visitor(ElementConj<InfiniteMPOElement>(), x.op());
+   return std::visit(ElementConj<InfiniteMPOElement>(), x.op());
 }
 
 // Adjoint
 InfiniteMPO adjoint(InfiniteMPO const& x)
 {
-   return boost::apply_visitor(ElementAdjoint<InfiniteMPOElement>(), x.op());
+   return std::visit(ElementAdjoint<InfiniteMPOElement>(), x.op());
 }
 
 // Inverse Adjoint
 InfiniteMPO inv_adjoint(InfiniteMPO const& x)
 {
-   return boost::apply_visitor(ElementInvAdjoint<InfiniteMPOElement>(), x.op());
+   return std::visit(ElementInvAdjoint<InfiniteMPOElement>(), x.op());
 }

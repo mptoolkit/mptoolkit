@@ -22,8 +22,7 @@
 #include "mpo/infinite_mpo_actions.h"
 #include "parser/parser.h"
 #include "unitcell-parser.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/math/special_functions/round.hpp>
+#include "common/stringutil.h"
 
 //
 // TODO: we can allow invoking complex-valued unit cell functions and operator functions,
@@ -268,7 +267,7 @@ struct push_sum_k
 
    void operator()(char const* Start, char const* End) const
    {
-      std::complex<double> k = boost::get<std::complex<double> >(eval.top());
+      std::complex<double> k = std::get<std::complex<double> >(eval.top());
       eval.pop();
       int Sites = pop_int(eval);
       if (Sites % Lattice.GetUnitCell().size() != 0)
@@ -569,7 +568,7 @@ struct push_coarse_grain
                                     + " canot coarse-grain to zero or negative size!",
                                     Start, End);
 
-      eval.push(boost::apply_visitor(coarse_grain_element<ElementType>(Sites), Op));
+      eval.push(std::visit(coarse_grain_element<ElementType>(Sites), Op));
    }
 
    InfiniteLattice const& Lattice;
@@ -611,8 +610,8 @@ using namespace ILP;
 struct InfiniteLatticeParser : public grammar<InfiniteLatticeParser>
 {
    typedef InfiniteMPOElement ElementType;
-   typedef boost::function<ElementType(ElementType)> unary_func_type;
-   typedef boost::function<ElementType(ElementType, ElementType)> binary_func_type;
+   typedef std::function<ElementType(ElementType)> unary_func_type;
+   typedef std::function<ElementType(ElementType, ElementType)> binary_func_type;
 
    typedef std::stack<ElementType>             ElemStackType;
    typedef std::stack<unary_func_type>         UnaryFuncStackType;
@@ -981,7 +980,7 @@ ParseOperatorStringAndLattice(std::string const& Str)
    }
 
    std::string LatticeFile = std::string(Str.begin(), Delim);
-   boost::trim(LatticeFile);
+   Trim(LatticeFile);
    pvalue_ptr<InfiniteLattice> Lattice = pheap::ImportHeap(LatticeFile);
 
    ++Delim;

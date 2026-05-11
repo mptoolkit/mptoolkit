@@ -53,7 +53,6 @@
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "common/prog_opt_accum.h"
 #include "common/json_emit.h"
-#include <boost/algorithm/string.hpp>
 #include "common/openmp.h"
 #include <sstream>
 

@@ -21,23 +21,25 @@
 // Attribute
 //
 
+#include "common/stringutil.h"
+
 template <typename T>
 Attribute::Attribute(T const& x)
-   : value_(boost::lexical_cast<std::string>(x))
+   : value_(ConvertToString(x))
 {
 }
 
 template <typename T>
 Attribute& Attribute::operator=(T const& x)
 {
-   value_ = boost::lexical_cast<std::string>(x);
+   value_ = ConvertToString(x);
    return *this;
 }
 
 template <typename T>
 Attribute& Attribute::operator+=(T const& x)
 {
-   value_ += boost::lexical_cast<std::string>(x);
+   value_ += ConvertToString(x);
    return *this;
 }
 
@@ -45,14 +47,14 @@ Attribute& Attribute::operator+=(T const& x)
 template <typename T>
 Attribute::operator T() const
 {
-   return boost::lexical_cast<T>(value_);
+   return ConvertStringStrict<T>(value_);
 }
 #endif
 
 template <typename T>
 T Attribute::as() const
 {
-   return boost::lexical_cast<T>(value_);
+   return ConvertStringStrict<T>(value_);
 }
 
 template <typename T>
@@ -60,5 +62,5 @@ T Attribute::get_or_default(T const& Def) const
 {
    if (value_.empty())
       return Def;
-   return boost::lexical_cast<T>(value_);
+   return ConvertStringStrict<T>(value_);
 }

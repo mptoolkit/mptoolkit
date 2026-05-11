@@ -17,6 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 
+#include "common/stringutil.h"
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
 #include "quantumnumbers/su2.h"
@@ -26,10 +27,10 @@
 
 void SetMatElement(SiteOperator& s, int n1, int s1, int n2, int s2, double x)
 {
-   std::string q1 = boost::lexical_cast<std::string>(n1)
-      + "," + boost::lexical_cast<std::string>(s1);
-   std::string q2 = boost::lexical_cast<std::string>(n2)
-      + "," + boost::lexical_cast<std::string>(s2);
+   std::string q1 = ConvertToString(n1)
+      + "," + ConvertToString(s1);
+   std::string q2 = ConvertToString(n2)
+      + "," + ConvertToString(s2);
 
    int l1 = s.Basis1().LookupOrNeg(q1);
    int l2 = s.Basis2().LookupOrNeg(q2);
@@ -57,8 +58,8 @@ LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
    {
       for (int s = n%2; s <= std::min(n, MaxS); s += 2)
       {
-         std::string q = boost::lexical_cast<std::string>(n)
-            + "," + boost::lexical_cast<std::string>(s);
+         std::string q = ConvertToString(n)
+            + "," + ConvertToString(s);
          Basis.push_back(q, QN(n,s));
       }
    }
@@ -113,8 +114,8 @@ LatticeSite CreateU1SU2BoseHubbardSite(int MaxN, int MaxS,
          SiteOperator X(Basis, QN(0,0), LatticeCommute::Bosonic);
          SetMatElement(X, n, s, n, s, 1);
          std::string OpName = std::string("P(")
-            + boost::lexical_cast<std::string>(n) + ","
-            + boost::lexical_cast<std::string>(s) + ")";
+            + ConvertToString(n) + ","
+            + ConvertToString(s) + ")";
          Site[OpName] = X;
       }
    }

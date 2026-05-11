@@ -18,6 +18,7 @@
 // ENDHEADER
 
 #include "common/poolallocator.h"
+#include <type_traits>
 
 namespace QuantumNumbers
 {
@@ -55,7 +56,7 @@ template <typename InputIter>
 inline
 RepLabelBase<Tag>::RepLabelBase(SymmetryListImpl const* q, int Size, InputIter InitIter)
 {
-   static_assert(std::is_same<typename std::iterator_traits<InputIter>::value_type, int>::value,
+   static_assert(std::is_same_v<typename std::iterator_traits<InputIter>::value_type, int>,
                  "quantum number iterator value must be int");
    DEBUG_PRECONDITION(q != NULL);
    CHECK(Size <= QUANTUM_NUMBER_FIXED_SIZE)(Size)

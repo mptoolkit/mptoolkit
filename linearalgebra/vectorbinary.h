@@ -56,7 +56,7 @@ class VectorBinaryTransformProxy
       VectorBinaryTransformProxy(reference1 x, reference2 y, functor_type f)
          : x_(x), y_(y), f_(f) {} //{ CHECK_EQUAL(Size<T1>()(x_), Size<T2>()(y_)); }
 
-      size_type size() const { using LinearAlgebra::size; return size(x_); }
+      size_type size() const { return LinearAlgebra::size(x_); }
    // return Size<T1>()(x_); }
 
       const_reference operator[](size_type n) const { return f_(x_[n], y_[n]); }

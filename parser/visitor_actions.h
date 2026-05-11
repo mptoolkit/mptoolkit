@@ -27,7 +27,8 @@
 #include <boost/variant.hpp>
 #include <boost/variant/static_visitor.hpp>
 #include <complex>
-#include <boost/math/special_functions/round.hpp>
+#include <cmath>
+#include <limits>
 #include "common/numerics.h"
 #include "common/formatting.h"
 
@@ -120,10 +121,12 @@ class ParserError : public std::exception
 inline
 int as_int(complex x)
 {
-   int j = boost::math::iround(x.real());
+   long j = std::lround(x.real());
+   if (j < std::numeric_limits<int>::min() || j > std::numeric_limits<int>::max())
+      throw ParserError("expected an integer, got a value outside the int range: " + format_complex(x));
    if (LinearAlgebra::norm_frob(x - double(j)) > 1E-7)
        throw ParserError("expected an integer, got a real/complex number: " + format_complex(x));
-   return j;
+   return static_cast<int>(j);
 }
 
 inline

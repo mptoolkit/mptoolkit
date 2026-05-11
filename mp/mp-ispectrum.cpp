@@ -41,7 +41,7 @@ void PrintFormat(QuantumNumber const& q, std::complex<double> x, int n, bool Sho
                  bool ShowCorrLength, bool ShowMagnitude, bool ShowArgument,
                  bool ShowRadians, double ScaleFactor)
 {
-   std::string SectorStr = boost::lexical_cast<std::string>(q);
+   std::string SectorStr = ConvertToString(q);
    std::complex<double> Value = std::pow(x, ScaleFactor);
    std::cout << std::setw(11) << SectorStr << ' ';
    std::cout << std::setw(4) << n << ' ';
@@ -320,8 +320,8 @@ int main(int argc, char** argv)
          {
             for (unsigned j = 0; j < RightOpStr.size(); ++j)
             {
-               std::string Title = "#overlap_" + boost::lexical_cast<std::string>(i) + '_'
-                  + boost::lexical_cast<std::string>(j);
+               std::string Title = "#overlap_" + ConvertToString(i) + '_'
+                  + ConvertToString(j);
                if (ShowRealPart)
                   std::cout << std::setw(20) << std::left << (Title+"_real") << "  ";
                if (ShowImagPart)
@@ -384,7 +384,7 @@ int main(int argc, char** argv)
                                        MaxEigen, LeftEigenvectorsPtr,
                                        RightEigenvectorsPtr, Tol, KrylovLength, Verbose);
 
-         for (int i = 0; i < int(size(EValues)); ++i)
+         for (int i = 0; i < int(LinearAlgebra::size(EValues)); ++i)
          {
             PrintFormat(*qI, EValues[i], i, ShowRealPart, ShowImagPart, ShowCorrLength, ShowMagnitude,
                         ShowArgument, ShowRadians, ScaleFactor);
