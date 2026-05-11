@@ -7716,10 +7716,6 @@ printf "%s\n" "#define CURRENTFORMAT_AUTOCONF /**/" >>confdefs.h
 
 
 
-printf "%s\n" "#define CONFIG_EXPOKIT /**/" >>confdefs.h
-
-
-
 printf "%s\n" "#define DEFAULT_PAGE_SIZE 65536" >>confdefs.h
 
 

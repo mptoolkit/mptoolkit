@@ -84,7 +84,7 @@ CXXFLAGS += -DGIT_VERSION="$(GIT_VERSION)"
 
 SRCDIRS = common common/private quantumnumbers pstream pheap \
           tensor lattice mp-algorithms wavefunction \
-          tutorial mp linearalgebra misc conf scripts utils interface expokit mpo \
+          tutorial mp linearalgebra misc conf scripts utils interface mpo \
           benchmark misc misc/oogl junk mpo mps parser models models/contrib
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
@@ -140,7 +140,7 @@ debugobj = backtrace.o debughandler.o
 
 simplecommonobj = poolallocator.o backtrace.o debughandler.o catchsegv.o
 
-expokitobj = exponential.o tensor_exponential.o
+exponentialobj = exponential.o tensor_exponential.o
 
 objects = $(quantumnumbersobj) \
           $(dmrgobj)           \
@@ -334,13 +334,13 @@ testla : $(linearalgebra_tests)
 	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
 
 $(tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-           $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+           $(dmrgobj) $(mpobj) $(exponentialobj) $(linearalgebraobj) $(parserobj)
 
 $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-                        $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+                        $(dmrgobj) $(mpobj) $(exponentialobj) $(linearalgebraobj) $(parserobj)
 
 $(all-models) :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
-              $(dmrgobj) $(mpobj) $(expokitobj) $(linearalgebraobj) $(parserobj)
+              $(dmrgobj) $(mpobj) $(exponentialobj) $(linearalgebraobj) $(parserobj)
 
 $(mp-misc) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
                $(dmrgobj) $(mpobj)
@@ -394,7 +394,7 @@ testpackunpack : packunpack.o mpstate.o eigen.o
 
 $(mpo_tests) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) $(tensorobj) $(latticeobj)
 
-test_operator_decompose : $(expokitobj) $(mpoobj) eigen.o
+test_operator_decompose : $(exponentialobj) $(mpoobj) eigen.o
 
 #
 # dependencies for lattice tests
@@ -421,8 +421,6 @@ testexponential : eigen.o exponential.o
 #
 
 $(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) eigen.o
-
-#$(mp-algorithms_tests) : $(commonobj) $(linearalgebraobj) $(expokitobj) eigen.o
 
 #
 # dependencies for pheap tests
@@ -476,16 +474,16 @@ mp-dmrg-init : dmrg.o stateslist.o
 mp-dmrg-resume : dmrg.o stateslist.o
 mp-gmres-init : simplecg.o solver-gmres.o stateslist.o
 mp-gmres-resume : simplecg.o solver-gmres.o stateslist.o
-mp-trotter : mpexponential.o $(expokitobj)
+mp-trotter : mpexponential.o $(exponentialobj)
 mp-dmrg : expansion.o dmrg.o finitedmrg.o
 mp-dmrg-3s : expansion.o dmrg.o finitedmrg.o
 mp-dmrg-2site : expansion.o dmrg.o finitedmrg.o
-mp-evolve-krylov : progressivekrylov.o krylovloop.o $(expokitobj)
-mp-evolve-magnus : progressivekrylov.o krylovloop.o $(expokitobj)
+mp-evolve-krylov : progressivekrylov.o krylovloop.o $(exponentialobj)
+mp-evolve-magnus : progressivekrylov.o krylovloop.o $(exponentialobj)
 mp-apply-opt : prodoptimizer.o
 mp-apply-multiple : prodoptimizer.o
-mp-evolve-mixed : aggregator.o $(expokitobj)
-mp-evolve-krylov-simple : simplekrylov.o $(expokitobj)
+mp-evolve-mixed : aggregator.o $(exponentialobj)
+mp-evolve-krylov-simple : simplekrylov.o $(exponentialobj)
 mp-wigner-eckart : wigner_eckart.o
 
 mp-cv2 : functional-solver.o
@@ -555,12 +553,12 @@ mp-iinfo : infinitewavefunctionleft.o
 mp-iprint : infinitewavefunctionleft.o
 mp-iorthogonalize : triangular_operator.o infinitewavefunctionleft.o
 mp-pwfrg : triangular_operator.o match_basis.o
-mp-evolve-bonds : local-evolution.o $(expokitobj)
+mp-evolve-bonds : local-evolution.o $(exponentialobj)
 mp-ispectrum : infinitewavefunctionleft.o siteoperator-parser.o
 mp-ieigen : triangular_operator.o infinitewavefunctionleft.o
 mp-idump : infinitewavefunctionleft.o
-mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
-mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(expokitobj)
+mp-imake-transverse-lattice : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(exponentialobj)
+mp-imake-transverse-lattice-folded : triangular_operator.o infinitewavefunctionleft.o random_wavefunc.o mpoperatorlist.o lattice.o linear_operator.o $(exponentialobj)
 mp-iwigner-eckart : infinitewavefunctionleft.o wigner_eckart.o
 
 # no longer required - we link against arpack for everything now
@@ -587,9 +585,6 @@ mp-idmrgx : dmrg.o match_basis.o
 
 mp-min-resid : $(commonobj) $(linearalgebraobj)
 
-# $(mp-tools) : $(expokitobj)
-# $(mp-tools-experimental) : $(expokitobj)
-
 #mp-overlap-bigmem : threads.o
 
 testdmrg :  $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
@@ -599,7 +594,7 @@ testlanczos : $(commonobj) eigen.o
 
 testdlamch :
 
-kondo-exactdiag : $(expokitobj)
+kondo-exactdiag : $(exponentialobj)
 
 
 # misc progs

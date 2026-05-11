@@ -48,7 +48,7 @@ constexpr std::array<double, 5> ThetaBounds{
    2.097847961257068, 5.371920351148152};
 
 // Adaptive scaling-and-squaring Pade implementation, ported from uni20.
-// This replaces the historical Fortran EXPOKIT zgpadm dependency.
+// This replaces the historical Fortran dense exponential dependency.
 class ExponentialMatrix
 {
    public:

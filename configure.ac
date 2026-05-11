@@ -150,9 +150,6 @@ AC_CHECK_TYPE([long long], [])
 AC_DEFINE([CURRENTFORMAT_AUTOCONF], [],
    [Define if we can determine the pstream binary format from autoconf])
 
-AC_DEFINE([CONFIG_EXPOKIT], [],
-   [Define if we want to include functions from EXPOKIT])
-
 AC_DEFINE([DEFAULT_PAGE_SIZE], [65536],
 	[Default page size for file I/O])
 

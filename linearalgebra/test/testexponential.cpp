@@ -17,7 +17,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// test the expokit exponential function.
+// test the dense matrix exponential function.
 // The main thing we want to do is see if it works for small inputs.
 
 #include "linearalgebra/exponential.h"

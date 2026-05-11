@@ -24,9 +24,6 @@
 /* Define if debugging is enabled */
 #undef CONFIG_DEBUG
 
-/* Define if we want to include functions from EXPOKIT */
-#undef CONFIG_EXPOKIT
-
 /* Define if debugging is disabled */
 #undef CONFIG_NODEBUG
 
