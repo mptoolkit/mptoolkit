@@ -4,3 +4,6 @@
 *.dvi
 *.figures
 autom4te.cache
+
+# Local Codex override file.
+.codex/instructions.local.md
