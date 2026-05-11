@@ -621,10 +621,6 @@ InvertUpperTriangular(M& m)
    return ImplementInvertUpperTriangular<M&>()(m);
 }
 
-#if defined(CONFIG_EXPOKIT)
-
-#endif //  defined(CONFIG_EXPOKIT)
-
 } // namespace LinearAlgebra
 
 #include "eigen.cc"

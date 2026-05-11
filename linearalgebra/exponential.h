@@ -31,7 +31,7 @@ namespace LinearAlgebra
 //
 // Exponentiate
 //
-// Calculate exp(M) of a matrix M, using Expokit.
+// Calculate exp(t*M) for a dense matrix M.
 //
 
 template <typename M, typename Mi = typename interface<M>::type>
