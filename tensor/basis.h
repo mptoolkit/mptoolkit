@@ -400,7 +400,7 @@ CullMissingSectors(VectorBasis const& B1, VectorBasis const& B2)
    std::map<QuantumNumbers::QuantumNumber, int> Result;
    for (int i = 0; i < B1.size(); ++i)
    {
-      if (QuantumNumbersInB2.count(B1[i]) > 0)
+      if (QuantumNumbersInB2.contains(B1[i]))
          Result[B1[i]] += B1.dim(i);
    }
    return Result;

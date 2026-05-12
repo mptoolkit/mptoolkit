@@ -40,8 +40,8 @@
 #include "siteoperator.h"
 #include "function.h"
 #include "operator_descriptions.h"
-#include <boost/variant.hpp>
 #include <map>
+#include <variant>
 
 using QuantumNumbers::SymmetryList;
 
@@ -51,6 +51,7 @@ class LatticeSite
       typedef SiteOperator                operator_type;
       typedef Function::OperatorFunction  function_type;
       typedef Function::Argument         argument_type;
+      typedef std::variant<operator_type, std::complex<double> > element_type;
 
    private:
       typedef std::map<std::string, operator_type>    OperatorListType;
@@ -106,7 +107,7 @@ class LatticeSite
       { return pImpl->Operators.find(s); }
 
       bool operator_exists(std::string const& s) const
-      { return pImpl->Operators.find(s) != pImpl->Operators.end(); }
+      { return pImpl->Operators.contains(s); }
 
       operator_type& operator[](std::string const& s) { return pImpl.mutate()->Operators[s]; }
       operator_type const& operator[](std::string const& s) const;
@@ -140,18 +141,18 @@ class LatticeSite
       { return pImpl->Functions.find(s); }
 
       bool function_exists(std::string const& s) const
-      { return pImpl->Functions.find(s) != pImpl->Functions.end(); }
+      { return pImpl->Functions.contains(s); }
 
       function_type& func(std::string const& s) { return pImpl.mutate()->Functions[s]; }
 
       function_type const& func(std::string const& s) const;
 
       // evaluate a function
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(Function::OperatorFunction const& Func,
                     Function::ParameterList const& Params) const;
 
-      boost::variant<operator_type, std::complex<double> >
+      element_type
       eval_function(std::string const& Func,
                     Function::ParameterList const& Params) const;
 

@@ -254,7 +254,7 @@ bool
 is_pure_scalar(ReducibleTensor<T, B1, B2, S> const& x)
 {
    std::set<QuantumNumber> comp = x.components();
-   return comp.empty() || (comp.size() == 1 && comp.count(QuantumNumbers::QuantumNumber(x.GetSymmetryList())));
+   return comp.empty() || (comp.size() == 1 && comp.contains(QuantumNumbers::QuantumNumber(x.GetSymmetryList())));
 }
 
 // text I/O

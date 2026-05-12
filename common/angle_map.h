@@ -183,14 +183,14 @@ angle_map<T>::has_element(std::complex<double> const& c)
    if (-Resolution < angle && angle < Resolution)
    {
       // we have a zero angle
-      return Map.find(std::complex<double>(1.0,0.0)) != Map.end();
+      return Map.contains(std::complex<double>(1.0,0.0));
    }
    // else
 
    if (math_const::pi-Resolution < angle || angle < -math_const::pi+Resolution)
    {
       // we have a pi angle
-      return Map.find(std::complex<double>(-1.0,0.0)) != Map.end();
+      return Map.contains(std::complex<double>(-1.0,0.0));
    }
    // else
 

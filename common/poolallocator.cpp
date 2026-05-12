@@ -76,7 +76,7 @@ void CheckForAllocatedBlocks(size_t UnitSize, std::set<void*> const& Free)
       int NAlloc = *reinterpret_cast<size_t*>(static_cast<char*>(Ptr) +  PoolAlloc::MinAlign);
       for (int i = 0; i < NAlloc; ++i)
       {
-         if (Free.count(First) == 0)
+         if (!Free.contains(First))
          {
             std::cerr << "\n      Block size " << (UnitSize * PoolAlloc::MinAlign) << " at " << (void*)First << " has leaked!";
          }

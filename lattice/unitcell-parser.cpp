@@ -42,6 +42,18 @@ using namespace Parser;
 
 typedef boost::variant<complex, UnitCellMPO> ElementType;
 
+namespace
+{
+
+ElementType to_parser_element(UnitCell::element_type const& Element)
+{
+   if (UnitCellMPO const* Op = std::get_if<UnitCellMPO>(&Element))
+      return *Op;
+   return std::get<std::complex<double> >(Element);
+}
+
+}
+
 // Operator expressions:
 // Op(cell)[site] - a local operator at a given site of a given unit cell
 // Op(cell)       - a cell operator at a given cell index
@@ -80,7 +92,7 @@ struct push_local_operator
          {
             w.AddHint("Did you intend the unit cell operator "
                       + ColorHighlight(OpName + "(" +
-                                      boost::lexical_cast<std::string>(n) + ")") + " ?");
+                                      std::to_string(n) + ")") + " ?");
          }
          throw w;
       }
@@ -159,19 +171,19 @@ struct eval_local_function
 
       //TRACE(n)(Site)(&Cell);
 
-      SiteElementType Element = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
+      LatticeSite::element_type Element = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
       FuncStack.pop();
       ParamStack.pop();
 
       // If we have a c-number, we can return it immediately
-      std::complex<double>* c = boost::get<std::complex<double> >(&Element);
+      std::complex<double>* c = std::get_if<std::complex<double> >(&Element);
       if (c)
       {
          eval.push(*c);
       }
       else
       {
-         SiteOperator Op = boost::get<SiteOperator>(Element);
+         SiteOperator Op = std::get<SiteOperator>(Element);
          eval.push(Cell.map_local_operator(Op, n, Site));
       }
       //TRACE(eval.size());
@@ -196,9 +208,9 @@ struct eval_local_c_function
    void operator()(char const*, char const*) const
    {
       int Site = pop_int(eval);
-      SiteElementType Result = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
+      LatticeSite::element_type Result = Cell[Site].eval_function(FuncStack.top(), ParamStack.top());
 
-      std::complex<double>* c = boost::get<std::complex<double> >(&Result);
+      std::complex<double>* c = std::get_if<std::complex<double> >(&Result);
       CHECK(c)("Local function must return a c-number")(FuncStack.top())(Site);
 
       FuncStack.pop();
@@ -230,12 +242,12 @@ struct eval_cell_function
       CHECK(NumCells == 0 || (j >= 0 && j < NumCells))("Cell index out of bounds")(j)(NumCells);
 
       // Construct the operator
-      UnitCellElementType Result = Cell.eval_function(FuncStack.top(), j, ParamStack.top());
+      UnitCell::element_type Result = Cell.eval_function(FuncStack.top(), j, ParamStack.top());
 
       FuncStack.pop();
       ParamStack.pop();
 
-      eval.push(Result);
+      eval.push(to_parser_element(Result));
    }
 
    UnitCell const& Cell;
@@ -258,11 +270,11 @@ struct eval_cell_c_function
    void operator()(char const* beg, char const* end) const
    {
       // Construct the operator
-      UnitCellElementType Result = Cell.eval_function(FuncStack.top(), 0, ParamStack.top());
+      UnitCell::element_type Result = Cell.eval_function(FuncStack.top(), 0, ParamStack.top());
 
       // the result must be a c-number
 
-      std::complex<double>* c = boost::get<std::complex<double> >(&Result);
+      std::complex<double>* c = std::get_if<std::complex<double> >(&Result);
       if (!c)
       {
          throw ParserError::AtRange("Function without cell index must return a c-number: "

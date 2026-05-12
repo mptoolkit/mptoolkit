@@ -231,7 +231,7 @@ EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionLeft const& Psi, std::comple
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
    // TODO: We do not allow changing boundary wavefunctions at the moment.
-   CHECK(PsiUpper.count(i) == 0)(PsiLower.count(i) == 0);
+   CHECK(!PsiUpper.contains(i))(!PsiLower.contains(i));
 
    // If we haven't set QShift, set it now, otherwise, check that it is the same.
    if (QShift.is_null())
@@ -276,7 +276,7 @@ EFMatrix::SetPsi(CornerIndex i, InfiniteWavefunctionRight const& Psi, std::compl
    PRECONDITION_EQUAL(i.size(), NUpper);
    PRECONDITION_EQUAL(i.size(), NLower);
    // TODO: We do not allow changing boundary wavefunctions at the moment.
-   CHECK(PsiUpper.count(i) == 0)(PsiLower.count(i) == 0);
+   CHECK(!PsiUpper.contains(i))(!PsiLower.contains(i));
 
    // If we haven't set QShift, set it now, otherwise, check that it is the same.
    if (QShift.is_null())
@@ -579,7 +579,7 @@ StateComponent
 EFMatrix::GetWUpper(EAIndex i, int n)
 {
    // If not defined, return null. (TODO: Is this the best behavior?)
-   if (WindowUpper.count(i) == 0)
+   if (!WindowUpper.contains(i))
       return StateComponent();
 
    // Get the site number of the element to convert the window position to the
@@ -604,7 +604,7 @@ StateComponent
 EFMatrix::GetWLower(EAIndex j, int n)
 {
    // If not defined, return null.
-   if (WindowLower.count(j) == 0)
+   if (!WindowLower.contains(j))
       return StateComponent();
 
    // Get the site number of the element to convert the window position to the
@@ -799,7 +799,7 @@ EFMatrix::GetWPrevCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, i
    }
 
    // Get the element for this window if it exists.
-   if (Upper ? IMax.count(i) : JMax.count(i))
+   if (Upper ? IMax.contains(i) : JMax.contains(i))
    {
       int Max = Upper ? IMax[i] : JMax[i];
 
@@ -1006,7 +1006,7 @@ EFMatrix::GetWNextCorner(std::map<EAIndex, StateComponent>& Result, EAIndex i, i
    }
 
    // Get the element for this window if it exists.
-   if (Upper ? IMax.count(i) : JMax.count(i))
+   if (Upper ? IMax.contains(i) : JMax.contains(i))
    {
       int Max = Upper ? IMax[i] : JMax[i];
 

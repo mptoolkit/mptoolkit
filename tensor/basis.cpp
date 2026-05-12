@@ -40,7 +40,7 @@ BasisList::is_regular() const
    std::set<QuantumNumber> Used;
    for (const_iterator I = this->begin(); I != this->end(); ++I)
    {
-      if (Used.find(*I) != Used.end())
+      if (Used.contains(*I))
          return false;
 
       Used.insert(*I);

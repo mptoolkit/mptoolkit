@@ -24,11 +24,25 @@
 #include "common/niftycounter.h"
 #include "quantumnumber.h"
 #include "common/halfint.h"
+#include <string>
 
 namespace QuantumNumbers
 {
 
-extern char const* TypeStr[];
+template <int n>
+class Zn;
+
+namespace detail
+{
+
+using ZnSymmetryCreator = SymmetryBase* (*)();
+
+void RegisterZnTemplate(int n, ZnSymmetryCreator Creator);
+
+template <int n>
+SymmetryBase* CreateZnTemplateSymmetry();
+
+} // namespace detail
 
 template <int n>
 class Zn
@@ -38,10 +52,10 @@ class Zn
       typedef Zn                                QuantumNumberType;
       typedef StaticQuantumNumberFactory<Zn<n>> FactoryType;
 
-      Zn() : x(0) {}
-      Zn(half_int x_) : x((x_+n)%n) {}
-      Zn(int x_) : x((x_ + n)%n) {}
-      explicit Zn(int const* InIter) : x(from_twice(*InIter)) {}
+      Zn() : x(0) { EnsureRegistered(); }
+      Zn(half_int x_) : x((x_+n)%n) { EnsureRegistered(); }
+      Zn(int x_) : x((x_ + n)%n) { EnsureRegistered(); }
+      explicit Zn(int const* InIter) : x(from_twice(*InIter)) { EnsureRegistered(); }
       explicit Zn( std::string const& s);
 
       std::string ToString() const;
@@ -49,16 +63,24 @@ class Zn
       int* Convert(int* OutIter) const
       { *OutIter = x.twice(); return OutIter+1; }
 
-      static char const* Type() { return TypeStr[n]; }
+      static char const* Type()
+      {
+         EnsureRegistered();
+         static std::string const TypeName = "Z_" + std::to_string(n);
+         return TypeName.c_str();
+      }
 
       static int Size() { return 1; }
 
       static int num_casimir() { return 1; }
       static std::string casimir_name(std::string const& QName, int)
       { return QName; }
+      static bool IsRuntimeCompatibleSymmetry(SymmetryBase const& Sb)
+      { return Sb.Type() == Type(); }
 
       // Registation is automatic via a nifty counter
       static void Register();
+      static void EnsureRegistered();
 
       // suffix for treating Zn as a projection
       static char const* Suffix() { return ""; }
@@ -376,9 +398,17 @@ double casimir(Zn<n> const& s, int i)
 }
 
 template <int n>
+SymmetryBase*
+detail::CreateZnTemplateSymmetry()
+{
+   return new BasicSymmetry<Zn<n>>();
+}
+
+template <int n>
 Zn<n>::Zn(std::string const& s)
   : x(convert_string<int>(s.begin(), s.end()))
 {
+   EnsureRegistered();
 }
 
 template <int n>
@@ -391,22 +421,13 @@ Zn<n>::ToString() const
 template <int n>
 void Zn<n>::Register()
 {
-   RegisterStaticSymmetry<Zn<n>>();
+   detail::RegisterZnTemplate(n, &detail::CreateZnTemplateSymmetry<n>);
 }
 
-namespace
+template <int n>
+void Zn<n>::EnsureRegistered()
 {
-   NiftyCounter::nifty_counter<Zn<2>::Register> ZnRegistrator2;
-   NiftyCounter::nifty_counter<Zn<3>::Register> ZnRegistrator3;
-   NiftyCounter::nifty_counter<Zn<4>::Register> ZnRegistrator4;
-   NiftyCounter::nifty_counter<Zn<5>::Register> ZnRegistrator5;
-   NiftyCounter::nifty_counter<Zn<6>::Register> ZnRegistrator6;
-   NiftyCounter::nifty_counter<Zn<7>::Register> ZnRegistrator7;
-   NiftyCounter::nifty_counter<Zn<8>::Register> ZnRegistrator8;
-   NiftyCounter::nifty_counter<Zn<9>::Register> ZnRegistrator9;
-   NiftyCounter::nifty_counter<Zn<10>::Register> ZnRegistrator10;
-   NiftyCounter::nifty_counter<Zn<11>::Register> ZnRegistrator11;
-   NiftyCounter::nifty_counter<Zn<12>::Register> ZnRegistrator12;
+   static NiftyCounter::nifty_counter<Zn<n>::Register> ZnRegistrator;
 }
 
 } // namespace QuantumNumbers

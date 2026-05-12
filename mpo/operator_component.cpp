@@ -1834,7 +1834,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
    {
       PartialProdIndex Left(I->first.qLeft, I->first.Left1, I->first.Left2);
       // If Left doesn't exist yet, then add it as the next successive integer (given by LeftIndex.size())
-      if (LeftIndex.find(Left) == LeftIndex.end())
+      if (!LeftIndex.contains(Left))
       {
          LeftIndex[Left] = LeftReverse.size();
          LeftReverse.push_back(Left);
@@ -1843,7 +1843,7 @@ decompose_tensor_prod(SimpleOperator const& Op,
       // same for the right index
       PartialProdIndex Right(I->first.qRight, I->first.Right1, I->first.Right2);
       // If Right doesn't exist yet, then add it as the next successive integer (given by RightIndex.size())
-      if (RightIndex.find(Right) == RightIndex.end())
+      if (!RightIndex.contains(Right))
       {
          RightIndex[Right] = RightReverse.size();
          RightReverse.push_back(Right);
@@ -1987,7 +1987,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
                      ComponentIndex LeftIndex
                         = std::make_tuple(LeftAux1, P->first.Left1, P->first.Left2,
                                             P->first.qLeft);
-                     if (LeftMapping[*Qpp].find(LeftIndex) == LeftMapping[*Qpp].end())
+                     if (!LeftMapping[*Qpp].contains(LeftIndex))
                      {
                         LeftMapping[*Qpp][LeftIndex] = LeftRevMapping[*Qpp].size();
                         LeftRevMapping[*Qpp].push_back(LeftIndex);
@@ -1996,7 +1996,7 @@ decompose_local_tensor_prod(OperatorComponent const& Op,
                      ComponentIndex RightIndex
                         = std::make_tuple(RightAux2, P->first.Right1, P->first.Right2,
                                             P->first.qRight);
-                     if (RightMapping[*Qpp].find(RightIndex) == RightMapping[*Qpp].end())
+                     if (!RightMapping[*Qpp].contains(RightIndex))
                      {
                         RightMapping[*Qpp][RightIndex] = RightRevMapping[*Qpp].size();
                         RightRevMapping[*Qpp].push_back(RightIndex);

@@ -60,7 +60,7 @@ bool is_regular_basis(VectorBasis const& b)
    std::set<QuantumNumber> Used;
    for (std::size_t i = 0; i < b.size(); ++i)
    {
-      if (Used.find(b[i]) != Used.end())
+      if (Used.contains(b[i]))
          return false;
 
       Used.insert(b[i]);

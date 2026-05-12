@@ -84,7 +84,7 @@ class AttributeList
       Attribute operator[](std::string const& s) const;
       Attribute& operator[](std::string const& s) { return data_[s]; }
 
-      int count(std::string const& s) const { return data_.count(s); }
+      int count(std::string const& s) const { return data_.contains(s); }
 
       iterator begin() { return data_.begin(); }
       iterator end() { return data_.end(); }

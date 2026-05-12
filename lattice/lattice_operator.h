@@ -29,6 +29,7 @@
 #include "basic_triangular_mpo.h"
 #include "product_operator.h"
 #include "pheap/pvalueptr.h"
+#include <variant>
 //#include "periodic_mpo.h"
 
 
@@ -91,7 +92,7 @@ class LatticeOperator
    private:
       pvalue_ptr<UnitCell> pUnitCell;
       std::string JWString;
-      boost::variant<BasicFiniteMPO, BasicTriangularMPO> Operator;
+      std::variant<BasicFiniteMPO, BasicTriangularMPO> Operator;
 };
 
 LatticeOperator MakeFinite(LatticeOperator const& Op);

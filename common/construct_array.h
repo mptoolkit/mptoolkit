@@ -34,6 +34,8 @@
 #if !defined(CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP)
 #define CONSTRUCT_ARRAY_H_JHU438R9U89UF89YPJJF89PREUHP
 
+#include <bit>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 
@@ -138,7 +140,7 @@ void DestroyHelper<T, Enable>::apply(T const* buf, size_t Size)
    // destroy in reverse order to construction
    for ( ; Size != 0; --Size)
    {
-     buf[Size-1].~T();
+      std::destroy_at(const_cast<T*>(buf + (Size - 1)));
    }
 }
 
@@ -152,9 +154,7 @@ struct ConstructHelper
 inline
 double nans(char const*)
 {
-   unsigned long long x = 0x7ff7ffffffffffffULL;
-   char const* c = static_cast<char const*>(static_cast<void const*>(&x));
-   return *static_cast<double const*>(static_cast<void const*>(c));
+   return std::bit_cast<double>(std::uint64_t{0x7ff7ffffffffffffULL});
 }
 
 template <typename T>
@@ -187,23 +187,7 @@ struct ConstructHelper<T, std::enable_if_t<elide_construction<T>::value>>
 template <typename T, typename Enable>
 void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
 {
-   size_t i = 0;
-   try
-   {
-      for ( ; i < Size; ++i)
-      {
-         new (buf+i) T;
-      }
-   }
-   catch (...)
-   {
-      // if buf[i]'s constructor threw, then destuct all of the previous objects
-      for ( ; i != 0; --i)
-      {
-         buf[i-1].~T();
-      }
-      throw;
-   }
+   std::uninitialized_default_construct_n(buf, Size);
 }
 #else
 template <typename T, typename Enable>
@@ -216,23 +200,7 @@ void ConstructHelper<T, Enable>::apply(T* buf, size_t Size)
 template <typename T, typename Enable>
 void ConstructHelper<T, Enable>::apply(T* buf, size_t Size, T const& x)
 {
-   size_t i = 0;
-   try
-   {
-      for ( ; i < Size; ++i)
-      {
-         new (buf+i) T(x);
-      }
-   }
-   catch (...)
-   {
-      // if buf[i]'s constructor threw, then destuct all of the previous objects
-      for ( ; i != 0; --i)
-      {
-         buf[i-1].~T();
-      }
-      throw;
-   }
+   std::uninitialized_fill_n(buf, Size, x);
 }
 } // namespace Private
 

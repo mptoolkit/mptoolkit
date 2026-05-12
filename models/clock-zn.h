@@ -37,8 +37,8 @@ ZnClockQuantumNumber(SymmetryList const& Symmetry, int q, int charge)
 inline
 LatticeSite ZnClockSite(int q)
 {
-   if (q < 2 || q > 12)
-      throw std::runtime_error("Z_q clock site supports q=2..12");
+   if (q < 2)
+      throw std::runtime_error("Z_q clock site supports q >= 2");
 
    SymmetryList Symmetry("Q:Z_" + ConvertToString(q));
    SiteBasis Basis(Symmetry);

@@ -67,8 +67,8 @@
 /* define if the Boost::PROGRAM_OPTIONS library is available */
 #undef HAVE_BOOST_PROGRAM_OPTIONS
 
-/* define if the compiler supports basic C++17 syntax */
-#undef HAVE_CXX17
+/* define if the compiler supports basic C++20 syntax */
+#undef HAVE_CXX20
 
 /* Defined if the compiler supports the restrict keyword. */
 #undef HAVE_CXX_RESTRICT

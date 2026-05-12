@@ -38,7 +38,7 @@ WignerEckartBasis(VectorBasis const& B,
       ProjectionList p = enumerate_projections(NonAbBasis[i]);
       for (unsigned pi = 0; pi < p.size(); ++pi)
       {
-         if (AllowedProjections.count(std::make_pair(NonAbBasis[i], p[pi])))
+         if (AllowedProjections.contains(std::make_pair(NonAbBasis[i], p[pi])))
          {
             UsedProjections.insert(std::make_pair(NonAbBasis[i], p[pi]));
             Mapping[i][pi] = AbBasis.size();

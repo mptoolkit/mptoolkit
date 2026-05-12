@@ -278,7 +278,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
          // we have an anonymous parameter, determine which
          // argument it corresponds to
          while (CurrentAnonArg < FormalArgs.size()
-                && Args.find(FormalArgs[CurrentAnonArg].Name) != Args.end())
+                && Args.contains(FormalArgs[CurrentAnonArg].Name))
          {
             ++CurrentAnonArg;
          }
@@ -302,7 +302,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
          }
          CHECK(Found)("Named parameter to function does not exist - check spelling!")(Params[i].Name);
          // and also check that it isn't duplicated
-         if (Args.find(Params[i].Name) != Args.end())
+         if (Args.contains(Params[i].Name))
          {
             PANIC("Value of named parameter has already been set!")(Params[i].Name);
          }
@@ -318,7 +318,7 @@ GetArguments(FormalArgumentList const& FormalArgs, ParameterList const& Params,
    for (int i = int(FormalArgs.size())-1; i >= 0; --i)
    {
       // is the argument not set yet?
-      if (Args.find(FormalArgs[i].Name) == Args.end())
+      if (!Args.contains(FormalArgs[i].Name))
       {
          // make sure that it has a default
          CHECK(!FormalArgs[i].Default.empty())

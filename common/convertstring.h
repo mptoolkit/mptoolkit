@@ -55,7 +55,7 @@ class invalid_string_conversion : public std::exception
 {
    public:
       invalid_string_conversion()  {}
-      char const* what() const throw () { return "Invalid string conversion."; }
+      char const* what() const noexcept override { return "Invalid string conversion."; }
 };
 
 // exception class for numeric overflow while attempting to convert a string

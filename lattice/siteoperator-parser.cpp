@@ -25,6 +25,18 @@ using namespace Parser;
 
 typedef boost::variant<SiteOperator, std::complex<double> > element_type;
 
+namespace
+{
+
+element_type to_parser_element(LatticeSite::element_type const& Element)
+{
+   if (SiteOperator const* Op = std::get_if<SiteOperator>(&Element))
+      return *Op;
+   return std::get<std::complex<double> >(Element);
+}
+
+}
+
 namespace Parser
 {
 
@@ -63,7 +75,7 @@ struct eval_function
 
    void operator()(char const*, char const*) const
    {
-      eval.push(Site.eval_function(FuncStack.top(), ParamStack.top()));
+      eval.push(to_parser_element(Site.eval_function(FuncStack.top(), ParamStack.top())));
       FuncStack.pop();
       ParamStack.pop();
    }

@@ -228,7 +228,7 @@ UnitCell::assign_operator(std::string const& Name, operator_type Op, int Offset)
 bool
 UnitCell::operator_exists(std::string const& s) const
 {
-   if (Operators.find(s) != Operators.end())
+   if (Operators.contains(s))
       return true;
    if (Sites->size() == 1 && Sites->front().operator_exists(s))
       return true;
@@ -387,21 +387,22 @@ struct ParseUnitCellExpression
 
 
 
-boost::variant<UnitCell::operator_type, std::complex<double> >
+UnitCell::element_type
 UnitCell::eval_function(Function::OperatorFunction const& Func, int Cell,
                         Function::ParameterList const& Params) const
 {
    Function::ArgumentList Args = GetArguments(Func.args(), Params, ParseUnitCellExpression(*this));
-   boost::variant<UnitCell::operator_type, std::complex<double> > Result
-      = ParseUnitCellElement(*this, 0, Func.definition(), Args);
-   if (boost::get<UnitCell::operator_type>(&Result))
+   UnitCellElementType Parsed = ParseUnitCellElement(*this, 0, Func.definition(), Args);
+   if (UnitCell::operator_type* Op = boost::get<UnitCell::operator_type>(&Parsed))
    {
-      boost::get<UnitCell::operator_type>(&Result)->translate(Cell*this->size());
+      UnitCell::operator_type Result = *Op;
+      Result.translate(Cell*this->size());
+      return Result;
    }
-   return Result;
+   return boost::get<std::complex<double> >(Parsed);
 }
 
-boost::variant<UnitCell::operator_type, std::complex<double> >
+UnitCell::element_type
 UnitCell::eval_function(std::string const& Func, int Cell,
                         Function::ParameterList const& Params) const
 {
@@ -411,20 +412,20 @@ UnitCell::eval_function(std::string const& Func, int Cell,
    return this->eval_local_function(Func, Cell, 0, Params);
 }
 
-boost::variant<UnitCell::operator_type, std::complex<double> >
+UnitCell::element_type
 UnitCell::eval_local_function(std::string const& Func, int Cell, int Site,
                               Function::ParameterList const& Params) const
 {
-   SiteElementType Element = Sites->operator[](Site).eval_function(Func, Params);
+   LatticeSite::element_type Element = Sites->operator[](Site).eval_function(Func, Params);
 
    // if the result is a c-number, we can return it without further processing
-   std::complex<double>* c = boost::get<std::complex<double> >(&Element);
+   std::complex<double>* c = std::get_if<std::complex<double> >(&Element);
    if (c)
    {
       return *c;
    }
    // else we have to convert the SiteOperator into a UnitCellMPO
-   SiteOperator Op = boost::get<SiteOperator>(Element);
+   SiteOperator Op = std::get<SiteOperator>(Element);
    return this->map_local_operator(Op, Cell, Site);
 }
 
