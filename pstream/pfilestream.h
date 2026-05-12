@@ -60,7 +60,7 @@ class runtime_errno : public std::exception
       runtime_errno() : m_Errno(errno) { strerror_r(m_Errno, StrBuffer, StrBufferSize); }
       runtime_errno(int Errno_) : m_Errno(Errno_) { strerror_r(m_Errno, StrBuffer, StrBufferSize); }
 
-      virtual char const* what() const throw() { return StrBuffer; }
+      char const* what() const noexcept override { return StrBuffer; }
 
       int what_errno() const { return m_Errno; }
 

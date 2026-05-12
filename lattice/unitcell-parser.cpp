@@ -92,7 +92,7 @@ struct push_local_operator
          {
             w.AddHint("Did you intend the unit cell operator "
                       + ColorHighlight(OpName + "(" +
-                                      boost::lexical_cast<std::string>(n) + ")") + " ?");
+                                      std::to_string(n) + ")") + " ?");
          }
          throw w;
       }
