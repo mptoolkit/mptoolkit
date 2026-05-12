@@ -614,6 +614,14 @@ Projection MakeP(SymmetryList SList, T1 n1, T2 n2, T3 n3, T4 n4, T5 n5)
 
 struct Dummy { typedef Dummy ProjectionType; };
 
+template <typename T>
+inline
+void EnsureConcreteSymmetryRegistered()
+{
+   if constexpr (requires { T::EnsureRegistered(); })
+      T::EnsureRegistered();
+}
+
 template <class T1, class T2 = Dummy, class T3 = Dummy, class T4 = Dummy, class T5 = Dummy>
 class QNConstructor
 {
@@ -624,11 +632,14 @@ class QNConstructor
       typedef typename T4::ProjectionType P4;
       typedef typename T5::ProjectionType P5;
 
-      QNConstructor(std::string const& Name) : SList(Name) {}
+      QNConstructor(std::string const& Name) : SList(MakeSymmetryList(Name)) {}
 
-      QNConstructor(char const* c) : SList(c) {}
+      QNConstructor(char const* c) : SList(MakeSymmetryList(c)) {}
 
-      QNConstructor(SymmetryList SList_) : SList(SList_) {}
+      QNConstructor(SymmetryList SList_) : SList(SList_)
+      {
+         EnsureConcreteSymmetriesRegistered();
+      }
 
       QuantumNumber operator()(T1 n1) const { return MakeQN(SList, n1); }
       QuantumNumber operator()(T1 n1, T2 n2) const { return MakeQN(SList, n1, n2); }
@@ -645,6 +656,21 @@ class QNConstructor
       SymmetryList GetSymmetryList() const { return SList; }
 
    private:
+      static SymmetryList MakeSymmetryList(std::string const& Name)
+      {
+         EnsureConcreteSymmetriesRegistered();
+         return SymmetryList(Name);
+      }
+
+      static void EnsureConcreteSymmetriesRegistered()
+      {
+         EnsureConcreteSymmetryRegistered<T1>();
+         EnsureConcreteSymmetryRegistered<T2>();
+         EnsureConcreteSymmetryRegistered<T3>();
+         EnsureConcreteSymmetryRegistered<T4>();
+         EnsureConcreteSymmetryRegistered<T5>();
+      }
+
       SymmetryList SList;
 };
 

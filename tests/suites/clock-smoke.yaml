@@ -14,6 +14,11 @@ fixtures:
     outputs:
       lattice: lat
 
+  clock_zn13_lat:
+    run: clock-zn -q 13 -o lat
+    outputs:
+      lattice: lat
+
 tests:
   clock_model_reports_expected_operators:
     use: clock_lat
@@ -30,6 +35,12 @@ tests:
           contains: "H_J        - nearest neighbor coupling -sum_i (Omega_i OmegaD_{i+1} + OmegaD_i Omega_{i+1})"
       - lattice_info_text:
           contains: "H_g        - transverse field -sum_i (Gamma_i + GammaD_i)"
+
+  clock_zn_runtime_factory_accepts_uninstantiated_order:
+    use: clock_zn13_lat
+    expect:
+      - lattice_info_text:
+          contains: "SymmetryList: Q:Z_13"
 
   clock_zn_model_reports_expected_symmetry_and_operators:
     use: clock_zn_lat

@@ -212,14 +212,18 @@ QuantumNumber::get(std::string Name) const
 
    SymmetryBase const* Sb = this->GetSymmetryList().GetSymmetryBase(SymmetryNumber);
    BasicSymmetry<T> const* SbT = dynamic_cast<BasicSymmetry<T> const*>(Sb);
-   if (!SbT)
+   if (SbT)
    {
-      PANIC("Quantum number is not convertible to the given type")
-         (Name)(typeid(T).name());
+      return SbT->MakeQN(this->begin()
+                         + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
    }
-
-   return SbT->MakeQN(this->begin()
-                      + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
+   if (Sb->Type() == T::Type())
+   {
+      return T(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
+   }
+   PANIC("Quantum number is not convertible to the given type")
+      (Name)(typeid(T).name());
+   return T(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
 }
 
 template <typename T>
@@ -234,13 +238,15 @@ QuantumNumber::set(std::string Name, T const& q)
 
    SymmetryBase const* Sb = this->GetSymmetryList().GetSymmetryBase(SymmetryNumber);
    BasicSymmetry<T> const* SbT = dynamic_cast<BasicSymmetry<T> const*>(Sb);
-   if (!SbT)
+   if (SbT || Sb->Type() == q.Type())
+   {
+      q.Convert(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
+   }
+   else
    {
       PANIC("Quantum number is not convertible to the given type")
          (Name)(typeid(T).name());
    }
-
-   q.Convert(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
 }
 
 //

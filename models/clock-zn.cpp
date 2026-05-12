@@ -37,7 +37,7 @@ int main(int argc, char** argv)
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
-         ("q,q", prog_opt::value(&q), "number of states, supported range 2..12 [default 3]")
+         ("q,q", prog_opt::value(&q), "number of states, supported range q >= 2 [default 3]")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
