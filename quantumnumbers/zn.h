@@ -75,6 +75,8 @@ class Zn
       static int num_casimir() { return 1; }
       static std::string casimir_name(std::string const& QName, int)
       { return QName; }
+      static bool IsRuntimeCompatibleSymmetry(SymmetryBase const& Sb)
+      { return Sb.Type() == Type(); }
 
       // Registation is automatic via a nifty counter
       static void Register();

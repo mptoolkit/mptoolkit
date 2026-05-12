@@ -23,6 +23,16 @@
 namespace QuantumNumbers
 {
 
+template <typename T>
+inline
+bool IsRuntimeCompatibleSymmetry(SymmetryBase const& Sb)
+{
+   if constexpr (requires { T::IsRuntimeCompatibleSymmetry(Sb); })
+      return T::IsRuntimeCompatibleSymmetry(Sb);
+   else
+      return false;
+}
+
 //
 // RepLabelBase
 //
@@ -217,7 +227,7 @@ QuantumNumber::get(std::string Name) const
       return SbT->MakeQN(this->begin()
                          + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
    }
-   if (Sb->Type() == T::Type())
+   if (IsRuntimeCompatibleSymmetry<T>(*Sb))
    {
       return T(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
    }
@@ -238,7 +248,7 @@ QuantumNumber::set(std::string Name, T const& q)
 
    SymmetryBase const* Sb = this->GetSymmetryList().GetSymmetryBase(SymmetryNumber);
    BasicSymmetry<T> const* SbT = dynamic_cast<BasicSymmetry<T> const*>(Sb);
-   if (SbT || Sb->Type() == q.Type())
+   if (SbT || IsRuntimeCompatibleSymmetry<T>(*Sb))
    {
       q.Convert(this->begin() + this->GetSymmetryList().QuantumNumberOffset(SymmetryNumber));
    }
