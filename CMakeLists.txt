@@ -16,12 +16,23 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release RelWithDebInf
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Keep the bootstrap Release default close to Autoconf and uni20 without
+# overriding an explicit -DCMAKE_CXX_FLAGS_RELEASE=... supplied by the user.
+if(CMAKE_CXX_FLAGS_RELEASE STREQUAL "-O3 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2" CACHE STRING "Flags used by the CXX compiler during RELEASE builds." FORCE)
+endif()
 
 option(MPTK_WITH_OPENMP "Enable OpenMP support" OFF)
 option(MPTK_WITH_PSTREAM "Enable persistent stream support" ON)
 option(MPTK_BUILD_CONTRIB_MODELS "Build models/contrib generators" OFF)
 set(MPTK_BLAS_VENDOR "auto" CACHE STRING "BLAS vendor for version reporting: auto, generic, OpenBLAS, or MKL")
 set_property(CACHE MPTK_BLAS_VENDOR PROPERTY STRINGS auto generic OpenBLAS MKL)
+set(MPTK_BLAS_VENDOR_VALUES auto generic OpenBLAS MKL)
+if(NOT MPTK_BLAS_VENDOR IN_LIST MPTK_BLAS_VENDOR_VALUES)
+  message(FATAL_ERROR "MPTK_BLAS_VENDOR must be one of: auto, generic, OpenBLAS, MKL")
+endif()
 set(MPTK_FORTRAN_COMPLEX_RETURN "auto" CACHE STRING "Fortran complex return convention: auto, register, or first_arg")
 set_property(CACHE MPTK_FORTRAN_COMPLEX_RETURN PROPERTY STRINGS auto register first_arg)
 set(MPTK_FORTRAN_COMPLEX_RETURN_VALUES auto register first_arg)
@@ -38,6 +49,7 @@ include(CheckCXXSourceRuns)
 include(CheckIncludeFileCXX)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(MPTKBlasVendor)
 include(TestBigEndian)
 
 find_package(Git QUIET)
@@ -207,15 +219,9 @@ else()
   set(FORTRAN_COMPLEX_RETURN_IN_REGISTER TRUE)
 endif()
 
+mptk_detect_blas_vendor(MPTK_DETECTED_BLAS_VENDOR)
 if(MPTK_BLAS_VENDOR STREQUAL "auto")
-  string(TOLOWER "${BLAS_LIBRARIES}" MPTK_BLAS_LIBRARIES_LOWER)
-  if(MPTK_BLAS_LIBRARIES_LOWER MATCHES "openblas")
-    set(MPTK_CONFIG_BLAS_VENDOR "OpenBLAS")
-  elseif(MPTK_BLAS_LIBRARIES_LOWER MATCHES "mkl")
-    set(MPTK_CONFIG_BLAS_VENDOR "MKL")
-  else()
-    set(MPTK_CONFIG_BLAS_VENDOR "generic")
-  endif()
+  set(MPTK_CONFIG_BLAS_VENDOR "${MPTK_DETECTED_BLAS_VENDOR}")
 else()
   set(MPTK_CONFIG_BLAS_VENDOR "${MPTK_BLAS_VENDOR}")
 endif()
@@ -593,3 +599,63 @@ if(MPTK_BUILD_CONTRIB_MODELS)
 else()
   add_custom_target(install-all-models DEPENDS install-models)
 endif()
+
+function(mptk_print_configuration_summary)
+  message(STATUS "")
+  message(STATUS "===== MPToolkit Build Options =====")
+  get_cmake_property(_mptk_cache_vars CACHE_VARIABLES)
+  foreach(_var ${_mptk_cache_vars})
+    if(_var MATCHES "^MPTK_" AND NOT _var MATCHES "^MPTK_DETECTED_")
+      get_property(_type CACHE ${_var} PROPERTY TYPE)
+      if(_type STREQUAL "INTERNAL")
+        continue()
+      endif()
+      get_property(_help CACHE ${_var} PROPERTY HELPSTRING)
+      message(STATUS "${_var} = ${${_var}}   # ${_help}")
+    endif()
+  endforeach()
+  message(STATUS "")
+
+  if(CMAKE_BUILD_TYPE)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _config_upper)
+  else()
+    set(_config_upper "RELEASE")
+  endif()
+
+  set(_well_known
+    CMAKE_SYSTEM_VERSION
+    CMAKE_SYSTEM_PROCESSOR
+    CMAKE_BUILD_TYPE
+    CMAKE_INSTALL_PREFIX
+    BUILD_SHARED_LIBS
+    BLA_VENDOR
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_${_config_upper}
+  )
+
+  message(STATUS "===== Common CMake Options =====")
+  foreach(_var IN LISTS _well_known)
+    if(DEFINED ${_var})
+      if(DEFINED CACHE{${_var}})
+        get_property(_help CACHE ${_var} PROPERTY HELPSTRING)
+        message(STATUS "${_var} = ${${_var}}   # ${_help}")
+      else()
+        message(STATUS "${_var} = ${${_var}}")
+      endif()
+    else()
+      message(STATUS "${_var} = # (not set)")
+    endif()
+  endforeach()
+  message(STATUS "")
+
+  message(STATUS "===== Detected Environment =====")
+  foreach(_var ${_mptk_cache_vars})
+    if(_var MATCHES "^MPTK_DETECTED_")
+      get_property(_help CACHE ${_var} PROPERTY HELPSTRING)
+      message(STATUS "${_var} = ${${_var}}   # ${_help}")
+    endif()
+  endforeach()
+  message(STATUS "")
+endfunction()
+
+mptk_print_configuration_summary()
