@@ -24,10 +24,15 @@ separate build tree:
 cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
 ```
 
-Build and install the standard tools and model generators:
+The default build target builds the standard tools and model generators:
 
 ```sh
-cmake --build build --target mptoolkit --parallel
+cmake --build build --parallel
+```
+
+Install the standard tools and model generators:
+
+```sh
 cmake --install build --component tools
 cmake --install build --component models
 ```
@@ -42,3 +47,27 @@ export PATH="$HOME/mptk/bin:$PATH"
 Other common non-root prefixes are `$HOME/.local`, which installs executables
 under `$HOME/.local/bin`, and `$HOME`, which installs executables under
 `$HOME/bin`.
+
+Contrib model generators are not built by default. To enable them, configure
+with:
+
+```sh
+cmake -S . -B build-contrib \
+  -DCMAKE_INSTALL_PREFIX="$HOME/mptk" \
+  -DMPTK_BUILD_CONTRIB_MODELS=ON
+```
+
+Then build individual contrib models by target name, or build all standard and
+contrib models:
+
+```sh
+cmake --build build-contrib --target bosehubbard-flux-2leg-u1 --parallel
+cmake --build build-contrib --target all-models --parallel
+```
+
+The aggregate contrib-only target is `contrib-models`, and contrib model
+installation is available separately with:
+
+```sh
+cmake --install build-contrib --component contrib-models
+```
