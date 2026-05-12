@@ -77,9 +77,9 @@ void ReplaceAll(std::string& s, std::string_view from, std::string_view to)
       return;
 
    std::string::size_type pos = 0;
-   while ((pos = s.find(from.data(), pos, from.size())) != std::string::npos)
+   while ((pos = s.find(from, pos)) != std::string::npos)
    {
-      s.replace(pos, from.size(), to.data(), to.size());
+      s.replace(pos, from.size(), to);
       pos += to.size();
    }
 }
