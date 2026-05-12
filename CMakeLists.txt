@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Keep the bootstrap Release default close to Autoconf and uni20 while
+# preserving explicit -DCMAKE_CXX_FLAGS_RELEASE=... cache values.
+set(MPTK_DEFAULT_CXX_FLAGS_RELEASE "-DNDEBUG -O2")
+if(DEFINED CMAKE_CXX_FLAGS_RELEASE)
+  set(MPTK_CMAKE_CXX_FLAGS_RELEASE_WAS_DEFINED TRUE)
+endif()
+
 project(MPToolkit LANGUAGES C CXX)
 
 if(CMAKE_CONFIGURATION_TYPES)
@@ -17,11 +24,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# Keep the bootstrap Release default close to Autoconf and uni20 without
-# overriding an explicit -DCMAKE_CXX_FLAGS_RELEASE=... supplied by the user.
-if(CMAKE_CXX_FLAGS_RELEASE STREQUAL "-O3 -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2" CACHE STRING "Flags used by the CXX compiler during RELEASE builds." FORCE)
+if(NOT MPTK_CMAKE_CXX_FLAGS_RELEASE_WAS_DEFINED)
+  set(CMAKE_CXX_FLAGS_RELEASE "${MPTK_DEFAULT_CXX_FLAGS_RELEASE}" CACHE STRING "Flags used by the CXX compiler during RELEASE builds." FORCE)
 endif()
 
 option(MPTK_WITH_OPENMP "Enable OpenMP support" OFF)
@@ -539,26 +543,12 @@ mptk_set_runtime_output(testexponential tests)
 add_test(NAME linearalgebra.testexponential COMMAND testexponential)
 set_tests_properties(linearalgebra.testexponential PROPERTIES TIMEOUT 30)
 
-set(MPTK_INTEGRATION_SUITES
-  spinchain-smoke
-  supported-model-contract
-)
-set(MPTK_INTEGRATION_DEPENDS tools models)
-if(MPTK_BUILD_CONTRIB_MODELS)
-  list(APPEND MPTK_INTEGRATION_SUITES
-    bosehubbard-flux-2leg-u1-smoke
-    bosehubbard-flux-3leg-u1-smoke
-  )
-  list(APPEND MPTK_INTEGRATION_DEPENDS contrib-models)
-endif()
-
 add_custom_target(test-integration
   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test"
           --bin-dir "${CMAKE_BINARY_DIR}"
           --config "$<CONFIG>"
-          ${MPTK_INTEGRATION_SUITES}
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-  DEPENDS ${MPTK_INTEGRATION_DEPENDS}
+  DEPENDS tools models
   USES_TERMINAL
 )
 

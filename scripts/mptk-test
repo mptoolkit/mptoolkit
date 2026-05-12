@@ -8,11 +8,11 @@ Usage: mptk-test [--bin-dir DIR] [--config CONFIG] [--work-root DIR] [--verbose]
 
 Run MPToolkit declarative integration suites.
 
-If no suite is given, all files under tests/suites/*.yaml are run.
+If no suite is given, all top-level files under tests/suites/*.yaml are run.
 Suite arguments may be:
   - an absolute or relative path to a suite file
-  - a basename under tests/suites/
-  - a basename without the .yaml suffix
+  - a relative path under tests/suites/
+  - a basename without the .yaml suffix, if it is unique
 
 The default binary directory is the current working directory, so this script is
 intended to be run from a build tree. The binary directory may either contain
@@ -33,6 +33,7 @@ test_specs=()
 
 resolve_suite() {
     local spec=$1
+    local matches=()
 
     if [[ -f $spec ]]; then
         printf '%s\n' "$spec"
@@ -45,6 +46,17 @@ resolve_suite() {
     if [[ -f ${repo_root}/tests/suites/${spec}.yaml ]]; then
         printf '%s\n' "${repo_root}/tests/suites/${spec}.yaml"
         return 0
+    fi
+    mapfile -t matches < <(find "${repo_root}/tests/suites" -mindepth 2 -maxdepth 2 -type f \( -name "$spec" -o -name "${spec}.yaml" \) | sort)
+    if ((${#matches[@]} == 1)); then
+        printf '%s\n' "${matches[0]}"
+        return 0
+    fi
+    if ((${#matches[@]} > 1)); then
+        printf 'Ambiguous suite: %s\n' "$spec" >&2
+        printf 'Matches:\n' >&2
+        printf '  %s\n' "${matches[@]}" >&2
+        return 1
     fi
 
     printf 'Unknown suite: %s\n' "$spec" >&2

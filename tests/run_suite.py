@@ -874,7 +874,7 @@ class SuiteRunner:
     def resolve_executable(self, program: str):
         for directory in self.bin_path_dirs:
             candidate = directory / program
-            if candidate.exists() and os.access(candidate, os.X_OK):
+            if candidate.is_file() and os.access(candidate, os.X_OK):
                 return candidate.resolve()
         return None
 
