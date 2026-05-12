@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(MPToolkit LANGUAGES C CXX Fortran)
+project(MPToolkit LANGUAGES C CXX)
 
 if(CMAKE_CONFIGURATION_TYPES)
   message(FATAL_ERROR
@@ -24,6 +24,10 @@ set(MPTK_BLAS_VENDOR "auto" CACHE STRING "BLAS vendor for version reporting: aut
 set_property(CACHE MPTK_BLAS_VENDOR PROPERTY STRINGS auto generic OpenBLAS MKL)
 set(MPTK_FORTRAN_COMPLEX_RETURN "auto" CACHE STRING "Fortran complex return convention: auto, register, or first_arg")
 set_property(CACHE MPTK_FORTRAN_COMPLEX_RETURN PROPERTY STRINGS auto register first_arg)
+set(MPTK_FORTRAN_COMPLEX_RETURN_VALUES auto register first_arg)
+if(NOT MPTK_FORTRAN_COMPLEX_RETURN IN_LIST MPTK_FORTRAN_COMPLEX_RETURN_VALUES)
+  message(FATAL_ERROR "MPTK_FORTRAN_COMPLEX_RETURN must be one of: auto, register, first_arg")
+endif()
 
 if(NOT MPTK_WITH_PSTREAM)
   message(FATAL_ERROR "MPTK_WITH_PSTREAM=OFF is not supported by the current source tree; PStream serialization is required")
@@ -268,7 +272,6 @@ set(MPTK_CORE_SOURCES
   common/sha256.cpp
   common/terminal.cpp
   common/unique.cpp
-  expokit/zgpadm.f
   interface/attributes.cpp
   interface/history.cpp
   interface/inittemp.cpp

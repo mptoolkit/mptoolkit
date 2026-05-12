@@ -18,7 +18,6 @@ jobs:
        sudo apt-get -y update
        sudo apt-get -y install \
          g++ \
-         gfortran \
          libarpack2-dev \
          libboost-program-options-dev \
          libgmp-dev \
