@@ -295,6 +295,12 @@ AssembleFiniteTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
       return PrepareFiniteTEBDHamiltonian(HamMPO, PsiSize);
    };
 
+   // Each split Hamiltonian family has its own time coverage over the full
+   // timestep.  The Suzuki-Trotter product applies even and odd gates in an
+   // interleaved order, but the even coefficients and odd coefficients each
+   // sum to one and each cover [StepStart, StepStart+Timestep].  Keep separate
+   // clocks for the two families; a single chronological application clock
+   // would sample the odd Hamiltonian at the wrong interval for leapfrog/Strang.
    std::vector<std::vector<SimpleOperator>> EvenU;
    std::complex<double> EvenTime = StepStart;
    for (double x : decomp.a())
@@ -316,6 +322,9 @@ AssembleFiniteTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
    std::vector<SimpleOperator> EvenContinuation;
    if (decomp.a().size() == decomp.b().size()+1)
    {
+      // The evolution loop defers the final even slice and merges it with the
+      // next timestep's first even slice.  This is one even-family interval
+      // from the previous slice start through the next first-slice endpoint.
       std::complex<double> SliceStart = StepStart - decomp.a().back() * Timestep;
       std::complex<double> SliceTimestep = (decomp.a().back() + decomp.a().front()) * Timestep;
       EvenContinuation = AssembleFiniteTEBDEvenSlice(HamiltonianSlice(SliceStart, SliceTimestep), SliceTimestep);
@@ -469,6 +478,9 @@ AssemblePeriodicTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
       return PreparePeriodicTEBDHamiltonianUnitCell(HamMPO, Coarsegrain, PsiSize);
    };
 
+   // See the finite time-dependent builder for the split-family clock
+   // convention.  Periodic TEBD uses the same independent even and odd clocks;
+   // the interleaved gate application order is not a single physical clock.
    std::vector<std::vector<SimpleOperator>> EvenU;
    std::complex<double> EvenTime = StepStart;
    for (double x : decomp.a())
@@ -490,6 +502,8 @@ AssemblePeriodicTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
    std::vector<SimpleOperator> EvenContinuation;
    if (decomp.a().size() == decomp.b().size()+1)
    {
+      // Merge the previous final even-family interval with this timestep's
+      // first even-family interval.
       std::complex<double> SliceStart = StepStart - decomp.a().back() * Timestep;
       std::complex<double> SliceTimestep = (decomp.a().back() + decomp.a().front()) * Timestep;
       EvenContinuation = AssemblePeriodicTEBDEvenSlice(HamiltonianSlice(SliceStart, SliceTimestep), SliceTimestep);
