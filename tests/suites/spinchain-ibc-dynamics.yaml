@@ -71,6 +71,35 @@ fixtures:
           approx: 0.0
           abs: 1e-12
 
+  ibc_neel2_tdvp_ising_real:
+    from: ibc_neel2
+    run: mp-ibc-tdvp -w ibc -H "lat:-4*sum_unit(Sz(0)*Sz(1))" -o out -t 0.1 -n 1 -s 1 -m 4
+    outputs:
+      state: out.t0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 3"
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          state: "{state}"
+          attribute: EvolutionHamiltonian
+          equals: "lat:-4*sum_unit(Sz(0)*Sz(1))"
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
 tests:
   ibc_tdvp_identity_updates_beta_and_keeps_the_simple_overlap:
     use:
@@ -86,6 +115,23 @@ tests:
       - attr_float:
           state: "{psi2}"
           attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+
+  ibc_tdvp_static_ising_real_time_preserves_simple_product_overlap:
+    use:
+      psi1: ibc_neel2.state
+      psi2: ibc_neel2_tdvp_ising_real.state
+    expect:
+      - ibc_overlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          state: "{psi2}"
+          attribute: Time
           approx: 0.1
           abs: 1e-12
 

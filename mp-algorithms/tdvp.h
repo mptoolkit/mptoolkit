@@ -35,7 +35,8 @@ class Hamiltonian
 
       // If Size == 0, do not rescale Hamiltonian size.
       Hamiltonian(std::string HamStr, int Size = 0,
-                  std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
+                  int Verbose = 0, int MagnusOrder = 2,
+                  std::string TimeVar = "t", int MagnusQuadrature = 0);
 
       // Get the Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
@@ -48,7 +49,8 @@ class Hamiltonian
       InfiniteLattice Lattice;
       std::string HamOperator;
       int Size;
-      std::string Magnus;
+      int MagnusOrder;
+      int MagnusQuadrature;
       std::string TimeVar;
       bool TimeDependent;
       BasicTriangularMPO HamMPO;

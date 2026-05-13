@@ -25,8 +25,9 @@
 #include "linearalgebra/eigen.h"
 
 WindowHamiltonian::WindowHamiltonian(std::string HamStrBackground, std::string HamStrWindow,
-                                     int Size_, std::string Magnus_, std::string TimeVar_, int Verbose_)
-   : Hamiltonian(HamStrBackground, Size_, Magnus_, TimeVar_, Verbose_)
+                                     int Size_, int Verbose_, int MagnusOrder_, std::string TimeVar_,
+                                     int MagnusQuadrature_)
+   : Hamiltonian(HamStrBackground, Size_, Verbose_, MagnusOrder_, TimeVar_, MagnusQuadrature_)
 {
    if (HamStrWindow.empty())
    {

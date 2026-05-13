@@ -31,7 +31,8 @@ class WindowHamiltonian : public Hamiltonian
 
       // If Size == 0, do not rescale Hamiltonian size.
       WindowHamiltonian(std::string HamStrBackground, std::string HamStrWindow,
-                        int Size = 0, std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
+                        int Size = 0, int Verbose = 0, int MagnusOrder = 2,
+                        std::string TimeVar = "t", int MagnusQuadrature = 0);
 
       // Get the Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(int Left, int Right, std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;

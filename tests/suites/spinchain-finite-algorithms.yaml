@@ -9,6 +9,11 @@ fixtures:
     outputs:
       lattice: lat
 
+  lat_plain:
+    run: spinchain -o lat_plain
+    outputs:
+      lattice: lat_plain
+
   neel4:
     from: lat
     run: mp-construct -l lat -o psi --finite 0.5:-0.5:0.5:-0.5
@@ -17,6 +22,35 @@ fixtures:
     certify:
       - norm:
           approx: 1.0
+          abs: 1e-12
+
+  up1_plain:
+    from: lat_plain
+    run: mp-construct -l lat_plain -o psi --finite 0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  upup2_plain:
+    from: lat_plain
+    run: mp-construct -l lat_plain -o psi --finite 0.5:0.5
+    outputs:
+      state: psi
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.5
           abs: 1e-12
 
   rand8:
@@ -64,6 +98,230 @@ fixtures:
           attribute: EvolutionHamiltonian
           equals: "lat:sum_unit(I(0))"
 
+  neel4_tdvp_time_dependent_identity_tau:
+    from: neel4
+    run: mp-tdvp -w psi -H "lat:(1+i*tau)*sum_unit(I(0))" -o out -t 0-0.1i -n 4 -s 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.4
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*tau)*sum_unit(I(0))"
+
+  up1_tdvp_rotating_transverse_field:
+    from: up1_plain
+    run: mp-tdvp -w psi -H "lat_plain:sum_unit(cos(2*t)*Sx(0)+sin(2*t)*Sy(0))" -o out -t 0.01 -n 40 -s 40 --magnus 4 --magnus-quadrature 4
+    outputs:
+      state: out.t0.40
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: 0.07297403638686
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.17515481843217
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.46259656245308
+          abs: 1e-6
+
+  upup2_tebd_rotating_transverse_field:
+    from: upup2_plain
+    run: mp-tebd -w psi -H "lat_plain:sum_unit(sites=2,cos(2*t)*Sx(0)+sin(2*t)*Sy(0))" -o out -t 0.01 -n 40 -s 40 --magnus 4 --magnus-quadrature 4
+    outputs:
+      state: out.t0.40
+    certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat_plain:sum_unit(sites=2,cos(2*t)*Sx(0)+sin(2*t)*Sy(0))"
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: 0.07297403638686
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.17515481843217
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.46259656245308
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  upup2_tebd_time_dependent_commuting_field_resume_real:
+    from: upup2_plain
+    steps:
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o half -t 0.4 -n 1 -s 1 --magnus 2
+        outputs:
+          state: half.t0.4
+        save_as:
+          state: half_state
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o resumed -t 0.4 -n 1 -s 1 --magnus 2
+        outputs:
+          state: resumed.t0.8
+    certify:
+      - attr_float:
+          state: half.t0.4
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.8
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))"
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  upup2_tebd_time_dependent_commuting_field_resume_complex:
+    from: upup2_plain
+    steps:
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o half -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2 --normalize
+        outputs:
+          state: half.t0.2.b0.1
+        save_as:
+          state: half_state
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o resumed -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2 --normalize
+        outputs:
+          state: resumed.t0.4.b0.2
+    certify:
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Time
+          approx: 0.2
+          abs: 1e-12
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.2
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))"
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: -0.13645254028157
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.21354813246347
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.43101960439413
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  upup2_tebd_time_dependent_commuting_field_resume_complex_unnormalized:
+    from: upup2_plain
+    steps:
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o half -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2
+        outputs:
+          state: half.t0.2.b0.1
+        save_as:
+          state: half_state
+      - run: mp-tebd -w {state} -H "lat_plain:sum_unit(sites=2,(1+t)*Sx(0))" -o resumed -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2
+        outputs:
+          state: resumed.t0.4.b0.2
+    certify:
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Time
+          approx: 0.2
+          abs: 1e-12
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.2
+          abs: 1e-12
+      - norm:
+          approx: 1.0158825380924
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: -0.14082138645699
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.22038537374793
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.44481970182219
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.51600866560055
+          abs: 1e-8
+
 tests:
   dmrg_3s_legacy_sweeps_path_converges_and_formats_real_energy_cleanly:
     use: rand8_dmrg_3s_s4
@@ -93,3 +351,112 @@ tests:
       - attr_text:
           attribute: EvolutionHamiltonian
           equals: "lat:sum_unit(I(0))"
+
+  tdvp_time_dependent_identity_accepts_magnus4_and_custom_timevar:
+    use: neel4_tdvp_time_dependent_identity_tau
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*tau)*sum_unit(I(0))"
+
+  tdvp_time_dependent_rotating_field_tracks_exact_single_spin_solution:
+    use: up1_tdvp_rotating_transverse_field
+    expect:
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: 0.07297403638686
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.17515481843217
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.46259656245308
+          abs: 1e-6
+
+  tebd_time_dependent_rotating_field_tracks_exact_single_spin_solution:
+    use: upup2_tebd_rotating_transverse_field
+    expect:
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: 0.07297403638686
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.17515481843217
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.46259656245308
+          abs: 1e-6
+      - expectation_real:
+          operator: "lat_plain:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  tebd_time_dependent_commuting_field_resumes_from_saved_time:
+    use: upup2_tebd_time_dependent_commuting_field_resume_real
+    expect:
+      - attr_float:
+          attribute: Time
+          approx: 0.8
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+
+  tebd_time_dependent_commuting_field_resumes_from_complex_time:
+    use: upup2_tebd_time_dependent_commuting_field_resume_complex
+    expect:
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.2
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: -0.13645254028157
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.21354813246347
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.43101960439413
+          abs: 1e-8
+
+  tebd_time_dependent_commuting_field_preserves_finite_complex_amplitude:
+    use: upup2_tebd_time_dependent_commuting_field_resume_complex_unnormalized
+    expect:
+      - norm:
+          approx: 1.0158825380924
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat_plain:Sx(0)"
+          approx: -0.14082138645699
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sy(0)"
+          approx: -0.22038537374793
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat_plain:Sz(0)"
+          approx: 0.44481970182219
+          abs: 1e-8

@@ -494,12 +494,12 @@ mp-misc = make-vb-state make-vb-su2
 
 mp-simple-marshall-qmc : random_wavefunc.o
 
-mp-tdvp : tdvp.o ef-optim.o number-parser.o tdvp-compositions.o expansion.o
+mp-tdvp : tdvp.o time-dependent-mpo.o ef-optim.o number-parser.o tdvp-compositions.o expansion.o
 
 # infinite tools
 
-mp-tebd : tebd.o number-parser.o
-mp-itebd : tebd.o number-parser.o
+mp-tebd : tebd.o time-dependent-mpo.o number-parser.o
+mp-itebd : tebd.o time-dependent-mpo.o number-parser.o
 
 mp-ibc-create : random_wavefunc.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-correlation : number-parser.o
@@ -528,7 +528,7 @@ mp-aux-matrix : infinitewavefunctionleft.o
 mp-ies : infinitewavefunctionleft.o
 mp-ies-cross : infinitewavefunctionleft.o
 mp-aux-project : infinitewavefunctionleft.o packunpack.o
-mp-itebd : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
+mp-itebd : $(mpoobj) time-dependent-mpo.o random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg-3s : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
 mp-dmrg-2site : $(mpoobj) random_wavefunc.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o packunpack.o
@@ -537,9 +537,9 @@ mp-scale : finitewavefunctionleft.o number-parser.o
 mp-iexpectation-cross : infinitewavefunctionleft.o
 mp-idivide :
 
-mp-itdvp : itdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
-mp-ibc-tdvp : ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
-mp-ibc-dmrg : ibc-dmrg.o ibc-tdvp.o tdvp.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
+mp-itdvp : itdvp.o tdvp.o time-dependent-mpo.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
+mp-ibc-tdvp : ibc-tdvp.o tdvp.o time-dependent-mpo.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
+mp-ibc-dmrg : ibc-dmrg.o ibc-tdvp.o tdvp.o time-dependent-mpo.o ef-optim.o number-parser.o tdvp-compositions.o triangular_mpo_solver.o momentum_operations.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o expansion.o
 mp-matrix : write-matrix.o
 mp-aux-matrix : triangular_mpo_solver.o triangular_mpo_solver_helpers.o momentum_operations.o
 

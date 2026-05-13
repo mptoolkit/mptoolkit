@@ -52,8 +52,6 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
-      std::string Magnus = "2";
-      std::string TimeVar = "t";
       std::string PreExpandAlgo = "rsvd";
       std::string PostExpandAlgo = "rsvd";
 
@@ -169,12 +167,6 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      if (Magnus != "2" && Magnus != "4")
-      {
-         std::cerr << "fatal: Invalid Magnus scheme." << std::endl;
-         return 1;
-      }
-
       Settings.PreExpansionAlgo = PreExpansionAlgorithm(PreExpandAlgo);
       Settings.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
 
@@ -272,7 +264,7 @@ int main(int argc, char** argv)
          }
       }
 
-      WindowHamiltonian Ham(HamStr, HamStrWindow, Psi.left().size(), Magnus, TimeVar, Verbose);
+      WindowHamiltonian Ham(HamStr, HamStrWindow, Psi.left().size(), Verbose);
 
       // Get EvolutionWindowLeft/Right from the wavefunction attributes if they
       // weren't specified, or else set them to the window boundaries.
