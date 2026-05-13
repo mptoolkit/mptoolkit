@@ -53,6 +53,11 @@ MULTI_CONFIG_SUBDIRS = (
     "RelWithDebInfo",
     "MinSizeRel",
 )
+SYSTEM_COMMAND_ALLOWLIST = frozenset({
+    "cp",
+    "sed",
+    "tar",
+})
 
 
 class SuiteError(RuntimeError):
@@ -127,8 +132,15 @@ def deep_copy(value: Any) -> Any:
 
 
 def resolve_reference(expr: str, context: dict[str, Any]) -> Any:
-    if "." not in expr and "bindings" in context and expr in context["bindings"]:
-        return context["bindings"][expr]
+    if "." not in expr:
+        bindings = context.get("bindings", {})
+        if expr in context:
+            direct = context[expr]
+            if isinstance(direct, dict) and expr in bindings:
+                return bindings[expr]
+            return direct
+        if expr in bindings:
+            return bindings[expr]
     current: Any = context
     for part in expr.split("."):
         if isinstance(current, dict) and part in current:
@@ -790,10 +802,10 @@ class SuiteRunner:
         trace: bool = False,
     ):
         self.suite = suite
+        self.repo_root = Path(__file__).resolve().parents[1]
         self.bin_dir = bin_dir.resolve()
         self.config = normalize_config(config)
         self.bin_path_dirs = executable_search_dirs(self.bin_dir, self.config)
-        self.repo_root = Path(__file__).resolve().parents[1]
         self.work_root = work_root
         self.verbose = verbose
         self.explain = explain
@@ -865,10 +877,27 @@ class SuiteRunner:
             argv = [render_value(item, call_context) for item in command]
         else:
             raise SuiteError("Command must render to a string or a list of strings")
-        if argv and "/" not in argv[0]:
-            candidate = self.resolve_executable(argv[0])
-            if candidate is not None:
+        if argv:
+            if "/" in argv[0]:
+                if not self.is_allowed_system_command(argv[0]):
+                    allowed = ", ".join(sorted(SYSTEM_COMMAND_ALLOWLIST))
+                    raise SuiteError(
+                        f"Explicit executable path {argv[0]!r} is not an allowed system command. "
+                        f"Allowed system commands: {allowed}"
+                    )
+                argv = [str(self.resolve_system_command(argv[0]))] + argv[1:]
+            elif (candidate := self.resolve_executable(argv[0])) is not None:
                 argv = [str(candidate)] + argv[1:]
+            elif self.is_allowed_system_command(argv[0]):
+                argv = [str(self.resolve_system_command(argv[0]))] + argv[1:]
+            else:
+                allowed = ", ".join(sorted(SYSTEM_COMMAND_ALLOWLIST))
+                raise SuiteError(
+                    f"Executable {argv[0]!r} was not found under --bin-dir {self.bin_dir} "
+                    f"and is not an allowed system command. Refusing to resolve it from PATH. "
+                    f"Searched {len(self.bin_path_dirs)} build-tree executable paths. "
+                    f"Allowed system commands: {allowed}"
+                )
         return argv
 
     def resolve_executable(self, program: str):
@@ -877,6 +906,21 @@ class SuiteRunner:
             if candidate.is_file() and os.access(candidate, os.X_OK):
                 return candidate.resolve()
         return None
+
+    def is_allowed_system_command(self, program: str) -> bool:
+        return Path(program).name in SYSTEM_COMMAND_ALLOWLIST
+
+    def resolve_system_command(self, program: str) -> Path:
+        if "/" in program:
+            path = Path(program)
+            if path.is_file() and os.access(path, os.X_OK):
+                return path.resolve()
+            raise SuiteError(f"Allowed system command {program!r} is not executable")
+
+        path_text = shutil.which(program)
+        if path_text is None:
+            raise SuiteError(f"Allowed system command {program!r} was not found on PATH")
+        return Path(path_text).resolve()
 
     def render_command_text(self, command: list[str]) -> str:
         return shlex.join(command)
@@ -1483,6 +1527,7 @@ def main(argv: list[str]) -> int:
             return 0
 
         def run_with_work_root(work_root: Path) -> int:
+            work_root = work_root.expanduser().resolve()
             ensure_directory(work_root)
 
             runner = SuiteRunner(
