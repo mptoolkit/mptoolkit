@@ -44,6 +44,38 @@
 
 namespace prog_opt = boost::program_options;
 
+namespace
+{
+
+bool
+ValidateFiniteTEBDHamiltonianSize(BasicTriangularMPO const& HamMPO, int PsiSize)
+{
+   if (HamMPO.empty())
+   {
+      std::cerr << "mp-tebd: fatal: Hamiltonian MPO is empty.\n";
+      return false;
+   }
+
+   if (HamMPO.size() > PsiSize)
+   {
+      std::cerr << "mp-tebd: fatal: Hamiltonian unit cell size " << HamMPO.size()
+                << " exceeds wavefunction length " << PsiSize << ".\n";
+      return false;
+   }
+
+   if (PsiSize % HamMPO.size() != 0)
+   {
+      std::cerr << "mp-tebd: fatal: wavefunction length " << PsiSize
+                << " must be an integer multiple of the Hamiltonian unit cell size "
+                << HamMPO.size() << ".\n";
+      return false;
+   }
+
+   return true;
+}
+
+} // namespace
+
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
                  double& LogAmplitude,
@@ -332,6 +364,8 @@ int main(int argc, char** argv)
       try
       {
          HamMPO = ParseTriangularOperator(Lattice, HamOperator);
+         if (!ValidateFiniteTEBDHamiltonianSize(HamMPO, Psi.size()))
+            return 1;
          HamMPO = PrepareFiniteTEBDHamiltonian(HamMPO, Psi.size());
       }
       catch (Parser::ParserError& e)
@@ -351,6 +385,14 @@ int main(int argc, char** argv)
       if (!TimeDependent)
       {
          Gates = AssembleFiniteTEBDHamiltonian(HamMPO, Timestep, decomp);
+      }
+      else
+      {
+         BasicTriangularMPO InitialHamMPO = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                                        InitialTime, Timestep,
+                                                                        MagnusOrder, MagnusQuadrature);
+         if (!ValidateFiniteTEBDHamiltonianSize(InitialHamMPO, Psi.size()))
+            return 1;
       }
 
       std::cout << "Using decomposition " << DecompositionStr << '\n';

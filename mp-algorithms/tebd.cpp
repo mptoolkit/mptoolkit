@@ -167,6 +167,13 @@ ExponentiateTEBDBond(std::complex<double> Factor,
 BasicTriangularMPO
 PrepareFiniteTEBDHamiltonian(BasicTriangularMPO HamMPO, int PsiSize)
 {
+   CHECK(!HamMPO.empty())("Finite TEBD Hamiltonian MPO is empty");
+   CHECK(HamMPO.size() <= PsiSize)("Finite TEBD Hamiltonian is larger than the wavefunction")
+      (HamMPO.size())(PsiSize);
+   CHECK(PsiSize % HamMPO.size() == 0)
+      ("Finite TEBD wavefunction size must be a multiple of the Hamiltonian unit cell")
+      (PsiSize)(HamMPO.size());
+
    if (HamMPO.size() < PsiSize)
       HamMPO = repeat(HamMPO, PsiSize / HamMPO.size());
    return HamMPO;
