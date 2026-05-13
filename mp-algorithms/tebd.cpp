@@ -164,6 +164,17 @@ ExponentiateTEBDBond(std::complex<double> Factor,
    return Exponentiate(Factor * BondTerm);
 }
 
+void
+CheckTEBDSplitFamilyClock(std::complex<double> Clock,
+                          std::complex<double> ExpectedEnd,
+                          char const* Family)
+{
+   double const Scale = std::max(1.0, std::max(std::abs(Clock), std::abs(ExpectedEnd)));
+   CHECK(std::abs(Clock - ExpectedEnd) <= 1e-12 * Scale)
+      ("TEBD split-family clock does not cover exactly one timestep")
+      (Family)(Clock)(ExpectedEnd);
+}
+
 BasicTriangularMPO
 PrepareFiniteTEBDHamiltonian(BasicTriangularMPO HamMPO, int PsiSize)
 {
@@ -318,6 +329,10 @@ AssembleFiniteTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
       OddU.push_back(AssembleFiniteTEBDOddSlice(HamiltonianSlice(OddTime, SliceTimestep), SliceTimestep));
       OddTime += SliceTimestep;
    }
+
+   std::complex<double> const StepEnd = StepStart + Timestep;
+   CheckTEBDSplitFamilyClock(EvenTime, StepEnd, "even");
+   CheckTEBDSplitFamilyClock(OddTime, StepEnd, "odd");
 
    std::vector<SimpleOperator> EvenContinuation;
    if (decomp.a().size() == decomp.b().size()+1)
@@ -498,6 +513,10 @@ AssemblePeriodicTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
       OddU.push_back(AssemblePeriodicTEBDOddSlice(HamiltonianSlice(OddTime, SliceTimestep), SliceTimestep));
       OddTime += SliceTimestep;
    }
+
+   std::complex<double> const StepEnd = StepStart + Timestep;
+   CheckTEBDSplitFamilyClock(EvenTime, StepEnd, "even");
+   CheckTEBDSplitFamilyClock(OddTime, StepEnd, "odd");
 
    std::vector<SimpleOperator> EvenContinuation;
    if (decomp.a().size() == decomp.b().size()+1)
