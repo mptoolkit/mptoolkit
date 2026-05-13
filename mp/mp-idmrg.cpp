@@ -16,6 +16,12 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
+//
+// iDMRG with single-site subspace expansion.
+//
+// This tool is the environment-expansion iDMRG path. It keeps explicit saved
+// singular-value and unitary factors at the unit-cell boundary so the center
+// tensor can be mapped consistently when a sweep wraps around the unit cell.
 
 #include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
@@ -220,19 +226,6 @@ struct ProductRight
    QuantumNumber QShift;
 };
 
-// Does Iter iterations of the MPO solver, without assuming that Psi
-// is perfectly orthogonal - that is, Rho and Identity are approximations.
-// The number of GMRES iterations is fixed by Iter, which is typically rather small.
-// On input, E is an approximation for the final solution,
-
-std::complex<double>
-PartialSolveSimpleMPO_Left(StateComponent& E, StateComponent const& OldE,
-                           LinearWavefunction const& Psi,
-                           QuantumNumber const& QShift, BasicTriangularMPO const& Op,
-                           MatrixOperator const& Rho, int Iter)
-{
-}
-
 struct MPSMultiply
 {
    MPSMultiply(StateComponent const& E_, OperatorComponent const& H_, StateComponent const& F_)
@@ -390,75 +383,6 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 
    return std::make_pair(D, Vh);
 }
-
-
-
-void SweepLeft(iDMRG& dmrg, StatesInfo const& States, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
-{
-   this->Solve();
-   this->SaveLeftBlock(States);
-   this->ShowInfo('Q');
-
-   loop
-   {
-      this->TruncateAndShiftLeft(States);
-      this->Solve();
-      this->ShowInfo('L');
-   }
-
-}
-
-
-   // NoUpdate is true only on the very first sweep
-
-   // First site:
-
-   if (!NoUpdate)
-      this->UpdateRightBlock(HMix);
-   this->Solve();
-   this->SaveLeftBlock(States);
-
-
-
-   this->ShowInfo('Q');
-
-   // The remaining sites:
-
-   while (C != FirstSite)
-   {
-      this->TruncateAndShiftLeft(States);
-      this->Solve();
-      this->ShowInfo('L');
-   }
-
-   // We could move this around and this->UpdateLeftBlock() at the end of the SweepLeft
-   // Finish() also does a SubspaceExpand.
-
-   SweepNumber++;
-
-
-   iDMRG::SweepRight(StatesInfo const& States, double HMix)
-   {
-      this->UpdateLeftBlock(HMix);
-      this->Solve();
-      this->SaveRightBlock(States);
-      this->ShowInfo('P');
-
-      while (C != LastSite)
-      {
-         this->TruncateAndShiftRight(States);
-         this->Solve();
-         this->ShowInfo('R');
-      }
-
-      SweepNumber++;
-   }
-
-
-}
-
-
-
 
 class iDMRG
 {
@@ -848,6 +772,24 @@ iDMRG::SweepRight(StatesInfo const& States, double HMix)
    SweepNumber++;
 }
 
+void
+iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
+{
+   if (!NoUpdate)
+      this->UpdateRightBlock(HMix);
+   this->Solve();
+   this->SaveLeftBlock(States);
+   this->ShowInfo('Q');
+
+   while (C != FirstSite)
+   {
+      this->TruncateAndShiftLeft(States);
+      this->Solve();
+      this->ShowInfo('L');
+   }
+
+   SweepNumber++;
+}
 
 void
 iDMRG::Finish(StatesInfo const& States)

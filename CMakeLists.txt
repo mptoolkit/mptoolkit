@@ -508,6 +508,7 @@ function(mptk_add_executable target source subdir)
 endfunction()
 
 set(MPTK_TOOLS
+  mp-idmrg
   mp-idmrg-s3e
   mp-ioverlap
   mp-info
