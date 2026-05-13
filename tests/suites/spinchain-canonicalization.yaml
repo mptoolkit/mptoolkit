@@ -34,6 +34,9 @@ fixtures:
     outputs:
       state: psi_right
     certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
       - info_text:
           contains: "Infinite wavefunction in the right canonical basis."
       - info_text:
@@ -66,6 +69,9 @@ tests:
   right_canonicalize_updates_wavefunction_type:
     use: infinite_neel2_right
     expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
       - info_text:
           contains: "Infinite wavefunction in the right canonical basis."
       - info_text:

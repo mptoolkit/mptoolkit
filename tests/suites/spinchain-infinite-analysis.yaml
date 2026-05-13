@@ -15,6 +15,9 @@ fixtures:
     outputs:
       state: psi
     certify:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
       - expectation_real:
           operator: "lat:Sz(0)"
           approx: 0.5
@@ -33,6 +36,22 @@ fixtures:
           abs: 1e-12
       - ioverlap_mag:
           psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+
+  infinite_neel2_scaled3:
+    from: infinite_neel2
+    run: mp-scale psi 3
+    certify:
+      - norm:
+          approx: 3.0
+          abs: 1e-12
+
+  infinite_neel2_scaled3_normalized:
+    from: infinite_neel2_scaled3
+    run: mp-normalize psi
+    certify:
+      - norm:
           approx: 1.0
           abs: 1e-12
 
@@ -113,6 +132,13 @@ fixtures:
           abs: 1e-12
 
 tests:
+  infinite_norm_tracks_scale_and_normalize:
+    use: infinite_neel2_scaled3_normalized
+    expect:
+      - norm:
+          approx: 1.0
+          abs: 1e-12
+
   irepeat_preserves_the_underlying_infinite_state:
     use:
       psi1: infinite_neel2.state

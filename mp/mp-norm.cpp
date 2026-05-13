@@ -29,9 +29,24 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcell-parser.h"
 #include "common/statistics.h"
+#include <cmath>
 
 namespace prog_opt = boost::program_options;
 
+namespace
+{
+
+double InfiniteNormPerUnitCell(InfiniteWavefunctionLeft const& Psi)
+{
+   return std::exp(Psi.log_amplitude());
+}
+
+double InfiniteNormPerUnitCell(InfiniteWavefunctionRight const& Psi)
+{
+   return std::exp(Psi.log_amplitude());
+}
+
+} // namespace
 
 int main(int argc, char** argv)
 {
@@ -65,7 +80,8 @@ int main(int argc, char** argv)
          print_copyright(std::cerr, "tools", basename(argv[0]));
          std::cerr << "usage: " << basename(argv[0]) << " <psi>\n";
          std::cerr << desc << '\n';
-         std::cerr << "Displays the 2-norm of a finite or IBC wavefunction.\n";
+         std::cerr << "Displays the 2-norm of a finite wavefunction, or the"
+                      " amplitude per unit cell of an infinite wavefunction.\n";
 
          return 1;
       }
@@ -74,7 +90,23 @@ int main(int argc, char** argv)
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
 
       pvalue_ptr<MPWavefunction> PsiPtr = pheap::OpenPersistent(InputFile, mp_pheap::CacheSize(), true);
-      std::cout << norm_2(PsiPtr->get<FiniteWavefunctionLeft>()) << '\n';
+      if (PsiPtr->is<FiniteWavefunctionLeft>())
+      {
+         std::cout << norm_2(PsiPtr->get<FiniteWavefunctionLeft>()) << '\n';
+      }
+      else if (PsiPtr->is<InfiniteWavefunctionLeft>())
+      {
+         std::cout << InfiniteNormPerUnitCell(PsiPtr->get<InfiniteWavefunctionLeft>()) << '\n';
+      }
+      else if (PsiPtr->is<InfiniteWavefunctionRight>())
+      {
+         std::cout << InfiniteNormPerUnitCell(PsiPtr->get<InfiniteWavefunctionRight>()) << '\n';
+      }
+      else
+      {
+         std::cerr << "mp-norm: fatal: wavefunction type " << PsiPtr->Type() << " is not supported.\n";
+         return 1;
+      }
 
       pheap::Shutdown();
    }
