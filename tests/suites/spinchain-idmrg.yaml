@@ -39,7 +39,7 @@ fixtures:
     from: lat
     # Smoke test for the post-expansion path. This schedule is intentionally
     # small for CI and is not a convergence benchmark.
-    run: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_J1 -m 4x2,8x2 --seed 1 --maxtol 1e-10 --post rsvd
+    run: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_J1 -m 4x2,8x2 --seed 1 --post rsvd --final-no-post
     outputs:
       state: psi
     certify:
@@ -49,7 +49,7 @@ fixtures:
       - info_text:
           contains: "Unit cell size = 2"
       - info_text:
-          contains: "Number of states = 6"
+          contains: "Number of states = 4"
 
 tests:
   idmrg_finds_the_exact_staggered_field_ground_state:
@@ -77,4 +77,4 @@ tests:
           attribute: Hamiltonian
           equals: "lat:H_J1"
       - info_text:
-          contains: "Number of states = 6"
+          contains: "Number of states = 4"

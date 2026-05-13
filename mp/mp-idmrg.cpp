@@ -345,7 +345,6 @@ class iDMRG
                       int NumStatesKeepNext, double HMix = 0);
       void SweepLeft(StatesInfo const& SInfo, ExpansionInfo const& PostExpand,
                      int NumStatesKeepNext, double HMix = 0, bool NoUpdate = false);
-      void CleanupPostExpansion(StatesInfo const& SInfo, double HMix = 0);
 
       // call after a SweepRight() to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
@@ -742,19 +741,6 @@ iDMRG::SweepLeft(StatesInfo const& States, ExpansionInfo const& PostExpand,
 }
 
 void
-iDMRG::CleanupPostExpansion(StatesInfo const& States, double HMix)
-{
-   ExpansionInfo NoExpansion;
-
-   // Post-expansion grows the active basis for the next local solve.  Finish
-   // with an ordinary sweep pair so those auxiliary states do not become part
-   // of the saved iMPS bond basis.
-   std::cout << "Running final no-expansion cleanup sweeps.\n";
-   this->SweepLeft(States, NoExpansion, States.MaxStates, HMix);
-   this->SweepRight(States, NoExpansion, States.MaxStates, HMix);
-}
-
-void
 iDMRG::Finish(StatesInfo const& States)
 {
    CHECK(C == LastSite);
@@ -828,7 +814,7 @@ int main(int argc, char** argv)
       bool Quiet = false;
       bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
       bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the next sweep
-      bool NoPostCleanup = false;
+      bool FinalNoPostExpansion = false;
       std::string TargetState;
       std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
@@ -883,8 +869,8 @@ int main(int argc, char** argv)
           "Post-expansion number of additional states in each quantum number sector")
          ("nogreedy", prog_opt::bool_switch(&NoGreedy),
           "Don't expand the basis one sweep ahead")
-         ("no-post-cleanup", prog_opt::bool_switch(&NoPostCleanup),
-          "Don't run final no-expansion cleanup sweeps after post-expansion")
+         ("final-no-post", prog_opt::bool_switch(&FinalNoPostExpansion),
+          "Run the final scheduled sweep pair without post-expansion")
          ("oversample", prog_opt::value(&Oversampling.Scale),
           FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())
          ("oversample-min", prog_opt::value(&Oversampling.Add),
@@ -1273,36 +1259,35 @@ int main(int argc, char** argv)
          std::cout << " with " << PostExpand;
       std::cout << '\n';
 
-      bool const UsesPostExpansion =
-         idmrg.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion
-         && (PostExpand.IncrementFactor > 0.0
-             || PostExpand.ExpandFactor > 0.0
-             || PostExpand.ExpandPerSector > 0);
-
       int ReturnCode = 0;
 
       try
       {
          bool First = true;
+         ExpansionInfo NoExpansion;
          for (int i = 0; i < MyStates.size(); ++i)
          {
             SInfo.MaxStates = MyStates[i].NumStates;
             int NumStatesKeepNext = (!NoGreedy && i < MyStates.size()-1)
                ? MyStates[i+1].NumStates : MyStates[i].NumStates;
+            // The final iMPS construction uses boundary maps saved by both
+            // sweep directions, so disabling post-expansion for a final output
+            // needs to cover the last left/right pair rather than a single
+            // half-sweep.
+            int const FinalSweepPairBegin = std::max(MyStates.size() - 2, 0);
+            bool const IsFinalSweepPair = i >= FinalSweepPairBegin;
+            ExpansionInfo const& ThisPostExpand = (FinalNoPostExpansion && IsFinalSweepPair)
+               ? NoExpansion : PostExpand;
 
             if (i % 2 == 0)
             {
-               idmrg.SweepLeft(SInfo, PostExpand, NumStatesKeepNext, HMix, First);
+               idmrg.SweepLeft(SInfo, ThisPostExpand, NumStatesKeepNext, HMix, First);
                First = false;
             }
             else
             {
-               idmrg.SweepRight(SInfo, PostExpand, NumStatesKeepNext, HMix);
+               idmrg.SweepRight(SInfo, ThisPostExpand, NumStatesKeepNext, HMix);
             }
-         }
-         if (UsesPostExpansion && !NoPostCleanup)
-         {
-            idmrg.CleanupPostExpansion(SInfo, HMix);
          }
          idmrg.Finish(SInfo);
 
