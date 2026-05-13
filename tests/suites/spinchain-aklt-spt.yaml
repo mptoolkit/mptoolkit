@@ -3,9 +3,8 @@ version: 0
 imports:
   - ../recipes/mptoolkit-probes.yaml
 
-# FIXME: mp-idmrg-s3e convergence for AKLT is not reliable enough for tight
-# numerical tolerances. Keep these as broad regression checks until the new
-# mp-idmrg path can replace this tool for the model.
+# The post-expansion mp-idmrg path converges this AKLT check reliably and
+# replaces the older S3E-based regression path for this model.
 
 fixtures:
   lat:
@@ -15,7 +14,7 @@ fixtures:
 
   aklt_ground:
     from: lat
-    run: mp-idmrg-s3e -e -b -u 2 -w psi -H lat:H_AKLT -m 8x32
+    run: mp-idmrg -e -b -u 2 -w psi -H lat:H_AKLT -m 8x32 --seed 1 --maxtol 1e-12 --post rsvd
     outputs:
       state: psi
     certify:
