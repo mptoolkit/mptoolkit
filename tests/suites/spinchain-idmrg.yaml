@@ -35,6 +35,22 @@ fixtures:
       - info_text:
           contains: "Quantum number per unit cell = 0"
 
+  infinite_spinchain_heisenberg_post_expansion:
+    from: lat
+    # Smoke test for the post-expansion path. This schedule is intentionally
+    # small for CI and is not a convergence benchmark.
+    run: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_J1 -m 4x2,8x2 --seed 1 --maxtol 1e-10 --post rsvd
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J1"
+      - info_text:
+          contains: "Unit cell size = 2"
+      - info_text:
+          contains: "Number of states = 6"
+
 tests:
   idmrg_finds_the_exact_staggered_field_ground_state:
     use: infinite_spinchain_hstag_ground
@@ -53,3 +69,12 @@ tests:
       - expectation_real:
           operator: "lat:Sz(1)"
           approx: 0.5
+
+  idmrg_post_expansion_handles_heisenberg_chain:
+    use: infinite_spinchain_heisenberg_post_expansion
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J1"
+      - info_text:
+          contains: "Number of states = 6"

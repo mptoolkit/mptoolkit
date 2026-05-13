@@ -70,6 +70,20 @@ std::ostream& operator<<(std::ostream& out, ExpansionInfo const& Info)
    return out;
 }
 
+int RoundExpansionStates(double Count)
+{
+   if (Count <= 0.0)
+      return 0;
+   return int(std::ceil(Count));
+}
+
+int ExtraStatesFromExpansion(ExpansionInfo const& Expand, int GrowthTargetStates,
+                             int CurrentStates, int ReferenceStates)
+{
+   return RoundExpansionStates(Expand.IncrementFactor * std::max(GrowthTargetStates - CurrentStates, 0)
+                               + Expand.ExpandFactor * ReferenceStates);
+}
+
 void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& PreExpand, ExpansionInfo const& PostExpand, int NumStatesKeepNext)
 {
    dmrg.StartSweep();
@@ -78,14 +92,14 @@ void SweepRight(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const&
       dmrg.StartIteration();
       int CurrentEnvStates = dmrg.Basis2TotalDimension();
       int DesiredStates = States.MaxStates;
-      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
+      int ExtraStates = ExtraStatesFromExpansion(PreExpand, DesiredStates, CurrentEnvStates, DesiredStates);
 
       if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0)) // && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandRightEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*States.MaxStates));
+      int Delta = ExtraStatesFromExpansion(PostExpand, NumStatesKeepNext, DesiredStates, States.MaxStates);
       TruncationInfo Info = dmrg.TruncateAndShiftRight(States, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << dmrg.TotalNumSweeps
          << " Site=" << dmrg.Site()-1  // -1 since we've already moved on to the next site
@@ -120,14 +134,14 @@ void SweepLeft(FiniteDMRG& dmrg, StatesInfo const& States, ExpansionInfo const& 
       dmrg.StartIteration();
       int CurrentEnvStates = dmrg.Basis1TotalDimension();
       int DesiredStates = States.MaxStates;
-      int ExtraStates = int(std::ceil(PreExpand.IncrementFactor*std::max(DesiredStates-CurrentEnvStates, 0) + PreExpand.ExpandFactor*DesiredStates));
+      int ExtraStates = ExtraStatesFromExpansion(PreExpand, DesiredStates, CurrentEnvStates, DesiredStates);
 
       if ((ExtraStates > 0 || PreExpand.ExpandPerSector > 0)) // && dmrg.Site < dmrg.RightStop)
       {
          CurrentEnvStates = dmrg.ExpandLeftEnvironment(CurrentEnvStates+ExtraStates, PreExpand.ExpandPerSector);
       }
       dmrg.Solve();
-      int Delta = int(std::ceil(PostExpand.IncrementFactor*std::max(NumStatesKeepNext-DesiredStates, 0) + PostExpand.ExpandFactor*States.MaxStates));
+      int Delta = ExtraStatesFromExpansion(PostExpand, NumStatesKeepNext, DesiredStates, States.MaxStates);
       TruncationInfo Info = dmrg.TruncateAndShiftLeft(States, Delta, PostExpand.ExpandPerSector);
       std::cout << "Sweep=" << dmrg.TotalNumSweeps
          << " Site=" << dmrg.Site()+1       // +1 since we've already moved on to the next site
@@ -194,7 +208,7 @@ int main(int argc, char** argv)
       PreExpand.ExpandPerSector = 0;
 
       PostExpand.IncrementFactor = 1.0;
-      PostExpand.ExpandFactor = 0.05;
+      PostExpand.ExpandFactor = 0.1;
       PostExpand.ExpandPerSector = 0;
 
       std::cout.precision(14);

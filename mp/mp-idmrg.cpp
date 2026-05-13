@@ -41,6 +41,7 @@
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
+#include "mp-algorithms/expansion.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
@@ -58,6 +59,8 @@
 #include "lattice/infinite-parser.h"
 #include "mp-algorithms/triangular_mpo_solver.h"
 #include "mp-algorithms/eigensolver.h"
+#include <algorithm>
+#include <cmath>
 
 namespace prog_opt = boost::program_options;
 
@@ -244,137 +247,73 @@ struct MPSMultiply
    StateComponent const& F;
 };
 
-struct MixInfo
+struct ExpansionInfo
 {
-   double MixFactor;
-   double RandomMixFactor;
+   double IncrementFactor;        // If the number of states is increasing from m to m', add IncrementFactor*(m'-m) states
+   double ExpandFactor;           // Add additional ExpandFactor * m' states
+   int ExpandPerSector;           // Add this many states per available quantum number sector
+
+   ExpansionInfo()
+      : IncrementFactor(0.0), ExpandFactor(0.0), ExpandPerSector(0) {}
 };
 
-//#define SSC
+std::ostream&
+operator<<(std::ostream& out, ExpansionInfo const& Info)
+{
+   out << "increment: " << Info.IncrementFactor
+       << " expansion factor: " << Info.ExpandFactor
+       << " per sector: " << Info.ExpandPerSector;
+   return out;
+}
 
-// Apply subspace expansion / truncation on the left (C.Basis1()).
-// Returns a matrix Lambda (diagonal) and a unitary
+int
+RoundExpansionStates(double Count)
+{
+   if (Count <= 0.0)
+      return 0;
+   return int(std::ceil(Count));
+}
+
+int
+PostExpansionExtraStates(ExpansionInfo const& PostExpand, StatesInfo const& States, int NumStatesKeepNext)
+{
+   int const DesiredStates = States.MaxStates;
+   return RoundExpansionStates(PostExpand.IncrementFactor * std::max(NumStatesKeepNext - DesiredStates, 0)
+                               + PostExpand.ExpandFactor * States.MaxStates);
+}
+
+// Apply post-expansion / truncation on the left (C.Basis1()).
+// Returns a unitary and diagonal matrix for the iDMRG unit-cell boundary map.
 // Postcondition: U' Lambda' C' = C (up to truncation!)
 std::pair<MatrixOperator, RealDiagonalOperator>
-SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateComponent const& RightHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& LeftHam)
+SplitTruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H,
+                          StateComponent const& RightHam, PostExpansionAlgorithm Algo,
+                          StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector,
+                          TruncationInfo& Info, OversamplingInfo Oversampling)
 {
-   // truncate - FIXME: this is the s3e step
-#if defined(SSC)
-   MatrixOperator Lambda;
-   SimpleStateComponent CX;
-   std::tie(Lambda, CX) = ExpandBasis1_(C);
-#else
-   MatrixOperator Lambda = ExpandBasis1(C);
-#endif
-
-   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
-   if (Mix.MixFactor > 0)
-   {
-#if defined(SSC)
-      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
-#else
-      StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
-#endif
-      MatrixOperator RhoMix;
-      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
-
-      // Skip the identity and the Hamiltonian
-      for (unsigned i = 1; i < RH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
-      }
-      // check for a zero mixing term - can happen if there are no interactions that span
-      // the current bond
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-
-   //TRACE(Rho);
-
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-   Lambda = Lambda * herm(U);
-
-   //TRACE(Lambda);
-
-#if defined(SSC)
-   C = U*CX; //prod(U, CX);
-#else
-   C = prod(U, C);
-#endif
-
+   MatrixOperator Lambda = TruncateExpandBasis1(C, LeftHam, H, RightHam, Algo, States,
+                                                ExtraStates, ExtraStatesPerSector, Info, Oversampling);
+   MatrixOperator U;
    MatrixOperator Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
-
-   //TRACE(U)(D)(Vh);
 
    C = prod(Vh, C);
    return std::make_pair(U, D);
 }
 
-// Apply subspace expansion / truncation on the right (C.Basis2()).
-// Returns Lambda matrix (diagonal) and a unitary matrix
+// Apply post-expansion / truncation on the right (C.Basis2()).
+// Returns a diagonal matrix and unitary for the iDMRG unit-cell boundary map.
 // Postcondition: C' Lambda' U' = C (up to truncation!)
 std::pair<RealDiagonalOperator, MatrixOperator>
-SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateComponent const& LeftHam,
-                     MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
-                     StateComponent const& RightHam)
+SplitTruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorComponent const& H,
+                          StateComponent const& RightHam, PostExpansionAlgorithm Algo,
+                          StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector,
+                          TruncationInfo& Info, OversamplingInfo Oversampling)
 {
-   // truncate - FIXME: this is the s3e step
-   MatrixOperator Lambda = ExpandBasis2(C);
-
-   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
-   if (Mix.MixFactor > 0)
-   {
-      StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
-      MatrixOperator RhoMix;
-
-      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
-
-      for (unsigned i = 1; i < LH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
-      }
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-
-   Lambda = U * Lambda;
-   C = prod(C, herm(U));
-
+   MatrixOperator Lambda = TruncateExpandBasis2(C, LeftHam, H, RightHam, Algo, States,
+                                                ExtraStates, ExtraStatesPerSector, Info, Oversampling);
+   MatrixOperator U;
    MatrixOperator Vh;
    RealDiagonalOperator D;
    SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
@@ -395,8 +334,6 @@ class iDMRG
             StateComponent const& LeftHam, StateComponent const& RightHam,
             std::complex<double> InitialEnergy = 0.0, int Verbose = 0);
 
-      void SetMixInfo(MixInfo const& m);
-
       void SetInitialFidelity(double f)
       {
          Solver_.SetInitialFidelity(Psi.size(), f);
@@ -404,8 +341,11 @@ class iDMRG
 
       LocalEigensolver& Solver() { return Solver_; }
 
-      void SweepRight(StatesInfo const& SInfo, double HMix = 0);
-      void SweepLeft(StatesInfo const& SInfo, double HMix = 0, bool NoUpdate = false);
+      void SweepRight(StatesInfo const& SInfo, ExpansionInfo const& PostExpand,
+                      int NumStatesKeepNext, double HMix = 0);
+      void SweepLeft(StatesInfo const& SInfo, ExpansionInfo const& PostExpand,
+                     int NumStatesKeepNext, double HMix = 0, bool NoUpdate = false);
+      void CleanupPostExpansion(StatesInfo const& SInfo, double HMix = 0);
 
       // call after a SweepRight() to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
@@ -423,10 +363,10 @@ class iDMRG
       void Solve();
 
       // at the left boundary of the unit cell, construct and save the RightHamiltonian for later use
-      void SaveRightBlock(StatesInfo const& States);
+      void SaveRightBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector);
 
       // at the right boundary of the unit cell, construct and save the LeftHamiltonian for later use
-      void SaveLeftBlock(StatesInfo const& States);
+      void SaveLeftBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector);
 
       // at the left boundary of the unit cell, update the LeftHamiltonian and C to SaveLeftHamiltonian
       // At the end of this step, the wavefunction is in a 'regular' form with
@@ -435,8 +375,8 @@ class iDMRG
 
       void UpdateRightBlock(double HMix = 0);
 
-      void TruncateAndShiftLeft(StatesInfo const& States);
-      void TruncateAndShiftRight(StatesInfo const& States);
+      void TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector);
+      void TruncateAndShiftRight(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector);
 
       void ShowInfo(char c);
 
@@ -474,7 +414,8 @@ class iDMRG
       MatrixOperator SaveU1;
       RealDiagonalOperator SaveLambda1;
 
-      MixInfo    MixingInfo;
+      PostExpansionAlgorithm PostExpansionAlgo;
+      OversamplingInfo Oversampling;
       TruncationInfo Info;
 
       int SweepNumber;
@@ -485,7 +426,8 @@ iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR
              StateComponent const& LeftHam, StateComponent const& RightHam,
              std::complex<double> InitialEnergy, int Verbose_)
    : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_),
-     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_), SweepNumber(1)
+     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_),
+     Oversampling(10, 1.0, 1), SweepNumber(1)
 {
    this->Initialize(LambdaR, UR, InitialEnergy);
 }
@@ -647,15 +589,18 @@ iDMRG::UpdateRightBlock(double HMix)
 }
 
 void
-iDMRG::SaveLeftBlock(StatesInfo const& States)
+iDMRG::SaveLeftBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    //TRACE(LeftHamiltonian.back());
    // When we save the block, we need to end up with
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);
    StateComponent L = *C;
-   std::tie(SaveLambda2, SaveU2) = SubspaceExpandBasis2(L, *H, LeftHamiltonian.back(),
-                                                          MixingInfo, States, Info, RightHamiltonian.front());
+   Info = TruncationInfo();
+   std::tie(SaveLambda2, SaveU2) = SplitTruncateExpandBasis2(L, LeftHamiltonian.back(), *H,
+                                                             RightHamiltonian.front(), PostExpansionAlgo,
+                                                             States, ExtraStates, ExtraStatesPerSector,
+                                                             Info, Oversampling);
 
    if (Verbose > 1)
    {
@@ -669,12 +614,15 @@ iDMRG::SaveLeftBlock(StatesInfo const& States)
 }
 
 void
-iDMRG::SaveRightBlock(StatesInfo const& States)
+iDMRG::SaveRightBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    CHECK(C == FirstSite);
    StateComponent R = *C;
-   std::tie(SaveU1, SaveLambda1) = SubspaceExpandBasis1(R, *H, RightHamiltonian.front(),
-                                                          MixingInfo, States, Info, LeftHamiltonian.back());
+   Info = TruncationInfo();
+   std::tie(SaveU1, SaveLambda1) = SplitTruncateExpandBasis1(R, LeftHamiltonian.back(), *H,
+                                                             RightHamiltonian.front(), PostExpansionAlgo,
+                                                             States, ExtraStates, ExtraStatesPerSector,
+                                                             Info, Oversampling);
 
    //   TRACE(SaveU1);
 
@@ -687,14 +635,13 @@ iDMRG::SaveRightBlock(StatesInfo const& States)
 }
 
 void
-iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
+iDMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    this->CheckConsistency();
-   // Truncate right
-   MatrixOperator U;
-   RealDiagonalOperator Lambda;
-   std::tie(U, Lambda) = SubspaceExpandBasis1(*C, *H, RightHamiltonian.front(), MixingInfo, States, Info,
-                                                LeftHamiltonian.back());
+   Info = TruncationInfo();
+   MatrixOperator Lambda = TruncateExpandBasis1(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
+                                                PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector,
+                                                Info, Oversampling);
 
    if (Verbose > 1)
    {
@@ -708,7 +655,7 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
    --H;
    --C;
 
-   *C = prod(*C, U*Lambda);
+   *C = prod(*C, Lambda);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -717,13 +664,12 @@ iDMRG::TruncateAndShiftLeft(StatesInfo const& States)
 }
 
 void
-iDMRG::TruncateAndShiftRight(StatesInfo const& States)
+iDMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
-   // Truncate right
-   RealDiagonalOperator Lambda;
-   MatrixOperator U;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
-                                                RightHamiltonian.front());
+   Info = TruncationInfo();
+   MatrixOperator Lambda = TruncateExpandBasis2(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
+                                                PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector,
+                                                Info, Oversampling);
    if (Verbose > 1)
    {
       std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
@@ -736,7 +682,7 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    ++H;
    ++C;
 
-   *C = prod(Lambda*U, *C);
+   *C = prod(Lambda, *C);
 
    // normalize
    *C *= 1.0 / norm_frob(*C);
@@ -755,16 +701,18 @@ iDMRG::CheckConsistency() const
 }
 
 void
-iDMRG::SweepRight(StatesInfo const& States, double HMix)
+iDMRG::SweepRight(StatesInfo const& States, ExpansionInfo const& PostExpand,
+                  int NumStatesKeepNext, double HMix)
 {
    this->UpdateLeftBlock(HMix);
    this->Solve();
-   this->SaveRightBlock(States);
+   int const ExtraStates = PostExpansionExtraStates(PostExpand, States, NumStatesKeepNext);
+   this->SaveRightBlock(States, ExtraStates, PostExpand.ExpandPerSector);
    this->ShowInfo('P');
 
    while (C != LastSite)
    {
-      this->TruncateAndShiftRight(States);
+      this->TruncateAndShiftRight(States, ExtraStates, PostExpand.ExpandPerSector);
       this->Solve();
       this->ShowInfo('R');
    }
@@ -773,22 +721,37 @@ iDMRG::SweepRight(StatesInfo const& States, double HMix)
 }
 
 void
-iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
+iDMRG::SweepLeft(StatesInfo const& States, ExpansionInfo const& PostExpand,
+                 int NumStatesKeepNext, double HMix, bool NoUpdate)
 {
    if (!NoUpdate)
       this->UpdateRightBlock(HMix);
    this->Solve();
-   this->SaveLeftBlock(States);
+   int const ExtraStates = PostExpansionExtraStates(PostExpand, States, NumStatesKeepNext);
+   this->SaveLeftBlock(States, ExtraStates, PostExpand.ExpandPerSector);
    this->ShowInfo('Q');
 
    while (C != FirstSite)
    {
-      this->TruncateAndShiftLeft(States);
+      this->TruncateAndShiftLeft(States, ExtraStates, PostExpand.ExpandPerSector);
       this->Solve();
       this->ShowInfo('L');
    }
 
    SweepNumber++;
+}
+
+void
+iDMRG::CleanupPostExpansion(StatesInfo const& States, double HMix)
+{
+   ExpansionInfo NoExpansion;
+
+   // Post-expansion grows the active basis for the next local solve.  Finish
+   // with an ordinary sweep pair so those auxiliary states do not become part
+   // of the saved iMPS bond basis.
+   std::cout << "Running final no-expansion cleanup sweeps.\n";
+   this->SweepLeft(States, NoExpansion, States.MaxStates, HMix);
+   this->SweepRight(States, NoExpansion, States.MaxStates, HMix);
 }
 
 void
@@ -800,8 +763,9 @@ iDMRG::Finish(StatesInfo const& States)
    // This is actually quite important to get a translationally invariant wavefunction
    RealDiagonalOperator Lambda;
    MatrixOperator U;
-   std::tie(Lambda, U) = SubspaceExpandBasis2(*C, *H, LeftHamiltonian.back(), MixingInfo, States, Info,
-                                                RightHamiltonian.front());
+   Info = TruncationInfo();
+   std::tie(Lambda, U) = SplitTruncateExpandBasis2(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
+                                                   PostExpansionAlgo, States, 0, 0, Info, Oversampling);
 
    if (Verbose > 1)
    {
@@ -828,6 +792,7 @@ iDMRG::ShowInfo(char c)
              << " Sweep=" << SweepNumber
              << " Energy=" << formatting::format_complex(Solver_.LastEnergy())
              << " States=" << Info.KeptStates()
+             << " Extra=" << Info.ExtraStates()
              << " TruncError=" << Info.TruncationError()
              << " Entropy=" << Info.KeptEntropy()
              << " FidelityLoss=" << Solver_.LastFidelityLoss()
@@ -854,8 +819,6 @@ int main(int argc, char** argv)
       bool TwoSite = true;
       bool OneSite = false;
       int WavefuncUnitCellSize = 0;
-      double MixFactor = 0.02;
-      double RandomMixFactor = 0.0;
       bool NoFixedPoint = false;
       bool NoOrthogonalize = false;
       bool Create = false;
@@ -864,6 +827,8 @@ int main(int argc, char** argv)
       int Verbose = 0;
       bool Quiet = false;
       bool DoRandom = false; // true if we want to start an iteration from a random centre matrix
+      bool NoGreedy = false;  // set to false to expand the basis quickly, keeping enough states for the next sweep
+      bool NoPostCleanup = false;
       std::string TargetState;
       std::vector<std::string> BoundaryState;
       double EvolveDelta = 0.0;
@@ -877,6 +842,13 @@ int main(int argc, char** argv)
       double MinTol = 1E-16; // lower bound for the eigensolver tolerance - seems we dont really need it
       double HMix = 0;  // Hamiltonian length-scale mixing factor
       double ShiftInvertEnergy = 0;
+      ExpansionInfo PostExpand;
+      std::string PostExpandAlgo = PostExpansionAlgorithm().Name();
+      OversamplingInfo Oversampling(10, 1.0, 1);
+
+      PostExpand.IncrementFactor = 1.0;
+      PostExpand.ExpandFactor = 0.1;
+      PostExpand.ExpandPerSector = 0;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
@@ -899,10 +871,24 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-         ("mix-factor", prog_opt::value(&MixFactor),
-          FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-         ("random-mix-factor", prog_opt::value(&RandomMixFactor),
-          FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
+         ("post", prog_opt::value(&PostExpandAlgo),
+          FormatDefault("Post-expansion algorithm, choices are " + PostExpansionAlgorithm::ListAvailable(),
+                        PostExpandAlgo).c_str())
+         ("post-increment", prog_opt::value(&PostExpand.IncrementFactor),
+          FormatDefault("Post-expansion growth factor for basis size increase",
+                        PostExpand.IncrementFactor).c_str())
+         ("post-factor", prog_opt::value(&PostExpand.ExpandFactor),
+          FormatDefault("Post-expansion factor", PostExpand.ExpandFactor).c_str())
+         ("post-sector", prog_opt::value(&PostExpand.ExpandPerSector),
+          "Post-expansion number of additional states in each quantum number sector")
+         ("nogreedy", prog_opt::bool_switch(&NoGreedy),
+          "Don't expand the basis one sweep ahead")
+         ("no-post-cleanup", prog_opt::bool_switch(&NoPostCleanup),
+          "Don't run final no-expansion cleanup sweeps after post-expansion")
+         ("oversample", prog_opt::value(&Oversampling.Scale),
+          FormatDefault("For random SVD, oversample by this factor", Oversampling.Scale).c_str())
+         ("oversample-min", prog_opt::value(&Oversampling.Add),
+          FormatDefault("For random SVD, minimum amount of oversampling", Oversampling.Add).c_str())
          ("hmix", prog_opt::value(&HMix),
           FormatDefault("Hamiltonian mixing factor", HMix).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
@@ -1252,8 +1238,22 @@ int main(int argc, char** argv)
       iDMRG idmrg(Psi, R, UR, QShift, HamMPO, BlockHamL,
                   BlockHamR, InitialEnergy, Verbose);
 
-      idmrg.MixingInfo.MixFactor = MixFactor;
-      idmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
+      idmrg.PostExpansionAlgo = PostExpansionAlgorithm(PostExpandAlgo);
+      idmrg.Oversampling = Oversampling;
+      if (!vm.count("post-sector"))
+      {
+         if (idmrg.PostExpansionAlgo == PostExpansionAlgorithm::SVD
+             || idmrg.PostExpansionAlgo == PostExpansionAlgorithm::RSVD)
+         {
+            PostExpand.ExpandPerSector = 0;
+         }
+         else if (idmrg.PostExpansionAlgo == PostExpansionAlgorithm::RangeFinding
+                  || idmrg.PostExpansionAlgo == PostExpansionAlgorithm::Random)
+         {
+            PostExpand.ExpandPerSector = 1;
+         }
+      }
+
       idmrg.SetInitialFidelity(InitialFidelity);
       idmrg.Solver().MaxTol = MaxTol;
       idmrg.Solver().MinTol = MinTol;
@@ -1268,6 +1268,17 @@ int main(int argc, char** argv)
       }
       idmrg.Solver().SetShiftInvertEnergy(ShiftInvertEnergy);
 
+      std::cout << "Using post-expansion algorithm: " << idmrg.PostExpansionAlgo.Name();
+      if (idmrg.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion)
+         std::cout << " with " << PostExpand;
+      std::cout << '\n';
+
+      bool const UsesPostExpansion =
+         idmrg.PostExpansionAlgo != PostExpansionAlgorithm::NoExpansion
+         && (PostExpand.IncrementFactor > 0.0
+             || PostExpand.ExpandFactor > 0.0
+             || PostExpand.ExpandPerSector > 0);
+
       int ReturnCode = 0;
 
       try
@@ -1276,16 +1287,22 @@ int main(int argc, char** argv)
          for (int i = 0; i < MyStates.size(); ++i)
          {
             SInfo.MaxStates = MyStates[i].NumStates;
+            int NumStatesKeepNext = (!NoGreedy && i < MyStates.size()-1)
+               ? MyStates[i+1].NumStates : MyStates[i].NumStates;
 
             if (i % 2 == 0)
             {
-               idmrg.SweepLeft(SInfo, HMix, First);
+               idmrg.SweepLeft(SInfo, PostExpand, NumStatesKeepNext, HMix, First);
                First = false;
             }
             else
             {
-               idmrg.SweepRight(SInfo, HMix);
+               idmrg.SweepRight(SInfo, PostExpand, NumStatesKeepNext, HMix);
             }
+         }
+         if (UsesPostExpansion && !NoPostCleanup)
+         {
+            idmrg.CleanupPostExpansion(SInfo, HMix);
          }
          idmrg.Finish(SInfo);
 
