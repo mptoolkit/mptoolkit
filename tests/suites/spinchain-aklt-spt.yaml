@@ -15,7 +15,7 @@ fixtures:
 
   aklt_ground:
     from: lat
-    run: mp-idmrg-s3e -e -b -u 2 -w psi -H lat:H_AKLT -m 8x32 --maxtol 1e-12
+    run: mp-idmrg-s3e -e -b -u 2 -w psi -H lat:H_AKLT -m 8x32 --maxtol 1e-12 --seed 1
     outputs:
       state: psi
     certify:

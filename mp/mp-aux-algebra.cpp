@@ -26,9 +26,9 @@
 #include "common/terminal.h"
 #include "common/prog_options.h"
 #include "common/prog_opt_accum.h"
+#include "common/randutil.h"
 #include "common/environment.h"
 #include "common/stringutil.h"
-#include "common/unique.h"
 #include "interface/inittemp.h"
 #include "tensor/tensor_eigen.h"
 #include "lattice/unitcell.h"
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
          print_preamble(std::cout, argc, argv);
 
       if (!NoRandomPhase)
-         srand(ext::get_unique() % RAND_MAX);
+         randutil::seed(randutil::crypto_rand());
 
       // if the number of eigenvalues is specified but
       // the cutoff is not, then set the cutoff to zero
