@@ -21,6 +21,10 @@
 #define ENVIRONMENT_H_KHCJKSHDUY478Y5478YOPEW
 
 #include "common/stringutil.h"
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <stdlib.h> // for getenv
 
@@ -87,6 +91,118 @@ getenv_or_default(std::string const& str, char const* Default)
 {
    char const* Str = getenv(str.c_str());
    return Str ? Str : Default;
+}
+
+// Format the current local date/time using strftime format specifiers.
+inline
+std::string format_date_time(std::string const& Format)
+{
+   std::time_t Time = std::time(nullptr);
+   std::tm LocalTime = *std::localtime(&Time);
+   char Buffer[100] = {};
+   std::strftime(Buffer, sizeof(Buffer), Format.c_str(), &LocalTime);
+   return std::string(Buffer);
+}
+
+// Find an unused filename of the form BaseName + N + Extension, where N is
+// zero-padded to at least Width digits.
+inline
+std::string find_next_unused_filename(std::string const& BaseName, std::string const& Extension,
+                                      int Width = 0)
+{
+   int Number = 1;
+   std::string FileName;
+   std::ostringstream Out;
+   do
+   {
+      Out.str("");
+      Out.clear();
+      Out << std::setw(Width) << std::setfill('0') << Number++;
+      FileName = BaseName + Out.str() + Extension;
+   } while (std::ifstream(FileName));
+   return FileName;
+}
+
+// Replace filename format specifiers used by MP_BENCHFILE.
+inline
+std::string replace_filename_format_specifiers(std::string FileName)
+{
+   struct FormatSpecifier
+   {
+      char const* Token;
+      char const* Format;
+   };
+
+   FormatSpecifier const FormatMap[] = {
+      {"%D", "%Y-%m-%d-%H:%M:%S"},
+      {"%T", "%H:%M:%S"},
+      {"%F", "%Y-%m-%d"},
+      {"%C", "%Y%m%d_%H%M%S"},
+      {"%z", "%z"},
+      {"%Z", "%Z"}
+   };
+
+   for (auto const& Format : FormatMap)
+   {
+      std::size_t Pos = 0;
+      while ((Pos = FileName.find(Format.Token, Pos)) != std::string::npos)
+      {
+         std::string Replacement = format_date_time(Format.Format);
+         FileName.replace(Pos, 2, Replacement);
+         Pos += Replacement.length();
+      }
+   }
+
+   std::size_t Pos = FileName.find('%');
+   while (Pos != std::string::npos)
+   {
+      std::size_t End = Pos + 1;
+      while (End < FileName.size() && FileName[End] >= '0' && FileName[End] <= '9')
+         ++End;
+      if (End < FileName.size() && FileName[End] == 'n')
+      {
+         std::string WidthStr = FileName.substr(Pos + 1, End - Pos - 1);
+         int Width = WidthStr.empty() ? 0 : std::stoi(WidthStr);
+         FileName = find_next_unused_filename(FileName.substr(0, Pos), FileName.substr(End + 1),
+                                              Width);
+         break;
+      }
+      Pos = FileName.find('%', Pos + 1);
+   }
+
+   return FileName;
+}
+
+// Open an MP_BENCHFILE-style output stream. A leading '+' appends, and a
+// leading '++' appends after writing a blank separator line.
+inline
+std::ofstream open_bench_file(std::string FileName)
+{
+   if (FileName.empty())
+      return std::ofstream();
+
+   bool Append = false;
+   bool BlankLine = false;
+   if (FileName[0] == '+')
+   {
+      Append = true;
+      FileName.erase(0, 1);
+      if (!FileName.empty() && FileName[0] == '+')
+      {
+         BlankLine = true;
+         FileName.erase(0, 1);
+      }
+   }
+
+   FileName = replace_filename_format_specifiers(FileName);
+   if (FileName.empty())
+      return std::ofstream();
+
+   std::ofstream Out(FileName, std::ios_base::out |
+                              (Append ? std::ios_base::app : std::ios_base::trunc));
+   if (BlankLine && Out.good())
+      Out << '\n';
+   return Out;
 }
 
 #endif
