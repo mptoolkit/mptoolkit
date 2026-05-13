@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Keep the bootstrap Release default close to Autoconf and uni20 while
-# preserving explicit -DCMAKE_CXX_FLAGS_RELEASE=... cache values.
+# Keep the bootstrap Release default close to Autoconf and uni20 without
+# clobbering user-provided or toolchain-provided release flags.
 set(MPTK_DEFAULT_CXX_FLAGS_RELEASE "-DNDEBUG -O2")
-if(DEFINED CMAKE_CXX_FLAGS_RELEASE)
-  set(MPTK_CMAKE_CXX_FLAGS_RELEASE_WAS_DEFINED TRUE)
+if(NOT DEFINED CMAKE_CXX_FLAGS_RELEASE)
+  set(CMAKE_CXX_FLAGS_RELEASE "${MPTK_DEFAULT_CXX_FLAGS_RELEASE}"
+      CACHE STRING "Flags used by the CXX compiler during RELEASE builds.")
 endif()
 
 project(MPToolkit LANGUAGES C CXX)
@@ -24,9 +25,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-if(NOT MPTK_CMAKE_CXX_FLAGS_RELEASE_WAS_DEFINED)
-  set(CMAKE_CXX_FLAGS_RELEASE "${MPTK_DEFAULT_CXX_FLAGS_RELEASE}" CACHE STRING "Flags used by the CXX compiler during RELEASE builds." FORCE)
-endif()
 
 option(MPTK_WITH_OPENMP "Enable OpenMP support" OFF)
 option(MPTK_WITH_PSTREAM "Enable persistent stream support" ON)
@@ -54,7 +52,11 @@ include(CheckIncludeFileCXX)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(MPTKBlasVendor)
+include(MPTKNumericalBackend)
 include(TestBigEndian)
+
+find_library(ARPACK_LIBRARY NAMES arpack REQUIRED)
+mptk_prepare_numerical_backend("${ARPACK_LIBRARY}")
 
 find_package(Git QUIET)
 if(NOT Boost_NO_BOOST_CMAKE)
@@ -75,9 +77,11 @@ if(NOT TARGET Boost::program_options)
 endif()
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-find_library(ARPACK_LIBRARY NAMES arpack REQUIRED)
 find_path(GMP_INCLUDE_DIR NAMES gmp.h REQUIRED)
 find_library(GMP_LIBRARY NAMES gmp REQUIRED)
+
+mptk_detect_blas_vendor(MPTK_DETECTED_BLAS_VENDOR)
+mptk_validate_numerical_backend("${ARPACK_LIBRARY}")
 
 if(NOT TARGET BLAS::BLAS)
   add_library(BLAS::BLAS INTERFACE IMPORTED)
@@ -223,7 +227,6 @@ else()
   set(FORTRAN_COMPLEX_RETURN_IN_REGISTER TRUE)
 endif()
 
-mptk_detect_blas_vendor(MPTK_DETECTED_BLAS_VENDOR)
 if(MPTK_BLAS_VENDOR STREQUAL "auto")
   set(MPTK_CONFIG_BLAS_VENDOR "${MPTK_DETECTED_BLAS_VENDOR}")
 else()

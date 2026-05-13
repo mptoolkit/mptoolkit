@@ -30,6 +30,15 @@ The default build target builds the standard tools and model generators:
 cmake --build build --parallel
 ```
 
+The CMake bootstrap currently supports LP64 BLAS/LAPACK builds. It validates
+the selected numerical backend against ARPACK where possible and aborts for
+known-incompatible combinations. For MKL builds, the default
+`MPTK_MKL_INTERFACE=auto` follows ARPACK's detected Fortran runtime when that
+can be inspected; otherwise GNU-like toolchains prefer MKL's GNU Fortran
+interface (`libmkl_gf_lp64`). The interface can be set explicitly with
+`-DMPTK_MKL_INTERFACE=gnu` or `-DMPTK_MKL_INTERFACE=intel` when all numerical
+dependencies use the matching ABI.
+
 Install the standard tools and model generators:
 
 ```sh
