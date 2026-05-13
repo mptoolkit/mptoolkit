@@ -13,7 +13,7 @@ project(MPToolkit LANGUAGES C CXX)
 if(CMAKE_CONFIGURATION_TYPES)
   message(FATAL_ERROR
     "MPToolkit's CMake bootstrap currently supports only single-config generators. "
-    "Use Ninja or Unix Makefiles with -DCMAKE_BUILD_TYPE=Release or Debug.")
+    "Use Ninja (recommended) or Unix Makefiles with -DCMAKE_BUILD_TYPE=Release or Debug.")
 endif()
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
@@ -29,12 +29,67 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(MPTK_WITH_OPENMP "Enable OpenMP support" OFF)
 option(MPTK_WITH_PSTREAM "Enable persistent stream support" ON)
 option(MPTK_BUILD_CONTRIB_MODELS "Build models/contrib generators" OFF)
+option(MPTK_ENABLE_IPO "Enable IPO/LTO for Release and MinSizeRel builds when supported" ON)
+if(CMAKE_GENERATOR MATCHES "Ninja")
+  set(MPTK_DEFAULT_IPO_JOBS auto)
+else()
+  set(MPTK_DEFAULT_IPO_JOBS 1)
+endif()
+set(MPTK_IPO_JOBS "${MPTK_DEFAULT_IPO_JOBS}" CACHE STRING "GNU IPO/LTO worker count: positive integer, jobserver, or auto")
+set_property(CACHE MPTK_IPO_JOBS PROPERTY STRINGS 1 2 4 8 16 jobserver auto)
+set(MPTK_LINK_JOBS "1" CACHE STRING "Ninja-only maximum concurrent link jobs; empty uses the generator default")
+set_property(CACHE MPTK_LINK_JOBS PROPERTY STRINGS "" 1 2 4 8 16)
 set(MPTK_BLAS_VENDOR "auto" CACHE STRING "BLAS vendor for version reporting: auto, generic, OpenBLAS, or MKL")
 set_property(CACHE MPTK_BLAS_VENDOR PROPERTY STRINGS auto generic OpenBLAS MKL)
 set(MPTK_BLAS_VENDOR_VALUES auto generic OpenBLAS MKL)
 if(NOT MPTK_BLAS_VENDOR IN_LIST MPTK_BLAS_VENDOR_VALUES)
   message(FATAL_ERROR "MPTK_BLAS_VENDOR must be one of: auto, generic, OpenBLAS, MKL")
 endif()
+if(NOT MPTK_LINK_JOBS STREQUAL "")
+  if(NOT MPTK_LINK_JOBS MATCHES "^[1-9][0-9]*$")
+    message(FATAL_ERROR "MPTK_LINK_JOBS must be empty or a positive integer")
+  endif()
+  if(CMAKE_GENERATOR MATCHES "Ninja")
+    set_property(GLOBAL APPEND PROPERTY JOB_POOLS "mptk_link_pool=${MPTK_LINK_JOBS}")
+    if(NOT DEFINED CMAKE_JOB_POOL_LINK OR CMAKE_JOB_POOL_LINK STREQUAL "")
+      set(CMAKE_JOB_POOL_LINK mptk_link_pool)
+    endif()
+  endif()
+endif()
+
+function(mptk_configure_gnu_ipo_jobs lang)
+  if(NOT CMAKE_${lang}_COMPILER_ID STREQUAL "GNU")
+    return()
+  endif()
+  if(NOT MPTK_IPO_JOBS MATCHES "^(auto|jobserver|[1-9][0-9]*)$")
+    message(FATAL_ERROR "MPTK_IPO_JOBS must be a positive integer, jobserver, or auto")
+  endif()
+  if(DEFINED CMAKE_${lang}_COMPILE_OPTIONS_IPO)
+    set(_ipo_options ${CMAKE_${lang}_COMPILE_OPTIONS_IPO})
+    list(TRANSFORM _ipo_options REPLACE "^-flto(=.*)?$" "-flto=${MPTK_IPO_JOBS}")
+    set(CMAKE_${lang}_COMPILE_OPTIONS_IPO ${_ipo_options} PARENT_SCOPE)
+  endif()
+endfunction()
+
+if(MPTK_ENABLE_IPO)
+  mptk_configure_gnu_ipo_jobs(C)
+  mptk_configure_gnu_ipo_jobs(CXX)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT MPTK_IPO_SUPPORTED OUTPUT MPTK_IPO_ERROR LANGUAGES C CXX)
+  if(MPTK_IPO_SUPPORTED)
+    if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND
+       NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
+      set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    endif()
+    if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND
+       NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL)
+      set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+    endif()
+  else()
+    message(STATUS "IPO/LTO not enabled: ${MPTK_IPO_ERROR}")
+  endif()
+endif()
+
 set(MPTK_FORTRAN_COMPLEX_RETURN "auto" CACHE STRING "Fortran complex return convention: auto, register, or first_arg")
 set_property(CACHE MPTK_FORTRAN_COMPLEX_RETURN PROPERTY STRINGS auto register first_arg)
 set(MPTK_FORTRAN_COMPLEX_RETURN_VALUES auto register first_arg)
@@ -402,10 +457,25 @@ if(MPTK_WITH_OPENMP)
   target_link_libraries(mptoolkit_config INTERFACE OpenMP::OpenMP_CXX)
 endif()
 
+set(MPTK_SYMMETRY_REGISTRAR_SOURCES
+  quantumnumbers/null-quantumnumber.cpp
+  quantumnumbers/su2.cpp
+  quantumnumbers/u1.cpp
+  quantumnumbers/z2.cpp
+  quantumnumbers/zn.cpp
+)
+list(REMOVE_ITEM MPTK_CORE_SOURCES ${MPTK_SYMMETRY_REGISTRAR_SOURCES})
+
 add_library(mptoolkit_core_objects OBJECT ${MPTK_CORE_SOURCES})
 target_link_libraries(mptoolkit_core_objects PUBLIC mptoolkit_config)
 
-add_library(mptoolkit_core STATIC $<TARGET_OBJECTS:mptoolkit_core_objects>)
+add_library(mptoolkit_symmetry_registrar_objects OBJECT ${MPTK_SYMMETRY_REGISTRAR_SOURCES})
+target_link_libraries(mptoolkit_symmetry_registrar_objects PUBLIC mptoolkit_config)
+
+add_library(mptoolkit_core STATIC
+  $<TARGET_OBJECTS:mptoolkit_core_objects>
+  $<TARGET_OBJECTS:mptoolkit_symmetry_registrar_objects>
+)
 target_link_libraries(mptoolkit_core PUBLIC mptoolkit_config)
 
 add_library(mptoolkit_algorithms_objects OBJECT ${MPTK_ALGORITHM_SOURCES})
@@ -429,9 +499,11 @@ endfunction()
 
 function(mptk_add_executable target source subdir)
   add_executable("${target}" "${source}" ${ARGN})
-  # Core contains static symmetry registrars, so link the object library
-  # directly; a static archive can drop otherwise unreferenced registrars.
-  target_link_libraries("${target}" PRIVATE mptoolkit_core_objects mptoolkit_algorithms)
+  # Symmetry registration relies on static initializers in these translation
+  # units. Link only those objects directly; the rest of core remains a normal
+  # archive so unused object files can be discarded by the linker.
+  target_sources("${target}" PRIVATE $<TARGET_OBJECTS:mptoolkit_symmetry_registrar_objects>)
+  target_link_libraries("${target}" PRIVATE mptoolkit_algorithms)
   mptk_set_runtime_output("${target}" "${subdir}")
 endfunction()
 
@@ -624,6 +696,8 @@ function(mptk_print_configuration_summary)
     BLA_VENDOR
     CMAKE_CXX_FLAGS
     CMAKE_CXX_FLAGS_${_config_upper}
+    CMAKE_INTERPROCEDURAL_OPTIMIZATION_${_config_upper}
+    CMAKE_JOB_POOL_LINK
   )
 
   message(STATUS "===== Common CMake Options =====")

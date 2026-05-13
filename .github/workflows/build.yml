@@ -16,13 +16,11 @@ jobs:
     - name: Install dependencies
       run: |
        sudo apt-get -y update
-       sudo apt-get -y install \
-         g++ \
+       sudo apt-get -y install --no-install-recommends \
          libarpack2-dev \
          libboost-program-options-dev \
          libgmp-dev \
          libopenblas-dev \
-         ninja-build \
          python3-yaml
     - name: Configure
       run: |

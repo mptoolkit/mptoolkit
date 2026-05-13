@@ -11,24 +11,31 @@ Documentation for the toolkit is available from https://mptoolkit.qusim.net/
 MPToolkit includes an initial CMake build. It is intended to live alongside the
 existing Autoconf build while the CMake configuration is being completed.
 
-Configure an out-of-tree build with a user-writable install prefix:
+Configure an out-of-tree build with a user-writable install prefix. Ninja is
+recommended when available:
 
 ```sh
-cmake -S . -B build -DCMAKE_INSTALL_PREFIX="$HOME/mptk"
+cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX="$HOME/mptk"
 ```
 
 The CMake build defaults to `Release`. For a developer debug build, configure a
 separate build tree:
 
 ```sh
-cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build-debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
 ```
+
+Release builds enable IPO/LTO when the compiler supports it. Ninja is
+recommended for parallel builds because the CMake configuration limits
+concurrent LTO links without disabling parallelism inside the active link.
 
 The default build target builds the standard tools and model generators:
 
 ```sh
-cmake --build build --parallel
+cmake --build build --parallel 4
 ```
+
+Adjust the `--parallel` value for your machine.
 
 The CMake bootstrap currently supports LP64 BLAS/LAPACK builds. It validates
 the selected numerical backend against ARPACK where possible and aborts for
@@ -61,7 +68,7 @@ Contrib model generators are not built by default. To enable them, configure
 with:
 
 ```sh
-cmake -S . -B build-contrib \
+cmake -S . -B build-contrib -G Ninja \
   -DCMAKE_INSTALL_PREFIX="$HOME/mptk" \
   -DMPTK_BUILD_CONTRIB_MODELS=ON
 ```
@@ -70,8 +77,8 @@ Then build individual contrib models by target name, or build all standard and
 contrib models:
 
 ```sh
-cmake --build build-contrib --target bosehubbard-flux-2leg-u1 --parallel
-cmake --build build-contrib --target all-models --parallel
+cmake --build build-contrib --target bosehubbard-flux-2leg-u1 --parallel 4
+cmake --build build-contrib --target all-models --parallel 4
 ```
 
 The aggregate contrib-only target is `contrib-models`, and contrib model
