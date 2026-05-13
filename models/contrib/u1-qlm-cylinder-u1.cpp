@@ -42,6 +42,7 @@
 #include "models/spinlessantifermion-u1.h"
 #include "models/spin.h"
 #include "common/terminal.h"
+#include "common/stringutil.h"
 #include "common/prog_options.h"
 
 namespace prog_opt = boost::program_options;
@@ -117,7 +118,7 @@ int main(int argc, char** argv)
       {
          std::map<half_int, std::string> SpinBasis;
          for (half_int s = -Spin; s <= Spin; ++s)
-            SpinBasis[s] = boost::lexical_cast<std::string>(s);
+            SpinBasis[s] = ConvertToString(s);
 
          for (half_int s = -Spin; s < Spin; ++s)
          {

@@ -4,18 +4,20 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: mptk-test [--bin-dir DIR] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [--test NAME ...] [suite ...]
+Usage: mptk-test [--bin-dir DIR] [--config CONFIG] [--work-root DIR] [--verbose] [--explain] [--trace] [--dump-ir] [--test NAME ...] [suite ...]
 
 Run MPToolkit declarative integration suites.
 
-If no suite is given, all files under tests/suites/*.yaml are run.
+If no suite is given, all top-level files under tests/suites/*.yaml are run.
 Suite arguments may be:
   - an absolute or relative path to a suite file
-  - a basename under tests/suites/
-  - a basename without the .yaml suffix
+  - a relative path under tests/suites/
+  - a basename without the .yaml suffix, if it is unique
 
 The default binary directory is the current working directory, so this script is
-intended to be run from a build tree.
+intended to be run from a build tree. The binary directory may either contain
+the executables directly, or be a build-tree root with tools/models under common
+runtime subdirectories.
 EOF
 }
 
@@ -23,6 +25,7 @@ script_dir=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo_root=$(cd -- "${script_dir}/.." && pwd)
 
 bin_dir=$PWD
+config=""
 work_root=""
 runner_flags=()
 suite_specs=()
@@ -30,6 +33,7 @@ test_specs=()
 
 resolve_suite() {
     local spec=$1
+    local matches=()
 
     if [[ -f $spec ]]; then
         printf '%s\n' "$spec"
@@ -43,6 +47,17 @@ resolve_suite() {
         printf '%s\n' "${repo_root}/tests/suites/${spec}.yaml"
         return 0
     fi
+    mapfile -t matches < <(find "${repo_root}/tests/suites" -mindepth 2 -maxdepth 2 -type f \( -name "$spec" -o -name "${spec}.yaml" \) | sort)
+    if ((${#matches[@]} == 1)); then
+        printf '%s\n' "${matches[0]}"
+        return 0
+    fi
+    if ((${#matches[@]} > 1)); then
+        printf 'Ambiguous suite: %s\n' "$spec" >&2
+        printf 'Matches:\n' >&2
+        printf '  %s\n' "${matches[@]}" >&2
+        return 1
+    fi
 
     printf 'Unknown suite: %s\n' "$spec" >&2
     return 1
@@ -53,6 +68,11 @@ while (($#)); do
         --bin-dir)
             [[ $# -ge 2 ]] || { printf 'Missing argument for --bin-dir\n' >&2; exit 2; }
             bin_dir=$2
+            shift 2
+            ;;
+        --config)
+            [[ $# -ge 2 ]] || { printf 'Missing argument for --config\n' >&2; exit 2; }
+            config=$2
             shift 2
             ;;
         --work-root)
@@ -113,6 +133,9 @@ failures=()
 first_suite=1
 for suite in "${suites[@]}"; do
     cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
+    if [[ -n $config ]]; then
+        cmd+=(--config "$config")
+    fi
     if [[ -n $work_root ]]; then
         suite_name=$(basename "$suite" .yaml)
         cmd+=(--work-root "${work_root}/${suite_name}")

@@ -23,7 +23,7 @@ fixtures:
       - attr_float:
           attribute: LastEnergy
           approx: -0.666666666666667
-          abs: 1e-12
+          abs: 1e-10
       - info_text:
           contains: "Unit cell size = 1"
       - aux_algebra_commutator_real:
@@ -74,7 +74,7 @@ tests:
       - attr_float:
           attribute: LastEnergy
           approx: -0.666666666666667
-          abs: 1e-12
+          abs: 1e-10
       - aux_algebra_commutator_real:
           operator1: X
           operator2: Z

@@ -1,7 +1,7 @@
 version: 0
 
 imports:
-  - ../recipes/mptoolkit-probes.yaml
+  - ../../recipes/mptoolkit-probes.yaml
 
 fixtures:
   lat:

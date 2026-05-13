@@ -8,12 +8,17 @@ Build MPToolkit first, then run the integration wrapper from the build
 directory. The wrapper uses the current directory as `--bin-dir`, so it can find
 programs such as `mp-construct`, `mp-itebd`, and `spinchain-u1`.
 
-Run all integration suites:
+Run all supported integration suites:
 
 ```bash
 cd /path/to/mptoolkit-build
 /path/to/mptoolkit-source/scripts/mptk-test
 ```
+
+By default, the wrapper runs top-level `tests/suites/*.yaml` suites. Optional
+contrib suites live under `tests/suites/contrib/`; they can be run explicitly
+when working on contrib models, but they are not part of the default CI blocker
+set.
 
 Run one suite:
 
@@ -38,6 +43,13 @@ cd /path/to/mptoolkit-source
 scripts/mptk-test --bin-dir /path/to/mptoolkit-build spinchain-tebd
 ```
 
+`--bin-dir` may point at the legacy flat build directory, or at a build output
+root containing executables under `bin/`, `tools/`, `models/`,
+`models/contrib/`, `bin/tools/`, `bin/models/`, or `bin/models/contrib/`.
+For CMake build trees with per-configuration output directories, pass
+`--config Release`, `--config Debug`, or another configuration name to prefer
+that configuration's outputs.
+
 Run the lower-level Python runner directly when debugging a single suite:
 
 ```bash
@@ -53,6 +65,8 @@ Useful runner flags:
 - `--trace`: print command output, extracted probe values, and assertion details
 - `--explain`: show fixture dependencies, scratch directories, and resolved
   commands
+- `--config CONFIG`: prefer binaries from that CMake configuration when
+  resolving tools in per-configuration output directories
 - `--work-root DIR`: keep fixture and test outputs under `DIR` instead of a
   temporary directory
 - `--dump-ir`: print the normalized suite representation for one suite
@@ -61,7 +75,8 @@ Layout:
 
 - `run_suite.py`: the test runner
 - `recipes/`: reusable probe recipes
-- `suites/`: executable YAML suites
+- `suites/`: supported executable YAML suites
+- `suites/contrib/`: optional suites for unsupported contrib models
 - `data/`: checked-in test data when needed
 
 The runner executes real MPToolkit commands, builds reusable fixtures in

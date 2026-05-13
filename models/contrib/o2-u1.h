@@ -32,7 +32,7 @@ LatticeSite O2U1(int Spin, std::string const& Sym = "Sz")
    std::map<int, std::string> SpinBasis;
    for (int s = -Spin; s <= Spin; ++s)
    {
-      SpinBasis[s] = boost::lexical_cast<std::string>(s);
+      SpinBasis[s] = std::to_string(s);
       Basis.push_back(SpinBasis[s], QN(s));
    }
 
