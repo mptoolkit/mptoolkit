@@ -25,6 +25,7 @@
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
 #include "mp-algorithms/ibc-tdvp.h"
+#include "mp-algorithms/time-dependent-mpo.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "parser/number-parser.h"
@@ -52,6 +53,9 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
+      int MagnusOrder = 2;
+      int MagnusQuadrature = 0;
+      std::string TimeVar = "t";
       std::string PreExpandAlgo = "rsvd";
       std::string PostExpandAlgo = "rsvd";
 
@@ -112,6 +116,10 @@ int main(int argc, char** argv)
          ("ewright", prog_opt::value(&EvolutionWindowRight), "Rightmost site of the initial evolution window (wavefunction attribute \"EvolutionWindowRight\")")
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
+         ("magnus", prog_opt::value(&MagnusOrder), FormatDefault("For time-dependent window Hamiltonians, use this order of the Magnus expansion", MagnusOrder).c_str())
+         ("magnus-quadrature", prog_opt::value(&MagnusQuadrature),
+          FormatDefault("Gauss-Legendre quadrature order for time-dependent window Magnus terms (0 selects the default for --magnus)", MagnusQuadrature).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent window Hamiltonians", TimeVar).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
 
@@ -164,6 +172,16 @@ int main(int argc, char** argv)
       if (Settings.Comp.Order == 0)
       {
          std::cerr << "fatal: Invalid composition" << std::endl;
+         return 1;
+      }
+
+      try
+      {
+         ResolveMagnusQuadratureOrder(MagnusOrder, MagnusQuadrature);
+      }
+      catch (std::exception const& e)
+      {
+         std::cerr << "fatal: " << e.what() << std::endl;
          return 1;
       }
 
@@ -264,7 +282,8 @@ int main(int argc, char** argv)
          }
       }
 
-      WindowHamiltonian Ham(HamStr, HamStrWindow, Psi.left().size(), Verbose);
+      WindowHamiltonian Ham(HamStr, HamStrWindow, Psi.left().size(), Verbose,
+                            MagnusOrder, TimeVar, MagnusQuadrature);
 
       // Get EvolutionWindowLeft/Right from the wavefunction attributes if they
       // weren't specified, or else set them to the window boundaries.

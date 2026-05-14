@@ -40,11 +40,17 @@ class WindowHamiltonian : public Hamiltonian
       bool is_window_empty() const { return WindowEmpty; }
       bool is_window_time_dependent() const { return WindowTimeDependent; }
 
-      bool window_size() const { return WindowMPO.size(); }
-      bool window_offset() const { return WindowMPO.offset(); }
+      int window_size() const { return WindowMPO.size(); }
+      int window_offset() const { return WindowMPO.offset(); }
 
    protected:
+      UnitCellMPO ParseWindowMPO(Function::ArgumentList Args = Function::ArgumentList()) const;
+      UnitCellMPO WindowMPOForTime(std::complex<double> t, std::complex<double> dt) const;
+      BasicTriangularMPO WindowTriangularMPO(int LeftUC, int RightUC,
+                                             std::complex<double> t, std::complex<double> dt) const;
+
       std::string WindowOperator;
+      InfiniteLattice WindowLattice;
       UnitCellMPO WindowMPO;
       bool WindowEmpty;
       bool WindowTimeDependent;
@@ -96,6 +102,10 @@ class IBC_TDVP : public TDVP
 
       // Evolve the window by one time step using 2TDVP.
       void Evolve2();
+
+      // Update a time-dependent window Hamiltonian and rebuild the effective
+      // environments around the current orthogonality centre.
+      void UpdateWindowHamiltonian(std::complex<double> t, std::complex<double> dt);
 
       double GMRESTol;
       double FidTol;

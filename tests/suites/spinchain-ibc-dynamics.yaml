@@ -100,6 +100,38 @@ fixtures:
           approx: 0.0
           abs: 1e-12
 
+  ibc_neel2_window_identity:
+    from: ibc_neel2
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_window
+    outputs:
+      state: ibc_window
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 1"
+
+  ibc_neel2_tdvp_time_dependent_zero_window:
+    from: ibc_neel2_window_identity
+    run: mp-ibc-tdvp -w ibc_window -H "lat:sum_unit(I(0))" -W "lat:tau*0*I(0)" -o out -t 0-0.1i -n 1 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.1
+    certify:
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
 tests:
   ibc_tdvp_identity_updates_beta_and_keeps_the_simple_overlap:
     use:
@@ -132,6 +164,23 @@ tests:
       - attr_float:
           state: "{psi2}"
           attribute: Time
+          approx: 0.1
+          abs: 1e-12
+
+  ibc_tdvp_accepts_time_dependent_window_operator:
+    use:
+      psi1: ibc_neel2_window_identity.state
+      psi2: ibc_neel2_tdvp_time_dependent_zero_window.state
+    expect:
+      - ibc_overlap_real:
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          approx: 0.0
+          abs: 1e-12
+      - attr_float:
+          state: "{psi2}"
+          attribute: Beta
           approx: 0.1
           abs: 1e-12
 
