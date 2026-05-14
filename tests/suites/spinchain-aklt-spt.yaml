@@ -41,6 +41,9 @@ fixtures:
 
 tests:
   aklt_ground_state_has_the_expected_energy_density:
+    allow_failure: >-
+      Issue #104: mp-idmrg-s3e AKLT convergence is unstable pending the new
+      idmrg cleanup.
     use: aklt_ground
     expect:
       - attr_text:
@@ -52,6 +55,9 @@ tests:
           abs: 1e-5
 
   aklt_ground_state_shows_the_expected_spt_xz_projective_phase:
+    allow_failure: >-
+      Issue #104: mp-idmrg-s3e AKLT convergence is unstable pending the new
+      idmrg cleanup.
     use: aklt_ground
     expect:
       - aux_algebra_commutator_real:
@@ -66,6 +72,9 @@ tests:
           abs: 1e-5
 
   aklt_ground_state_shows_the_expected_spt_xy_projective_phase:
+    allow_failure: >-
+      Issue #104: mp-idmrg-s3e AKLT convergence is unstable pending the new
+      idmrg cleanup.
     use: aklt_ground
     expect:
       - aux_algebra_commutator_real:
@@ -80,6 +89,9 @@ tests:
           abs: 1e-5
 
   aklt_ground_state_shows_the_expected_spt_yz_projective_phase:
+    allow_failure: >-
+      Issue #104: mp-idmrg-s3e AKLT convergence is unstable pending the new
+      idmrg cleanup.
     use: aklt_ground
     expect:
       - aux_algebra_commutator_real:

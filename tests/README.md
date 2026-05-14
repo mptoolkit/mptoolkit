@@ -71,6 +71,11 @@ Useful runner flags:
   temporary directory
 - `--dump-ir`: print the normalized suite representation for one suite
 
+Suites can temporarily mark a test with `allow_failure: "reason"` when a known
+issue should remain visible without blocking CI. These tests still run. A
+failure is reported as `SOFTFAIL`, included in the suite and overall summaries,
+and does not make the runner exit nonzero.
+
 Layout:
 
 - `run_suite.py`: the test runner
@@ -122,8 +127,9 @@ Common stress-test patterns:
 Stress-test behavior:
 
 - default log directory is `/tmp/mptk-stress-<suite>-<timestamp>-<pid>/`
-- `summary.txt` records pass/fail by iteration
+- `summary.txt` records pass/fail/soft-fail by iteration
 - failed iteration logs are kept automatically
+- `SOFTFAIL` iterations are treated as stress failures so their logs are kept
 - passing iteration logs are deleted unless `--keep-all-logs` is given
 - `--fail-fast` stops on the first failure
 

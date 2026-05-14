@@ -169,16 +169,20 @@ print_summary() {
 
     end_epoch=$(date +%s)
     elapsed=$((end_epoch - start_epoch))
-    total=$((passes + failures))
+    total=$((passes + failures + soft_failures))
 
     printf '\n'
-    printf 'Overall summary: %d total, %d passed, %d failed\n' \
+    printf 'Overall summary: %d total, %d passed, %d failed' \
         "$total" "$passes" "$failures" | tee -a "$summary_file"
+    if (( soft_failures )); then
+        printf ', %d soft-failed' "$soft_failures" | tee -a "$summary_file"
+    fi
+    printf '\n' | tee -a "$summary_file"
     if (( interrupted )); then
         printf 'Stopped by interrupt\n' | tee -a "$summary_file"
     fi
     printf 'Elapsed: %ds\n' "$elapsed" | tee -a "$summary_file"
-    if (( failures )); then
+    if (( failures || soft_failures )); then
         printf 'Failure logs:\n' | tee -a "$summary_file"
         cat "$failures_file"
     fi
@@ -207,6 +211,7 @@ printf '\n' | tee -a "$summary_file"
 
 passes=0
 failures=0
+soft_failures=0
 start_epoch=$(date +%s)
 
 for ((i = 1; ; ++i)); do
@@ -233,6 +238,15 @@ for ((i = 1; ; ++i)); do
         printf '[%s/%s] ' "$i" "$iterations"
     fi
     if "${cmd[@]}" >"$log_file" 2>&1; then
+        if grep -q '^SOFTFAIL ' "$log_file"; then
+            soft_failures=$((soft_failures + 1))
+            printf 'SOFTFAIL (%s)\n' "$log_file"
+            printf 'SOFTFAIL %04d %s\n' "$i" "$log_file" | tee -a "$summary_file" >>"$failures_file"
+            if (( fail_fast )); then
+                break
+            fi
+            continue
+        fi
         passes=$((passes + 1))
         printf 'PASS\n'
         printf 'PASS %04d\n' "$i" >>"$summary_file"
@@ -255,6 +269,6 @@ for ((i = 1; ; ++i)); do
     fi
 done
 
-if (( failures )); then
+if (( failures || soft_failures )); then
     exit 1
 fi

@@ -64,6 +64,23 @@ class SuiteError(RuntimeError):
     pass
 
 
+def allow_failure_reason(test_spec: dict[str, Any]) -> str | None:
+    if "allow_failure" not in test_spec:
+        return None
+    marker = test_spec["allow_failure"]
+    if marker is None or marker is False:
+        return None
+    if isinstance(marker, str):
+        return marker or "allowed failure"
+    if isinstance(marker, dict):
+        reason = marker.get("reason")
+        issue = marker.get("issue")
+        parts = [str(part) for part in (issue, reason) if part]
+        if parts:
+            return ": ".join(parts)
+    return "allowed failure"
+
+
 def strip_ansi(text: str) -> str:
     return ANSI_ESCAPE_RE.sub("", text)
 
@@ -1484,20 +1501,50 @@ class SuiteRunner:
         if unknown:
             raise SuiteError(f"Unknown test(s): {', '.join(unknown)}")
         failures: list[tuple[str, str]] = []
+        soft_failures: list[tuple[str, str, str]] = []
+        allowed_passes: list[tuple[str, str]] = []
         for name in test_names:
+            reason = allow_failure_reason(self.tests[name])
             try:
                 self.run_test(name)
-                print(f"PASS {name}")
-            except Exception as exc:  # pragma: no cover - suite failure path
-                failures.append((name, str(exc)))
-                print(f"FAIL {name}")
+            except SuiteError as exc:  # pragma: no cover - suite failure path
+                if reason is not None:
+                    soft_failures.append((name, reason, str(exc)))
+                    print(f"SOFTFAIL {name}")
+                    print(f"Allowed failure: {reason}")
+                else:
+                    failures.append((name, str(exc)))
+                    print(f"FAIL {name}")
                 print(str(exc))
-        passed = len(test_names) - len(failures)
-        print(f"Summary: {len(test_names)} total, {passed} passed, {len(failures)} failed")
+            except Exception as exc:  # pragma: no cover - unexpected runner failure path
+                message = f"Unexpected runner error: {type(exc).__name__}: {exc}"
+                failures.append((name, message))
+                print(f"FAIL {name}")
+                print(message)
+            else:
+                if reason is not None:
+                    allowed_passes.append((name, reason))
+                    print(f"PASS {name} (allow_failure: {reason})")
+                else:
+                    print(f"PASS {name}")
+        passed = len(test_names) - len(failures) - len(soft_failures)
+        summary = f"Summary: {len(test_names)} total, {passed} passed, {len(failures)} failed"
+        if soft_failures:
+            summary += f", {len(soft_failures)} soft-failed"
+        print(summary)
         if failures:
             print("Failed tests:")
             for name, _message in failures:
                 print(f"- {name}")
+        if soft_failures:
+            print("Allowed failures:")
+            for name, reason, _message in soft_failures:
+                print(f"- {name}: {reason}")
+        if allowed_passes:
+            print("Allow-failure tests that passed:")
+            for name, reason in allowed_passes:
+                print(f"- {name}: {reason}")
+        if failures:
             return 1
         return 0
 

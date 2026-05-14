@@ -128,8 +128,10 @@ status=0
 total_tests=0
 total_passed=0
 total_failed=0
+total_soft_failed=0
 suite_errors=0
 failures=()
+soft_failures=()
 first_suite=1
 for suite in "${suites[@]}"; do
     cmd=(python3 "${repo_root}/tests/run_suite.py" "$suite" --bin-dir "$bin_dir")
@@ -158,16 +160,24 @@ for suite in "${suites[@]}"; do
     printf '%s\n' "$output"
 
     summary_line=$(printf '%s\n' "$output" | grep '^Summary: ' | tail -n 1 || true)
-    if [[ $summary_line =~ Summary:\ ([0-9]+)\ total,\ ([0-9]+)\ passed,\ ([0-9]+)\ failed ]]; then
+    if [[ $summary_line =~ Summary:\ ([0-9]+)\ total,\ ([0-9]+)\ passed,\ ([0-9]+)\ failed(,\ ([0-9]+)\ soft-failed)? ]]; then
         total_tests=$((total_tests + BASH_REMATCH[1]))
         total_passed=$((total_passed + BASH_REMATCH[2]))
         total_failed=$((total_failed + BASH_REMATCH[3]))
+        if [[ -n ${BASH_REMATCH[5]:-} ]]; then
+            total_soft_failed=$((total_soft_failed + BASH_REMATCH[5]))
+        fi
     fi
 
     while IFS= read -r line; do
         test_name=${line#FAIL }
         failures+=("$(basename "$suite"):$test_name")
     done < <(printf '%s\n' "$output" | grep '^FAIL ' || true)
+
+    while IFS= read -r line; do
+        test_name=${line#SOFTFAIL }
+        soft_failures+=("$(basename "$suite"):$test_name")
+    done < <(printf '%s\n' "$output" | grep '^SOFTFAIL ' || true)
 
     if (( suite_status != 0 )) && ! printf '%s\n' "$output" | grep -q '^FAIL '; then
         suite_errors=$((suite_errors + 1))
@@ -178,6 +188,9 @@ done
 printf '\n'
 printf 'Overall summary: %d total, %d passed, %d failed' \
     "$total_tests" "$total_passed" "$total_failed"
+if (( total_soft_failed )); then
+    printf ', %d soft-failed' "$total_soft_failed"
+fi
 if (( suite_errors )); then
     printf ', %d suite errors' "$suite_errors"
 fi
@@ -185,6 +198,12 @@ printf '\n'
 if ((${#failures[@]})); then
     printf 'Overall failures:\n'
     for failure in "${failures[@]}"; do
+        printf -- '- %s\n' "$failure"
+    done
+fi
+if ((${#soft_failures[@]})); then
+    printf 'Overall allowed failures:\n'
+    for failure in "${soft_failures[@]}"; do
         printf -- '- %s\n' "$failure"
     done
 fi
