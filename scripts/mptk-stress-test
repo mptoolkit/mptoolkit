@@ -233,6 +233,15 @@ for ((i = 1; ; ++i)); do
         printf '[%s/%s] ' "$i" "$iterations"
     fi
     if "${cmd[@]}" >"$log_file" 2>&1; then
+        if grep -q '^SOFTFAIL ' "$log_file"; then
+            failures=$((failures + 1))
+            printf 'SOFTFAIL (%s)\n' "$log_file"
+            printf 'SOFTFAIL %04d %s\n' "$i" "$log_file" | tee -a "$summary_file" >>"$failures_file"
+            if (( fail_fast )); then
+                break
+            fi
+            continue
+        fi
         passes=$((passes + 1))
         printf 'PASS\n'
         printf 'PASS %04d\n' "$i" >>"$summary_file"
