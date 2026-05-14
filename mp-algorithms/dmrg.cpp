@@ -44,7 +44,7 @@ DMRG::DMRG(int Verbose_)
 }
 
 void
-DMRG::InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F)
+DMRG::InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F, bool CheckStructure)
 {
    Hamiltonian = Ham_;
    Psi = std::move(Psi_);
@@ -77,8 +77,11 @@ DMRG::InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham
    TotalNumIterations = 0;
    TotalNumMultiplies = 0;
 
-   // Call this version, not the virtual function, since derived classes won't have finished their setup yet
-   this->DMRG::check_structure();
+   if (CheckStructure)
+   {
+      // Call this version, not the virtual function, since derived classes won't have finished their setup yet.
+      this->DMRG::check_structure();
+   }
 }
 
 void DMRG::StartIteration()
@@ -256,6 +259,18 @@ int DMRG::ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector)
    #endif
 
    return C->Basis2().total_dimension();
+}
+
+void
+DMRG::ResetLeftEnvironment(StateComponent const& E)
+{
+   HamMatrices.reset_left(E);
+}
+
+void
+DMRG::ResetRightEnvironment(StateComponent const& F)
+{
+   HamMatrices.reset_right(F);
 }
 
 void

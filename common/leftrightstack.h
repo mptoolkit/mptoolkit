@@ -55,6 +55,9 @@ class left_right_stack
       void pop_left();
       void pop_right();
 
+      void reset_left(value_type const& L);
+      void reset_right(value_type const& R);
+
       int size_left() const;
       int size_right() const;
 
@@ -120,6 +123,22 @@ void left_right_stack<T>::pop_right()
       rightTop = rightStack.back().load();
       rightStack.pop_back();
    }
+}
+
+template <typename T>
+inline
+void left_right_stack<T>::reset_left(value_type const& L)
+{
+   leftStack.clear();
+   leftTop = ptr_type(new value_type(L));
+}
+
+template <typename T>
+inline
+void left_right_stack<T>::reset_right(value_type const& R)
+{
+   rightStack.clear();
+   rightTop = ptr_type(new value_type(R));
 }
 
 template <typename T>

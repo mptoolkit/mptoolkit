@@ -41,6 +41,7 @@
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
+#include "mp-algorithms/dmrg.h"
 #include "mp-algorithms/expansion.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
@@ -323,7 +324,7 @@ SplitTruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, Oper
    return std::make_pair(D, Vh);
 }
 
-class iDMRG
+class iDMRG : public DMRG
 {
    public:
       // Construct an iDMRG object.  It is assumed that Psi_ is in left-canonical form, with
@@ -338,8 +339,6 @@ class iDMRG
       {
          Solver_.SetInitialFidelity(Psi.size(), f);
       }
-
-      LocalEigensolver& Solver() { return Solver_; }
 
       void SweepRight(StatesInfo const& SInfo, ExpansionInfo const& PostExpand,
                       int NumStatesKeepNext, double HMix = 0);
@@ -357,9 +356,8 @@ class iDMRG
 
       // construct initial hamiltonian, called by the constructor
       void Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
+                      StateComponent const& LeftHam,
                       std::complex<double> InitialEnergy);
-
-      void Solve();
 
       // at the left boundary of the unit cell, construct and save the RightHamiltonian for later use
       void SaveRightBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector);
@@ -386,24 +384,12 @@ class iDMRG
 
 
       //   private:
-      BasicTriangularMPO Hamiltonian;
-      LinearWavefunction Psi;
       QuantumNumber QShift;
-
-      std::deque<StateComponent> LeftHamiltonian;
-      std::deque<StateComponent> RightHamiltonian;
-
-      LinearWavefunction::iterator C;
-      BasicTriangularMPO::const_iterator H;
-
-      int Verbose;
 
       // iterators pointing to the edges of the unit cell.
       // FirstSite = Psi.begin()
       // LastSite = Psi.end() - 1
       LinearWavefunction::const_iterator FirstSite, LastSite;
-
-      LocalEigensolver Solver_;
 
       StateComponent SaveLeftHamiltonian;
       RealDiagonalOperator SaveLambda2;
@@ -413,8 +399,6 @@ class iDMRG
       MatrixOperator SaveU1;
       RealDiagonalOperator SaveLambda1;
 
-      PostExpansionAlgorithm PostExpansionAlgo;
-      OversamplingInfo Oversampling;
       TruncationInfo Info;
 
       int SweepNumber;
@@ -424,34 +408,20 @@ iDMRG::iDMRG(LinearWavefunction const& Psi_, RealDiagonalOperator const& LambdaR
              QuantumNumber const& QShift_, BasicTriangularMPO const& Hamiltonian_,
              StateComponent const& LeftHam, StateComponent const& RightHam,
              std::complex<double> InitialEnergy, int Verbose_)
-   : Hamiltonian(Hamiltonian_), Psi(Psi_), QShift(QShift_),
-     LeftHamiltonian(1, LeftHam), RightHamiltonian(1, RightHam), Verbose(Verbose_),
-     Oversampling(10, 1.0, 1), SweepNumber(1)
+   : DMRG(Verbose_), QShift(QShift_), SweepNumber(1)
 {
-   this->Initialize(LambdaR, UR, InitialEnergy);
+   Oversampling = OversamplingInfo(10, 1.0, 1);
+   this->InitializeLeftOrtho(Psi_, Hamiltonian_, LeftHam, RightHam, false);
+   this->Initialize(LambdaR, UR, LeftHam, InitialEnergy);
 }
 
 void
-iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR, std::complex<double> InitialEnergy)
+iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
+                  StateComponent const& LeftHam, std::complex<double> InitialEnergy)
 {
-   // the starting point is at the right hand side, so fill out the LeftHamiltonian
-   // fill out the LeftHamiltonian
-   C = Psi.begin();
-   H = Hamiltonian.begin();
-
    FirstSite = Psi.begin();
    LastSite = Psi.end();
    --LastSite;
-
-   CHECK_EQUAL(LeftHamiltonian.back().Basis2(), C->Basis1());
-
-   // Generate the left Hamiltonian matrices at each site, up to (but not including) the last site.
-   while (C != LastSite)
-   {
-      LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
-      ++C;
-      ++H;
-   }
 
    // make *C the 'centre MPS' by incorporating LambdaR into it
    *C = prod(*C, LambdaR);
@@ -468,7 +438,7 @@ iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
       if (Verbose > 0)
          std::cerr << "Correcting initial energy to " << InitialEnergy << '\n';
 
-      StateComponent R = operator_prod_inner(*H, LeftHamiltonian.back(), *C, herm(RightHamiltonian.front()));
+      StateComponent R = operator_prod_inner(*H, HamMatrices.left(), *C, herm(HamMatrices.right()));
       std::complex<double> E = inner_prod(*C, R) / inner_prod(*C, *C);
 
       if (Verbose > 0)
@@ -480,13 +450,13 @@ iDMRG::Initialize(RealDiagonalOperator const& LambdaR, MatrixOperator const& UR,
          std::cerr << "Initial residual norm is " << norm_frob(Resid) << '\n';
       }
 
-      RightHamiltonian.front().front() += (InitialEnergy - E) * RightHamiltonian.front().back();
+      HamMatrices.right().front() += (InitialEnergy - E) * HamMatrices.right().back();
    }
 
    // We are going to start by sweeping left, so we need to initialize the
    // left blocks such that UpdateLeftBlock() will function
-   SaveLeftHamiltonian = LeftHamiltonian.front();
-   SaveRightHamiltonian = RightHamiltonian.front();
+   SaveLeftHamiltonian = LeftHam;
+   SaveRightHamiltonian = HamMatrices.right();
    SaveLambda2 = LambdaR; //MatrixOperator::make_identity(Psi.Basis1());
    SaveU2 = UR;
 
@@ -507,13 +477,13 @@ iDMRG::UpdateLeftBlock(double HMix)
    if (Verbose > 2)
    {
       std::cerr << "Updating left Hamiltonian.  Old basis has "
-                << LeftHamiltonian.back().Basis1().total_dimension()
+                << HamMatrices.left().Basis1().total_dimension()
                 << " states, new basis has states = "
                 << SaveLeftHamiltonian.Basis1().total_dimension() << "\n";
    }
 
-   StateComponent E = LeftHamiltonian.back();
-   LeftHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveLeftHamiltonian, QShift));
+   StateComponent E = HamMatrices.left();
+   this->ResetLeftEnvironment(delta_shift(SaveLeftHamiltonian, QShift));
 
    MatrixOperator T = Solve_D_U_DInv(delta_shift(SaveLambda2, QShift), delta_shift(SaveU2, QShift), SaveLambda1);
 
@@ -530,11 +500,11 @@ iDMRG::UpdateLeftBlock(double HMix)
       // Adjust basis of E
       MatrixOperator V = delta_shift(SaveU2, QShift) * herm(SaveU1);
       E = triple_prod(V, E, herm(V));
-      LeftHamiltonian.back() = HMix * E + (1.0 - HMix) * LeftHamiltonian.back();
+      HamMatrices.left() = HMix * E + (1.0 - HMix) * HamMatrices.left();
    }
 
    // Subtract off the energy
-   LeftHamiltonian.back().back() -= Solver_.LastEnergy() * LeftHamiltonian.back().front();
+   HamMatrices.left().back() -= Solver_.LastEnergy() * HamMatrices.left().front();
 
    this->CheckConsistency();
 }
@@ -545,13 +515,13 @@ iDMRG::UpdateRightBlock(double HMix)
    if (Verbose > 2)
    {
       std::cerr << "Updating right Hamiltonian.  Old basis has "
-                << RightHamiltonian.front().Basis1().total_dimension()
+                << HamMatrices.right().Basis1().total_dimension()
                 << " states, new basis has states = "
                 << SaveRightHamiltonian.Basis1().total_dimension() << "\n";
    }
 
-   StateComponent F = RightHamiltonian.front();
-   RightHamiltonian = std::deque<StateComponent>(1, delta_shift(SaveRightHamiltonian, adjoint(QShift)));
+   StateComponent F = HamMatrices.right();
+   this->ResetRightEnvironment(delta_shift(SaveRightHamiltonian, adjoint(QShift)));
 
    //TRACE(SaveLambda2)(SaveU1)(SaveLambda1);
    MatrixOperator T = Solve_DInv_U_D(SaveLambda2, delta_shift(SaveU1, adjoint(QShift)),
@@ -575,14 +545,14 @@ iDMRG::UpdateRightBlock(double HMix)
 
       for (unsigned n = 0; n < F.size(); ++n)
       {
-         TRACE(norm_frob(F[n] - RightHamiltonian.front()[n]));
+         TRACE(norm_frob(F[n] - HamMatrices.right()[n]));
       }
 
-      RightHamiltonian.front() = HMix * F + (1.0 - HMix) * RightHamiltonian.front();
+      HamMatrices.right() = HMix * F + (1.0 - HMix) * HamMatrices.right();
    }
 
    // Subtract off the energy.  Since the hamiltonian is E * herm(F) we need to conjugate here
-   RightHamiltonian.front().front() -= std::conj(Solver_.LastEnergy()) * RightHamiltonian.front().back();
+   HamMatrices.right().front() -= std::conj(Solver_.LastEnergy()) * HamMatrices.right().back();
 
    this->CheckConsistency();
 }
@@ -590,14 +560,14 @@ iDMRG::UpdateRightBlock(double HMix)
 void
 iDMRG::SaveLeftBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
-   //TRACE(LeftHamiltonian.back());
+   //TRACE(HamMatrices.left());
    // When we save the block, we need to end up with
    // C.Basis2() == SaveLeftHamiltonian.Basis()
    CHECK(C == LastSite);
    StateComponent L = *C;
    Info = TruncationInfo();
-   std::tie(SaveLambda2, SaveU2) = SplitTruncateExpandBasis2(L, LeftHamiltonian.back(), *H,
-                                                             RightHamiltonian.front(), PostExpansionAlgo,
+   std::tie(SaveLambda2, SaveU2) = SplitTruncateExpandBasis2(L, HamMatrices.left(), *H,
+                                                             HamMatrices.right(), PostExpansionAlgo,
                                                              States, ExtraStates, ExtraStatesPerSector,
                                                              Info, Oversampling);
 
@@ -606,7 +576,7 @@ iDMRG::SaveLeftBlock(StatesInfo const& States, int ExtraStates, int ExtraStatesP
       std::cerr << "Saving left block for idmrg, states=" << Info.KeptStates()
                 << " L.Basis2() is " << L.Basis2().total_dimension() << '\n';
    }
-   SaveLeftHamiltonian = contract_from_left(*H, herm(L), LeftHamiltonian.back(), L);
+   SaveLeftHamiltonian = contract_from_left(*H, herm(L), HamMatrices.left(), L);
    this->CheckConsistency();
 
    //TRACE(SaveLeftHamiltonian);
@@ -618,8 +588,8 @@ iDMRG::SaveRightBlock(StatesInfo const& States, int ExtraStates, int ExtraStates
    CHECK(C == FirstSite);
    StateComponent R = *C;
    Info = TruncationInfo();
-   std::tie(SaveU1, SaveLambda1) = SplitTruncateExpandBasis1(R, LeftHamiltonian.back(), *H,
-                                                             RightHamiltonian.front(), PostExpansionAlgo,
+   std::tie(SaveU1, SaveLambda1) = SplitTruncateExpandBasis1(R, HamMatrices.left(), *H,
+                                                             HamMatrices.right(), PostExpansionAlgo,
                                                              States, ExtraStates, ExtraStatesPerSector,
                                                              Info, Oversampling);
 
@@ -629,7 +599,7 @@ iDMRG::SaveRightBlock(StatesInfo const& States, int ExtraStates, int ExtraStates
    {
       std::cerr << "Saving right block for idmrg, states=" << Info.KeptStates() << '\n';
    }
-   SaveRightHamiltonian = contract_from_right(herm(*H), R, RightHamiltonian.front(), herm(R));
+   SaveRightHamiltonian = contract_from_right(herm(*H), R, HamMatrices.right(), herm(R));
    this->CheckConsistency();
 }
 
@@ -637,65 +607,24 @@ void
 iDMRG::TruncateAndShiftLeft(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
    this->CheckConsistency();
-   Info = TruncationInfo();
-   MatrixOperator Lambda = TruncateExpandBasis1(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
-                                                PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector,
-                                                Info, Oversampling);
-
-   if (Verbose > 1)
-   {
-      std::cerr << "Truncating left basis, states=" << Info.KeptStates() << '\n';
-   }
-   // update blocks
-   RightHamiltonian.push_front(contract_from_right(herm(*H), *C, RightHamiltonian.front(), herm(*C)));
-   LeftHamiltonian.pop_back();
-
-   // next site
-   --H;
-   --C;
-
-   *C = prod(*C, Lambda);
-
-   // normalize
-   *C *= 1.0 / norm_frob(*C);
-
+   this->StartIteration();
+   Info = this->DMRG::TruncateAndShiftLeft(States, ExtraStates, ExtraStatesPerSector);
    this->CheckConsistency();
 }
 
 void
 iDMRG::TruncateAndShiftRight(StatesInfo const& States, int ExtraStates, int ExtraStatesPerSector)
 {
-   Info = TruncationInfo();
-   MatrixOperator Lambda = TruncateExpandBasis2(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
-                                                PostExpansionAlgo, States, ExtraStates, ExtraStatesPerSector,
-                                                Info, Oversampling);
-   if (Verbose > 1)
-   {
-      std::cerr << "Truncating right basis, states=" << Info.KeptStates() << '\n';
-   }
-   // update blocks
-   LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
-   RightHamiltonian.pop_front();
-
-   // next site
-   ++H;
-   ++C;
-
-   *C = prod(Lambda, *C);
-
-   // normalize
-   *C *= 1.0 / norm_frob(*C);
-
+   this->CheckConsistency();
+   this->StartIteration();
+   Info = this->DMRG::TruncateAndShiftRight(States, ExtraStates, ExtraStatesPerSector);
    this->CheckConsistency();
 }
 
 void
 iDMRG::CheckConsistency() const
 {
-   CHECK_EQUAL(LeftHamiltonian.back().Basis2(), C->Basis1());
-   CHECK_EQUAL(RightHamiltonian.front().Basis1(), C->Basis2());
-   CHECK_EQUAL(LeftHamiltonian.back().LocalBasis(), H->Basis1());
-   CHECK_EQUAL(RightHamiltonian.front().LocalBasis(), H->Basis2());
+   this->DMRG::check_structure();
    CHECK_EQUAL(H->LocalBasis2(), C->LocalBasis());
 }
 
@@ -750,7 +679,7 @@ iDMRG::Finish(StatesInfo const& States)
    RealDiagonalOperator Lambda;
    MatrixOperator U;
    Info = TruncationInfo();
-   std::tie(Lambda, U) = SplitTruncateExpandBasis2(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front(),
+   std::tie(Lambda, U) = SplitTruncateExpandBasis2(*C, HamMatrices.left(), *H, HamMatrices.right(),
                                                    PostExpansionAlgo, States, 0, 0, Info, Oversampling);
 
    if (Verbose > 1)
@@ -763,12 +692,6 @@ iDMRG::Finish(StatesInfo const& States)
    (*C) = prod(*C, Solve_D_U_DInv(Lambda, U*herm(SaveU2), SaveLambda2));
 
    CHECK_EQUAL(Psi.Basis1(), delta_shift(Psi.Basis2(), QShift));
-}
-
-void
-iDMRG::Solve()
-{
-   Solver_.Solve(*C, LeftHamiltonian.back(), *H, RightHamiltonian.front());
 }
 
 void

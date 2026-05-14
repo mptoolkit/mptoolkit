@@ -33,7 +33,7 @@ class DMRG
 
       // Initialize the state of the system from a left orthogonalized wavefunction.
       // All sites in Psi_ are assumed to be left-orthogonal except for the right-most site.
-      void InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F);
+      void InitializeLeftOrtho(LinearWavefunction Psi_, BasicTriangularMPO const& Ham_, StateComponent const& E, StateComponent const& F, bool CheckStructure = true);
 
       // Size of the window
       int size() const { return Psi.size(); }
@@ -71,6 +71,10 @@ class DMRG
       // Returns the actual environment size.
       int ExpandLeftEnvironment(int StatesWanted, int ExtraStatesPerSector);
       int ExpandRightEnvironment(int StatesWanted, int ExtraStatesPerSector);
+
+      // Replace one boundary environment while preserving the opposite stack.
+      void ResetLeftEnvironment(StateComponent const& E);
+      void ResetRightEnvironment(StateComponent const& F);
 
       virtual void check_structure() const;
       virtual void debug_check_structure() const;
