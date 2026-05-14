@@ -1507,7 +1507,7 @@ class SuiteRunner:
             reason = allow_failure_reason(self.tests[name])
             try:
                 self.run_test(name)
-            except Exception as exc:  # pragma: no cover - suite failure path
+            except SuiteError as exc:  # pragma: no cover - suite failure path
                 if reason is not None:
                     soft_failures.append((name, reason, str(exc)))
                     print(f"SOFTFAIL {name}")
@@ -1516,6 +1516,11 @@ class SuiteRunner:
                     failures.append((name, str(exc)))
                     print(f"FAIL {name}")
                 print(str(exc))
+            except Exception as exc:  # pragma: no cover - unexpected runner failure path
+                message = f"Unexpected runner error: {type(exc).__name__}: {exc}"
+                failures.append((name, message))
+                print(f"FAIL {name}")
+                print(message)
             else:
                 if reason is not None:
                     allowed_passes.append((name, reason))
