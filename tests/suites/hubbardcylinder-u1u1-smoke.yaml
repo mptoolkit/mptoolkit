@@ -1,0 +1,27 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat:
+    run: hubbardcylinder-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+tests:
+  lattice_info_reports_the_default_u1u1_hubbard_cylinder_geometry:
+    use: lat
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Fermi Hubbard 2D cylinder square lattice"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),Sz:U(1)"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_txup     - nearest neighbor hopping in x-direction for up spins"
+      - lattice_info_text:
+          contains: "H_tdown    - nearest neighbor hopping for down spins"
+      - lattice_info_text:
+          contains: "H_U        - on-site Coulomb interaction n_up*n_down"

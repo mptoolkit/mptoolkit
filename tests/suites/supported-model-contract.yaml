@@ -74,6 +74,11 @@ fixtures:
     outputs:
       lattice: lat
 
+  hubbardcylinder_u1u1:
+    run: hubbardcylinder-u1u1 -o lat
+    outputs:
+      lattice: lat
+
   klm_u1su2:
     run: klm-u1su2 -o lat
     outputs:
@@ -304,6 +309,18 @@ tests:
           contains: "Unit cell size: 4"
       - lattice_info_text:
           contains: "H_tx       - nearest neighbor hopping in x-direction"
+
+  hubbardcylinder_u1u1_contract:
+    use: hubbardcylinder_u1u1
+    expect:
+      - lattice_info_text:
+          contains: "Description: U(1)xU(1) Fermi Hubbard 2D cylinder square lattice"
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),Sz:U(1)"
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+      - lattice_info_text:
+          contains: "H_txup     - nearest neighbor hopping in x-direction for up spins"
 
   klm_u1su2_contract:
     use: klm_u1su2

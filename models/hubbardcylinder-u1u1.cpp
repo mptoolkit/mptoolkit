@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// models/hubbardcylinder-u1su2.cpp
+// models/hubbardcylinder-u1u1.cpp
 //
 // Copyright (C) 2015-2016 Ian McCulloch <ian@qusim.net>
 //
@@ -21,7 +21,7 @@
 #include "lattice/infinitelattice.h"
 #include "lattice/unitcelloperator.h"
 #include "mp/copyright.h"
-#include "models/fermion-u1su2.h"
+#include "models/fermion-u1u1.h"
 #include "common/terminal.h"
 #include "common/prog_options.h"
 
@@ -51,14 +51,20 @@ int main(int argc, char** argv)
       prog_opt::notify(vm);
 
       OperatorDescriptions OpDescriptions;
-      OpDescriptions.set_description("U(1)xSU(2) Fermi Hubbard 2D cylinder square lattice");
+      OpDescriptions.set_description("U(1)xU(1) Fermi Hubbard 2D cylinder square lattice");
       OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
       OpDescriptions.add_operators()
-         ("H_tx" , "nearest neighbor hopping in x-direction")
-         ("H_ty" , "nearest neighbor hopping in y-direction")
-         ("H_t"  , "nearest neighbor hopping")
-         ("H_U"  , "on-site Coulomb interaction n_up*n_down")
-         ("H_Us" , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
+         ("H_txup"   , "nearest neighbor hopping in x-direction for up spins")
+         ("H_txdown" , "nearest neighbor hopping in x-direction for down spins")
+         ("H_tx"     , "nearest neighbor hopping in x-direction")
+         ("H_tyup"   , "nearest neighbor hopping in y-direction for up spins")
+         ("H_tydown" , "nearest neighbor hopping in y-direction for down spins")
+         ("H_ty"     , "nearest neighbor hopping in y-direction")
+         ("H_tup"    , "nearest neighbor hopping for up spins")
+         ("H_tdown"  , "nearest neighbor hopping for down spins")
+         ("H_t"      , "nearest neighbor hopping")
+         ("H_U"      , "on-site Coulomb interaction n_up*n_down")
+         ("H_Us"     , "on-site Coulomb interaction (n_up-1/2)(n_down-1/2)")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -72,32 +78,37 @@ int main(int argc, char** argv)
 
       int CellSize = x == 0 ? y : x;
 
-      LatticeSite Site = FermionU1SU2();
+      LatticeSite Site = FermionU1U1();
       UnitCell Cell(repeat(Site, CellSize));
       InfiniteLattice Lattice(&Cell);
-      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), Pdouble(Cell, "Pdouble"),
-         Hu(Cell, "Hu"), N(Cell, "N");
+      UnitCellOperator CHup(Cell, "CHup"), CHdown(Cell, "CHdown"),
+         Cup(Cell, "Cup"), Cdown(Cell, "Cdown"), Pdouble(Cell, "Pdouble"),
+         Hu(Cell, "Hu");
 
-      UnitCellMPO tx, ty, U, Us;
-      // the XY configuration is special
+      UnitCellMPO txup, txdown, tyup, tydown, U, Us;
       if (x == 0)
       {
          for (int i = 0; i < y; ++i)
          {
-            tx += dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
-            ty += dot(CH(0)[i], C(0)[(i+1)%y]) + dot(C(0)[i], CH(0)[(i+1)%y]);
+            txup += dot(CHup(0)[i], Cup(1)[i]) - dot(Cup(0)[i], CHup(1)[i]);
+            txdown += dot(CHdown(0)[i], Cdown(1)[i]) - dot(Cdown(0)[i], CHdown(1)[i]);
+            tyup += dot(CHup(0)[i], Cup(0)[(i+1)%y]) - dot(Cup(0)[i], CHup(0)[(i+1)%y]);
+            tydown += dot(CHdown(0)[i], Cdown(0)[(i+1)%y]) - dot(Cdown(0)[i], CHdown(0)[(i+1)%y]);
          }
       }
       else
       {
          for (int i = 0; i < x-1; ++i)
          {
-            tx += dot(CH(0)[i], C(0)[i+1]) + dot(C(0)[i], CH(0)[i+1]);
+            txup += dot(CHup(0)[i], Cup(0)[i+1]) - dot(Cup(0)[i], CHup(0)[i+1]);
+            txdown += dot(CHdown(0)[i], Cdown(0)[i+1]) - dot(Cdown(0)[i], CHdown(0)[i+1]);
          }
-         tx += dot(CH(0)[x-1], C(y+1)[0]) + dot(C(0)[x-1], CH(y+1)[0]);
+         txup += dot(CHup(0)[x-1], Cup(y+1)[0]) - dot(Cup(0)[x-1], CHup(y+1)[0]);
+         txdown += dot(CHdown(0)[x-1], Cdown(y+1)[0]) - dot(Cdown(0)[x-1], CHdown(y+1)[0]);
          for (int i = 0; i < x; ++i)
          {
-            ty += dot(CH(0)[i], C(1)[i]) + dot(C(0)[i], CH(1)[i]);
+            tyup += dot(CHup(0)[i], Cup(1)[i]) - dot(Cup(0)[i], CHup(1)[i]);
+            tydown += dot(CHdown(0)[i], Cdown(1)[i]) - dot(Cdown(0)[i], CHdown(1)[i]);
          }
       }
 
@@ -107,9 +118,15 @@ int main(int argc, char** argv)
          Us += Hu(0)[i];
       }
 
-      Lattice["H_tx"] = sum_unit(tx);
-      Lattice["H_ty"] = sum_unit(ty);
-      Lattice["H_t"] = sum_unit(tx+ty);
+      Lattice["H_txup"] = -sum_unit(txup);
+      Lattice["H_txdown"] = -sum_unit(txdown);
+      Lattice["H_tx"] = Lattice["H_txup"] + Lattice["H_txdown"];
+      Lattice["H_tyup"] = -sum_unit(tyup);
+      Lattice["H_tydown"] = -sum_unit(tydown);
+      Lattice["H_ty"] = Lattice["H_tyup"] + Lattice["H_tydown"];
+      Lattice["H_tup"] = Lattice["H_txup"] + Lattice["H_tyup"];
+      Lattice["H_tdown"] = Lattice["H_txdown"] + Lattice["H_tydown"];
+      Lattice["H_t"] = Lattice["H_tup"] + Lattice["H_tdown"];
       Lattice["H_U"] = sum_unit(U);
       Lattice["H_Us"] = sum_unit(Us);
 
