@@ -35,6 +35,23 @@ fixtures:
       - info_text:
           contains: "Quantum number per unit cell = 0"
 
+  infinite_spinchain_hstag_additive_schedule:
+    from: lat
+    # Regression test for additive StatesList plateau syntax, M+I..NxS.
+    run: mp-idmrg-s3e -e -b -u 2 -q 0 -w psi -H lat:H_stag -m 1+2..4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 2"
+
 tests:
   idmrg_s3e_finds_the_exact_staggered_field_ground_state:
     use: infinite_spinchain_hstag_ground
@@ -53,4 +70,12 @@ tests:
       - expectation_real:
           operator: "lat:Sz(1)"
           approx: 0.5
+          abs: 1e-12
+
+  idmrg_s3e_accepts_additive_schedule_with_final_plateau:
+    use: infinite_spinchain_hstag_additive_schedule
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
           abs: 1e-12
