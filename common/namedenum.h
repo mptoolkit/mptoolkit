@@ -35,10 +35,14 @@
 //    static constexpr std::array<char const*, 3> Names = { "some", "enumeration", "elements" };
 // };
 //
+// String construction is case-insensitive.
+//
 
+#include "common/stringutil.h"
 #include <array>
+#include <stdexcept>
 #include <string>
-#include <exception>
+#include <vector>
 
 #if !defined(MPTOOLKIT_COMMON_NAMEDENUM_H)
 #define MPTOOLKIT_COMMON_NAMEDENUM_H
@@ -75,7 +79,12 @@ class NamedEnumeration : public Traits
       NamedEnumeration& operator--() { e = static_cast<Enum>(e-1); return *this; }
       const NamedEnumeration& operator*() const { return *this; }
 
+      // returns a comma-separated list of the enumeration names
       static std::string ListAvailable();
+      static std::string ListAll();
+
+      // returns an array of the enumeration names
+      static std::vector<std::string> EnumerateAll();
 
       std::string Name() const { return Traits::Names[e]; }
 
@@ -99,12 +108,29 @@ std::string NamedEnumeration<Traits>::ListAvailable()
 }
 
 template <typename Traits>
-NamedEnumeration<Traits>::NamedEnumeration(std::string Name)
+std::string NamedEnumeration<Traits>::ListAll()
 {
-   std::transform(Name.begin(), Name.end(), Name.begin(), [](unsigned char c){ return std::tolower(c); });
+   return ListAvailable();
+}
+
+template <typename Traits>
+std::vector<std::string> NamedEnumeration<Traits>::EnumerateAll()
+{
+   std::vector<std::string> Result;
+   Result.reserve(NamedEnumeration::size());
    for (auto a : NamedEnumeration())
    {
-      if (a.Name() == Name)
+      Result.push_back(a.Name());
+   }
+   return Result;
+}
+
+template <typename Traits>
+NamedEnumeration<Traits>::NamedEnumeration(std::string Name)
+{
+   for (auto a : NamedEnumeration())
+   {
+      if (IEquals(a.Name(), Name))
       {
          e = a.e;
          return;

@@ -22,7 +22,6 @@
 #include "mp-algorithms/arnoldi.h"
 #include "mp-algorithms/gmres.h"
 #include "mp-algorithms/davidson.h"
-#include "common/stringutil.h"
 
 #include "mps/packunpack.h"
 
@@ -76,59 +75,19 @@ struct MPSMultiplyShift
 LocalEigensolver::Solver
 LocalEigensolver::SolverFromStr(std::string Str)
 {
-   Str = ToLowerCopy(Str);
-   if (Str == "lanczos")
-      return Solver::Lanczos;
-   else if (Str == "arnoldi")
-      return Solver::Arnoldi;
-   else if (Str == "arnoldi-smallest")
-      return Solver::ArnoldiSmallest;
-   else if (Str == "arnoldi-lowest")
-      return Solver::ArnoldiLowest;
-   else if (Str == "davidson")
-      return Solver::Davidson;
-   else if (Str == "shift-invert")
-      return Solver::ShiftInvert;
-   else if (Str == "shift-invert-direct")
-      return Solver::ShiftInvertDirect;
-   else if (Str == "davidson")
-      return Solver::Davidson;
-   else if (Str == "davidson-target")
-      return Solver::DavidsonTarget;
-   else if (Str == "davidson-max-overlap")
-      return Solver::DavidsonMaxOverlap;
-   return Solver::InvalidSolver;
+   return Solver(Str);
 }
 
 std::string
 LocalEigensolver::SolverStr(LocalEigensolver::Solver s)
 {
-   if (s == Solver::Lanczos)
-      return "lanczos";
-   else if (s == Solver::Arnoldi)
-      return "arnoldi";
-   else if (s == Solver::Davidson)
-      return "davidson";
-   else if (s == Solver::ShiftInvert)
-      return "shift-Invert";
-   else if (s == Solver::ShiftInvertDirect)
-      return "shift-invert-direct";
-   else if (s == Solver::Davidson)
-      return "davidson";
-   else if (s == Solver::DavidsonTarget)
-      return "davidson-target";
-   else if (s == Solver::DavidsonMaxOverlap)
-      return "davidson-max-overlap";
-   return "Invalid Solver";
+   return s.Name();
 }
 
 std::vector<std::string>
 LocalEigensolver::EnumerateSolvers()
 {
-   std::vector<std::string> Result;
-   for (int s = int(Solver::Lanczos); s <= int(Solver::LastSolver); ++s)
-      Result.push_back(SolverStr(Solver(s)));
-   return Result;
+   return Solver::EnumerateAll();
 }
 
 LocalEigensolver::LocalEigensolver(Solver s)
@@ -404,7 +363,7 @@ LocalEigensolver::Solve(StateComponent& C,
       }
       else
       {
-         PANIC("Unsupported solver")(SolverStr(Solver_));
+         PANIC("Unsupported solver")(Solver_.Name());
       }
    }
 
