@@ -105,6 +105,19 @@ recipes:
         pattern: "{time} {x} %(float:value)"
         capture: value
 
+  ibc_correlation_ucsize_real:
+    probe: mp-ibc-correlation --quiet --real -w {prefix} -t {timestep} -n {num_steps} --xmin {xmin} -x {xmax} --ucsize {ucsize}
+    defaults:
+      num_steps: 0
+      xmin: 0
+      xmax: 0
+      x: 0
+      time: "-0.0"
+    extract:
+      line_pattern:
+        pattern: "{time} {x} %(float:value)"
+        capture: value
+
   aux_algebra_commutator_real:
     probe: mp-aux-algebra -w {state} -l {lattice} --quiet {operator1} {operator2}
     defaults:

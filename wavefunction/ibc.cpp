@@ -19,6 +19,7 @@
 // ENDHEADER
 
 #include "ibc.h"
+#include "common/numerics.h"
 #include "mpwavefunction.h"
 #include "tensor/tensor_eigen.h"
 #include "mp-algorithms/transfer.h"
@@ -698,8 +699,8 @@ get_boundary_transfer_eigenvectors(IBCWavefunction const& Psi1, ProductMPO const
 
    // Compensate for the boundary contributions to the phase for the boundaries
    // which have been incorporated into the window.
-   E *= std::pow(OverlapL, IndexLeft / LeftSize);
-   F *= std::pow(OverlapR, IndexRight / RightSize);
+   E *= std::pow(OverlapL, numerics::divp(IndexLeft, LeftSize).quot);
+   F *= std::pow(OverlapR, numerics::divp(IndexRight, RightSize).quot);
 
    return std::make_tuple(E, F);
 }
