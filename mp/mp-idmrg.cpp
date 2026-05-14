@@ -35,6 +35,7 @@
 #include "common/proccontrol.h"
 #include "common/formatting.h"
 #include "common/prog_options.h"
+#include <fstream>
 #include <iostream>
 #include "common/environment.h"
 #include "common/unique.h"
@@ -73,6 +74,9 @@ double const iTol = 1E-7;
 MatrixOperator GlobalU;
 
 bool EarlyTermination = false;  // we set this to true if we get a checkpoint
+
+std::ofstream PerStepFile(open_bench_file(getenv_or_default("MP_BENCHFILE", "")));
+bool PerStep = PerStepFile.good();
 
 
 LinearAlgebra::DiagonalMatrix<double>
@@ -697,9 +701,10 @@ iDMRG::Finish(StatesInfo const& States)
 void
 iDMRG::ShowInfo(char c)
 {
+   std::complex<double> Energy = Solver_.LastEnergy();
    std::cout << c
              << " Sweep=" << SweepNumber
-             << " Energy=" << formatting::format_complex(Solver_.LastEnergy())
+             << " Energy=" << formatting::format_complex(Energy)
              << " States=" << Info.KeptStates()
              << " Extra=" << Info.ExtraStates()
              << " TruncError=" << Info.TruncationError()
@@ -709,6 +714,15 @@ iDMRG::ShowInfo(char c)
              << " Iter=" << Solver_.LastIter()
              << " Tol=" << Solver_.LastTol()
              << '\n';
+   if (PerStep)
+   {
+      PerStepFile << ProcControl::GetElapsedTime() << ' ' << c << ' ' << SweepNumber << ' '
+                  << Info.KeptStates() << ' ' << Info.ExtraStates() << ' '
+                  << formatting::format_complex(Energy) << ' ' << Info.TruncationError() << ' '
+                  << Info.KeptEntropy() << ' ' << Solver_.LastFidelityLoss() << ' '
+                  << Solver_.LastIter() << ' ' << Solver_.LastTol() << '\n';
+      PerStepFile.flush();
+   }
 }
 
 int main(int argc, char** argv)
@@ -861,9 +875,16 @@ int main(int argc, char** argv)
 
       std::cout.precision(getenv_or_default("MP_PRECISION", 14));
       std::cerr.precision(getenv_or_default("MP_PRECISION", 14));
+      PerStepFile.precision(getenv_or_default("MP_PRECISION", 14));
 
       if (!Quiet)
          print_preamble(std::cout, argc, argv);
+
+      if (PerStep)
+      {
+         print_preamble(PerStepFile, argc, argv);
+         PerStepFile << "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol\n";
+      }
 
       std::cout << "Starting iDMRG.  Hamiltonian = " << HamStr << '\n';
       std::cout << "Wavefunction = " << FName << std::endl;

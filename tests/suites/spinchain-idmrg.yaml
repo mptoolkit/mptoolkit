@@ -3,6 +3,15 @@ version: 0
 imports:
   - ../recipes/mptoolkit-probes.yaml
 
+recipes:
+  idmrg_hstag_with_benchfile:
+    action: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_stag -m 4x2 --seed 1
+    env:
+      MP_BENCHFILE: bench.dat
+    outputs:
+      state: psi
+      bench: bench.dat
+
 fixtures:
   lat:
     run: spinchain-u1 -o lat
@@ -51,6 +60,22 @@ fixtures:
       - info_text:
           contains: "Number of states = 4"
 
+  infinite_spinchain_hstag_benchfile:
+    from: lat
+    build:
+      recipe: idmrg_hstag_with_benchfile
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - file_text:
+          path: "{bench}"
+          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol"
+      - file_text:
+          path: "{bench}"
+          contains: " Q 1 "
+
 tests:
   idmrg_finds_the_exact_staggered_field_ground_state:
     use: infinite_spinchain_hstag_ground
@@ -78,3 +103,15 @@ tests:
           equals: "lat:H_J1"
       - info_text:
           contains: "Number of states = 4"
+
+  idmrg_writes_per_step_benchmark_file:
+    use:
+      state: infinite_spinchain_hstag_benchfile.state
+      bench: infinite_spinchain_hstag_benchfile.bench
+    expect:
+      - file_text:
+          path: "{bench}"
+          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol"
+      - file_text:
+          path: "{bench}"
+          contains: " F 3 "
