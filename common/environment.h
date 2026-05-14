@@ -27,6 +27,7 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h> // for getenv
+#include <sys/stat.h>
 
 inline
 std::string quote_shell(std::string s)
@@ -98,10 +99,43 @@ inline
 std::string format_date_time(std::string const& Format)
 {
    std::time_t Time = std::time(nullptr);
-   std::tm LocalTime = *std::localtime(&Time);
-   char Buffer[100] = {};
-   std::strftime(Buffer, sizeof(Buffer), Format.c_str(), &LocalTime);
-   return std::string(Buffer);
+   std::tm LocalTime;
+#if defined(_WIN32) || defined(_MSC_VER)
+   if (localtime_s(&LocalTime, &Time) != 0)
+      return std::string();
+#else
+   if (localtime_r(&Time, &LocalTime) == nullptr)
+      return std::string();
+#endif
+
+   std::ostringstream Out;
+   Out << std::put_time(&LocalTime, Format.c_str());
+   return Out ? Out.str() : std::string();
+}
+
+inline
+bool bench_filename_exists(std::string const& FileName)
+{
+   struct stat Buffer;
+   return stat(FileName.c_str(), &Buffer) == 0;
+}
+
+inline
+bool parse_bench_filename_width(std::string const& WidthStr, int& Width)
+{
+   int const MaxWidth = 100;
+   Width = 0;
+   for (char c : WidthStr)
+   {
+      if (c < '0' || c > '9')
+         return false;
+      int const Digit = c - '0';
+      // Avoid exceptions and pathological filename padding from bad environment values.
+      if (Width > (MaxWidth - Digit) / 10)
+         return false;
+      Width = Width * 10 + Digit;
+   }
+   return true;
 }
 
 // Find an unused filename of the form BaseName + N + Extension, where N is
@@ -119,7 +153,7 @@ std::string find_next_unused_filename(std::string const& BaseName, std::string c
       Out.clear();
       Out << std::setw(Width) << std::setfill('0') << Number++;
       FileName = BaseName + Out.str() + Extension;
-   } while (std::ifstream(FileName));
+   } while (bench_filename_exists(FileName));
    return FileName;
 }
 
@@ -145,10 +179,11 @@ std::string replace_filename_format_specifiers(std::string FileName)
    for (auto const& Format : FormatMap)
    {
       std::size_t Pos = 0;
+      std::size_t const TokenLength = std::char_traits<char>::length(Format.Token);
       while ((Pos = FileName.find(Format.Token, Pos)) != std::string::npos)
       {
          std::string Replacement = format_date_time(Format.Format);
-         FileName.replace(Pos, 2, Replacement);
+         FileName.replace(Pos, TokenLength, Replacement);
          Pos += Replacement.length();
       }
    }
@@ -162,7 +197,9 @@ std::string replace_filename_format_specifiers(std::string FileName)
       if (End < FileName.size() && FileName[End] == 'n')
       {
          std::string WidthStr = FileName.substr(Pos + 1, End - Pos - 1);
-         int Width = WidthStr.empty() ? 0 : std::stoi(WidthStr);
+         int Width = 0;
+         if (!parse_bench_filename_width(WidthStr, Width))
+            return std::string();
          FileName = find_next_unused_filename(FileName.substr(0, Pos), FileName.substr(End + 1),
                                               Width);
          break;
@@ -183,7 +220,7 @@ std::ofstream open_bench_file(std::string FileName)
 
    bool Append = false;
    bool BlankLine = false;
-   if (FileName[0] == '+')
+   if (!FileName.empty() && FileName[0] == '+')
    {
       Append = true;
       FileName.erase(0, 1);
