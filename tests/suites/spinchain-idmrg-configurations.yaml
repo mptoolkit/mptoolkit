@@ -1,0 +1,231 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat_u1:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  lat_null:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  idmrg_u1_staggered_uc4:
+    from: lat_u1
+    run: mp-idmrg -e -b -u 4 -q 0 -w psi -H lat:H_stag -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 4"
+      - info_text:
+          contains: "Quantum number per unit cell = 0"
+
+  s3e_u1_staggered_uc4:
+    from: lat_u1
+    run: mp-idmrg-s3e -e -b -u 4 -q 0 -w psi -H lat:H_stag -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(3)"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 4"
+      - info_text:
+          contains: "Quantum number per unit cell = 0"
+
+  idmrg_u1_ferromagnetic_uc3:
+    from: lat_u1
+    run: mp-idmrg -e -b -u 3 -q -1.5 -w psi -H lat:-H_J1z -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:-H_J1z"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.75
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: -0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 3"
+      - info_text:
+          contains: "Quantum number per unit cell = -1.5"
+
+  s3e_u1_ferromagnetic_uc3:
+    from: lat_u1
+    run: mp-idmrg-s3e -e -b -u 3 -q -1.5 -w psi -H lat:-H_J1z -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:-H_J1z"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -0.75
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: -0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 3"
+      - info_text:
+          contains: "Quantum number per unit cell = -1.5"
+
+  idmrg_null_transverse_field_uc3:
+    from: lat_null
+    run: mp-idmrg -e -b -u 3 -w psi -H lat:H_X -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_X"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(0)"
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(1)"
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(2)"
+          approx: -1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = S:Null"
+      - info_text:
+          contains: "Unit cell size = 3"
+
+  s3e_null_transverse_field_uc3:
+    from: lat_null
+    run: mp-idmrg-s3e -e -b -u 3 -w psi -H lat:H_X -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_X"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(0)"
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(1)"
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:X(2)"
+          approx: -1.0
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = S:Null"
+      - info_text:
+          contains: "Unit cell size = 3"
+
+tests:
+  idmrg_and_s3e_match_staggered_field_with_repeated_unit_cell:
+    use:
+      psi1: idmrg_u1_staggered_uc4.state
+      psi2: s3e_u1_staggered_uc4.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  idmrg_and_s3e_match_ferromagnetic_ising_with_nonzero_u1_charge:
+    use:
+      psi1: idmrg_u1_ferromagnetic_uc3.state
+      psi2: s3e_u1_ferromagnetic_uc3.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  idmrg_and_s3e_match_null_symmetry_transverse_field_product_state:
+    use:
+      psi1: idmrg_null_transverse_field_uc3.state
+      psi2: s3e_null_transverse_field_uc3.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
