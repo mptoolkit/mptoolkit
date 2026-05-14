@@ -46,6 +46,9 @@ class FiniteDMRG : public DMRG
 
       virtual void check_structure() const;
 
+      // Statistics which are valid at the end of the sweep.
+      double LastSweepFidelity;      // Overlap of the wavefunction before and after the previous sweep
+
       // The wavefunction from the start of the sweep, projected into the basis of C.
       StateComponent SweepC;
 

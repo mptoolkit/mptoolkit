@@ -22,7 +22,6 @@
 
 #include "common/leftrightstack.h"
 #include "mp-algorithms/eigensolver.h"
-#include "wavefunction/finitewavefunctionleft.h"
 #include "wavefunction/linearwavefunction.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "mp-algorithms/expansion.h"
@@ -59,18 +58,11 @@ class DMRG
       // returns the last energy obtained from the eigensolver
       std::complex<double> LastEnergy() const { return Solver_.LastEnergy(); }
 
-      // returns ||psi - psi_prev||^2, where psi_prev is the previous
-      // wavefunction (set to psi by StartSweep())
-      double FidelityLoss() const;
-
       // returns the dimension of the Basis1() of the active site
       int Basis1TotalDimension() const { return C->Basis1().total_dimension(); }
 
       // returns the dimension of the Basis2() of the active site
       int Basis2TotalDimension() const { return C->Basis2().total_dimension(); }
-
-      // get the current wavefunction
-      FiniteWavefunctionLeft Wavefunction() const;
 
       TruncationInfo TruncateAndShiftLeft(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
       TruncationInfo TruncateAndShiftRight(StatesInfo const& SInfo, int ExtraStates, int ExtraStatesPerSector);
@@ -112,8 +104,6 @@ class DMRG
 
       // Statistics which are valid at the end of the sweep
       double LastSweepTime;          // Elapsed time for the previous sweep
-      double LastSweepFidelity;      // Overlap of the wavefunction before and after the previous sweep
-
       // some statistics for current sweep
       int SweepNumIterations;        // number of iterations in the sweep; normally equal to the number of sites
       int SweepSumStates;            // sum of IterationNumStates
