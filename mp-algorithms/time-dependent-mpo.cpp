@@ -28,6 +28,7 @@ namespace
 {
 
 std::complex<double> const I(0.0, 1.0);
+int const MaxImplementedMagnusOrder = 4;
 
 std::pair<double, double>
 LegendreAndDerivative(int Order, double x)
@@ -144,6 +145,9 @@ ValidateMagnusOrder(int MagnusOrder)
 {
    if (MagnusOrder < 2 || MagnusOrder % 2 != 0)
       throw std::runtime_error("Invalid Magnus order; expected a positive even integer.");
+   if (MagnusOrder > MaxImplementedMagnusOrder)
+      throw std::runtime_error("Magnus orders above " + std::to_string(MaxImplementedMagnusOrder)
+                               + " are not implemented yet.");
 }
 
 int
@@ -218,8 +222,7 @@ TimeDependentHamiltonianMPO(InfiniteLattice const& Lattice,
                             int MagnusOrder,
                             int MagnusQuadratureOrder)
 {
-   if (MagnusOrder > 4)
-      throw std::runtime_error("Magnus orders above four are not implemented yet.");
+   ValidateMagnusOrder(MagnusOrder);
 
    if (Timestep == 0.0)
       return ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, Time}});

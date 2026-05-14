@@ -239,18 +239,32 @@ FiniteTEBDBondHamiltonian(BasicTriangularMPO const& HamMPO)
    return BondH;
 }
 
-std::vector<SimpleOperator>
-AssembleFiniteTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
-                            std::complex<double> SliceTimestep)
+namespace
 {
-   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDSlice(BasicTriangularMPO const& HamMPO,
+                        std::vector<SimpleOperator> const& BondH,
+                        int FirstBond,
+                        std::complex<double> SliceTimestep)
+{
    std::vector<SimpleOperator> Terms;
-   for (int i = 0; i < BondH.size(); i += 2)
+   for (int i = FirstBond; i < BondH.size(); i += 2)
    {
       Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[i],
                                            HamMPO[i], HamMPO[i+1]));
    }
    return Terms;
+}
+
+} // namespace
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
+                            std::complex<double> SliceTimestep)
+{
+   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+   return AssembleFiniteTEBDSlice(HamMPO, BondH, 0, SliceTimestep);
 }
 
 std::vector<SimpleOperator>
@@ -258,13 +272,7 @@ AssembleFiniteTEBDOddSlice(BasicTriangularMPO const& HamMPO,
                            std::complex<double> SliceTimestep)
 {
    std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
-   std::vector<SimpleOperator> Terms;
-   for (int i = 1; i < BondH.size(); i += 2)
-   {
-      Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[i],
-                                           HamMPO[i], HamMPO[i+1]));
-   }
-   return Terms;
+   return AssembleFiniteTEBDSlice(HamMPO, BondH, 1, SliceTimestep);
 }
 
 TEBDHamiltonianGates
@@ -272,17 +280,20 @@ AssembleFiniteTEBDHamiltonian(BasicTriangularMPO const& HamMPO,
                               std::complex<double> Timestep,
                               LTSDecomposition const& decomp)
 {
+   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+
    std::vector<std::vector<SimpleOperator>> EvenU;
    for (auto x : decomp.a())
-      EvenU.push_back(AssembleFiniteTEBDEvenSlice(HamMPO, x*Timestep));
+      EvenU.push_back(AssembleFiniteTEBDSlice(HamMPO, BondH, 0, x*Timestep));
 
    std::vector<std::vector<SimpleOperator>> OddU;
    for (auto x : decomp.b())
-      OddU.push_back(AssembleFiniteTEBDOddSlice(HamMPO, x*Timestep));
+      OddU.push_back(AssembleFiniteTEBDSlice(HamMPO, BondH, 1, x*Timestep));
 
    std::vector<SimpleOperator> EvenContinuation;
    if (decomp.a().size() == decomp.b().size()+1)
-      EvenContinuation = AssembleFiniteTEBDEvenSlice(HamMPO, (decomp.a().front() + decomp.a().back()) * Timestep);
+      EvenContinuation = AssembleFiniteTEBDSlice(HamMPO, BondH, 0,
+                                                 (decomp.a().front() + decomp.a().back()) * Timestep);
 
    return {EvenU, OddU, EvenContinuation};
 }

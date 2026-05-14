@@ -192,8 +192,7 @@ WindowHamiltonian::WindowMPOForTime(std::complex<double> t, std::complex<double>
    if (!WindowTimeDependent)
       return WindowMPO;
 
-   if (MagnusOrder > 4)
-      throw std::runtime_error("Magnus orders above four are not implemented yet.");
+   ValidateMagnusOrder(MagnusOrder);
 
    if (dt == 0.0)
       return this->ParseWindowMPO({{TimeVar, t}});
