@@ -1,0 +1,224 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  lat_plain:
+    run: hubbard -o lat
+    outputs:
+      lattice: lat
+
+  lat_u1u1:
+    run: hubbard-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  # Decoupled two-site hopping dimers give exact free-fermion ground states,
+  # while still exercising fermionic signs, nontrivial site entanglement, and
+  # multi-component U(1)xU(1) quantum numbers.
+  idmrg_plain_free_dimer_pair:
+    from: lat_plain
+    run: mp-idmrg -e -b -u 2 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)) + dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)))" -m 8x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Pdouble(0)"
+          approx: 0.25
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:Null"
+      - info_text:
+          contains: "Unit cell size = 2"
+
+  s3e_plain_free_dimer_pair:
+    from: lat_plain
+    run: mp-idmrg-s3e -e -b -u 2 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)) + dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)))" -m 8x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Pdouble(0)"
+          approx: 0.25
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:Null"
+      - info_text:
+          contains: "Unit cell size = 2"
+
+  idmrg_u1u1_free_dimer_one_up:
+    from: lat_u1u1
+    run: mp-idmrg -e -b -u 2 -q 1,0.5 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)))" -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(CHup(0), Cup(1))"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number per unit cell = 1,0.5"
+
+  s3e_u1u1_free_dimer_one_up:
+    from: lat_u1u1
+    run: mp-idmrg-s3e -e -b -u 2 -q 1,0.5 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)))" -m 4x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:dot(CHup(0), Cup(1))"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number per unit cell = 1,0.5"
+
+  idmrg_u1u1_free_dimer_pair:
+    from: lat_u1u1
+    run: mp-idmrg -e -b -u 2 -q 2,0 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)) + dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)))" -m 8x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Pdouble(0)"
+          approx: 0.25
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number per unit cell = 2,0"
+
+  s3e_u1u1_free_dimer_pair:
+    from: lat_u1u1
+    run: mp-idmrg-s3e -e -b -u 2 -q 2,0 -w psi -H "lat:-sum_unit(sites=2,dot(CHup(0), Cup(1)) - dot(Cup(0), CHup(1)) + dot(CHdown(0), Cdown(1)) - dot(Cdown(0), CHdown(1)))" -m 8x2 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Ndown(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Pdouble(0)"
+          approx: 0.25
+          abs: 1e-12
+      - info_text:
+          contains: "Symmetry list = N:U(1),Sz:U(1)"
+      - info_text:
+          contains: "Quantum number per unit cell = 2,0"
+
+tests:
+  idmrg_and_s3e_match_plain_hubbard_free_dimer_pair:
+    use:
+      psi1: idmrg_plain_free_dimer_pair.state
+      psi2: s3e_plain_free_dimer_pair.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  idmrg_and_s3e_match_u1u1_hubbard_free_dimer_one_up:
+    use:
+      psi1: idmrg_u1u1_free_dimer_one_up.state
+      psi2: s3e_u1u1_free_dimer_one_up.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
+
+  idmrg_and_s3e_match_u1u1_hubbard_free_dimer_pair:
+    use:
+      psi1: idmrg_u1u1_free_dimer_pair.state
+      psi2: s3e_u1u1_free_dimer_pair.state
+    expect:
+      - ioverlap_mag:
+          approx: 1.0
+          abs: 1e-12
