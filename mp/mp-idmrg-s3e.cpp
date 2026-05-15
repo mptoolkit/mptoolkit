@@ -495,7 +495,11 @@ class iDMRG
       void SweepRight(StatesInfo const& SInfo, double HMix = 0);
       void SweepLeft(StatesInfo const& SInfo, double HMix = 0, bool NoUpdate = false);
 
-      // call after a SweepRight() to make Psi an infinite wavefunction
+      // If the final scheduled sweep ended at the left edge, rotate the center
+      // back to the right edge without solving, truncating, or applying S3E mixing.
+      void MoveCenterRightForFinish();
+
+      // call with the center at the right edge to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
 
       // returns the wavefunction, which is in center-regular form
@@ -840,6 +844,37 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
    *C *= 1.0 / norm_frob(*C);
 
    this->CheckConsistency();
+}
+
+void
+iDMRG::MoveCenterRightForFinish()
+{
+   CHECK(C == FirstSite);
+
+   // Close the unit-cell boundary using the left block saved by the final
+   // scheduled left sweep, then move the center to the right edge without
+   // changing the requested sweep schedule or the last solved energy.
+   this->UpdateLeftBlock();
+
+   while (C != LastSite)
+   {
+      MatrixOperator Lambda = ExpandBasis2(*C);
+
+      // update blocks
+      LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
+      RightHamiltonian.pop_front();
+
+      // next site
+      ++H;
+      ++C;
+
+      *C = prod(Lambda, *C);
+
+      // normalize
+      *C *= 1.0 / norm_frob(*C);
+
+      this->CheckConsistency();
+   }
 }
 
 void
@@ -1391,6 +1426,10 @@ int main(int argc, char** argv)
             {
                idmrg.SweepRight(SInfo, HMix);
             }
+         }
+         if (MyStates.size() % 2 == 1)
+         {
+            idmrg.MoveCenterRightForFinish();
          }
          idmrg.Finish(SInfo);
 

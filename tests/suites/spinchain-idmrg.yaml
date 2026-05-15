@@ -44,6 +44,34 @@ fixtures:
       - info_text:
           contains: "Quantum number per unit cell = 0"
 
+  infinite_spinchain_hstag_odd_schedule:
+    from: lat
+    # Regression test for schedules ending after a left sweep. Finalization
+    # should rotate the center back to the right edge without adding a solve.
+    run: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_stag -m 4x1 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_stag"
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - info_text:
+          contains: "Unit cell size = 2"
+      - info_text:
+          contains: "Quantum number per unit cell = 0"
+
   infinite_spinchain_heisenberg_post_expansion:
     from: lat
     # Smoke test for the post-expansion path. This schedule is intentionally
@@ -59,6 +87,42 @@ fixtures:
           contains: "Unit cell size = 2"
       - info_text:
           contains: "Number of states = 4"
+
+  infinite_spinchain_heisenberg_odd_post_expansion:
+    from: lat
+    # Odd-length post-expansion schedule: the finalization pass should not
+    # leave extra post-expanded states in the saved wavefunction.
+    run: mp-idmrg -e -b -u 2 -q 0 -w psi -H lat:H_J1 -m 4x1,8x2 --seed 1 --post rsvd --final-no-post
+    outputs:
+      state: psi
+    certify:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J1"
+      - info_text:
+          contains: "Unit cell size = 2"
+      - info_text:
+          compare:
+            kind: matches
+            value: 'Number of states = [1-8]\b'
+
+  infinite_spinchain_heisenberg_odd_post_expansion_right:
+    from: infinite_spinchain_heisenberg_odd_post_expansion
+    run: mp-right-canonicalize psi psi_right
+    outputs:
+      state: psi_right
+    certify:
+      - info_text:
+          contains: "WavefunctionType=InfiniteRightCanonical"
+
+  infinite_spinchain_heisenberg_odd_post_expansion_roundtrip:
+    from: infinite_spinchain_heisenberg_odd_post_expansion_right
+    run: mp-left-canonicalize psi_right psi_left
+    outputs:
+      state: psi_left
+    certify:
+      - info_text:
+          contains: "WavefunctionType=Infinite"
 
   infinite_spinchain_hstag_benchfile:
     from: lat
@@ -95,6 +159,22 @@ tests:
           operator: "lat:Sz(1)"
           approx: 0.5
 
+  idmrg_accepts_odd_sweep_schedule:
+    use: infinite_spinchain_hstag_odd_schedule
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
   idmrg_post_expansion_handles_heisenberg_chain:
     use: infinite_spinchain_heisenberg_post_expansion
     expect:
@@ -103,6 +183,26 @@ tests:
           equals: "lat:H_J1"
       - info_text:
           contains: "Number of states = 4"
+
+  idmrg_post_expansion_accepts_odd_sweep_schedule:
+    use: infinite_spinchain_heisenberg_odd_post_expansion
+    expect:
+      - attr_text:
+          attribute: Hamiltonian
+          equals: "lat:H_J1"
+      - info_text:
+          compare:
+            kind: matches
+            value: 'Number of states = [1-8]\b'
+
+  idmrg_odd_post_expansion_canonical_roundtrip_preserves_nontrivial_state:
+    use:
+      psi1: infinite_spinchain_heisenberg_odd_post_expansion.state
+      psi2: infinite_spinchain_heisenberg_odd_post_expansion_roundtrip.state
+    expect:
+      - ioverlap_sector_mag:
+          approx: 1.0
+          abs: 1e-12
 
   idmrg_writes_per_step_benchmark_file:
     use:
