@@ -642,7 +642,9 @@ iDMRG::MoveCenterRightForFinish()
    while (C != LastSite)
    {
       this->CheckConsistency();
-      this->ShiftRight(ExpandBasis2(*C));
+      // Move the center exactly via QR; ExpandBasis2() would inflate this
+      // temporary finish pass to the full product basis.
+      this->ShiftRight(OrthogonalizeBasis2_QR(*C));
       this->CheckConsistency();
    }
 }
@@ -742,7 +744,8 @@ iDMRG::ShowInfo(char c)
                   << Info.KeptStates() << ' ' << Info.ExtraStates() << ' '
                   << formatting::format_complex(Energy) << ' ' << Info.TruncationError() << ' '
                   << Info.KeptEntropy() << ' ' << Solver_.LastFidelityLoss() << ' '
-                  << Solver_.LastIter() << ' ' << Solver_.LastTol() << '\n';
+                  << Solver_.LastIter() << ' ' << Solver_.LastRequestedTol() << ' '
+                  << Solver_.LastTol() << '\n';
       PerStepFile.flush();
    }
 }
@@ -905,7 +908,7 @@ int main(int argc, char** argv)
       if (PerStep)
       {
          print_preamble(PerStepFile, argc, argv);
-         PerStepFile << "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol\n";
+         PerStepFile << "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #RequestedTol #Tol\n";
       }
 
       std::cout << "Starting iDMRG.  Hamiltonian = " << HamStr << '\n';

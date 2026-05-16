@@ -114,7 +114,7 @@ void SweepRight(FiniteDMRG3S& dmrg, StatesInfo const& SInfo, double MixFactor)
       if (Flush)
          std::cout << std::flush;
       if (PerStep)
-         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastRequestedTol() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
 
@@ -145,7 +145,7 @@ void SweepLeft(FiniteDMRG3S& dmrg, StatesInfo const& SInfo, double MixFactor)
       if (Flush)
          std::cout << std::flush;
       if (PerStep)
-         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
+         PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastRequestedTol() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
 
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
       if (PerStep)
       {
          print_preamble(PerStepFile, argc, argv);
-         PerStepFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #Tol\n";
+         PerStepFile << "#Time #SweepNum #Site #States #Energy #Trunc #Fidelity #Iter #RequestedTol #Tol\n";
       }
 
       std::cout << "Starting DMRG...\n";

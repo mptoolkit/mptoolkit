@@ -100,6 +100,7 @@ class LocalEigensolver
       std::complex<double> LastEnergy() const { return LastEnergy_; }
       double LastEnergyReal() const { return LastEnergy_.real(); }
       double LastFidelityLoss() const { return LastFidelityLoss_; }
+      double LastRequestedTol() const { return LastRequestedTol_; }
       double LastTol() const { return LastTol_; }
       double LastIter() const { return LastIter_; }
       double AverageFidelity() const { return FidelityAv_.value(); }
@@ -109,6 +110,7 @@ class LocalEigensolver
       // information on the last solver application
       double LastFidelityLoss_;
       std::complex<double> LastEnergy_;
+      double LastRequestedTol_;
       double LastTol_;
       int LastIter_;
       std::complex<double> ShiftInvertEnergy;

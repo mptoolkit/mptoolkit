@@ -91,8 +91,11 @@ LocalEigensolver::EnumerateSolvers()
 }
 
 LocalEigensolver::LocalEigensolver(Solver s)
-   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1-10), MinIter(2), MaxIter(20), Verbose(0),
-     Solver_(s), ShiftInvertEnergy(0), SubspaceSize(30), UsePreconditioning(false)
+   : FidelityScale(0.1), MaxTol(1e-4), MinTol(1e-16), EvolveDelta(0.0),
+     MinIter(2), MaxIter(20), Verbose(0),
+     Solver_(s), LastFidelityLoss_(0.0), LastEnergy_(0.0), LastRequestedTol_(0.0),
+     LastTol_(0.0), LastIter_(0), ShiftInvertEnergy(0), SubspaceSize(30),
+     UsePreconditioning(false)
 {
 }
 
@@ -252,19 +255,22 @@ LocalEigensolver::Solve(StateComponent& C,
       C = ROld - EvolveDelta * C; // imaginary time evolution step
       C *= 1.0 / norm_frob(C);    // normalize
       LastIter_ = 1;
+      LastRequestedTol_ = 0.0;
       LastTol_ = 0.0;
    }
    else
    {
-      LastTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
-      LastTol_ = std::max(LastTol_, MinTol);
+      LastRequestedTol_ = std::min(std::sqrt(this->AverageFidelity()) * FidelityScale, MaxTol);
+      LastRequestedTol_ = std::max(LastRequestedTol_, MinTol);
+      LastTol_ = LastRequestedTol_;
       //LastTol_ = std::min(this->AverageFidelity() * FidelityScale, MaxTol);
       LastIter_ = MaxIter;
       if (Verbose > 2)
       {
          std::cerr << "Starting eigensolver.  Initial guess vector has dimensions "
                    << C.Basis1().total_dimension() << " x " << C.LocalBasis().size()
-                   << " x " << C.Basis2().total_dimension() << ", requested Tol=" << LastTol_ << '\n';
+                   << " x " << C.Basis2().total_dimension()
+                   << ", requested Tol=" << LastRequestedTol_ << '\n';
       }
       if (Solver_ == Solver::Lanczos)
       {
