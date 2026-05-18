@@ -201,7 +201,7 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)         \
          $(parserobj)
 
-tools = mp-idmrg-s3e mp-ioverlap \
+tools = mp-idmrg-s3e mp-idmrg-3s mp-ioverlap \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
@@ -478,6 +478,7 @@ mp-trotter : mpexponential.o $(exponentialobj)
 mp-dmrg : expansion.o dmrg.o finitedmrg.o
 mp-dmrg-3s : expansion.o dmrg.o finitedmrg.o
 mp-dmrg-2site : expansion.o dmrg.o finitedmrg.o
+mp-idmrg-3s : expansion.o
 mp-evolve-krylov : progressivekrylov.o krylovloop.o $(exponentialobj)
 mp-evolve-magnus : progressivekrylov.o krylovloop.o $(exponentialobj)
 mp-apply-opt : prodoptimizer.o
@@ -510,6 +511,7 @@ mp-ea-dmrg: ef-optim.o momentum_operations.o triangular_mpo_solver_helpers.o tri
 
 mp-idmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o
 mp-idmrg-s3e : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
+mp-idmrg-3s : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o triangular_mpo_solver_helpers.o triangular_mpo_solver_simple.o
 mp-ibc-dmrg : $(mpoobj) random_wavefunc.o packunpack.o triangular_mpo_solver.o momentum_operations.o infinitelattice.o stateslist.o ef-optim.o eigensolver.o
 mp-irename-symmetry : triangular_operator.o mpoperator.o infinitewavefunctionleft.o
 mp-iparity : triangular_operator.o mpoperator.o infinitewavefunctionleft.o random_wavefunc.o packunpack.o
