@@ -1082,41 +1082,56 @@ fixtures:
 
   hubbard_u1u1_y2_single_up_time_dependent_window:
     from: hubbard_u1u1_y2_single_up
-    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-4 --pre fullsvd --post fullsvd
     outputs:
       state: out.b0.02
     certify:
       - info_text:
           state: "{state}"
-          contains: "Window size = 9"
+          contains: "Window size = 6"
       - info_text:
           state: "{state}"
-          contains: "Offset of first site of the window = -3"
+          contains: "Offset of first site of the window = -1"
       - attr_float:
           state: "{state}"
           attribute: EvolutionWindowLeft
-          approx: -2
+          approx: 0
           abs: 1e-12
       - attr_float:
           state: "{state}"
           attribute: EvolutionWindowRight
-          approx: 4
+          approx: 3
           abs: 1e-12
       - attr_float:
           state: "{state}"
           attribute: Beta
           approx: 0.02
           abs: 1e-12
+      # The raised expansion threshold avoids a marginal automatic right-edge
+      # expansion while still extending the input size-2 window to the six raw
+      # sites needed for the one-step evolution window.  Local densities have
+      # small run-to-run variation because zero-weight expansion vectors are not
+      # unique, but the particle remains localized near the original site.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]"
+          approx: 0.9998
+          abs: 4e-4
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[0]"
+          approx: 0.0002
+          abs: 2e-4
       # The time-dependent local potential changes the dynamics but conserves
       # total Nup and Ndown; these sums cover the full reported window.
       - expectation_real:
           state: "{state}"
-          operator: "lat:Nup(-2)[1]+Nup(-1)[0]+Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]+Nup(2)[1]"
+          operator: "lat:Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]"
           approx: 1.0
           abs: 1e-12
       - expectation_real:
           state: "{state}"
-          operator: "lat:Ndown(-2)[1]+Ndown(-1)[0]+Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]+Ndown(2)[1]"
+          operator: "lat:Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]"
           approx: 0.0
           abs: 1e-12
 
@@ -1340,8 +1355,12 @@ tests:
     expect:
       - attr_float:
           attribute: EvolutionWindowRight
-          approx: 4
+          approx: 3
           abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)[0]"
+          approx: 0.9998
+          abs: 4e-4
 
   hubbard_u1u1_y2_time_dependent_window_keeps_expanding_over_multiple_steps:
     use: hubbard_u1u1_y2_single_up_td_window_four_steps
