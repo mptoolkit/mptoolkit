@@ -1122,41 +1122,63 @@ fixtures:
 
   hubbard_u1u1_y2_single_up_td_window_four_steps:
     from: hubbard_u1u1_y2_single_up
-    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 4 -s 4 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 4 -s 4 -m 2 --min-states 1 --fidtol 1e-4 --pre fullsvd --post fullsvd
     outputs:
       state: out.b0.08
     certify:
       - info_text:
           state: "{state}"
-          contains: "Window size = 12"
+          contains: "Window size = 9"
       - info_text:
           state: "{state}"
-          contains: "Offset of first site of the window = -5"
+          contains: "Offset of first site of the window = -4"
       - attr_float:
           state: "{state}"
           attribute: EvolutionWindowLeft
-          approx: -4
+          approx: -3
           abs: 1e-12
       - attr_float:
           state: "{state}"
           attribute: EvolutionWindowRight
-          approx: 5
+          approx: 3
           abs: 1e-12
       - attr_float:
           state: "{state}"
           attribute: Beta
           approx: 0.08
           abs: 1e-12
-      # As above, the time-dependent potential conserves total particle number;
-      # these sums cover the full expanded window at beta=0.08.
+      # The raised expansion threshold keeps the automatic final window
+      # deterministic while still expanding on each later step:
+      # initial size 6, final raw sites -4..4, i.e. cells -2[0]..2[0].
+      # Zero-weight expansion vectors are not unique, so local densities have
+      # small run-to-run variation; the reference values below are from the
+      # same four-step single-particle run, with tolerances chosen from repeated
+      # runs rather than exact single-particle diagonalization.
       - expectation_real:
           state: "{state}"
-          operator: "lat:Nup(-3)[1]+Nup(-2)[0]+Nup(-2)[1]+Nup(-1)[0]+Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]+Nup(2)[1]+Nup(3)[0]"
+          operator: "lat:Nup(-1)[0]"
+          approx: 0.003548
+          abs: 2e-5
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[0]"
+          approx: 0.0055
+          abs: 1e-3
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]+Nup(1)[0]+Nup(2)[0]"
+          approx: 0.996436
+          abs: 2e-5
+      # The time-dependent potential conserves total particle number; these
+      # sums cover the full expanded window at beta=0.08.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-2)[0]+Nup(-2)[1]+Nup(-1)[0]+Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]"
           approx: 1.0
           abs: 1e-12
       - expectation_real:
           state: "{state}"
-          operator: "lat:Ndown(-3)[1]+Ndown(-2)[0]+Ndown(-2)[1]+Ndown(-1)[0]+Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]+Ndown(2)[1]+Ndown(3)[0]"
+          operator: "lat:Ndown(-2)[0]+Ndown(-2)[1]+Ndown(-1)[0]+Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]"
           approx: 0.0
           abs: 1e-12
 
@@ -1326,5 +1348,9 @@ tests:
     expect:
       - attr_float:
           attribute: EvolutionWindowRight
-          approx: 5
+          approx: 3
           abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(-1)[0]"
+          approx: 0.003548
+          abs: 2e-5
