@@ -28,6 +28,7 @@
 #include "common/prog_options.h"
 #include "parser/number-parser.h"
 #include "lattice/infinite-parser.h"
+#include <iterator>
 
 namespace prog_opt = boost::program_options;
 
@@ -215,8 +216,13 @@ int main(int argc, char** argv)
 
       // If UCSize is not specified, then we set it to the left boundary unit
       // cell size.
-      if (UCSize = -1)
-         UCSize = Psi1.left().size();
+      if (UCSize == -1)
+         UCSize = std::ssize(Psi1.left());
+      if (UCSize <= 0)
+      {
+         std::cerr << "fatal: --ucsize must be positive." << std::endl;
+         return 1;
+      }
       
       if (vm.count("string"))
       {
