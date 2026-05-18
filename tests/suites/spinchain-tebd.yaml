@@ -275,6 +275,72 @@ fixtures:
           approx: 0.38481214455298
           abs: 1e-12
 
+  infinite_neel2_itdvp_time_dependent_imag_magnus4_tau:
+    from: infinite_neel2
+    run: mp-itdvp -w psi -H "lat:(1+i*tau)*sum_unit(I(0))" -o out -t 0-0.1i -n 4 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.4
+      state_b0p1: out.b0.1
+      state_b0p2: out.b0.2
+      state_b0p3: out.b0.3
+      state_b0p4: out.b0.4
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*tau)*sum_unit(I(0))"
+      - ioverlap_real:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+      - ioverlap_imag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38481214455298
+          abs: 1e-12
+
+  infinite_neel2_itebd_time_dependent_imag_magnus4_tau:
+    from: infinite_neel2
+    run: mp-itebd -w psi -H "lat:(1+i*tau)*sum_unit(I(0))" -o out -t 0-0.1i -n 4 -s 1 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.4
+      state_b0p1: out.b0.1
+      state_b0p2: out.b0.2
+      state_b0p3: out.b0.3
+      state_b0p4: out.b0.4
+    certify:
+      - attr_float:
+          attribute: Beta
+          approx: 0.4
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:(1+i*tau)*sum_unit(I(0))"
+      - ioverlap_real:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38289288597511
+          abs: 1e-12
+      - ioverlap_imag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.0
+          abs: 1e-12
+      - ioverlap_mag:
+          state: "{state_b0p4}"
+          psi2: "{parent.state}"
+          approx: 0.38289288597511
+          abs: 1e-12
+
 
   lat_plain:
     run: spinchain -o lat
@@ -308,6 +374,160 @@ fixtures:
           operator: "lat:Sz(0)"
           approx: 0.49750208263901
           abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup2_itebd_rotating_transverse_field:
+    from: infinite_upup2
+    run: mp-itebd -w psi -H "lat:sum_unit(sites=2,cos(2*t)*Sx(0)+sin(2*t)*Sy(0))" -o out -t 0.01 -n 10 -s 10 --magnus 4 --magnus-quadrature 4
+    outputs:
+      state: out.t0.10
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(sites=2,cos(2*t)*Sx(0)+sin(2*t)*Sy(0))"
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: 0.0049709455177231
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.049585202107799
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.49751039932105
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup2_itebd_time_dependent_commuting_field_continuation:
+    from: infinite_upup2
+    run: mp-itebd -w psi -H "lat:sum_unit(sites=2,(1+t)*Sx(0))" -o out -t 0.4 -n 2 -s 2 --magnus 2
+    outputs:
+      state: out.t0.8
+    certify:
+      - attr_float:
+          attribute: Time
+          approx: 0.8
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(sites=2,(1+t)*Sx(0))"
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup2_itebd_time_dependent_commuting_field_resume_real:
+    from: infinite_upup2
+    steps:
+      - run: mp-itebd -w {state} -H "lat:sum_unit(sites=2,(1+t)*Sx(0))" -o half -t 0.4 -n 1 -s 1 --magnus 2
+        outputs:
+          state: half.t0.4
+        save_as:
+          state: half_state
+      - run: mp-itebd -w {state} -H "lat:sum_unit(sites=2,(1+t)*Sx(0))" -o resumed -t 0.4 -n 1 -s 1 --magnus 2
+        outputs:
+          state: resumed.t0.8
+    certify:
+      - attr_float:
+          state: half.t0.4
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.8
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(sites=2,(1+t)*Sx(0))"
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  infinite_upup2_itebd_time_dependent_commuting_field_resume_complex:
+    from: infinite_upup2
+    steps:
+      - run: mp-itebd -w {state} -H "lat:sum_unit(sites=2,(1+t)*Sx(0))" -o half -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2
+        outputs:
+          state: half.t0.2.b0.1
+        save_as:
+          state: half_state
+      - run: mp-itebd -w {state} -H "lat:sum_unit(sites=2,(1+t)*Sx(0))" -o resumed -t 0.2 -b 0.1 -n 1 -s 1 --magnus 2
+        outputs:
+          state: resumed.t0.4.b0.2
+    certify:
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Time
+          approx: 0.2
+          abs: 1e-12
+      - attr_float:
+          state: half.t0.2.b0.1
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.2
+          abs: 1e-12
+      - attr_text:
+          attribute: EvolutionHamiltonian
+          equals: "lat:sum_unit(sites=2,(1+t)*Sx(0))"
+      - info_log_amplitude:
+          approx: 0.01934912339218324
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: -0.13645254028157
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.21354813246347
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.43101960439413
+          abs: 1e-8
       - expectation_real:
           operator: "lat:Sz(1)"
           approx: 0.5
@@ -604,6 +824,89 @@ tests:
           approx: 1.0
           abs: 1e-12
 
+  itebd_time_dependent_rotating_field_tracks_exact_single_spin_solution:
+    use: infinite_upup2_itebd_rotating_transverse_field
+    expect:
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: 0.0049709455177231
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.049585202107799
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.49751039932105
+          abs: 1e-4
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  itebd_time_dependent_continuation_slice_uses_boundary_interval:
+    use: infinite_upup2_itebd_time_dependent_commuting_field_continuation
+    expect:
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  itebd_time_dependent_resume_uses_saved_time_attribute:
+    use: infinite_upup2_itebd_time_dependent_commuting_field_resume_real
+    expect:
+      - attr_float:
+          attribute: Time
+          approx: 0.8
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.45005022108825
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.21784122313836
+          abs: 1e-8
+
+  itebd_time_dependent_resume_uses_saved_complex_time_attribute:
+    use: infinite_upup2_itebd_time_dependent_commuting_field_resume_complex
+    expect:
+      - attr_float:
+          attribute: Time
+          approx: 0.4
+          abs: 1e-12
+      - attr_float:
+          attribute: Beta
+          approx: 0.2
+          abs: 1e-12
+      - info_log_amplitude:
+          approx: 0.01934912339218324
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: -0.13645254028157
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sy(0)"
+          approx: -0.21354813246347
+          abs: 1e-8
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.43101960439413
+          abs: 1e-8
+
 
   itebd_site_dependent_two_site_drive_on_second_site_matches_itdvp:
     use:
@@ -813,6 +1116,64 @@ tests:
           psi1: "{psi0}"
           psi2: "{beta_0p4}"
           approx: 0.38481214455298
+          abs: 1e-12
+
+  itdvp_time_dependent_imaginary_time_magnus4_respects_custom_timevar:
+    use:
+      psi0: infinite_neel2.state
+      beta_0p1: infinite_neel2_itdvp_time_dependent_imag_magnus4_tau.state_b0p1
+      beta_0p2: infinite_neel2_itdvp_time_dependent_imag_magnus4_tau.state_b0p2
+      beta_0p3: infinite_neel2_itdvp_time_dependent_imag_magnus4_tau.state_b0p3
+      beta_0p4: infinite_neel2_itdvp_time_dependent_imag_magnus4_tau.state_b0p4
+    expect:
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81464731641141
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64726466707803
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50409022957483
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38481214455298
+          abs: 1e-12
+
+  itebd_time_dependent_imaginary_time_magnus4_respects_custom_timevar:
+    use:
+      psi0: infinite_neel2.state
+      beta_0p1: infinite_neel2_itebd_time_dependent_imag_magnus4_tau.state_b0p1
+      beta_0p2: infinite_neel2_itebd_time_dependent_imag_magnus4_tau.state_b0p2
+      beta_0p3: infinite_neel2_itebd_time_dependent_imag_magnus4_tau.state_b0p3
+      beta_0p4: infinite_neel2_itebd_time_dependent_imag_magnus4_tau.state_b0p4
+    expect:
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p1}"
+          approx: 0.81058424597019
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p2}"
+          approx: 0.64403642108314
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p3}"
+          approx: 0.50157606906606
+          abs: 1e-12
+      - ioverlap_real:
+          psi1: "{psi0}"
+          psi2: "{beta_0p4}"
+          approx: 0.38289288597511
           abs: 1e-12
 
   imoments_cross_json_reuses_itebd_output:

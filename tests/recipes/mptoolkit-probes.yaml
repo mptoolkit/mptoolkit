@@ -27,6 +27,13 @@ recipes:
     probe: mp-info {state}
     extract: full_text
 
+  info_log_amplitude:
+    probe: mp-info {state}
+    extract:
+      line_pattern:
+        pattern: "Log amplitude per unit cell = %(float:value)"
+        capture: value
+
   history_text:
     probe: mp-history {state}
     extract: full_text

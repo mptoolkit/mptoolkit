@@ -22,8 +22,8 @@
 #include "common/prog_opt_accum.h"
 #include "common/prog_options.h"
 #include "common/rangelist.h"
+#include "common/randutil.h"
 #include "common/terminal.h"
-#include "common/unique.h"
 #include "interface/inittemp.h"
 #include "lattice/infinite-parser.h"
 #include "lattice/infinitelattice.h"
@@ -140,9 +140,9 @@ int main(int argc, char** argv)
 
       Settings.Verbose = Verbose;
 
-      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
-         : (ext::get_unique() % RAND_MAX);
-      srand(RandSeed);
+      unsigned int RandSeed = vm.count("seed") ? static_cast<unsigned int>(vm["seed"].as<unsigned long>())
+         : randutil::crypto_rand();
+      randutil::seed(RandSeed);
 
       mp_pheap::InitializeTempPHeap();
 

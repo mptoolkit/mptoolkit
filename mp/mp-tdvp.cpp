@@ -22,6 +22,7 @@
 #include "common/prog_options.h"
 #include "common/terminal.h"
 #include "interface/inittemp.h"
+#include "mp-algorithms/time-dependent-mpo.h"
 #include "mp-algorithms/tdvp.h"
 #include "mp/copyright.h"
 #include "mpo/basic_triangular_mpo.h"
@@ -49,7 +50,8 @@ int main(int argc, char** argv)
       int Verbose = 0;
       int OutputDigits = 0;
       std::string CompositionStr = "secondorder";
-      std::string Magnus = "2";
+      int MagnusOrder = 2;
+      int MagnusQuadrature = 0;
       std::string TimeVar = "t";
       std::string PreExpandAlgo = "rsvd";
       std::string PostExpandAlgo = "rsvd";
@@ -98,7 +100,9 @@ int main(int argc, char** argv)
          ("two-site,2", prog_opt::bool_switch(&TwoSite), "Use two-site TDVP")
          ("epsilon", prog_opt::bool_switch(&Settings.Epsilon), "Calculate the error measures Eps1SqSum and Eps2SqSum")
          ("composition,c", prog_opt::value(&CompositionStr), FormatDefault("Composition scheme", CompositionStr).c_str())
-         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("magnus", prog_opt::value(&MagnusOrder), FormatDefault("For time-dependent Hamiltonians, use this order of the Magnus expansion", MagnusOrder).c_str())
+         ("magnus-quadrature", prog_opt::value(&MagnusQuadrature),
+          FormatDefault("Gauss-Legendre quadrature order for time-dependent Magnus terms (0 selects the default for --magnus)", MagnusQuadrature).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("verbose,v", prog_opt_ext::accum_value(&Verbose), "Increase verbosity (can be used more than once)")
          ;
@@ -153,9 +157,13 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      if (Magnus != "2" && Magnus != "4")
+      try
       {
-         std::cerr << "fatal: Invalid Magnus scheme." << std::endl;
+         ResolveMagnusQuadratureOrder(MagnusOrder, MagnusQuadrature);
+      }
+      catch (std::exception const& e)
+      {
+         std::cerr << "fatal: " << e.what() << std::endl;
          return 1;
       }
 
@@ -257,7 +265,7 @@ int main(int argc, char** argv)
          }
       }
 
-      Hamiltonian Ham(HamStr, Psi.size(), Magnus, TimeVar, Verbose);
+      Hamiltonian Ham(HamStr, Psi.size(), Verbose, MagnusOrder, TimeVar, MagnusQuadrature);
 
       std::cout << "Maximum number of Lanczos iterations: " << Settings.MaxIter << '\n';
       std::cout << "Error tolerance for the Lanczos evolution: " << Settings.ErrTol << '\n';

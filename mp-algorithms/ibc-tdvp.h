@@ -31,7 +31,8 @@ class WindowHamiltonian : public Hamiltonian
 
       // If Size == 0, do not rescale Hamiltonian size.
       WindowHamiltonian(std::string HamStrBackground, std::string HamStrWindow,
-                        int Size = 0, std::string Magnus = "2", std::string TimeVar = "t", int Verbose = 0);
+                        int Size = 0, int Verbose = 0, int MagnusOrder = 2,
+                        std::string TimeVar = "t", int MagnusQuadrature = 0);
 
       // Get the Hamiltonian MPO to evolve from t to t + dt.
       BasicTriangularMPO operator()(int Left, int Right, std::complex<double> t = 0.0, std::complex<double> dt = 0.0) const;
@@ -39,11 +40,17 @@ class WindowHamiltonian : public Hamiltonian
       bool is_window_empty() const { return WindowEmpty; }
       bool is_window_time_dependent() const { return WindowTimeDependent; }
 
-      bool window_size() const { return WindowMPO.size(); }
-      bool window_offset() const { return WindowMPO.offset(); }
+      int window_size() const { return WindowMPO.size(); }
+      int window_offset() const { return WindowMPO.offset(); }
 
    protected:
+      UnitCellMPO ParseWindowMPO(Function::ArgumentList Args = Function::ArgumentList()) const;
+      UnitCellMPO WindowMPOForTime(std::complex<double> t, std::complex<double> dt) const;
+      BasicTriangularMPO WindowTriangularMPO(int LeftUC, int RightUC,
+                                             std::complex<double> t, std::complex<double> dt) const;
+
       std::string WindowOperator;
+      InfiniteLattice WindowLattice;
       UnitCellMPO WindowMPO;
       bool WindowEmpty;
       bool WindowTimeDependent;
@@ -95,6 +102,10 @@ class IBC_TDVP : public TDVP
 
       // Evolve the window by one time step using 2TDVP.
       void Evolve2();
+
+      // Update a time-dependent window Hamiltonian and rebuild the effective
+      // environments around the current orthogonality centre.
+      void UpdateWindowHamiltonian(std::complex<double> t, std::complex<double> dt);
 
       double GMRESTol;
       double FidTol;

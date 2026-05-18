@@ -19,6 +19,7 @@
 // ENDHEADER
 
 #include "mp-algorithms/tebd.h"
+#include "mp-algorithms/time-dependent-mpo.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
@@ -36,10 +37,44 @@
 #include "lattice/infinite-parser.h"
 #include "interface/inittemp.h"
 #include "common/openmp.h"
+#include "common/formatting.h"
 #include "tensor/reducible.h"
+#include "parser/parser.h"
 #include <cctype>
 
 namespace prog_opt = boost::program_options;
+
+namespace
+{
+
+bool
+ValidateFiniteTEBDHamiltonianSize(BasicTriangularMPO const& HamMPO, int PsiSize)
+{
+   if (HamMPO.empty())
+   {
+      std::cerr << "mp-tebd: fatal: Hamiltonian MPO is empty.\n";
+      return false;
+   }
+
+   if (HamMPO.size() > PsiSize)
+   {
+      std::cerr << "mp-tebd: fatal: Hamiltonian unit cell size " << HamMPO.size()
+                << " exceeds wavefunction length " << PsiSize << ".\n";
+      return false;
+   }
+
+   if (PsiSize % HamMPO.size() != 0)
+   {
+      std::cerr << "mp-tebd: fatal: wavefunction length " << PsiSize
+                << " must be an integer multiple of the Hamiltonian unit cell size "
+                << HamMPO.size() << ".\n";
+      return false;
+   }
+
+   return true;
+}
+
+} // namespace
 
 void DoEvenSlice(std::deque<StateComponent>& Psi,
                  std::deque<RealDiagonalOperator>& Lambda,
@@ -158,7 +193,11 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
       int Coarsegrain = 1;
+      int MagnusOrder = 2;
+      int MagnusQuadrature = 0;
+      std::string TimeVar = "t";
       std::string DecompositionStr = "optimized4-11";
+      bool TimeDependent = false;
       bool Quiet = false;
 
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -169,6 +208,7 @@ int main(int argc, char** argv)
          ("wavefunction,w", prog_opt::value(&InputFile), "input wavefunction")
          ("output,o", prog_opt::value(&OutputPrefix), "prefix for saving output files")
          ("timestep,t", prog_opt::value(&TimestepStr), "timestep (required)")
+         ("betastep,b", prog_opt::value(&BetastepStr), "betastep (alternative to timestep)")
          ("decomposition,c", prog_opt::value(&DecompositionStr), FormatDefault("choice of decomposition", DecompositionStr).c_str())
          ("num-timesteps,n", prog_opt::value(&N), FormatDefault("number of timesteps to calculate", N).c_str())
          ("save-timesteps,s", prog_opt::value(&SaveEvery), "save the wavefunction every s timesteps")
@@ -180,6 +220,10 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+         ("magnus", prog_opt::value(&MagnusOrder), FormatDefault("For time-dependent Hamiltonians, use this order of the Magnus expansion", MagnusOrder).c_str())
+         ("magnus-quadrature", prog_opt::value(&MagnusQuadrature),
+          FormatDefault("Gauss-Legendre quadrature order for time-dependent Magnus terms (0 selects the default for --magnus)", MagnusQuadrature).c_str())
+         ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("coarsegrain", prog_opt::value(&Coarsegrain),
           "coarse-grain N-to-1 sites")
          ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default if timestep is real]")
@@ -196,7 +240,7 @@ int main(int argc, char** argv)
       if (vm.count("help") > 0 || vm.count("wavefunction") < 1
           ||  (vm.count("timestep") < 1 && vm.count("betastep") < 1))
       {
-         print_copyright(std::cerr, "tools", "mp-itebd");
+         print_copyright(std::cerr, "tools", "mp-tebd");
          std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
          std::cerr << desc << '\n';
          std::cerr << "Available decompositions:\n";
@@ -219,7 +263,17 @@ int main(int argc, char** argv)
       }
       if (decomp.order() == 0)
       {
-         std::cerr << "mp-itebd: fatal: invalid decomposition\n";
+         std::cerr << "mp-tebd: fatal: invalid decomposition\n";
+         return 1;
+      }
+
+      try
+      {
+         ResolveMagnusQuadratureOrder(MagnusOrder, MagnusQuadrature);
+      }
+      catch (std::exception const& e)
+      {
+         std::cerr << "mp-tebd: fatal: " << e.what() << '\n';
          return 1;
       }
 
@@ -300,90 +354,55 @@ int main(int argc, char** argv)
          }
       }
 
-      std::tie(HamMPO, Lattice) = ParseTriangularOperatorAndLattice(HamStr);
-      if (HamMPO.size() < Psi.size())
-      HamMPO = repeat(HamMPO, Psi.size() / HamMPO.size());
+      std::string HamOperator;
+      std::tie(HamOperator, Lattice) = ParseOperatorStringAndLattice(HamStr);
 
-      // Assemble the Hamiltonian into the bond terms
-      std::vector<SimpleOperator> BondH(HamMPO.size()-1);
-      auto SplitTerms = SplitMPO(HamMPO);
-      for (int i = 0; i < SplitTerms.size(); ++i)
+      // Attempt to convert the operator into an MPO.  If it works, then the
+      // Hamiltonian is time-independent.  If it fails, assume it failed because
+      // the time variable is not defined yet; other operator errors will be
+      // reported when the time-dependent MPO is built.
+      try
       {
-         for (auto const& op : SplitTerms[i])
+         HamMPO = ParseTriangularOperator(Lattice, HamOperator);
+         if (!ValidateFiniteTEBDHamiltonianSize(HamMPO, Psi.size()))
+            return 1;
+         HamMPO = PrepareFiniteTEBDHamiltonian(HamMPO, Psi.size());
+      }
+      catch (Parser::ParserError& e)
+      {
+         if (Verbose > 1)
          {
-            if (op.size() == 1)
-            {
-               // split single-site operators over the two bonds, unless they are at the edge
-               if (i == 0)
-               {
-                  SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[i+1](0,0));
-                  BondH[i] += p.scalar();
-               }
-               else if (i == HamMPO.size()-1)
-               {
-                  SimpleRedOperator p = tensor_prod(HamMPO[i-1](0,0), op[0](0,0));
-                  BondH[i-1] += p.scalar();
-               }
-               else
-               {
-                  SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[i+1](0,0));
-                  BondH[i] += 0.5 * p.scalar();
-                  SimpleRedOperator q = tensor_prod(HamMPO[i-1](0,0), op[0](0,0));
-                  BondH[i-1] += 0.5 * q.scalar();
-               }
-            }
-            else if (op.size() == 2)
-            {
-               // ignore terms that cross beyond the unit cell boundary
-               if (i < HamMPO.size()-1)
-                  BondH[i] += coarse_grain(op).scalar();
-            }
-            else
-            {
-               throw std::runtime_error("fatal: operator has support over more than 2 sites.");
-            }
+            std::cerr << "Parser error converting the Hamiltonian to an MPO - assuming the Hamiltonian is time-dependent.\n";
          }
+         TimeDependent = true;
+      }
+      catch (...)
+      {
+         throw;
       }
 
-      std::vector<std::vector<SimpleOperator>> EvenU;
-      for (auto x : decomp.a())
+      TEBDHamiltonianGates Gates;
+      if (!TimeDependent)
       {
-         std::vector<SimpleOperator> Terms;
-         for (int i = 0; i < BondH.size(); i += 2)
-         {
-            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
-         }
-         EvenU.push_back(std::move(Terms));
+         Gates = AssembleFiniteTEBDHamiltonian(HamMPO, Timestep, decomp);
       }
-
-      std::vector<std::vector<SimpleOperator>> OddU;
-      for (auto x : decomp.b())
+      else
       {
-         std::vector<SimpleOperator> Terms;
-         for (int i = 1; i < BondH.size(); i += 2)
-         {
-            Terms.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
-         }
-         OddU.push_back(std::move(Terms));
-      }
-
-      // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
-      // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
-      std::vector<SimpleOperator> EvenContinuation;
-      if (decomp.a().size() == decomp.b().size()+1)
-      {
-         double x = decomp.a().front() + decomp.a().back();
-          for (int i = 0; i < BondH.size(); i += 2)
-         {
-            EvenContinuation.push_back(Exponentiate(-Timestep*std::complex<double>(0,x) * BondH[i]));
-         }
+         BasicTriangularMPO InitialHamMPO = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                                        InitialTime, Timestep,
+                                                                        MagnusOrder, MagnusQuadrature);
+         if (!ValidateFiniteTEBDHamiltonianSize(InitialHamMPO, Psi.size()))
+            return 1;
       }
 
       std::cout << "Using decomposition " << DecompositionStr << '\n';
       if (Verbose > 0)
       {
-         std::cout << "Number of even slices: " << EvenU.size() << '\n';
-         std::cout << "Number of odd slices: " << OddU.size() << '\n';
+         if (!TimeDependent)
+         {
+            std::cout << "Number of even slices: " << Gates.EvenU.size() << '\n';
+            std::cout << "Number of odd slices: " << Gates.OddU.size() << '\n';
+         }
       }
 
       StatesInfo SInfo;
@@ -419,28 +438,38 @@ int main(int argc, char** argv)
 
       while (tstep < N)
       {
+         // If the Hamiltonian is time-dependent, build the gates over the
+         // actual time interval covered by each Suzuki-Trotter slice.
+         if (TimeDependent)
+         {
+            Gates = AssembleFiniteTimeDependentTEBDHamiltonian(Lattice, HamOperator, TimeVar,
+                                                               InitialTime + double(tstep)*Timestep, Timestep,
+                                                               decomp, MagnusOrder, MagnusQuadrature,
+                                                               Psi.size());
+         }
+
          if (Continue)
          {
             if (Verbose > 1)
             {
                std::cout << "Merge slice\n";
             }
-            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenContinuation, SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenContinuation, SInfo, Verbose);
          }
          else
          {
-            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenU[0], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[0], SInfo, Verbose);
          }
 
-         DoOddSlice(PsiVec, Lambda, LogAmplitude, OddU[0], SInfo, Verbose);
-         for (int bi = 1; bi < OddU.size(); ++bi)
+         DoOddSlice(PsiVec, Lambda, LogAmplitude, Gates.OddU[0], SInfo, Verbose);
+         for (int bi = 1; bi < Gates.OddU.size(); ++bi)
          {
-            DoEvenSlice(PsiVec, Lambda, LogAmplitude, EvenU[bi], SInfo, Verbose);
-            DoOddSlice(PsiVec, Lambda, LogAmplitude, OddU[bi], SInfo, Verbose);
+            DoEvenSlice(PsiVec, Lambda, LogAmplitude, Gates.EvenU[bi], SInfo, Verbose);
+            DoOddSlice(PsiVec, Lambda, LogAmplitude, Gates.OddU[bi], SInfo, Verbose);
          }
 
          // do we do a continuation?
-         Continue = EvenU.size() > OddU.size();
+         Continue = Gates.EvenU.size() > Gates.OddU.size();
 
          ++tstep;
          std::cout << "Timestep " << formatting::format_complex(tstep)
@@ -451,15 +480,15 @@ int main(int argc, char** argv)
          {
             LinearWavefunction Psi;
             double ThisLogAmplitude = LogAmplitude;
-            if (EvenU.size() > OddU.size())
+            if (Gates.EvenU.size() > Gates.OddU.size())
             {
-               CHECK_EQUAL(EvenU.size(), OddU.size()+1);
+               CHECK_EQUAL(Gates.EvenU.size(), Gates.OddU.size()+1);
                std::cout << "Doing final slice before saving wavefunction.\n";
                // do the final slice to finish the timstep.  Make a copy of the wavefunction since it is better to
                // avoid a truncation step and 'continue' the wavefunction by wrapping around the next timestep.
                std::deque<StateComponent> PsiVecSave = PsiVec;
                std::deque<RealDiagonalOperator> LambdaSave = Lambda;
-               DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, EvenU.back(), SInfo, Verbose);
+               DoEvenSlice(PsiVecSave, LambdaSave, ThisLogAmplitude, Gates.EvenU.back(), SInfo, Verbose);
                Psi = LinearWavefunction::FromContainer(PsiVecSave.begin(), PsiVecSave.end());
             }
             else

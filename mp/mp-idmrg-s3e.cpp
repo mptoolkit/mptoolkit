@@ -68,9 +68,9 @@
 #include "common/formatting.h"
 #include "common/prog_options.h"
 #include <fstream>
+#include "common/randutil.h"
 #include <iostream>
 #include "common/environment.h"
-#include "common/unique.h"
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
@@ -955,7 +955,6 @@ int main(int argc, char** argv)
       double MixFactor = 0.02;
       double RandomMixFactor = 0.0;
       bool NoFixedPoint = false;
-      bool NoOrthogonalize = false;
       bool Create = false;
       bool ExactDiag = false;
       double FidelityScale = 1.0;
@@ -1020,8 +1019,6 @@ int main(int argc, char** argv)
           "(useful for integer spin chains, can be used multiple times)")
          ("create,b", prog_opt::bool_switch(&NoFixedPoint),
           "Construct a new wavefunction from a random state or single-cell diagonalization")
-         ("no-orthogonalize", prog_opt::bool_switch(&NoOrthogonalize),
-          "Don't orthogonalize the wavefunction before saving")
          ("maxiter", prog_opt::value<int>(&NumIter),
           FormatDefault("Maximum number of Lanczos iterations per step (Krylov subspace size)", NumIter).c_str())
          ("miniter", prog_opt::value<int>(&MinIter),
@@ -1078,9 +1075,9 @@ int main(int argc, char** argv)
       std::cout << "Starting iDMRG.  Hamiltonian = " << HamStr << '\n';
       std::cout << "Wavefunction = " << FName << std::endl;
 
-      unsigned int RandSeed = vm.count("seed") ? (vm["seed"].as<unsigned long>() % RAND_MAX)
-         : (ext::get_unique() % RAND_MAX);
-      srand(RandSeed);
+      unsigned int RandSeed = vm.count("seed") ? static_cast<unsigned int>(vm["seed"].as<unsigned long>())
+         : randutil::crypto_rand();
+      randutil::seed(RandSeed);
 
       if (vm.count("one-site"))
          TwoSite = !OneSite;
