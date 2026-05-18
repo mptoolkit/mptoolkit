@@ -510,6 +510,7 @@ endfunction()
 
 set(MPTK_TOOLS
   mp-idmrg-s3e
+  mp-idmrg-3s
   mp-ioverlap
   mp-info
   mp-history
