@@ -119,7 +119,7 @@ InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-1
    return Result;
 }
 
-double const Alpha = 100;
+double BoundaryInverseAlpha = 1e-3;
 
 // function to calculate
 // (D1 * U) * Inverse(D2)
@@ -195,9 +195,9 @@ Solve_D_U_DInv(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiago
          int Dim2 = E.Basis1().dim(J.index2());
 
          LinearAlgebra::DiagonalMatrix<double>
-            DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, Alpha);
+            DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, BoundaryInverseAlpha);
          LinearAlgebra::DiagonalMatrix<double>
-            EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, Alpha);
+            EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, BoundaryInverseAlpha);
 
          LinearAlgebra::Matrix<std::complex<double>> Component =
             DD * (*J) * InvertDiagonal(EE, iTol);
@@ -221,9 +221,9 @@ Solve_DInv_U_D(RealDiagonalOperator const& D, MatrixOperator const& U, RealDiago
          int Dim2 = E.Basis1().dim(J.index2());
 
          LinearAlgebra::DiagonalMatrix<double>
-            DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, Alpha);
+            DD = D(J.index1(), J.index1()) + LinearAlgebra::DiagonalMatrix<double>(Dim1, Dim1, BoundaryInverseAlpha);
          LinearAlgebra::DiagonalMatrix<double>
-            EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, Alpha);
+            EE = E(J.index2(), J.index2()) + LinearAlgebra::DiagonalMatrix<double>(Dim2, Dim2, BoundaryInverseAlpha);
 
          LinearAlgebra::Matrix<std::complex<double>> Component =
             InvertDiagonal(DD, iTol) * (*J) * EE;
@@ -921,6 +921,8 @@ int main(int argc, char** argv)
          ("seed", prog_opt::value<unsigned long>(), "random seed")
          ("gmrestol", prog_opt::value(&GMRESTol),
           FormatDefault("tolerance for GMRES linear solver for the initial H matrix elements", GMRESTol).c_str())
+         ("boundary-inverse-alpha", prog_opt::value(&BoundaryInverseAlpha),
+          FormatDefault("Regularizing shift for boundary lambda inversion", BoundaryInverseAlpha).c_str())
 	 ("solver", prog_opt::value<std::string>(),
 	  ("Eigensolver to use; choices are " + LocalEigensolver::Solver::ListAvailable()).c_str())
 	 ("shift-invert-energy", prog_opt::value(&ShiftInvertEnergy),
