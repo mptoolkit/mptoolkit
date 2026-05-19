@@ -422,6 +422,7 @@ set(MPTK_ALGORITHM_SOURCES
   mp-algorithms/stateslist.cpp
   mp-algorithms/tdvp.cpp
   mp-algorithms/tebd.cpp
+  mp-algorithms/time-dependent-mpo.cpp
   mp-algorithms/triangular_mpo_solver.cpp
   mp-algorithms/triangular_mpo_solver_cross.cpp
   mp-algorithms/triangular_mpo_solver_ea.cpp
@@ -510,6 +511,7 @@ endfunction()
 set(MPTK_TOOLS
   mp-idmrg
   mp-idmrg-s3e
+  mp-idmrg-3s
   mp-ioverlap
   mp-info
   mp-history

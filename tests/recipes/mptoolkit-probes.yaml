@@ -27,6 +27,13 @@ recipes:
     probe: mp-info {state}
     extract: full_text
 
+  info_log_amplitude:
+    probe: mp-info {state}
+    extract:
+      line_pattern:
+        pattern: "Log amplitude per unit cell = %(float:value)"
+        capture: value
+
   history_text:
     probe: mp-history {state}
     extract: full_text
@@ -93,6 +100,19 @@ recipes:
 
   ibc_correlation_real:
     probe: mp-ibc-correlation --quiet --real -w {prefix} -t {timestep} -n {num_steps} --xmin {xmin} -x {xmax}
+    defaults:
+      num_steps: 0
+      xmin: 0
+      xmax: 0
+      x: 0
+      time: "-0.0"
+    extract:
+      line_pattern:
+        pattern: "{time} {x} %(float:value)"
+        capture: value
+
+  ibc_correlation_ucsize_real:
+    probe: mp-ibc-correlation --quiet --real -w {prefix} -t {timestep} -n {num_steps} --xmin {xmin} -x {xmax} --ucsize {ucsize}
     defaults:
       num_steps: 0
       xmin: 0

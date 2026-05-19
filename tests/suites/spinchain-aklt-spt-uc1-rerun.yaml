@@ -72,9 +72,6 @@ fixtures:
 
 tests:
   rerunning_single_site_aklt_dmrg_preserves_exact_energy_and_spt_projective_phase:
-    allow_failure: >-
-      Issue #104: mp-idmrg-s3e AKLT convergence is unstable pending the new
-      idmrg cleanup.
     use: aklt_ground_uc1_rerun
     expect:
       - attr_float:

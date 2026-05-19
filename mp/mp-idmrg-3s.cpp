@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp/mp-idmrg-s3e.cpp
+// mp/mp-idmrg-3s.cpp
 //
 // Copyright (C) 2015-2024 Ian McCulloch <ian@qusim.net>
 // Copyright (C) 2022 Jesse Osborne <j.osborne@uqconnect.edu.au>
@@ -18,7 +18,7 @@
 //----------------------------------------------------------------------------
 // ENDHEADER
 //
-// iDMRG with single-site subspace expansion
+// iDMRG with the strict single-site 3S expansion.
 //
 // A note on initialization.
 // The wavefunction is stored in the left-canonical form, of A-matrices.
@@ -74,6 +74,7 @@
 #include "common/statistics.h"
 #include "common/prog_opt_accum.h"
 #include "mp-algorithms/gmres.h"
+#include "mp-algorithms/expansion.h"
 #include "tensor/tensor_eigen.h"
 #include "tensor/regularize.h"
 #include "mp-algorithms/stateslist.h"
@@ -335,7 +336,6 @@ struct MPSMultiply
 struct MixInfo
 {
    double MixFactor;
-   double RandomMixFactor;
 };
 
 //#define SSC
@@ -348,73 +348,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
                      MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& LeftHam)
 {
-   // truncate - FIXME: this is the s3e step
-#if defined(SSC)
-   MatrixOperator Lambda;
-   SimpleStateComponent CX;
-   std::tie(Lambda, CX) = ExpandBasis1_(C);
-#else
-   MatrixOperator Lambda = ExpandBasis1(C);
-#endif
-
-   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
-   if (Mix.MixFactor > 0)
-   {
-#if defined(SSC)
-      StateComponent RH = contract_from_right(herm(H), CX, RightHam, herm(CX));
-#else
-      StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
-#endif
-      MatrixOperator RhoMix;
-      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
-
-      // Skip the identity and the Hamiltonian
-      for (unsigned i = 1; i < RH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
-      }
-      // check for a zero mixing term - can happen if there are no interactions that span
-      // the current bond
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-
-   //TRACE(Rho);
-
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-   Lambda = Lambda * herm(U);
-
-   //TRACE(Lambda);
-
-#if defined(SSC)
-   C = U*CX; //prod(U, CX);
-#else
-   C = prod(U, C);
-#endif
-
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis2(Lambda, U, D, Vh);
-
-   //TRACE(U)(D)(Vh);
-
-   C = prod(Vh, C);
-   return std::make_pair(U, D);
+   return ::SubspaceExpandBasis1(C, H, RightHam, Mix.MixFactor, States, Info, LeftHam);
 }
 
 // Apply subspace expansion / truncation on the right (C.Basis2()).
@@ -425,51 +359,7 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
                      MixInfo const& Mix, StatesInfo const& States, TruncationInfo& Info,
                      StateComponent const& RightHam)
 {
-   // truncate - FIXME: this is the s3e step
-   MatrixOperator Lambda = ExpandBasis2(C);
-
-   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
-   if (Mix.MixFactor > 0)
-   {
-      StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
-      MatrixOperator RhoMix;
-
-      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
-
-      for (unsigned i = 1; i < LH.size()-1; ++i)
-      {
-         double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
-         if (Prefactor == 0)
-            Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
-      }
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (Mix.MixFactor / RhoTrace) * RhoMix;
-   }
-   if (Mix.RandomMixFactor > 0)
-   {
-      MatrixOperator RhoMix = MakeRandomMatrixOperator(Rho.Basis1(), Rho.Basis2());
-      RhoMix = herm(RhoMix) * RhoMix;
-      Rho += (Mix.RandomMixFactor / trace(RhoMix)) * RhoMix;
-   }
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
-      TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
-                                         States,
-                                         Info);
-   MatrixOperator U = DM.ConstructTruncator(DM.begin(), DMPivot);
-
-   Lambda = U * Lambda;
-   C = prod(C, herm(U));
-
-   MatrixOperator Vh;
-   RealDiagonalOperator D;
-   SingularValueDecompositionKeepBasis1(Lambda, U, D, Vh);
-
-   C = prod(C, U);
-
-   return std::make_pair(D, Vh);
+   return ::SubspaceExpandBasis2(C, H, LeftHam, Mix.MixFactor, States, Info, RightHam);
 }
 
 class iDMRG
@@ -495,11 +385,7 @@ class iDMRG
       void SweepRight(StatesInfo const& SInfo, double HMix = 0);
       void SweepLeft(StatesInfo const& SInfo, double HMix = 0, bool NoUpdate = false);
 
-      // If the final scheduled sweep ended at the left edge, rotate the center
-      // back to the right edge without solving, truncating, or applying S3E mixing.
-      void MoveCenterRightForFinish();
-
-      // call with the center at the right edge to make Psi an infinite wavefunction
+      // call after a SweepRight() to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
 
       // returns the wavefunction, which is in center-regular form
@@ -847,39 +733,6 @@ iDMRG::TruncateAndShiftRight(StatesInfo const& States)
 }
 
 void
-iDMRG::MoveCenterRightForFinish()
-{
-   CHECK(C == FirstSite);
-
-   // Close the unit-cell boundary using the left block saved by the final
-   // scheduled left sweep, then move the center to the right edge without
-   // changing the requested sweep schedule or the last solved energy.
-   this->UpdateLeftBlock();
-
-   while (C != LastSite)
-   {
-      // Move the center exactly via QR; ExpandBasis2() would inflate this
-      // temporary finish pass to the full product basis.
-      MatrixOperator Lambda = OrthogonalizeBasis2_QR(*C);
-
-      // update blocks
-      LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
-      RightHamiltonian.pop_front();
-
-      // next site
-      ++H;
-      ++C;
-
-      *C = prod(Lambda, *C);
-
-      // normalize
-      *C *= 1.0 / norm_frob(*C);
-
-      this->CheckConsistency();
-   }
-}
-
-void
 iDMRG::SweepRight(StatesInfo const& States, double HMix)
 {
    this->UpdateLeftBlock(HMix);
@@ -967,7 +820,7 @@ iDMRG::ShowInfo(char c)
                   << Info.KeptStates() << ' ' << formatting::format_complex(Energy) << ' '
                   << Info.TruncationError() << ' ' << Info.KeptEntropy() << ' '
                   << Solver_.LastFidelityLoss() << ' ' << Solver_.LastIter() << ' '
-                  << Solver_.LastRequestedTol() << ' ' << Solver_.LastTol() << '\n';
+                  << Solver_.LastTol() << '\n';
       PerStepFile.flush();
    }
 }
@@ -990,7 +843,6 @@ int main(int argc, char** argv)
       bool OneSite = false;
       int WavefuncUnitCellSize = 0;
       double MixFactor = 0.02;
-      double RandomMixFactor = 0.0;
       bool NoFixedPoint = false;
       bool Create = false;
       bool ExactDiag = false;
@@ -1034,9 +886,7 @@ int main(int argc, char** argv)
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
-          FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
-         ("random-mix-factor", prog_opt::value(&RandomMixFactor),
-          FormatDefault("Random mixing for the density matrix", RandomMixFactor).c_str())
+          FormatDefault("Mixing coefficient for the 3S expansion", MixFactor).c_str())
          ("hmix", prog_opt::value(&HMix),
           FormatDefault("Hamiltonian mixing factor", HMix).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
@@ -1106,7 +956,7 @@ int main(int argc, char** argv)
       if (PerStep)
       {
          print_preamble(PerStepFile, argc, argv);
-         PerStepFile << "#Time #Step #SweepNum #States #Energy #Trunc #Entropy #Fidelity #Iter #RequestedTol #Tol\n";
+         PerStepFile << "#Time #Step #SweepNum #States #Energy #Trunc #Entropy #Fidelity #Iter #Tol\n";
       }
 
       std::cout << "Starting iDMRG.  Hamiltonian = " << HamStr << '\n';
@@ -1392,7 +1242,6 @@ int main(int argc, char** argv)
                   BlockHamR, InitialEnergy, Verbose);
 
       idmrg.MixingInfo.MixFactor = MixFactor;
-      idmrg.MixingInfo.RandomMixFactor = RandomMixFactor;
       idmrg.SetInitialFidelity(InitialFidelity);
       idmrg.Solver().MaxTol = MaxTol;
       idmrg.Solver().MinTol = MinTol;
@@ -1425,10 +1274,6 @@ int main(int argc, char** argv)
             {
                idmrg.SweepRight(SInfo, HMix);
             }
-         }
-         if (MyStates.size() % 2 == 1)
-         {
-            idmrg.MoveCenterRightForFinish();
          }
          idmrg.Finish(SInfo);
 

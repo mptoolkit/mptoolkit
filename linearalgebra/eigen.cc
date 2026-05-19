@@ -29,6 +29,18 @@
 namespace LinearAlgebra
 {
 
+#if defined(RANDOMIZE_VECTORS)
+namespace
+{
+
+double RandomSign()
+{
+   return randutil::rand() < 0.5 ? -1.0 : 1.0;
+}
+
+} // namespace
+#endif
+
 namespace Private
 {
 
@@ -559,7 +571,7 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (unsigned i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
@@ -601,7 +613,7 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
@@ -639,7 +651,7 @@ struct ImplementSingularValueDecompositionLeft<A, U, D,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
       }
 #endif
@@ -675,7 +687,7 @@ struct ImplementSingularValueDecompositionRight<A, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
 #endif
@@ -719,7 +731,7 @@ struct ImplementSingularValueDecomposition<A, U, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
@@ -781,7 +793,7 @@ struct ImplementSingularValueDecompositionFull<A, U, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < min_mn; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
          Vtres(i,LinearAlgebra::all) *= LinearAlgebra::conj(Phase);
       }
@@ -907,7 +919,7 @@ struct ImplementSingularValueDecompositionLeftFull<A, U, D,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < m; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Ures(LinearAlgebra::all,i) *= Phase;
       }
 #endif
@@ -976,7 +988,7 @@ struct ImplementSingularValueDecompositionRightFull<A, D, Vt,
 #if defined(RANDOMIZE_VECTORS)
       for (int i = 0; i < n; ++i)
       {
-         double Phase = (rand() % 2) * 2.0 - 1.0;
+         double Phase = RandomSign();
          Vtres(i,LinearAlgebra::all) *= Phase;
       }
 #endif

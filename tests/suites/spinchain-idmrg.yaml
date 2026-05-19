@@ -135,7 +135,7 @@ fixtures:
           abs: 1e-12
       - file_text:
           path: "{bench}"
-          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol"
+          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #RequestedTol #Tol"
       - file_text:
           path: "{bench}"
           contains: " Q 1 "
@@ -211,7 +211,7 @@ tests:
     expect:
       - file_text:
           path: "{bench}"
-          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #Tol"
+          contains: "#Time #Step #SweepNum #States #Extra #Energy #Trunc #Entropy #Fidelity #Iter #RequestedTol #Tol"
       - file_text:
           path: "{bench}"
           contains: " F 3 "

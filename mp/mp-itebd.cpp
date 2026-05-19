@@ -19,6 +19,7 @@
 // ENDHEADER
 
 #include "mp-algorithms/tebd.h"
+#include "mp-algorithms/time-dependent-mpo.h"
 #include "mpo/basic_triangular_mpo.h"
 #include "wavefunction/infinitewavefunctionleft.h"
 #include "wavefunction/mpwavefunction.h"
@@ -33,7 +34,6 @@
 #include "common/environment.h"
 #include "interface/inittemp.h"
 #include "common/prog_options.h"
-#include "common/statistics.h"
 #include "lattice/infinite-parser.h"
 #include "common/formatting.h"
 #include <cctype>
@@ -121,108 +121,6 @@ void DoOddSlice(std::deque<StateComponent>& Psi,
    Lambda.pop_front();
 }
 
-struct HamiltonianGates
-{
-   std::vector<std::vector<SimpleOperator>> EvenU;
-   std::vector<std::vector<SimpleOperator>> OddU;
-   std::vector<SimpleOperator> EvenContinuation;
-};
-
-SimpleOperator BondIdentity(OperatorComponent const& Left, OperatorComponent const& Right)
-{
-   return tensor_prod(SimpleOperator::make_identity(Left.LocalBasis1()),
-                      SimpleOperator::make_identity(Right.LocalBasis1()));
-}
-
-SimpleOperator ExponentiateBond(std::complex<double> Factor,
-                                SimpleOperator const& BondTerm,
-                                OperatorComponent const& Left,
-                                OperatorComponent const& Right)
-{
-   if (BondTerm.is_null())
-      return BondIdentity(Left, Right);
-   return Exponentiate(Factor * BondTerm);
-}
-
-// Construct the 2-body gates from the Hamiltonian.
-// We assume that the Hamiltonian has already been converted to an appropriate size unit cell.
-HamiltonianGates AssembleHamiltonian(BasicTriangularMPO HamMPO, std::complex<double> Timestep, LTSDecomposition const& decomp)
-{
-   int UnitCellSize = HamMPO.size();
-
-   // Assemble the Hamiltonian into the bond terms
-   std::vector<SimpleOperator> BondH(UnitCellSize);
-   auto SplitTerms = SplitMPO(HamMPO);
-   for (int i = 0; i < SplitTerms.size(); ++i)
-   {
-      for (auto const& op : SplitTerms[i])
-      {
-         if (op.size() == 1)
-         {
-            // split single-site operators over the two bonds, if i=0 then
-            // the split wraps around the unit cell
-            SimpleRedOperator p = tensor_prod(op[0](0,0),HamMPO[(i+1)%UnitCellSize](0,0));
-            BondH[i] += 0.5 * p.scalar();
-            SimpleRedOperator q = tensor_prod(HamMPO[(i+UnitCellSize-1)%UnitCellSize](0,0), op[0](0,0));
-            BondH[(i+UnitCellSize-1)%UnitCellSize] += 0.5 * q.scalar();
-         }
-         else if (op.size() == 2)
-         {
-               BondH[i] += coarse_grain(op).scalar();
-         }
-         else
-         {
-            throw std::runtime_error("fatal: operator has support over more than 2 sites.");
-         }
-      }
-   }
-
-   // Exponentiate the bond operators and split into even and odd slices
-   std::vector<std::vector<SimpleOperator>> EvenU;
-   for (auto x : decomp.a())
-   {
-      std::vector<SimpleOperator> Terms;
-      for (int i = 0; i < BondH.size(); i += 2)
-      {
-         Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
-                                          HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
-      }
-      EvenU.push_back(std::move(Terms));
-   }
-
-   std::vector<std::vector<SimpleOperator>> OddU;
-   // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
-   // This means that the first odd-bond operator we need is the one that wraps around, which is at the end of the list.
-   // To allow for this, we reserve the first element of the Terms vector and move the last element to the front
-   for (auto x : decomp.b())
-   {
-      std::vector<SimpleOperator> Terms;
-      Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[BondH.size()-1],
-                                       HamMPO[BondH.size()-1], HamMPO[0]));
-      for (int i = 1; i < BondH.size()-1; i += 2)
-      {
-         Terms.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
-                                          HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
-      }
-      OddU.push_back(std::move(Terms));
-   }
-
-   // If we have an odd number of terms (the usual case), then we can wrap around the last even slice
-   // if we are continuing the evolution beyond the current timestep.  This is the sum of a[last] + a[0] terms
-   std::vector<SimpleOperator> EvenContinuation;
-   if (decomp.a().size() == decomp.b().size()+1)
-   {
-      double x = decomp.a().front() + decomp.a().back();
-      for (int i = 0; i < BondH.size(); i += 2)
-      {
-         EvenContinuation.push_back(ExponentiateBond(-Timestep*std::complex<double>(0,x), BondH[i],
-                                                     HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
-      }
-   }
-
-   return {EvenU, OddU, EvenContinuation};
-}
-
 int main(int argc, char** argv)
 {
    try
@@ -246,7 +144,8 @@ int main(int argc, char** argv)
       double EigenCutoff = 1E-16;
       int OutputDigits = 0;
       int Coarsegrain = 1;
-      std::string Magnus = "2";
+      int MagnusOrder = 2;
+      int MagnusQuadrature = 0;
       std::string TimeVar = "t";
       std::string DecompositionStr = "optimized4-11";
       bool TimeDependent = false;
@@ -272,7 +171,9 @@ int main(int argc, char** argv)
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
           FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
-         ("magnus", prog_opt::value(&Magnus), FormatDefault("For time-dependent Hamiltonians, use this variant of the Magnus expansion", Magnus).c_str())
+         ("magnus", prog_opt::value(&MagnusOrder), FormatDefault("For time-dependent Hamiltonians, use this order of the Magnus expansion", MagnusOrder).c_str())
+         ("magnus-quadrature", prog_opt::value(&MagnusQuadrature),
+          FormatDefault("Gauss-Legendre quadrature order for time-dependent Magnus terms (0 selects the default for --magnus)", MagnusQuadrature).c_str())
          ("timevar", prog_opt::value(&TimeVar), FormatDefault("The time variable for time-dependent Hamiltonians", TimeVar).c_str())
          ("coarsegrain", prog_opt::value(&Coarsegrain), "coarse-grain N-to-1 sites")
          ("normalize", prog_opt::bool_switch(&Normalize), "Normalize the wavefunction [default if timestep is real]")
@@ -312,6 +213,16 @@ int main(int argc, char** argv)
       if (decomp.order() == 0)
       {
          std::cerr << "mp-itebd: fatal: invalid decomposition\n";
+         return 1;
+      }
+
+      try
+      {
+         ResolveMagnusQuadratureOrder(MagnusOrder, MagnusQuadrature);
+      }
+      catch (std::exception const& e)
+      {
+         std::cerr << "mp-itebd: fatal: " << e.what() << '\n';
          return 1;
       }
 
@@ -402,13 +313,8 @@ int main(int argc, char** argv)
       try
       {
          HamMPO = ParseTriangularOperator(Lattice, HamOperator);
-         //Coarse-grain, if necessary
-         HamMPO = coarse_grain(HamMPO, Coarsegrain);
-
-         // Make sure the unit cell is an even size
-         int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
-
-         HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
+         HamMPO = PreparePeriodicTEBDHamiltonianUnitCell(HamMPO, Coarsegrain, Psi.size());
+         int UnitCellSize = HamMPO.size();
 
          // and adjust the wavefunction and hamiltonian to match the unit cell size
          if (Psi.size() != UnitCellSize)
@@ -430,10 +336,24 @@ int main(int argc, char** argv)
          throw;
       }
 
-      HamiltonianGates Gates;
+      if (TimeDependent)
+      {
+         BasicTriangularMPO InitialHamMPO = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                                        InitialTime, Timestep,
+                                                                        MagnusOrder, MagnusQuadrature);
+         InitialHamMPO = PreparePeriodicTEBDHamiltonianUnitCell(InitialHamMPO, Coarsegrain, Psi.size());
+         int UnitCellSize = InitialHamMPO.size();
+         if (Psi.size() != UnitCellSize)
+         {
+            std::cerr << "mp-itebd: warning: extending wavefunction unit cell to " << UnitCellSize << " sites.\n";
+            Psi = repeat(Psi, UnitCellSize / Psi.size());
+         }
+      }
+
+      TEBDHamiltonianGates Gates;
       if (!TimeDependent)
       {
-         Gates = AssembleHamiltonian(HamMPO, Timestep, decomp);
+         Gates = AssemblePeriodicTEBDHamiltonian(HamMPO, Timestep, decomp);
          if (Verbose > 0)
          {
             std::cout << "Number of even slices: " << Gates.EvenU.size() << '\n';
@@ -470,36 +390,14 @@ int main(int argc, char** argv)
 
       while (tstep < N)
       {
-         // If the Hamiltonian is time-dependent, we need to construct it now
+         // If the Hamiltonian is time-dependent, build the gates over the
+         // actual time interval covered by each Suzuki-Trotter slice.
          if (TimeDependent)
          {
-            if (Magnus == "2")
-            {
-               std::complex<double> t = InitialTime + (tstep+0.5)*Timestep;
-               HamMPO = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t}});
-            }
-            else if (Magnus == "4")
-            {
-               std::complex<double> t1 = InitialTime + (tstep + 0.5 - std::sqrt(3.0)/6.0)*Timestep;
-               std::complex<double> t2 = InitialTime + (tstep + 0.5 + std::sqrt(3.0)/6.0)*Timestep;
-               BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
-               BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
-               HamMPO = 0.5 * (A1 + A2) - Timestep*std::complex<double>(0.0, 1.0)* (sqrt(3.0) / 12.0) * commutator(A1, A2);
-            }
-            else
-            {
-               std::cerr << "Unknown --magnus option\n";
-               return 1;
-            }
-            //Coarse-grain, if necessary
-            HamMPO = coarse_grain(HamMPO, Coarsegrain);
-
-            // Make sure the unit cell is an even size
-            int UnitCellSize = statistics::lcm(Psi.size(), HamMPO.size(), 2);
-
-            HamMPO = repeat(HamMPO, UnitCellSize / HamMPO.size());
-
-            Gates = AssembleHamiltonian(HamMPO, Timestep, decomp);
+            Gates = AssemblePeriodicTimeDependentTEBDHamiltonian(Lattice, HamOperator, TimeVar,
+                                                                 InitialTime + double(tstep)*Timestep, Timestep,
+                                                                 decomp, MagnusOrder, MagnusQuadrature,
+                                                                 Coarsegrain, Psi.size());
          }
 
          if (Continue)

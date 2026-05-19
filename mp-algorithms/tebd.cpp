@@ -19,7 +19,10 @@
 // ENDHEADER
 
 #include "mp-algorithms/tebd.h"
+#include "mp-algorithms/time-dependent-mpo.h"
+#include "common/statistics.h"
 #include "mps/density.h"
+#include <stdexcept>
 
 // returns the number of digits of precision used in the decimal number f
 int Digits(std::string const& f)
@@ -138,6 +141,406 @@ Decompositions = {
                                                {0.18793069262651671457, 0.5553,
                                                      0.12837035888423653774, -0.84315275357471264676})}};
 
+// FIXME: The finite and periodic gate assembly below intentionally duplicates
+// some traversal logic while finite/infinite MPO and lattice boundary semantics
+// are still represented separately.  Consolidate this once those abstractions
+// make edge versus wraparound behavior explicit.
+
+SimpleOperator
+TEBDBondIdentity(OperatorComponent const& Left, OperatorComponent const& Right)
+{
+   return tensor_prod(SimpleOperator::make_identity(Left.LocalBasis1()),
+                      SimpleOperator::make_identity(Right.LocalBasis1()));
+}
+
+SimpleOperator
+ExponentiateTEBDBond(std::complex<double> Factor,
+                     SimpleOperator const& BondTerm,
+                     OperatorComponent const& Left,
+                     OperatorComponent const& Right)
+{
+   if (BondTerm.is_null())
+      return TEBDBondIdentity(Left, Right);
+   return Exponentiate(Factor * BondTerm);
+}
+
+void
+CheckTEBDSplitFamilyClock(std::complex<double> Clock,
+                          std::complex<double> ExpectedEnd,
+                          char const* Family)
+{
+   double const Scale = std::max(1.0, std::max(std::abs(Clock), std::abs(ExpectedEnd)));
+   CHECK(std::abs(Clock - ExpectedEnd) <= 1e-12 * Scale)
+      ("TEBD split-family clock does not cover exactly one timestep")
+      (Family)(Clock)(ExpectedEnd);
+}
+
+BasicTriangularMPO
+PrepareFiniteTEBDHamiltonian(BasicTriangularMPO HamMPO, int PsiSize)
+{
+   CHECK(!HamMPO.empty())("Finite TEBD Hamiltonian MPO is empty");
+   CHECK(HamMPO.size() <= PsiSize)("Finite TEBD Hamiltonian is larger than the wavefunction")
+      (HamMPO.size())(PsiSize);
+   CHECK(PsiSize % HamMPO.size() == 0)
+      ("Finite TEBD wavefunction size must be a multiple of the Hamiltonian unit cell")
+      (PsiSize)(HamMPO.size());
+
+   if (HamMPO.size() < PsiSize)
+      HamMPO = repeat(HamMPO, PsiSize / HamMPO.size());
+   return HamMPO;
+}
+
+std::vector<SimpleOperator>
+FiniteTEBDBondHamiltonian(BasicTriangularMPO const& HamMPO)
+{
+   if (HamMPO.size() < 2)
+      return {};
+
+   std::vector<SimpleOperator> BondH(HamMPO.size()-1);
+   auto SplitTerms = SplitMPO(HamMPO);
+   for (int i = 0; i < SplitTerms.size(); ++i)
+   {
+      for (auto const& op : SplitTerms[i])
+      {
+         if (op.size() == 1)
+         {
+            // Split single-site operators over the two bonds, unless they are at the edge.
+            if (i == 0)
+            {
+               SimpleRedOperator p = tensor_prod(op[0](0,0), HamMPO[i+1](0,0));
+               BondH[i] += p.scalar();
+            }
+            else if (i == HamMPO.size()-1)
+            {
+               SimpleRedOperator p = tensor_prod(HamMPO[i-1](0,0), op[0](0,0));
+               BondH[i-1] += p.scalar();
+            }
+            else
+            {
+               SimpleRedOperator p = tensor_prod(op[0](0,0), HamMPO[i+1](0,0));
+               BondH[i] += 0.5 * p.scalar();
+               SimpleRedOperator q = tensor_prod(HamMPO[i-1](0,0), op[0](0,0));
+               BondH[i-1] += 0.5 * q.scalar();
+            }
+         }
+         else if (op.size() == 2)
+         {
+            // Ignore terms that cross beyond the finite-system boundary.
+            if (i < HamMPO.size()-1)
+               BondH[i] += coarse_grain(op).scalar();
+         }
+         else
+         {
+            throw std::runtime_error("fatal: operator has support over more than 2 sites.");
+         }
+      }
+   }
+
+   return BondH;
+}
+
+namespace
+{
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDSlice(BasicTriangularMPO const& HamMPO,
+                        std::vector<SimpleOperator> const& BondH,
+                        int FirstBond,
+                        std::complex<double> SliceTimestep)
+{
+   std::vector<SimpleOperator> Terms;
+   for (int i = FirstBond; i < BondH.size(); i += 2)
+   {
+      Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[i],
+                                           HamMPO[i], HamMPO[i+1]));
+   }
+   return Terms;
+}
+
+} // namespace
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
+                            std::complex<double> SliceTimestep)
+{
+   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+   return AssembleFiniteTEBDSlice(HamMPO, BondH, 0, SliceTimestep);
+}
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDOddSlice(BasicTriangularMPO const& HamMPO,
+                           std::complex<double> SliceTimestep)
+{
+   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+   return AssembleFiniteTEBDSlice(HamMPO, BondH, 1, SliceTimestep);
+}
+
+TEBDHamiltonianGates
+AssembleFiniteTEBDHamiltonian(BasicTriangularMPO const& HamMPO,
+                              std::complex<double> Timestep,
+                              LTSDecomposition const& decomp)
+{
+   std::vector<SimpleOperator> BondH = FiniteTEBDBondHamiltonian(HamMPO);
+
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   for (auto x : decomp.a())
+      EvenU.push_back(AssembleFiniteTEBDSlice(HamMPO, BondH, 0, x*Timestep));
+
+   std::vector<std::vector<SimpleOperator>> OddU;
+   for (auto x : decomp.b())
+      OddU.push_back(AssembleFiniteTEBDSlice(HamMPO, BondH, 1, x*Timestep));
+
+   std::vector<SimpleOperator> EvenContinuation;
+   if (decomp.a().size() == decomp.b().size()+1)
+      EvenContinuation = AssembleFiniteTEBDSlice(HamMPO, BondH, 0,
+                                                 (decomp.a().front() + decomp.a().back()) * Timestep);
+
+   return {EvenU, OddU, EvenContinuation};
+}
+
+TEBDHamiltonianGates
+AssembleFiniteTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
+                                           std::string const& HamOperator,
+                                           std::string const& TimeVar,
+                                           std::complex<double> StepStart,
+                                           std::complex<double> Timestep,
+                                           LTSDecomposition const& decomp,
+                                           int MagnusOrder,
+                                           int MagnusQuadrature,
+                                           int PsiSize)
+{
+   auto HamiltonianSlice = [&](std::complex<double> SliceStart, std::complex<double> SliceTimestep)
+   {
+      BasicTriangularMPO HamMPO = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                              SliceStart, SliceTimestep,
+                                                              MagnusOrder, MagnusQuadrature);
+      return PrepareFiniteTEBDHamiltonian(HamMPO, PsiSize);
+   };
+
+   // Each split Hamiltonian family has its own time coverage over the full
+   // timestep.  The Suzuki-Trotter product applies even and odd gates in an
+   // interleaved order, but the even coefficients and odd coefficients each
+   // sum to one and each cover [StepStart, StepStart+Timestep].  Keep separate
+   // clocks for the two families; a single chronological application clock
+   // would sample the odd Hamiltonian at the wrong interval for leapfrog/Strang.
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   std::complex<double> EvenTime = StepStart;
+   for (double x : decomp.a())
+   {
+      std::complex<double> SliceTimestep = x * Timestep;
+      EvenU.push_back(AssembleFiniteTEBDEvenSlice(HamiltonianSlice(EvenTime, SliceTimestep), SliceTimestep));
+      EvenTime += SliceTimestep;
+   }
+
+   std::vector<std::vector<SimpleOperator>> OddU;
+   std::complex<double> OddTime = StepStart;
+   for (double x : decomp.b())
+   {
+      std::complex<double> SliceTimestep = x * Timestep;
+      OddU.push_back(AssembleFiniteTEBDOddSlice(HamiltonianSlice(OddTime, SliceTimestep), SliceTimestep));
+      OddTime += SliceTimestep;
+   }
+
+   std::complex<double> const StepEnd = StepStart + Timestep;
+   CheckTEBDSplitFamilyClock(EvenTime, StepEnd, "even");
+   CheckTEBDSplitFamilyClock(OddTime, StepEnd, "odd");
+
+   std::vector<SimpleOperator> EvenContinuation;
+   if (decomp.a().size() == decomp.b().size()+1)
+   {
+      // The evolution loop defers the final even slice and merges it with the
+      // next timestep's first even slice.  This is one even-family interval
+      // from the previous slice start through the next first-slice endpoint.
+      std::complex<double> SliceStart = StepStart - decomp.a().back() * Timestep;
+      std::complex<double> SliceTimestep = (decomp.a().back() + decomp.a().front()) * Timestep;
+      EvenContinuation = AssembleFiniteTEBDEvenSlice(HamiltonianSlice(SliceStart, SliceTimestep), SliceTimestep);
+   }
+
+   return {EvenU, OddU, EvenContinuation};
+}
+
+BasicTriangularMPO
+PreparePeriodicTEBDHamiltonianUnitCell(BasicTriangularMPO HamMPO, int Coarsegrain, int PsiSize)
+{
+   HamMPO = coarse_grain(HamMPO, Coarsegrain);
+
+   int UnitCellSize = statistics::lcm(PsiSize, HamMPO.size(), 2);
+   return repeat(HamMPO, UnitCellSize / HamMPO.size());
+}
+
+std::vector<SimpleOperator>
+PeriodicTEBDBondHamiltonian(BasicTriangularMPO const& HamMPO)
+{
+   int UnitCellSize = HamMPO.size();
+
+   std::vector<SimpleOperator> BondH(UnitCellSize);
+   auto SplitTerms = SplitMPO(HamMPO);
+   for (int i = 0; i < SplitTerms.size(); ++i)
+   {
+      for (auto const& op : SplitTerms[i])
+      {
+         if (op.size() == 1)
+         {
+            // Split single-site operators over the two bonds, wrapping around the unit cell.
+            SimpleRedOperator p = tensor_prod(op[0](0,0), HamMPO[(i+1)%UnitCellSize](0,0));
+            BondH[i] += 0.5 * p.scalar();
+            SimpleRedOperator q = tensor_prod(HamMPO[(i+UnitCellSize-1)%UnitCellSize](0,0), op[0](0,0));
+            BondH[(i+UnitCellSize-1)%UnitCellSize] += 0.5 * q.scalar();
+         }
+         else if (op.size() == 2)
+         {
+            BondH[i] += coarse_grain(op).scalar();
+         }
+         else
+         {
+            throw std::runtime_error("fatal: operator has support over more than 2 sites.");
+         }
+      }
+   }
+
+   return BondH;
+}
+
+std::vector<SimpleOperator>
+AssemblePeriodicTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
+                              std::complex<double> SliceTimestep)
+{
+   int UnitCellSize = HamMPO.size();
+   std::vector<SimpleOperator> BondH = PeriodicTEBDBondHamiltonian(HamMPO);
+   std::vector<SimpleOperator> Terms;
+   for (int i = 0; i < BondH.size(); i += 2)
+   {
+      Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[i],
+                                           HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
+   }
+   return Terms;
+}
+
+std::vector<SimpleOperator>
+AssemblePeriodicTEBDOddSlice(BasicTriangularMPO const& HamMPO,
+                             std::complex<double> SliceTimestep)
+{
+   int UnitCellSize = HamMPO.size();
+   std::vector<SimpleOperator> BondH = PeriodicTEBDBondHamiltonian(HamMPO);
+   std::vector<SimpleOperator> Terms;
+
+   // The odd slice uses a rotation of the unit cell that takes the right-most site and puts it on the left.
+   Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[BondH.size()-1],
+                                        HamMPO[BondH.size()-1], HamMPO[0]));
+   for (int i = 1; i < BondH.size()-1; i += 2)
+   {
+      Terms.push_back(ExponentiateTEBDBond(-SliceTimestep*std::complex<double>(0.0, 1.0), BondH[i],
+                                           HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
+   }
+
+   return Terms;
+}
+
+TEBDHamiltonianGates
+AssemblePeriodicTEBDHamiltonian(BasicTriangularMPO const& HamMPO,
+                                std::complex<double> Timestep,
+                                LTSDecomposition const& decomp)
+{
+   int UnitCellSize = HamMPO.size();
+   std::vector<SimpleOperator> BondH = PeriodicTEBDBondHamiltonian(HamMPO);
+
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   for (auto x : decomp.a())
+   {
+      std::vector<SimpleOperator> Terms;
+      for (int i = 0; i < BondH.size(); i += 2)
+      {
+         Terms.push_back(ExponentiateTEBDBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                              HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
+      }
+      EvenU.push_back(std::move(Terms));
+   }
+
+   std::vector<std::vector<SimpleOperator>> OddU;
+   for (auto x : decomp.b())
+   {
+      std::vector<SimpleOperator> Terms;
+      Terms.push_back(ExponentiateTEBDBond(-Timestep*std::complex<double>(0,x), BondH[BondH.size()-1],
+                                           HamMPO[BondH.size()-1], HamMPO[0]));
+      for (int i = 1; i < BondH.size()-1; i += 2)
+      {
+         Terms.push_back(ExponentiateTEBDBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                              HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
+      }
+      OddU.push_back(std::move(Terms));
+   }
+
+   std::vector<SimpleOperator> EvenContinuation;
+   if (decomp.a().size() == decomp.b().size()+1)
+   {
+      double x = decomp.a().front() + decomp.a().back();
+      for (int i = 0; i < BondH.size(); i += 2)
+      {
+         EvenContinuation.push_back(ExponentiateTEBDBond(-Timestep*std::complex<double>(0,x), BondH[i],
+                                                         HamMPO[i], HamMPO[(i+1)%UnitCellSize]));
+      }
+   }
+
+   return {EvenU, OddU, EvenContinuation};
+}
+
+TEBDHamiltonianGates
+AssemblePeriodicTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
+                                             std::string const& HamOperator,
+                                             std::string const& TimeVar,
+                                             std::complex<double> StepStart,
+                                             std::complex<double> Timestep,
+                                             LTSDecomposition const& decomp,
+                                             int MagnusOrder,
+                                             int MagnusQuadrature,
+                                             int Coarsegrain,
+                                             int PsiSize)
+{
+   auto HamiltonianSlice = [&](std::complex<double> SliceStart, std::complex<double> SliceTimestep)
+   {
+      BasicTriangularMPO HamMPO = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                              SliceStart, SliceTimestep,
+                                                              MagnusOrder, MagnusQuadrature);
+      return PreparePeriodicTEBDHamiltonianUnitCell(HamMPO, Coarsegrain, PsiSize);
+   };
+
+   // See the finite time-dependent builder for the split-family clock
+   // convention.  Periodic TEBD uses the same independent even and odd clocks;
+   // the interleaved gate application order is not a single physical clock.
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   std::complex<double> EvenTime = StepStart;
+   for (double x : decomp.a())
+   {
+      std::complex<double> SliceTimestep = x * Timestep;
+      EvenU.push_back(AssemblePeriodicTEBDEvenSlice(HamiltonianSlice(EvenTime, SliceTimestep), SliceTimestep));
+      EvenTime += SliceTimestep;
+   }
+
+   std::vector<std::vector<SimpleOperator>> OddU;
+   std::complex<double> OddTime = StepStart;
+   for (double x : decomp.b())
+   {
+      std::complex<double> SliceTimestep = x * Timestep;
+      OddU.push_back(AssemblePeriodicTEBDOddSlice(HamiltonianSlice(OddTime, SliceTimestep), SliceTimestep));
+      OddTime += SliceTimestep;
+   }
+
+   std::complex<double> const StepEnd = StepStart + Timestep;
+   CheckTEBDSplitFamilyClock(EvenTime, StepEnd, "even");
+   CheckTEBDSplitFamilyClock(OddTime, StepEnd, "odd");
+
+   std::vector<SimpleOperator> EvenContinuation;
+   if (decomp.a().size() == decomp.b().size()+1)
+   {
+      // Merge the previous final even-family interval with this timestep's
+      // first even-family interval.
+      std::complex<double> SliceStart = StepStart - decomp.a().back() * Timestep;
+      std::complex<double> SliceTimestep = (decomp.a().back() + decomp.a().front()) * Timestep;
+      EvenContinuation = AssemblePeriodicTEBDEvenSlice(HamiltonianSlice(SliceStart, SliceTimestep), SliceTimestep);
+   }
+
+   return {EvenU, OddU, EvenContinuation};
+}
 
 LinearAlgebra::DiagonalMatrix<double>
 InvertDiagonal(LinearAlgebra::DiagonalMatrix<double> const& D, double Tol = 1E-15)

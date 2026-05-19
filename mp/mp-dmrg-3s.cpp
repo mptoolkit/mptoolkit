@@ -201,9 +201,9 @@ int main(int argc, char** argv)
          ("trunc,r", prog_opt::value<double>(&TruncCutoff),
           FormatDefault("Truncation error cutoff", TruncCutoff).c_str())
          ("eigen-cutoff,d", prog_opt::value(&EigenCutoff),
-          FormatDefault("Cutoff threshold for density matrix eigenvalues", EigenCutoff).c_str())
+          FormatDefault("Cutoff threshold for density matrix weights", EigenCutoff).c_str())
          ("mix-factor", prog_opt::value(&MixFactor),
-          FormatDefault("Mixing coefficient for the density matrix", MixFactor).c_str())
+          FormatDefault("Mixing coefficient for the 3S expansion", MixFactor).c_str())
          ("evolve", prog_opt::value(&EvolveDelta),
           "Instead of Lanczos, do imaginary time evolution with this timestep")
          ("maxiter", prog_opt::value<int>(&NumIter),
@@ -318,7 +318,7 @@ int main(int argc, char** argv)
       }
       std::cout << MyStates << '\n';
 
-      std::cout << "Density matrix mixing coefficient: " << MixFactor << std::endl;
+      std::cout << "3S expansion mixing coefficient: " << MixFactor << std::endl;
       std::cout << "Number of Lanczos iterations: " << NumIter << std::endl;
       std::cout << "Number of half-sweeps: " << NumSweeps << std::endl;
       std::cout << "Using solver: " << Solver << std::endl;

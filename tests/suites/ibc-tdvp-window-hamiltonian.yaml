@@ -1,0 +1,1375 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  chain_lat:
+    run: spinchain-u1 -o lat
+    outputs:
+      lattice: lat
+
+  chain_neel2:
+    from: chain_lat
+    run: mp-construct -l lat -o psi 0.5:-0.5
+    outputs:
+      state: psi
+
+  chain_ibc:
+    from: chain_neel2
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  chain_ibc_window_i0:
+    from: chain_ibc
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 1"
+
+  chain_tdvp_td_window_support3:
+    from: chain_ibc_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:sum_unit(I(0))" -W "lat:tau*0*(I(0)+I(1)+I(2))" -o out -t 0-0.1i -n 1 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 5"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+  spin_plain_lat:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  spin_plain_up:
+    from: spin_plain_lat
+    run: mp-construct -l lat -o psi 0.5
+    outputs:
+      state: psi
+    certify:
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  spin_plain_ibc:
+    from: spin_plain_up
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 0"
+
+  # Noncommuting time-dependent window Hamiltonian.  Since
+  # H_w(t)=cos(2t)Sx(0)+sin(2t)Sy(0), [H_w(t1),H_w(t2)] is nonzero
+  # for generic t1,t2.  The exact solution is still simple in the rotating
+  # frame: U(t)=exp(-2it Sz) exp(-it*(Sx-2Sz)).
+  # The listed observables are <psi|O|psi>/<psi|psi>, with
+  # psi = U(T)|up> and T equal to the final complex time.
+  spin_plain_rotating_time_dependent_window_real:
+    from: spin_plain_ibc
+    run: mp-ibc-tdvp -w ibc -H "lat:sum_unit(I(0))" -W "lat:cos(2*t)*Sx(0)+sin(2*t)*Sy(0)" --magnus 4 --magnus-quadrature 4 --timevar t -o out -t 0.01 -n 10 -s 10 -m 4 --min-states 1 --fidtol 1e-8 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.t0.10
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 5"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      # Exact rotating-frame result at T=0.1:
+      # psi = exp(-2i*T*Sz) exp(-i*T*(Sx-2*Sz)) |up>.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sx(0)"
+          approx: 0.004970945517723078
+          abs: 1e-7
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sy(0)"
+          approx: -0.04958520210779876
+          abs: 1e-7
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sz(0)"
+          approx: 0.4975103993210479
+          abs: 1e-7
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sz(-1)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+
+  spin_plain_rotating_time_dependent_window_complex:
+    from: spin_plain_ibc
+    run: mp-ibc-tdvp -w ibc -H "lat:sum_unit(I(0))" -W "lat:cos(2*t)*Sx(0)+sin(2*t)*Sy(0)" --magnus 4 --magnus-quadrature 4 --timevar t -o out -t 0.01-0.005i -n 10 -s 10 -m 4 --min-states 1 --fidtol 1e-8 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.t0.100.b0.050
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 5"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.05
+          abs: 1e-12
+      # Exact rotating-frame result at T=0.1-0.05i:
+      # psi = exp(-2i*T*Sz) exp(-i*T*(Sx-2*Sz)) |up>, normalized for expectations.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sx(0)"
+          approx: -0.020770872100626184
+          abs: 1e-7
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sy(0)"
+          approx: -0.05471267530093071
+          abs: 1e-7
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Sz(0)"
+          approx: 0.4965632830099246
+          abs: 1e-7
+      - expectation_imag:
+          state: "{state}"
+          operator: "lat:Sx(0)"
+          approx: 0.0
+          abs: 1e-12
+
+  ladder_lat:
+    run: spinladder-u1 -o lat
+    outputs:
+      lattice: lat
+
+  ladder_neel4:
+    from: ladder_lat
+    run: mp-construct -l lat -o psi -r 2 0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Unit cell size = 4"
+
+  ladder_ibc:
+    from: ladder_neel4
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  ladder_ibc_window_i0:
+    from: ladder_ibc
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+
+  ladder_tdvp_td_window_support3:
+    from: ladder_ibc_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:sum_unit(I(0))" -W "lat:tau*0*(I(0)+I(1)+I(2))" -o out -t 0-0.1i -n 1 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 9"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+  cylinder_lat:
+    run: spincylinder-u1 -o lat
+    outputs:
+      lattice: lat
+
+  cylinder_neel4:
+    from: cylinder_lat
+    run: mp-construct -l lat -o psi 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Unit cell size = 4"
+
+  cylinder_ibc:
+    from: cylinder_neel4
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  cylinder_ibc_window_i0:
+    from: cylinder_ibc
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 4"
+
+  cylinder_tdvp_td_window_support2:
+    from: cylinder_ibc_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:sum_unit(I(0))" -W "lat:tau*0*(I(0)+I(1))" -o out -t 0-0.1i -n 1 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 10"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+  cylinder_neel8:
+    from: cylinder_lat
+    run: mp-construct -l lat -o psi -r 2 0.5:-0.5:0.5:-0.5
+    outputs:
+      state: psi
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Unit cell size = 8"
+
+  cylinder_ibc_uc8:
+    from: cylinder_neel8
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  cylinder_ibc_uc8_window_i0:
+    from: cylinder_ibc_uc8
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 4"
+
+  cylinder_uc8_tdvp_td_window_support3:
+    from: cylinder_ibc_uc8_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:sum_unit(I(0))" -W "lat:tau*0*(I(0)+I(1)+I(2))" -o out -t 0-0.1i -n 1 -s 1 -m 4 --magnus 4 --magnus-quadrature 3 --timevar tau
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 17"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - ibc_overlap_real:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 1.0
+          abs: 1e-12
+      - ibc_overlap_imag:
+          psi1: "{parent.state}"
+          psi2: "{state}"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_y2_lat:
+    run: hubbardcylinder-u1su2 -y 2 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_y2_empty:
+    from: hubbard_y2_lat
+    run: mp-construct -l lat -o psi empty:empty
+    outputs:
+      state: psi
+
+  hubbard_y2_ibc:
+    from: hubbard_y2_empty
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  hubbard_y2_tdvp_empty_initial_window_operator:
+    from: hubbard_y2_ibc
+    run: mp-ibc-tdvp -w ibc -H "lat:H_t" -W "lat:I(-1)" -o out -t 0-0.1i -n 1 -s 1 -m 1 --pre none --post none
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 5"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -3"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:N(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Pdouble(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_y2_ibc_window_i0:
+    from: hubbard_y2_ibc
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = 0"
+
+  hubbard_y2_tdvp_window_spans_both_sides:
+    from: hubbard_y2_ibc_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:H_t" -W "lat:I(-1)+I(0)+I(1)" -o out -t 0-0.1i -n 1 -s 1 -m 1 --pre none --post none
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 8"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -3"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.1
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:N(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Pdouble(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_y2_tdvp_nexpand_keeps_offsets:
+    from: hubbard_y2_ibc_window_i0
+    run: mp-ibc-tdvp -w ibc_w -H "lat:H_t" -W "lat:I(0)" -o out -t 0-0.1i -n 1 -s 1 -m 1 --pre none --post none --n-expand 1
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:N(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Pdouble(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_y2_ibc_window_i_minus1:
+    from: hubbard_y2_ibc
+    run: mp-ibc-apply --window "lat:I(-1)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+
+  hubbard_y2_tdvp_negative_offset_operator_extension:
+    from: hubbard_y2_ibc_window_i_minus1
+    run: mp-ibc-tdvp -w ibc_w -H "lat:H_t" -W "lat:I(-1)+I(0)" -o out -t 0-0.1i -n 1 -s 1 -m 1 --pre none --post none
+    outputs:
+      state: out.b0.1
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -3"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 1
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:N(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Pdouble(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_lat:
+    run: hubbard-u1u1 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_u1u1_chain_empty:
+    from: hubbard_u1u1_chain_lat
+    run: mp-construct -l lat -o psi empty
+    outputs:
+      state: psi
+
+  hubbard_u1u1_chain_ibc:
+    from: hubbard_u1u1_chain_empty
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  hubbard_u1u1_chain_single_up:
+    from: hubbard_u1u1_chain_ibc
+    run: mp-ibc-apply --window "lat:CHup(0)" ibc ibc_up
+    outputs:
+      state: ibc_up
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 1"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = 0"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(0)"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_single_up_at_positive_site:
+    from: hubbard_u1u1_chain_ibc
+    run: mp-ibc-apply --window "lat:CHup(1)" ibc ibc_up_pos
+    outputs:
+      state: ibc_up_pos
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = 0"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(1)"
+          approx: 0.0
+          abs: 1e-12
+
+  # Exact time-dependent window-Hamiltonian checks.  The static background is
+  # intentionally trivial; all nontrivial evolution is in the finite window MPO.
+  hubbard_u1u1_chain_time_dependent_window_bond_imag:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(0),Cup(1))-dot(Cup(0),CHup(1)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Exact two-state solution for H_window(tau) = -(1+tau)B.
+      # With timestep z, theta = z + z^2/2 and p1 = |sin(theta)|^2/(|cos(theta)|^2+|sin(theta)|^2).
+      # Here z = -0.02i, so theta = -0.0002-0.02i.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9996002265252472
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.0003997734747527452
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)+Nup(0)+Nup(1)+Nup(2)"
+          approx: 1.0
+          abs: 1e-12
+      # Particle number and spin sector are conserved; this sums over the full reported window.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(-1)+Ndown(0)+Ndown(1)+Ndown(2)"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_bond_positive_location:
+    from: hubbard_u1u1_chain_single_up_at_positive_site
+    run: mp-ibc-tdvp -w ibc_up_pos -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(1),Cup(2))-dot(Cup(1),CHup(2)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -1"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: 0
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Same exact two-state solution as above, translated to the positive bond (1,2).
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.9996002265252472
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(2)"
+          approx: 0.0003997734747527452
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)+Nup(1)+Nup(2)+Nup(3)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_bond_left_extension:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(-1),Cup(0))-dot(Cup(-1),CHup(0)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -3"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Same exact two-state solution, but the finite window Hamiltonian extends to the left.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9996002265252472
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)"
+          approx: 0.0003997734747527452
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-2)+Nup(-1)+Nup(0)+Nup(1)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_three_site_both_sides:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(-1),Cup(0))-dot(Cup(-1),CHup(0))+dot(CHup(0),Cup(1))-dot(Cup(0),CHup(1)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 7"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -3"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Exact three-site single-particle imaginary-time solution for the same
+      # integrated coupling theta = -0.0002-0.02i.  Diagonalize the 3x3 path
+      # adjacency A, apply exp(theta*A) to the middle-site basis vector, and
+      # normalize |amplitude|^2.  TDVP one-step error is kept below 1e-6 here;
+      # the two-site translated cases above are exact to roundoff.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)"
+          approx: 0.00039993328072220123
+          abs: 1e-6
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9992001334385556
+          abs: 1e-6
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.00039993328072220063
+          abs: 1e-6
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-2)+Nup(-1)+Nup(0)+Nup(1)+Nup(2)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_bond_real:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(0),Cup(1))-dot(Cup(0),CHup(1)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0.02 -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.t0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -1
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.02
+          abs: 1e-12
+      # Same exact two-state solution with z = 0.02, so theta = 0.0202.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9995920154958612
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.0004079845041388137
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)+Nup(0)+Nup(1)+Nup(2)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_bond_complex:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(0),Cup(1))-dot(Cup(0),CHup(1)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0.02-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.t0.02.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.02
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Same exact two-state solution with z = 0.02-0.02i, so theta = 0.02-0.0204i.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9991845144366752
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.0008154855633248414
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)+Nup(0)+Nup(1)+Nup(2)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_chain_time_dependent_window_bond_four_steps:
+    from: hubbard_u1u1_chain_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(0),Cup(1))-dot(Cup(0),CHup(1)))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 4 -s 4 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.08
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -2"
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.08
+          abs: 1e-12
+      # Same exact two-state solution with z = -0.08i, so theta = -0.0032-0.08i.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)"
+          approx: 0.9936574529888663
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)"
+          approx: 0.006342547011133706
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)+Nup(0)+Nup(1)+Nup(2)"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_lat:
+    run: hubbardcylinder-u1u1 -y 2 -o lat
+    outputs:
+      lattice: lat
+
+  hubbard_u1u1_y2_empty:
+    from: hubbard_u1u1_y2_lat
+    run: mp-construct -l lat -o psi empty:empty
+    outputs:
+      state: psi
+
+  hubbard_u1u1_y2_ibc:
+    from: hubbard_u1u1_y2_empty
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+
+  hubbard_u1u1_y2_single_up:
+    from: hubbard_u1u1_y2_ibc
+    run: mp-ibc-apply --window "lat:CHup(0)[0]" ibc ibc_up
+    outputs:
+      state: ibc_up
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = 0"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_single_up_boundary:
+    from: hubbard_u1u1_y2_ibc
+    run: mp-ibc-apply --window "lat:CHup(0)[1]" ibc ibc_up_boundary
+    outputs:
+      state: ibc_up_boundary
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 2"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = 0"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[1]"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_boundary_time_dependent_window_bond_complex:
+    from: hubbard_u1u1_y2_single_up_boundary
+    run: mp-ibc-tdvp -w ibc_up_boundary -H "lat:sum_unit(I(0))" -W "lat:-(1+tau)*(dot(CHup(0)[1],Cup(1)[1])-dot(Cup(0)[1],CHup(1)[1]))" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0.02-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.t0.02.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 7"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -1"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: 0
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 4
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Time
+          approx: 0.02
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Same exact two-state solution as the chain complex-time case,
+      # but starting at site [1] so the finite bond crosses a unit-cell boundary.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[1]"
+          approx: 0.9991845144366752
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[1]"
+          approx: 0.0008154855633248414
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]+Nup(1)[0]"
+          approx: 0.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)[0]+Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]"
+          approx: 1.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_single_up_hopping_expansion:
+    from: hubbard_u1u1_y2_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-6 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 5"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -1"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: 0
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # Exact two-state imaginary-time update for Beta = 0.02:
+      # x = tanh(Beta/2), p0 = 1/(1+x*x), p1 = x*x/(1+x*x).
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]"
+          approx: 0.999900016663956
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[0]"
+          approx: 9.998333604400482e-05
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(0)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_single_up_time_dependent_window:
+    from: hubbard_u1u1_y2_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 1 -s 1 -m 2 --min-states 1 --fidtol 1e-4 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.02
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 6"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -1"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: 0
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.02
+          abs: 1e-12
+      # The raised expansion threshold avoids a marginal automatic right-edge
+      # expansion while still extending the input size-2 window to the six raw
+      # sites needed for the one-step evolution window.  Local densities have
+      # small run-to-run variation because zero-weight expansion vectors are not
+      # unique, but the particle remains localized near the original site.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]"
+          approx: 0.9998
+          abs: 4e-4
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[0]"
+          approx: 0.0002
+          abs: 2e-4
+      # The time-dependent local potential changes the dynamics but conserves
+      # total Nup and Ndown; these sums cover the full reported window.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+  hubbard_u1u1_y2_single_up_td_window_four_steps:
+    from: hubbard_u1u1_y2_single_up
+    run: mp-ibc-tdvp -w ibc_up -H "lat:H_txup" -W "lat:tau*Nup(1)[0]" --timevar tau --magnus 4 --magnus-quadrature 3 -o out -t 0-0.02i -n 4 -s 4 -m 2 --min-states 1 --fidtol 1e-4 --pre fullsvd --post fullsvd
+    outputs:
+      state: out.b0.08
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 9"
+      - info_text:
+          state: "{state}"
+          contains: "Offset of first site of the window = -4"
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowLeft
+          approx: -3
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - attr_float:
+          state: "{state}"
+          attribute: Beta
+          approx: 0.08
+          abs: 1e-12
+      # The raised expansion threshold keeps the automatic final window
+      # deterministic while still expanding on each later step:
+      # initial size 6, final raw sites -4..4, i.e. cells -2[0]..2[0].
+      # Zero-weight expansion vectors are not unique, so local densities have
+      # small run-to-run variation; the reference values below are from the
+      # same four-step single-particle run, with tolerances chosen from repeated
+      # runs rather than exact single-particle diagonalization.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-1)[0]"
+          approx: 0.003548
+          abs: 2e-5
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(1)[0]"
+          approx: 0.0055
+          abs: 1e-3
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(0)[0]+Nup(1)[0]+Nup(2)[0]"
+          approx: 0.996436
+          abs: 2e-5
+      # The time-dependent potential conserves total particle number; these
+      # sums cover the full expanded window at beta=0.08.
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Nup(-2)[0]+Nup(-2)[1]+Nup(-1)[0]+Nup(-1)[1]+Nup(0)[0]+Nup(0)[1]+Nup(1)[0]+Nup(1)[1]+Nup(2)[0]"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Ndown(-2)[0]+Ndown(-2)[1]+Ndown(-1)[0]+Ndown(-1)[1]+Ndown(0)[0]+Ndown(0)[1]+Ndown(1)[0]+Ndown(1)[1]+Ndown(2)[0]"
+          approx: 0.0
+          abs: 1e-12
+
+tests:
+  chain_lattice_uc1_wavefunction_uc2_extends_for_three_site_window_operator:
+    use: chain_tdvp_td_window_support3
+    expect:
+      - info_text:
+          contains: "Window size = 5"
+
+  spin_plain_real_time_noncommuting_time_dependent_window_matches_rotating_frame_solution:
+    use: spin_plain_rotating_time_dependent_window_real
+    expect:
+      # Same rotating-frame formula as the fixture:
+      # psi = exp(-2i*T*Sz) exp(-i*T*(Sx-2*Sz)) |up>, T=0.1.
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.4975103993210479
+          abs: 1e-7
+
+  spin_plain_complex_time_noncommuting_time_dependent_window_matches_rotating_frame_solution:
+    use: spin_plain_rotating_time_dependent_window_complex
+    expect:
+      # Same rotating-frame formula as the fixture, with T=0.1-0.05i.
+      - expectation_real:
+          operator: "lat:Sx(0)"
+          approx: -0.020770872100626184
+          abs: 1e-7
+
+  ladder_lattice_uc2_wavefunction_uc4_extends_for_three_lattice_unit_cells:
+    use: ladder_tdvp_td_window_support3
+    expect:
+      - info_text:
+          contains: "Window size = 9"
+
+  cylinder_lattice_uc4_wavefunction_uc4_extends_for_two_cylinder_unit_cells:
+    use: cylinder_tdvp_td_window_support2
+    expect:
+      - info_text:
+          contains: "Window size = 10"
+
+  cylinder_lattice_uc4_wavefunction_uc8_extends_to_wavefunction_unit_cell_boundary:
+    use: cylinder_uc8_tdvp_td_window_support3
+    expect:
+      - info_text:
+          contains: "Window size = 17"
+
+  hubbard_y2_empty_initial_window_extends_for_window_operator:
+    use: hubbard_y2_tdvp_empty_initial_window_operator
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+
+  hubbard_y2_window_operator_spans_both_sides_and_observables_stay_vacuum:
+    use: hubbard_y2_tdvp_window_spans_both_sides
+    expect:
+      - info_text:
+          contains: "Offset of first site of the window = -3"
+
+  hubbard_y2_window_expansion_updates_evolution_offsets:
+    use: hubbard_y2_tdvp_nexpand_keeps_offsets
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+
+  hubbard_y2_negative_offset_extension_regression:
+    use: hubbard_y2_tdvp_negative_offset_operator_extension
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+
+  hubbard_u1u1_chain_unit_cell_one_imag_time_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_imag
+    expect:
+      # Two-site formula from the fixture: theta=z+z^2/2, z=-0.02i.
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.0003997734747527452
+          abs: 1e-12
+
+  hubbard_u1u1_chain_positive_location_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_positive_location
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+
+  hubbard_u1u1_chain_left_extension_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_left_extension
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowLeft
+          approx: -2
+          abs: 1e-12
+
+  hubbard_u1u1_chain_both_side_extension_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_three_site_both_sides
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowRight
+          approx: 2
+          abs: 1e-12
+
+  hubbard_u1u1_chain_unit_cell_one_real_time_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_real
+    expect:
+      # Two-site formula from the fixture: theta=z+z^2/2, z=0.02.
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.0004079845041388137
+          abs: 1e-12
+
+  hubbard_u1u1_chain_unit_cell_one_complex_time_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_complex
+    expect:
+      # Two-site formula from the fixture: theta=z+z^2/2, z=0.02-0.02i.
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.0008154855633248414
+          abs: 1e-12
+
+  hubbard_u1u1_chain_unit_cell_one_multi_step_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_chain_time_dependent_window_bond_four_steps
+    expect:
+      # Two-site formula from the fixture: theta=z+z^2/2, z=-0.08i.
+      - expectation_real:
+          operator: "lat:Nup(1)"
+          approx: 0.006342547011133706
+          abs: 1e-12
+
+  hubbard_u1u1_y2_single_particle_hopping_expands_and_spreads:
+    use: hubbard_u1u1_y2_single_up_hopping_expansion
+    expect:
+      # Two-site static hopping formula from the fixture:
+      # x=tanh(Beta/2), p1=x*x/(1+x*x), Beta=0.02.
+      - expectation_real:
+          operator: "lat:Nup(1)[0]"
+          approx: 9.998333604400482e-05
+          abs: 1e-12
+
+  hubbard_u1u1_y2_boundary_site_complex_time_matches_exact_time_dependent_window_solution:
+    use: hubbard_u1u1_y2_boundary_time_dependent_window_bond_complex
+    expect:
+      # Same two-site formula as the chain complex-time case, translated to site [1].
+      - expectation_real:
+          operator: "lat:Nup(1)[1]"
+          approx: 0.0008154855633248414
+          abs: 1e-12
+
+  hubbard_u1u1_y2_time_dependent_window_expands_and_preserves_particle_number:
+    use: hubbard_u1u1_y2_single_up_time_dependent_window
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(0)[0]"
+          approx: 0.9998
+          abs: 4e-4
+
+  hubbard_u1u1_y2_time_dependent_window_keeps_expanding_over_multiple_steps:
+    use: hubbard_u1u1_y2_single_up_td_window_four_steps
+    expect:
+      - attr_float:
+          attribute: EvolutionWindowRight
+          approx: 3
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Nup(-1)[0]"
+          approx: 0.003548
+          abs: 2e-5

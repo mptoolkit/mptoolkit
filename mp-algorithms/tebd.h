@@ -21,9 +21,12 @@
 #if !defined(MTOOLKIT_MP_ALGORITHMS_TEBD_H)
 #define MTOOLKIT_MP_ALGORITHMS_TEBD_H
 
+#include <complex>
 #include <string>
 #include <vector>
 #include <map>
+#include "lattice/infinitelattice.h"
+#include "mpo/basic_triangular_mpo.h"
 #include "mps/state_component.h"
 #include "mps/truncation.h"
 
@@ -56,6 +59,85 @@ class LTSDecomposition
 
 // The list of all available decompositions.  See tebd.cpp for the complete list
 extern std::map<std::string, LTSDecomposition> Decompositions;
+
+struct TEBDHamiltonianGates
+{
+   std::vector<std::vector<SimpleOperator>> EvenU;
+   std::vector<std::vector<SimpleOperator>> OddU;
+   std::vector<SimpleOperator> EvenContinuation;
+};
+
+SimpleOperator
+TEBDBondIdentity(OperatorComponent const& Left, OperatorComponent const& Right);
+
+SimpleOperator
+ExponentiateTEBDBond(std::complex<double> Factor,
+                     SimpleOperator const& BondTerm,
+                     OperatorComponent const& Left,
+                     OperatorComponent const& Right);
+
+BasicTriangularMPO
+PrepareFiniteTEBDHamiltonian(BasicTriangularMPO HamMPO, int PsiSize);
+
+std::vector<SimpleOperator>
+FiniteTEBDBondHamiltonian(BasicTriangularMPO const& HamMPO);
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
+                            std::complex<double> SliceTimestep);
+
+std::vector<SimpleOperator>
+AssembleFiniteTEBDOddSlice(BasicTriangularMPO const& HamMPO,
+                           std::complex<double> SliceTimestep);
+
+TEBDHamiltonianGates
+AssembleFiniteTEBDHamiltonian(BasicTriangularMPO const& HamMPO,
+                              std::complex<double> Timestep,
+                              LTSDecomposition const& decomp);
+
+TEBDHamiltonianGates
+AssembleFiniteTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
+                                           std::string const& HamOperator,
+                                           std::string const& TimeVar,
+                                           std::complex<double> StepStart,
+                                           std::complex<double> Timestep,
+                                           LTSDecomposition const& decomp,
+                                           int MagnusOrder,
+                                           int MagnusQuadrature,
+                                           int PsiSize);
+
+BasicTriangularMPO
+PreparePeriodicTEBDHamiltonianUnitCell(BasicTriangularMPO HamMPO,
+                                       int Coarsegrain,
+                                       int PsiSize);
+
+std::vector<SimpleOperator>
+PeriodicTEBDBondHamiltonian(BasicTriangularMPO const& HamMPO);
+
+std::vector<SimpleOperator>
+AssemblePeriodicTEBDEvenSlice(BasicTriangularMPO const& HamMPO,
+                              std::complex<double> SliceTimestep);
+
+std::vector<SimpleOperator>
+AssemblePeriodicTEBDOddSlice(BasicTriangularMPO const& HamMPO,
+                             std::complex<double> SliceTimestep);
+
+TEBDHamiltonianGates
+AssemblePeriodicTEBDHamiltonian(BasicTriangularMPO const& HamMPO,
+                                std::complex<double> Timestep,
+                                LTSDecomposition const& decomp);
+
+TEBDHamiltonianGates
+AssemblePeriodicTimeDependentTEBDHamiltonian(InfiniteLattice const& Lattice,
+                                             std::string const& HamOperator,
+                                             std::string const& TimeVar,
+                                             std::complex<double> StepStart,
+                                             std::complex<double> Timestep,
+                                             LTSDecomposition const& decomp,
+                                             int MagnusOrder,
+                                             int MagnusQuadrature,
+                                             int Coarsegrain,
+                                             int PsiSize);
 
 // Do a TEBD iteration.
 //

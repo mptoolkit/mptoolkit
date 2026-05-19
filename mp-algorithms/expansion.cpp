@@ -1008,7 +1008,10 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    MatrixOperator Lambda = ExpandBasis1(C);
 #endif
 
-   MatrixOperator Rho = scalar_prod(herm(Lambda), Lambda);
+   BasisList MixBasis(C.GetSymmetryList());
+   MixBasis.push_back(Lambda.TransformsAs());
+   std::vector<MatrixOperator> SVDTerms;
+   SVDTerms.push_back(Lambda);
    if (MixFactor > 0)
    {
 #if defined(SSC)
@@ -1016,8 +1019,8 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
 #else
       StateComponent RH = contract_from_right(herm(H), C, RightHam, herm(C));
 #endif
-      MatrixOperator RhoMix;
-      MatrixOperator RhoL = scalar_prod(Lambda, herm(Lambda));
+      std::vector<MatrixOperator> MixTerms;
+      double MixTrace = 0.0;
 
       // Skip the identity and the Hamiltonian
       for (unsigned i = 1; i < RH.size()-1; ++i)
@@ -1025,19 +1028,34 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
          double Prefactor = norm_frob_sq(herm(Lambda) * LeftHam[i]);
          if (Prefactor == 0)
             Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(herm(RH[i]), Rho, RH[i]);
-	 //TRACE(i)(Prefactor);
+         MatrixOperator Term = std::sqrt(Prefactor) * (Lambda * RH[i]);
+         MixTrace += norm_frob_sq(Term);
+         MixTerms.push_back(std::move(Term));
       }
       // check for a zero mixing term - can happen if there are no interactions that span
       // the current bond
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (MixFactor / RhoTrace) * RhoMix;
+      if (MixTrace != 0)
+      {
+         double const MixScale = std::sqrt(MixFactor / MixTrace);
+         for (auto const& Term : MixTerms)
+         {
+            MatrixOperator ScaledTerm = MixScale * Term;
+            MixBasis.push_back(ScaledTerm.TransformsAs());
+            SVDTerms.push_back(std::move(ScaledTerm));
+         }
+      }
    }
 
-   DensityMatrix<MatrixOperator> DM(Rho);
+   StateComponent TruncationTensor(MixBasis, Lambda.Basis1(), Lambda.Basis2());
+   for (unsigned i = 0; i < SVDTerms.size(); ++i)
+   {
+      CHECK_EQUAL(TruncationTensor.LocalBasis()[i], SVDTerms[i].TransformsAs());
+      TruncationTensor[i] = std::move(SVDTerms[i]);
+   }
+
+   CMatSVD DM(ReshapeBasis1(TruncationTensor), CMatSVD::Right);
    //DM.DensityMatrixReport(std::cout);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
+   CMatSVD::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
                                          Info);
@@ -1045,7 +1063,7 @@ SubspaceExpandBasis1(StateComponent& C, OperatorComponent const& H, StateCompone
    std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
 
-   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   MatrixOperator UKeep = DM.ConstructRightVectors(KeptStates.begin(), KeptStates.end());
    Lambda = Lambda * herm(UKeep);
 
    //TRACE(Lambda);
@@ -1076,35 +1094,53 @@ SubspaceExpandBasis2(StateComponent& C, OperatorComponent const& H, StateCompone
 {
    MatrixOperator Lambda = ExpandBasis2(C);
 
-   MatrixOperator Rho = scalar_prod(Lambda, herm(Lambda));
+   BasisList MixBasis(C.GetSymmetryList());
+   MixBasis.push_back(Lambda.TransformsAs());
+   std::vector<MatrixOperator> SVDTerms;
+   SVDTerms.push_back(Lambda);
    if (MixFactor > 0)
    {
       StateComponent LH = contract_from_left(H, herm(C), LeftHam, C);
-      MatrixOperator RhoMix;
-
-      MatrixOperator RhoR = scalar_prod(herm(Lambda), Lambda);
+      std::vector<MatrixOperator> MixTerms;
+      double MixTrace = 0.0;
 
       for (unsigned i = 1; i < LH.size()-1; ++i)
       {
          double Prefactor = norm_frob_sq(Lambda * RightHam[i]);
          if (Prefactor == 0)
             Prefactor = 1;
-         RhoMix += Prefactor * triple_prod(LH[i], Rho, herm(LH[i]));
-	 //	 TRACE(i)(Prefactor);
+         MatrixOperator Term = std::sqrt(Prefactor) * (LH[i] * Lambda);
+         MixTrace += norm_frob_sq(Term);
+         MixTerms.push_back(std::move(Term));
       }
-      double RhoTrace = trace(RhoMix).real();
-      if (RhoTrace != 0)
-         Rho += (MixFactor / RhoTrace) * RhoMix;
+      if (MixTrace != 0)
+      {
+         double const MixScale = std::sqrt(MixFactor / MixTrace);
+         for (auto const& Term : MixTerms)
+         {
+            MatrixOperator ScaledTerm = MixScale * Term;
+            MixBasis.push_back(ScaledTerm.TransformsAs());
+            SVDTerms.push_back(std::move(ScaledTerm));
+         }
+      }
    }
-   DensityMatrix<MatrixOperator> DM(Rho);
-   DensityMatrix<MatrixOperator>::const_iterator DMPivot =
+
+   StateComponent TruncationTensor(MixBasis, Lambda.Basis1(), Lambda.Basis2());
+   for (unsigned i = 0; i < SVDTerms.size(); ++i)
+   {
+      CHECK_EQUAL(TruncationTensor.LocalBasis()[i], SVDTerms[i].TransformsAs());
+      TruncationTensor[i] = std::move(SVDTerms[i]);
+   }
+
+   CMatSVD DM(ReshapeBasis2(TruncationTensor), CMatSVD::Left);
+   CMatSVD::const_iterator DMPivot =
       TruncateFixTruncationErrorRelative(DM.begin(), DM.end(),
                                          States,
                                          Info);
    std::list<EigenInfo> KeptStates(DM.begin(), DMPivot);
    std::list<EigenInfo> DiscardStates(DMPivot, DM.end());
 
-   MatrixOperator UKeep = DM.ConstructTruncator(KeptStates.begin(), KeptStates.end());
+   MatrixOperator UKeep = adjoint(DM.ConstructLeftVectors(KeptStates.begin(), KeptStates.end()));
 
    Lambda = UKeep * Lambda;
    C = prod(C, herm(UKeep));

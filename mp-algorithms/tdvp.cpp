@@ -20,6 +20,7 @@
 
 #include "tdvp.h"
 #include "lanczos-exponential-new.h"
+#include "time-dependent-mpo.h"
 #include "tensor/regularize.h"
 #include "tensor/tensor_eigen.h"
 #include "linearalgebra/eigen.h"
@@ -66,9 +67,13 @@ struct HEff2
 };
 
 Hamiltonian::Hamiltonian(std::string HamStr, int Size_,
-                         std::string Magnus_, std::string TimeVar_, int Verbose_)
-   : Size(Size_), Magnus(Magnus_), TimeVar(TimeVar_), Verbose(Verbose_)
+                         int Verbose_, int MagnusOrder_, std::string TimeVar_,
+                         int MagnusQuadrature_)
+   : Size(Size_), MagnusOrder(MagnusOrder_), MagnusQuadrature(MagnusQuadrature_),
+     TimeVar(TimeVar_), Verbose(Verbose_)
 {
+   ResolveMagnusQuadratureOrder(MagnusOrder, MagnusQuadrature);
+
    std::tie(HamOperator, Lattice) = ParseOperatorStringAndLattice(HamStr);
 
    // Attempt to convert the operator into an MPO. If it works, then the
@@ -101,23 +106,9 @@ Hamiltonian::operator()(std::complex<double> t, std::complex<double> dt) const
       return HamMPO;
    else
    {
-      BasicTriangularMPO HamMPO_;
-
-      if (dt == 0.0)
-         HamMPO_ = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t}});
-      else if (Magnus == "2")
-      {
-         std::complex<double> Time = t + 0.5*dt;
-         HamMPO_ = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, Time}});
-      }
-      else if (Magnus == "4")
-      {
-         std::complex<double> t1 = t + (0.5 - std::sqrt(3.0)/6.0) * dt;
-         std::complex<double> t2 = t + (0.5 + std::sqrt(3.0)/6.0) * dt;
-         BasicTriangularMPO A1 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t1}});
-         BasicTriangularMPO A2 = ParseTriangularOperator(Lattice, HamOperator, {{TimeVar, t2}});
-         HamMPO_ = 0.5 * (A1 + A2) - I * dt * (std::sqrt(3.0) / 12.0) * commutator(A1, A2);
-      }
+      BasicTriangularMPO HamMPO_ = TimeDependentHamiltonianMPO(Lattice, HamOperator, TimeVar,
+                                                               t, dt, MagnusOrder,
+                                                               MagnusQuadrature);
 
       if (Size != 0)
          HamMPO_ = repeat(HamMPO_, Size / HamMPO_.size());
