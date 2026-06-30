@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 // Matrix Product Toolkit http://mptoolkit.qusim.net/
 //
-// mp/mp-ibc-wavepacket.cpp
+// mp/mp-ibc-wavepacket-2d.cpp
 //
 // Copyright (C) 2022-2023 Jesse Osborne <j.osborne@uqconnect.edu.au>
 //
@@ -191,7 +191,7 @@ ConstructPsiWindow(InfiniteWavefunctionLeft PsiLeft, InfiniteWavefunctionRight P
 // Calculate the "N_Lambda" matrix from Eq. (A6) in Van Damme et al., Phys. Rev. Research 3, 013078.
 LinearAlgebra::Matrix<std::complex<double>>
 CalculateNLambda(std::vector<std::vector<std::vector<std::complex<double>>>> const& BBVec, std::vector<std::complex<double>> const& ExpIKVec,
-                  int const N, int const Lambda, int const LatticeUCSize)
+                  int const N, int const Lambda, int const LambdaY, int const LatticeUCSize)
 {
    int Size = ExpIKVec.size();
    LinearAlgebra::Matrix<std::complex<double>> NLambdaMat(Size, Size, 0.0);
@@ -208,8 +208,15 @@ CalculateNLambda(std::vector<std::vector<std::vector<std::complex<double>>>> con
          for (int Row = 0; Row < Size; ++Row)
          {
             std::complex<double> Coeff = 0.0;
-            for (int j = Lambda+1; j < N-Lambda; ++j)
-               Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
+            // If LambdaY < m % LatticeUCSize < LatticeUCSize - LambdaY,
+            // calculate the contribution for all x, otherwise, only use the
+            // contribution from Lambda < x < N - Lambda.
+            if ((m % LatticeUCSize) > LambdaY && (m % LatticeUCSize) < LatticeUCSize - LambdaY)
+               for (int j = 0; j < N; ++j)
+                  Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
+            else
+               for (int j = Lambda+1; j < N-Lambda; ++j)
+                  Coeff += std::pow(std::conj(*ExpIKI) * *ExpIKJ, j);
 
             NLambdaMat(Col, Row) += *BBI * Coeff;
             ++ExpIKI, ++BBI;
@@ -262,12 +269,15 @@ int main(int argc, char** argv)
       int Verbose = 0;
       std::string KStr;
       double KSMA = 0.0;
+      std::string KYStr = "0";
       int LatticeUCSize = 1;
       std::string InputPrefix;
       std::string OutputFilename;
       bool Force = false;
       double Sigma = 0.0;
       double KCenter = 0.0;
+      double SigmaY = 0.0;
+      double KYCenter = 0.0;
       int InputDigits = -1;
       double Tol = 1e-5;
       int LambdaMax = 0;
@@ -281,12 +291,15 @@ int main(int argc, char** argv)
          ("wavefunction,w", prog_opt::value(&InputPrefix), "Prefix for input filenames (of the form [prefix].k[k]) [required]")
          ("momentum,k", prog_opt::value(&KStr), "Momentum range of the form start:end:step or start:end,num (in units of pi) [required]")
          ("sma", prog_opt::value(&KSMA), "Use a single-mode approximation using the EA wavefunction for this momentum (in units of pi) [alternative to -k]")
+         ("ky", prog_opt::value(&KYStr), "Localize the wavepacker on a cylinder using this y-momentum range (in units of pi)")
          ("digits", prog_opt::value(&InputDigits), "Manually use this number of decimal places for the filenames")
          ("latticeucsize", prog_opt::value(&LatticeUCSize), "Lattice unit cell size [default wavefunction attribute \"LatticeUnitCellSize\" or 1]")
          ("output,o", prog_opt::value(&OutputFilename), "Output filename [required]")
          ("force,f", prog_opt::bool_switch(&Force), "Force overwriting output file")
          ("sigma,s", prog_opt::value(&Sigma), "Convolute with a Gaussian in momentum space with this width (in units of pi)")
          ("kcenter,c", prog_opt::value(&KCenter), FormatDefault("Central momentum of the momentum space Gaussian (in units of pi)", KCenter).c_str())
+         ("sigmay", prog_opt::value(&SigmaY), "Convolute with a Gaussian in y-momentum space with this width (in units of pi)")
+         ("kycenter", prog_opt::value(&KYCenter), FormatDefault("Central momentum of the y-momentum space Gaussian (in units of pi)", KCenter).c_str())
          ("tol", prog_opt::value(&Tol),
           FormatDefault("Tolerance for the wavepacket weight outside the window", Tol).c_str())
          ("lambdamax", prog_opt::value(&LambdaMax), "Maximum allowed window size of the output wavefunction [default 2*pi/kstep]")
@@ -323,6 +336,7 @@ int main(int argc, char** argv)
 
       pheap::Initialize(OutputFilename, 1, mp_pheap::PageSize(), mp_pheap::CacheSize(), false, Force);
 
+      RangeList KYList(KYStr);
       RangeList KList;
 
       if (vm.count("sma") == 0)
@@ -339,6 +353,9 @@ int main(int argc, char** argv)
       {
          KList = RangeList(std::to_string(KSMA));
 
+         // TODO: We might want to be able to use a different SMA for each y-momentum.
+         CHECK(vm.count("ky") == 0);
+
          if (Sigma == 0.0)
          {
             std::cerr << "fatal: --sigma must be specified if using --sma." << std::endl;
@@ -349,6 +366,8 @@ int main(int argc, char** argv)
       if (InputDigits == -1)
       {
          InputDigits = std::max(formatting::digits(KList.get_start()), formatting::digits(KList.get_step()));
+         if (vm.count("kynum"))
+            InputDigits = std::max(InputDigits, formatting::digits(KYList.get_step()));
       }
 
       if (Verbose > 1)
@@ -361,7 +380,12 @@ int main(int argc, char** argv)
       QuantumNumber LeftQShift, RightQShift;
       int LeftIndex, RightIndex, UCSize;
       {
-         std::string InputFilename = InputPrefix + ".k" + formatting::format_digits(KList.get_start(), InputDigits);
+         std::string InputFilename = InputPrefix;
+         if (vm.count("kynum") == 0)
+            InputFilename += ".k" + formatting::format_digits(KList.get_start(), InputDigits);
+         else
+            InputFilename += ".kx" + formatting::format_digits(KList.get_start(), InputDigits)
+                           + ".ky" + formatting::format_digits(KYList.get_start(), InputDigits);
 
          pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
          EAWavefunction Psi = InPsi->get<EAWavefunction>();
@@ -412,71 +436,80 @@ int main(int argc, char** argv)
       std::vector<std::complex<double>> ExpIKVec;
       for (double const k : KList)
       {
-         // Load wavefunction.
-         std::string InputFilename = InputPrefix + ".k" + formatting::format_digits(k, InputDigits);
+         for (double const ky : KYList)
+         {
+            // Load wavefunction.
+            std::string InputFilename = InputPrefix;
+            if (vm.count("kynum") == 0)
+               InputFilename += ".k" + formatting::format_digits(k, InputDigits);
+            else
+               InputFilename += ".kx" + formatting::format_digits(k, InputDigits)
+                              + ".ky" + formatting::format_digits(ky, InputDigits);
 
-         pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
-         EAWavefunction Psi = InPsi->get<EAWavefunction>();
+            pvalue_ptr<MPWavefunction> InPsi = pheap::ImportHeap(InputFilename);
+            EAWavefunction Psi = InPsi->get<EAWavefunction>();
 
-         // We only handle single-site EAWavefunctions at the moment.
-         CHECK(Psi.window_size() == 1);
+            // We only handle single-site EAWavefunctions at the moment.
+            CHECK(Psi.window_size() == 1);
 
-         // TODO: Check each wavefunction has the same left/right boundaries.
+            // TODO: Check each wavefunction has the same left/right boundaries.
 
-         ExpIKVec.push_back(Psi.exp_ik());
+            ExpIKVec.push_back(Psi.exp_ik());
 
-         auto BCell = BVec.begin();
-         // Here we use the left-gauge fixing condition.
+            auto BCell = BVec.begin();
+            // Here we use the left-gauge fixing condition.
 #if 1
-         for (WavefunctionSectionLeft Window : Psi.window_vec())
-         {
-            LinearWavefunction PsiLinear;
-            MatrixOperator U;
-            std::tie(PsiLinear, U) = get_left_canonical(Window);
-            // Note that we assume that the window is single-site.
-            BCell->push_back(PsiLinear.get_front()*U);
-            ++BCell;
-         }
-         // TODO: Symmetric gauge-fixing.
+            for (WavefunctionSectionLeft Window : Psi.window_vec())
+            {
+               LinearWavefunction PsiLinear;
+               MatrixOperator U;
+               std::tie(PsiLinear, U) = get_left_canonical(Window);
+               // Note that we assume that the window is single-site.
+               TRACE(norm_frob(U));
+               BCell->push_back(PsiLinear.get_front()*U);
+               ++BCell;
+            }
+            // TODO: Symmetric gauge-fixing.
 #else
-         // Get the right null space matrices corresponding to each A-matrix in PsiRight.
-         LinearWavefunction PsiLinearLeft;
-         std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(Psi.Left);
+            // Get the right null space matrices corresponding to each A-matrix in PsiRight.
+            LinearWavefunction PsiLinearLeft;
+            std::tie(PsiLinearLeft, std::ignore) = get_left_canonical(Psi.Left);
 
-         LinearWavefunction PsiLinearRight;
-         std::tie(std::ignore, PsiLinearRight) = get_right_canonical(Psi.Right);
+            LinearWavefunction PsiLinearRight;
+            std::tie(std::ignore, PsiLinearRight) = get_right_canonical(Psi.Right);
 
-         std::vector<StateComponent> NullRightVec;
-         for (StateComponent C : PsiLinearRight)
-            NullRightVec.push_back(NullSpace1(C));
+            std::vector<StateComponent> NullRightVec;
+            for (StateComponent C : PsiLinearRight)
+               NullRightVec.push_back(NullSpace1(C));
 
-         auto NR = NullRightVec.begin();
-         auto AL = PsiLinearLeft.begin();
-         auto AR = PsiLinearRight.begin();
-         for (WavefunctionSectionLeft Window : Psi.window_vec())
-         {
-            LinearWavefunction PsiLinear;
-            MatrixOperator U;
-            std::tie(PsiLinear, U) = get_left_canonical(Window);
-            // Note that we assume that the window is single-site.
-            StateComponent BL = PsiLinear.get_front()*U;
+            auto NR = NullRightVec.begin();
+            auto AL = PsiLinearLeft.begin();
+            auto AR = PsiLinearRight.begin();
+            for (WavefunctionSectionLeft Window : Psi.window_vec())
+            {
+               LinearWavefunction PsiLinear;
+               MatrixOperator U;
+               std::tie(PsiLinear, U) = get_left_canonical(Window);
+               // Note that we assume that the window is single-site.
+               StateComponent BL = PsiLinear.get_front()*U;
 
-            // Find the B-matrix satisfying the right-gauge fixing condition.
-            MatrixOperator XR = scalar_prod(BL, herm(*NR));
-            StateComponent BR = prod(XR, *NR);
-            // Scale norm to match BL
-            //BR *= norm_frob(BL) / norm_frob(BR);
+               // Find the B-matrix satisfying the right-gauge fixing condition.
+               MatrixOperator XR = scalar_prod(BL, herm(*NR));
+               StateComponent BR = prod(XR, *NR);
+               // Scale norm to match BL
+               //BR *= norm_frob(BL) / norm_frob(BR);
 
-            TRACE(inner_prod(BR, *AR))(inner_prod(BR, *AL));
-            TRACE(inner_prod(BL, *AL))(inner_prod(BL, *AR));
-            TRACE(inner_prod(BR, BL));
-            TRACE(norm_frob(BL))(norm_frob(BR))(norm_frob(XR));
+               TRACE(inner_prod(BR, *AR))(inner_prod(BR, *AL));
+               TRACE(inner_prod(BL, *AL))(inner_prod(BL, *AR));
+               TRACE(inner_prod(BR, BL));
+               TRACE(norm_frob(BL))(norm_frob(BR))(norm_frob(XR));
 
-            BCell->push_back(0.5*(BL+BR));
-            ++BCell;
-            ++NR, ++AR, ++AL;
-         }
+               BCell->push_back(0.5*(BL+BR));
+               ++BCell;
+               ++NR, ++AR, ++AL;
+            }
 #endif
+         }
       }
 
       std::vector<std::vector<StateComponent>> WPVec;
@@ -500,32 +533,59 @@ int main(int argc, char** argv)
          if (LambdaMax == 0)
             LambdaMax = N/2;
 
+         int NY;
+         if (vm.count("kynum"))
+         {
+            NY = std::round(2.0/KYList.get_step());
+            if (std::abs(NY*KYList.get_step()/2.0 - 1.0) > 0.0)
+               std::cerr << "WARNING: Number of y Fourier modes " << 2.0/KYList.get_step() << " is noninteger! Trying NY=" << NY << std::endl;
+            if (NY < 4)
+            {
+               std::cerr << "fatal: NY=" << NY << " is less than 4: cannot localize wavepacket along the y-axis!" << std::endl;
+               return 1;
+            }
+         }
+         else
+            // This makes it such that each Lambda is calculated once.
+            NY = 4;
+
          std::vector<std::complex<double>> FVec;
          std::vector<std::vector<std::vector<std::complex<double>>>> BBVec = CalculateBBVec(BVec);
          // Number of different Fourier modes that we optimize over.
-         int Size = KList.get_num();
+         int Size = KList.get_num()*KYList.get_num();
 
          int Lambda = 1;
+         int LambdaY = 1;
          bool Finished = false;
          while (Lambda < LambdaMax && !Finished)
          {
-            LinearAlgebra::Matrix<std::complex<double>> NLambdaMat = CalculateNLambda(BBVec, ExpIKVec, N, Lambda, LatticeUCSize);
-            LinearAlgebra::Vector<double> EValues = LinearAlgebra::DiagonalizeHermitian(NLambdaMat);
-
-            if (Verbose > 0)
+            LambdaY = 1;
+            // Only try values of LambdaY up to the current value of Lambda.
+            // If we aren't localising along the y-axis, then this loop will only
+            // run once, since we set NY/2 = 2.
+            while (LambdaY < std::min(Lambda+1, NY/2) && !Finished)
             {
-               std::cout << "Lambda=" << Lambda;
-               std::cout << " ExternalWeight=" << std::real(EValues[0])
-                         << std::endl;
-            }
+               LinearAlgebra::Matrix<std::complex<double>> NLambdaMat = CalculateNLambda(BBVec, ExpIKVec, N, Lambda, LambdaY, LatticeUCSize);
+               LinearAlgebra::Vector<double> EValues = LinearAlgebra::DiagonalizeHermitian(NLambdaMat);
 
-            if (std::real(EValues[0]) < Tol)
-            {
-               Finished = true;
-               // Extract the smallest eigenvector.
-               FVec = std::vector<std::complex<double>>(NLambdaMat.data(), NLambdaMat.data()+Size);
-            }
+               if (Verbose > 0)
+               {
+                  std::cout << "Lambda=" << Lambda;
+                  if (vm.count("kynum"))
+                     std::cout << " LambdaY=" << LambdaY;
+                  std::cout << " ExternalWeight=" << std::real(EValues[0])
+                            << std::endl;
+               }
 
+               if (std::real(EValues[0]) < Tol)
+               {
+                  Finished = true;
+                  // Extract the smallest eigenvector.
+                  FVec = std::vector<std::complex<double>>(NLambdaMat.data(), NLambdaMat.data()+Size);
+               }
+
+               ++LambdaY;
+            }
             ++Lambda;
          }
 
@@ -539,14 +599,17 @@ int main(int argc, char** argv)
          {
             // Print the F vector before convolution.
             std::cout << "Printing F before convolution..." << std::endl;
-            std::cout << "#kx F" << std::endl;
+            std::cout << "#kx ky F" << std::endl;
             auto K = KList.begin();
+            auto KY = KYList.begin();
             auto F = FVec.begin();
             while (K != KList.end())
             {
                std::cout << *K << " ";
+               if (vm.count("ky"))
+                  std::cout << *KY << " ";
                std::cout << formatting::format_complex(*F) << std::endl;
-               ++K, ++F;
+               ++K, ++KY, ++F;
             }
          }
 
@@ -567,18 +630,35 @@ int main(int argc, char** argv)
             }
          }
 
+         // Convolute with y-momentum space Gaussian.
+         if (SigmaY != 0.0)
+         {
+            if (Verbose > 1)
+               std::cout << "Convoluting with y-momentum space Gaussian..." << std::endl;
+            auto KY = KYList.begin();
+            auto F = FVec.begin();
+            while (KY != KYList.end())
+            {
+               *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
+               ++KY, ++F;
+            }
+         }
+
          if (Verbose > 3)
          {
             // Print the F vector after convolution.
             std::cout << "Printing F after convolution..." << std::endl;
-            std::cout << "#kx F" << std::endl;
+            std::cout << "#kx ky F" << std::endl;
             auto K = KList.begin();
+            auto KY = KYList.begin();
             auto F = FVec.begin();
             while (K != KList.end())
             {
                std::cout << *K << " ";
+               if (vm.count("ky"))
+                  std::cout << *KY << " ";
                std::cout << formatting::format_complex(*F) << std::endl;
-               ++K, ++F;
+               ++K, ++KY, ++F;
             }
          }
 
@@ -604,7 +684,7 @@ int main(int argc, char** argv)
          for (LambdaNew = Lambda; LambdaNew < LambdaMax; ++LambdaNew)
          {
             LinearAlgebra::Matrix<std::complex<double>> NLambdaMat
-               = CalculateNLambda(BBVec, ExpIKVec, N, LambdaNew, LatticeUCSize);
+               = CalculateNLambda(BBVec, ExpIKVec, N, LambdaNew, LambdaY, LatticeUCSize);
             double Error = std::real(inner_prod(FVector, NLambdaMat * FVector));
 
             if (Verbose > 1)

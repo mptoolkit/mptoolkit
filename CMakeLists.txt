@@ -564,6 +564,7 @@ set(MPTK_TOOLS
   mp-ibc-correlation
   mp-excitation-ansatz
   mp-ibc-wavepacket
+  mp-ibc-wavepacket-2d
   mp-ibc-splice
   mp-ibc-dmrg
   mp-ea-moments
