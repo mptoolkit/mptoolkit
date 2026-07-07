@@ -400,8 +400,8 @@ IBCWavefunction::SetDefaultAttributes(AttributeList& A) const
 class ConstIBCIterator
 {
    public:
-      ConstIBCIterator(IBCWavefunction const& Psi_, int Index_)
-         : Psi(Psi_), Index(Index_)
+      ConstIBCIterator(IBCWavefunction const& Psi_, int Index_, bool Lambda_ = true)
+         : Psi(Psi_), Index(Index_), Lambda(Lambda_)
       {
          PsiLeft = Psi.left();
          PsiRight = Psi.right();
@@ -455,7 +455,11 @@ class ConstIBCIterator
          StateComponent Result = *C;
 
          if (Index == WindowRightIndex + 1)
-            Result = Psi.window().lambda_r() * Psi.window().RightU() * Result;
+         {
+            Result = Psi.window().RightU() * Result;
+            if (Lambda)
+               Result = Psi.window().lambda_r() * Result;
+         }
 
          if (Index == WindowLeftIndex)
             Result = Psi.window().LeftU() * Result;
@@ -504,6 +508,7 @@ class ConstIBCIterator
       InfiniteWavefunctionRight PsiRight;
       CanonicalWavefunctionBase::const_mps_iterator C;
       int Index;
+      bool Lambda;
       int WindowLeftIndex;
       int WindowRightIndex;
 };
@@ -511,12 +516,10 @@ class ConstIBCIterator
 std::complex<double>
 expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose)
 {
-   // We choose IndexLeft/IndexRight such that it is the first/last site in the
-   // operator unit cell, in order for Op.ExtendToCover to work correctly.
-   int IndexLeft = std::min(Psi.window_offset() - ((Psi.left().size() - Psi.window_left_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor())),
-                            Op.offset());
-   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.right().size() - Psi.window_right_sites() - 1) % (Op.unit_cell_size() / Op.coarse_grain_factor())),
-                             Op.size() + Op.offset() - 1);
+   // We need to include at least the first or last site of the window,
+   // because we do not have the Lambda matrices of the boundaries.
+   int IndexLeft = std::min(Psi.window_size() + Psi.window_offset() - Psi.window_right_sites(), Op.offset());
+   int IndexRight = std::max(Psi.window_offset() + Psi.window_left_sites() - 1, Op.size() + Op.offset() - 1);
 
    if (Verbose > 0)
       std::cout << "Calculating IBC expectation value over sites " << IndexLeft << " to " << IndexRight
@@ -526,7 +529,7 @@ expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose)
 
    BasicFiniteMPO M = Op.MPO();
 
-   ConstIBCIterator C = ConstIBCIterator(Psi, IndexLeft);
+   ConstIBCIterator C = ConstIBCIterator(Psi, IndexLeft, false);
 
    MatrixOperator I = MatrixOperator::make_identity((*C).Basis1());
    StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
@@ -539,9 +542,15 @@ expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose)
       if (Verbose > 2)
          std::cout << "Site " << i << std::endl;
 
+      if (i == Psi.window_size() + Psi.window_offset())
+         E = conj(Psi.window().lambda_r()) * E * Psi.window().lambda_r();
+
       E = contract_from_left(*W, herm(*C), E, *C);
       ++C, ++W;
    }
+
+   if (IndexRight < Psi.window_size() + Psi.window_offset())
+      E = conj(Psi.window().lambda(IndexRight-Psi.window_offset()+1)) * E * Psi.window().lambda(IndexRight-Psi.window_offset()+1);
 
    return trace(E[0]);
 }
