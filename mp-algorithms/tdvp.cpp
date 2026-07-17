@@ -488,9 +488,8 @@ TDVP::SweepRightFinal(std::complex<double> Tau, bool Expand)
 void
 TDVP::Evolve(bool Expand)
 {
-   // Reset MaxStates if we are expanding.
-   if (Expand)
-      MaxStates = 0;
+   // Reset MaxStates count for next sweep
+   MaxStates = 1;
 
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
@@ -721,6 +720,9 @@ TDVP::SweepRight2(std::complex<double> Tau)
 void
 TDVP::Evolve2()
 {
+   // Reset MaxStates count for next sweep
+   MaxStates = 1;
+
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
 

@@ -1016,6 +1016,9 @@ IBC_TDVP::UpdateWindowHamiltonian(std::complex<double> t, std::complex<double> d
 void
 IBC_TDVP::Evolve(bool Expand)
 {
+   // Reset MaxStates count for next sweep
+   MaxStates = 1;
+
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
    Eps1SqSum = 0.0;
@@ -1067,6 +1070,9 @@ IBC_TDVP::Evolve(bool Expand)
 void
 IBC_TDVP::Evolve2()
 {
+   // Reset MaxStates count for next sweep
+   MaxStates = 1;
+
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
    TruncErrSum = 0.0;
