@@ -600,12 +600,11 @@ int main(int argc, char** argv)
 
          // Calculate the new value of Lambda post-convolution.
          int LambdaNew;
-         LinearAlgebra::Vector<std::complex<double>> FVector(FVec.begin(), FVec.end());
          for (LambdaNew = Lambda; LambdaNew < LambdaMax; ++LambdaNew)
          {
             LinearAlgebra::Matrix<std::complex<double>> NLambdaMat
                = CalculateNLambda(BBVec, ExpIKVec, N, LambdaNew, LatticeUCSize);
-            double Error = std::real(inner_prod(FVector, NLambdaMat * FVector));
+            double Error = std::real(inner_prod(FVec, trans(NLambdaMat) * FVec));
 
             if (Verbose > 1)
                std::cout << "LambdaNew=" << LambdaNew
