@@ -37,9 +37,9 @@ cmake --build build --parallel 4
 
 Adjust the `--parallel` value for your machine.
 
-The CMake bootstrap currently supports LP64 BLAS/LAPACK builds. It validates
-the selected numerical backend against ARPACK where possible and aborts for
-known-incompatible combinations. For MKL builds, the default
+The CMake bootstrap currently supports LP64 BLAS/LAPACK builds. ARPACK is a
+required dependency, so the bootstrap inspects it before selecting BLAS/LAPACK
+and aborts for known-incompatible combinations. For MKL builds, the default
 `MPTK_MKL_INTERFACE=auto` follows ARPACK's detected Fortran runtime when that
 can be inspected; otherwise GNU-like toolchains prefer MKL's GNU Fortran
 interface (`libmkl_gf_lp64`). The interface can be set explicitly with

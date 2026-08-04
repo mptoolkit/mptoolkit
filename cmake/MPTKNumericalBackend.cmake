@@ -61,6 +61,25 @@ function(mptk_prepare_numerical_backend)
     set(_mptk_mkl_requested TRUE)
   endif()
 
+  set(_mptk_bla_vendor "")
+  if(DEFINED BLA_VENDOR AND NOT BLA_VENDOR STREQUAL "")
+    set(_mptk_bla_vendor "${BLA_VENDOR}")
+  elseif(DEFINED ENV{BLA_VENDOR} AND NOT "$ENV{BLA_VENDOR}" STREQUAL "")
+    set(_mptk_bla_vendor "$ENV{BLA_VENDOR}")
+  else()
+    set(_mptk_bla_vendor "All")
+  endif()
+
+  # FindBLAS probes MKL before OpenBLAS for its default "All" vendor.  Since
+  # ARPACK is required, let its detected runtime select the Fortran language
+  # that FindBLAS uses to choose the MKL interface.
+  set(_mptk_findblas_may_select_mkl FALSE)
+  if(_mptk_mkl_requested
+      OR _mptk_bla_vendor STREQUAL "All"
+      OR _mptk_bla_vendor MATCHES "^Intel")
+    set(_mptk_findblas_may_select_mkl TRUE)
+  endif()
+
   set(_mptk_prefer_mkl_gnu FALSE)
   if(MPTK_MKL_INTERFACE STREQUAL "gnu")
     set(_mptk_prefer_mkl_gnu TRUE)
@@ -74,23 +93,10 @@ function(mptk_prepare_numerical_backend)
     set(_mptk_prefer_mkl_gnu TRUE)
   endif()
 
-  if(_mptk_mkl_requested AND _mptk_prefer_mkl_gnu
-      AND NOT CMAKE_Fortran_COMPILER_LOADED)
-    include(CheckLanguage)
-    check_language(Fortran)
-    if(CMAKE_Fortran_COMPILER)
-      enable_language(Fortran)
-      set(MPTK_DETECTED_FORTRAN_COMPILER_ID "${CMAKE_Fortran_COMPILER_ID}"
-          CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
-      message(STATUS
-        "Enabled Fortran (${CMAKE_Fortran_COMPILER_ID}) so FindBLAS can select the matching MKL interface")
-    else()
-      set(MPTK_DETECTED_FORTRAN_COMPILER_ID "None"
-          CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
-    endif()
-  elseif(CMAKE_Fortran_COMPILER_LOADED)
-    set(MPTK_DETECTED_FORTRAN_COMPILER_ID "${CMAKE_Fortran_COMPILER_ID}"
-        CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
+  if(_mptk_findblas_may_select_mkl AND _mptk_prefer_mkl_gnu)
+    set(MPTK_NUMERICAL_BACKEND_TRY_GNU_FORTRAN TRUE PARENT_SCOPE)
+  else()
+    set(MPTK_NUMERICAL_BACKEND_TRY_GNU_FORTRAN FALSE PARENT_SCOPE)
   endif()
 
   if(_mptk_mkl_requested AND _mptk_prefer_mkl_gnu
@@ -134,6 +140,29 @@ function(mptk_prepare_numerical_backend)
     endif()
   endif()
 endfunction()
+
+# enable_language() must run in directory scope so that FindBLAS can observe
+# the loaded compiler and choose the matching MKL interface.
+macro(mptk_enable_numerical_backend_languages)
+  if(MPTK_NUMERICAL_BACKEND_TRY_GNU_FORTRAN
+      AND NOT CMAKE_Fortran_COMPILER_LOADED)
+    include(CheckLanguage)
+    check_language(Fortran)
+    if(CMAKE_Fortran_COMPILER)
+      enable_language(Fortran)
+      set(MPTK_DETECTED_FORTRAN_COMPILER_ID "${CMAKE_Fortran_COMPILER_ID}"
+          CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
+      message(STATUS
+        "Enabled Fortran (${CMAKE_Fortran_COMPILER_ID}) so FindBLAS can select the matching MKL interface")
+    else()
+      set(MPTK_DETECTED_FORTRAN_COMPILER_ID "None"
+          CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
+    endif()
+  elseif(CMAKE_Fortran_COMPILER_LOADED)
+    set(MPTK_DETECTED_FORTRAN_COMPILER_ID "${CMAKE_Fortran_COMPILER_ID}"
+        CACHE INTERNAL "Detected Fortran compiler ID used for numerical dependency selection" FORCE)
+  endif()
+endmacro()
 
 function(mptk_detect_mkl_interface output_var)
   set(_interface "")
