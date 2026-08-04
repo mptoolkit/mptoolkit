@@ -94,7 +94,8 @@ int main(int argc, char** argv)
       // in misc/spin2.cpp
       Lattice["H_p0"] = (-1/50.0)*H_dipole + (1/105.0) *H_quad + (-1/180.0)*H_hex + (1/180.0) *H_oct + (1/25.0)*c;
       Lattice["H_p1"] = (-1/20.0)*H_dipole + (1/70.0)  *H_quad + (0.0)     *H_hex + (-1/90.0) *H_oct + (3/25.0)*c;
-      Lattice["H_p2"] = (-1/20.0)*H_dipole + (-1/98.0) *H_quad + (1/63.0)  *H_hex + (1/126.0) *H_oct + (5/55.0)*c;
+      // note: constant term in H_p2 corrected from 5/55 to 5/25
+      Lattice["H_p2"] = (-1/20.0)*H_dipole + (-1/98.0) *H_quad + (1/63.0)  *H_hex + (1/126.0) *H_oct + (5/25.0)*c;
       Lattice["H_p3"] = (0.0)    *H_dipole + (-4/105.0)*H_quad + (-1/72.0) *H_hex + (-1/360.0)*H_oct + (7/25.0)*c;
       Lattice["H_p4"] = (3/25.0) *H_dipole + (6/245.0) *H_quad + (1/280.0) *H_hex + (1/2520.0)*H_oct + (9/25.0)*c;
 
