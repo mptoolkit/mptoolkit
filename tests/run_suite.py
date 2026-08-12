@@ -26,7 +26,7 @@ except ModuleNotFoundError as exc:
 
 
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-TEMPLATE_RE = re.compile(r"\{([^{}]+)\}")
+TEMPLATE_RE = re.compile(r"(?<!\{)\{([^{}]+)\}(?!\})")
 LINE_PATTERN_RE = re.compile(r"%\(([^()]+)\)")
 DEFAULT_OVERLAY = {
     "defaults": {
@@ -173,7 +173,8 @@ def render_value(value: Any, context: dict[str, Any]) -> Any:
             resolved = resolve_reference(match.group(1), context)
             return str(resolved)
 
-        return TEMPLATE_RE.sub(replace, value)
+        rendered = TEMPLATE_RE.sub(replace, value)
+        return rendered.replace("{{", "{").replace("}}", "}")
     if isinstance(value, list):
         return [render_value(item, context) for item in value]
     if isinstance(value, dict):
