@@ -82,7 +82,7 @@ fixtures:
 
   minimized4:
     from: trial4
-    run: mp-dmrg -w trial -H 'lat:H_select{{lambda=1}}' -m 32 -s 16 --maxtol 1e-12 --maxiter 50
+    run: mp-dmrg -w trial -H 'lat:H_select{{lambda=1}}' -m 32 -s 64 --post rsvd --miniter 2 --maxiter 8
 
 tests:
   highest_weight_has_the_correct_open_boundary_energy:
