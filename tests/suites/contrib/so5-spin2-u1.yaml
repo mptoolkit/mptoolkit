@@ -1,0 +1,190 @@
+version: 0
+
+imports:
+  - ../../recipes/mptoolkit-probes.yaml
+
+recipes:
+  half_entropy4:
+    probe: mp-info --entropy --base2 --quiet --partition 2 {state}
+    extract:
+      line_pattern:
+        pattern: "2 2 %(float:entropy)"
+        capture: entropy
+
+  half_entropy8:
+    probe: mp-info --entropy --base2 --quiet --partition 4 {state}
+    extract:
+      line_pattern:
+        pattern: "4 4 %(float:entropy)"
+        capture: entropy
+
+fixtures:
+  lat:
+    run: so5-spin2-u1 -o lat
+    outputs:
+      lattice: lat
+
+  omega1:
+    from: lat
+    run: mp-construct -l lat -o psi --finite 2
+    outputs:
+      state: psi
+
+  omega4:
+    from: lat
+    run: mp-construct -l lat -o psi --finite -r 4 2
+    outputs:
+      state: psi
+
+  scalar4_raw:
+    from: omega4
+    run: mp-apply 'lat:C_minus_finite(0){{L=4}}' psi scalar
+    outputs:
+      state: scalar
+
+  scalar4:
+    from: scalar4_raw
+    run: mp-normalize scalar
+
+  scalar4_fsup:
+    from: omega4
+    run: mp-apply 'lat:fsup(0,4,C_minus)/sqrt(108)' psi scalar_fsup
+    outputs:
+      state: scalar_fsup
+
+  omega8:
+    from: lat
+    run: mp-construct -l lat -o psi --finite -r 8 2
+    outputs:
+      state: psi
+
+  scalar8_once:
+    from: omega8
+    run: mp-apply 'lat:C_minus_finite(0){{L=8}}' psi once
+    outputs:
+      state: once
+
+  scalar8_twice_raw:
+    from: scalar8_once
+    run: mp-apply 'lat:C_minus_finite(0){{L=8}}' once scalar
+    outputs:
+      state: scalar
+
+  scalar8_twice:
+    from: scalar8_twice_raw
+    run: mp-normalize scalar
+
+  trial4:
+    from: lat
+    run: mp-construct -l lat -o trial --finite 2:0:2:0
+    outputs:
+      state: trial
+
+  minimized4:
+    from: trial4
+    run: mp-dmrg -w trial -H 'lat:H_select{{lambda=1}}' -m 32 -s 16 --maxtol 1e-12 --maxiter 50
+
+tests:
+  highest_weight_has_the_correct_open_boundary_energy:
+    use: omega4
+    expect:
+      - expectation_real:
+          operator: 'lat:H_finite(0){{L=4}}'
+          approx: -3
+          abs: 1e-12
+      - expectation_real:
+          operator: 'lat:Q_tot_finite(0){{L=4}}'
+          approx: 4
+          abs: 1e-12
+      - expectation_real:
+          operator: 'lat:T2_tot_finite(0){{L=4}}'
+          approx: 0
+          abs: 1e-12
+      - expectation_real:
+          operator: 'lat:H_finite(1){{L=2}}'
+          approx: -1
+          abs: 1e-12
+
+  collective_lowerer_keeps_its_nonzero_on_site_term:
+    use: omega1
+    expect:
+      - expectation_real:
+          operator: 'lat:fsup(0,1,C_plus)*fsup(0,1,C_minus)'
+          approx: 9
+          abs: 1e-12
+      - expectation_real:
+          operator: 'lat:fsup(0,1,H_SO5)'
+          approx: 0
+          abs: 1e-12
+
+  collective_lowering_norm_includes_all_pair_terms:
+    use: omega4
+    expect:
+      - expectation_real:
+          operator: 'lat:C_plus_finite(0){{L=4}}*C_minus_finite(0){{L=4}}'
+          approx: 108
+          abs: 1e-10
+
+  direct_lowering_has_scalar_quantum_numbers_and_exact_entropy:
+    use: scalar4
+    expect:
+      - expectation_real:
+          operator: 'lat:H_finite(0){{L=4}}'
+          approx: -3
+          abs: 1e-11
+      - expectation_real:
+          operator: 'lat:Q_tot_finite(0){{L=4}}'
+          approx: 2
+          abs: 1e-11
+      - expectation_real:
+          operator: 'lat:Sz_tot_finite(0){{L=4}}'
+          approx: 4
+          abs: 1e-11
+      - expectation_real:
+          operator: 'lat:T2_tot_finite(0){{L=4}}'
+          approx: 0
+          abs: 1e-11
+      - expectation_real:
+          operator: 'lat:H_select_finite(0){{L=4,lambda=2}}'
+          approx: -3
+          abs: 1e-11
+      - half_entropy4:
+          approx: 2.25105939349207
+          abs: 1e-11
+
+  finite_wrapper_and_fsup_construct_the_same_state:
+    use:
+      psi1: scalar4.state
+      psi2: scalar4_fsup.state
+    expect:
+      - overlap_mag:
+          approx: 1
+          abs: 1e-11
+
+  minimization_selects_the_explicit_scalar_descendant:
+    use:
+      psi1: scalar4.state
+      psi2: minimized4.state
+    expect:
+      - overlap_mag:
+          approx: 1
+          abs: 1e-8
+
+  repeated_lowering_matches_the_eight_site_scalar_entropy:
+    use: scalar8_twice
+    expect:
+      - expectation_real:
+          operator: 'lat:H_finite(0){{L=8}}'
+          approx: -7
+          abs: 1e-10
+      - expectation_real:
+          operator: 'lat:Q_tot_finite(0){{L=8}}'
+          approx: 4
+          abs: 1e-10
+      - expectation_real:
+          operator: 'lat:T2_tot_finite(0){{L=8}}'
+          approx: 0
+          abs: 1e-10
+      - half_entropy8:
+          approx: 3.324362673901629
+          abs: 1e-10
