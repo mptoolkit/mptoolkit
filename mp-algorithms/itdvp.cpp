@@ -443,6 +443,9 @@ iTDVP::EvolveRight(std::complex<double> Tau)
 void
 iTDVP::Evolve(bool Expand)
 {
+   // Reset MaxStates count for next sweep
+   MaxStates = 1;
+
    Time = InitialTime + ((double) TStep)*Timestep;
    ++TStep;
 
@@ -451,7 +454,7 @@ iTDVP::Evolve(bool Expand)
 
    while (Alpha != Comp.Alpha.cend())
    {
-      // We do not need/cannot update the Hamiltonian on the first timestep.
+      // We do not need to/cannot update the Hamiltonian on the first timestep.
       if (TStep > 1)
          this->UpdateHamiltonianLeft(Time, (*Alpha)*Timestep);
 

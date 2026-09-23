@@ -74,6 +74,8 @@ int main(int argc, char** argv)
          ;
 
       OpDescriptions.add_functions()
+	 ("H_expx", "Exponentially decaying spin exchange in x direction parameterized by lambda as exp(-lambda*r)")
+	 ("H_expz", "Exponentially decaying spin exchange in z direction parameterized by lambda as exp(-lambda*r)")
 	 ("H_BQ"  , "Bilinear-biquadratic model, parameterized by theta", "spin 1",
 	  [&Spin]()->bool {return Spin==1;})
          ("H_murray", "Biquadratic model with anisotropy, parameterized by x, y and z", "spin 1")
@@ -133,6 +135,11 @@ int main(int argc, char** argv)
          // -3^2 == (-3)^2 rather than -(3^2).  So we need to include brackets.
          Lattice.func("H_murray")("x", arg("y")=1, arg("z")=1) = "sum_unit(-((x*Sx(0)*Sx(1) + y*Sy(0)*Sy(1) + z*Sz(0)*Sz(1))^2))";
       }
+
+      Lattice.func("H_expx")(arg("lambda")=0.5)
+         = "exp(-lambda)*sum_string_inner(Sx(0),exp(-lambda)*I(0),Sx(0))";
+      Lattice.func("H_expz")(arg("lambda")=0.5)
+         = "exp(-lambda)*sum_string_inner(Sz(0),exp(-lambda)*I(0),Sz(0))";
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

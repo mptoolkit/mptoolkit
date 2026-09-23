@@ -63,6 +63,8 @@ int main(int argc, char** argv)
          ("H_J1z"   , "same as H_zz")
          ("H_J1t"   , "transverse spin exchange, H_xx + H_yy")
          ("H_J1"    , "nearest neighbor spin exchange = H_J1z + H_J1t")
+         ("H_J2x"   , "next-nearest neighbor spin coupling Sx Sx")
+         ("H_J2y"   , "next-nearest neighbor spin coupling Sy Sy")
          ("H_J2z"   , "next-nearest neighbor spin coupling Sz Sz")
          ("H_J2t"   , "next-nearest neighbor transverse spin exchange")
          ("H_J2"    , "next-nearest neighbor spin exchange = H_J2z + H_J2t")
@@ -122,6 +124,8 @@ int main(int argc, char** argv)
       Lattice["H_J1z"] = Lattice["H_zz"];
       Lattice["H_J1t"] = Lattice["H_xx"] + Lattice["H_yy"];
       Lattice["H_J1"] = sum_unit(SpinExchange);
+      Lattice["H_J2x"] = sum_unit(Sx(0)*Sx(2));
+      Lattice["H_J2y"] = sum_unit(Sy(0)*Sy(2));
       Lattice["H_J2z"] = sum_unit(Sz(0)*Sz(2));
       Lattice["H_J2t"] = sum_unit(Sx(0)*Sx(2) + Sy(0)*Sy(2));
       Lattice["H_J2"] = sum_unit(SpinExchange2);

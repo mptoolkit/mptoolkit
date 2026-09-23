@@ -71,6 +71,10 @@ Useful runner flags:
   temporary directory
 - `--dump-ir`: print the normalized suite representation for one suite
 
+Suite strings use `{name}` for template references.  Use doubled braces when
+the command itself requires literal braces; for example,
+`lat:H_expx{{ln(2)}}` is passed to MPToolkit as `lat:H_expx{ln(2)}`.
+
 Suites can temporarily mark a test with `allow_failure: "reason"` when a known
 issue should remain visible without blocking CI. These tests still run. A
 failure is reported as `SOFTFAIL`, included in the suite and overall summaries,

@@ -112,6 +112,7 @@ include(TestBigEndian)
 
 find_library(ARPACK_LIBRARY NAMES arpack REQUIRED)
 mptk_prepare_numerical_backend("${ARPACK_LIBRARY}")
+mptk_enable_numerical_backend_languages()
 
 find_package(Git QUIET)
 if(NOT Boost_NO_BOOST_CMAKE)
@@ -614,6 +615,12 @@ endif()
 add_custom_target(mptoolkit DEPENDS tools models)
 
 enable_testing()
+
+add_test(
+  NAME cmake.numerical-backend-selection
+  COMMAND "${CMAKE_COMMAND}" -P
+          "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/MPTKNumericalBackendSelection.cmake"
+)
 
 add_executable(testexponential linearalgebra/test/testexponential.cpp)
 target_link_libraries(testexponential PRIVATE mptoolkit_core)

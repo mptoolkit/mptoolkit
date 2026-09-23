@@ -373,13 +373,13 @@ int main(int argc, char** argv)
                Wavefunction.Attributes()["Hamiltonian"] = HamStr;
 
                std::string FName = OutputPrefix;
+               if (NumEigen > 1)
+                  FName += ".n" + std::to_string(i);
                if (vm.count("ky") == 0)
                   FName += ".k" + formatting::format_digits(k, OutputDigits);
                else
                   FName += ".kx" + formatting::format_digits(k, OutputDigits)
                          + ".ky" + formatting::format_digits(Settings.ky, OutputDigits);
-               if (NumEigen > 1)
-                  FName += ".n" + std::to_string(i);
 
                pvalue_ptr<MPWavefunction> PsiPtr(new MPWavefunction(Wavefunction));
                pheap::ExportHeap(FName, PsiPtr);

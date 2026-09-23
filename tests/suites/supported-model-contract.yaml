@@ -383,6 +383,10 @@ tests:
           contains: "SymmetryList: Z:Z2"
       - lattice_info_text:
           contains: "H_ITF      - Ising transverse-field model, H_ITF = -H_ZZ + H_X"
+      - lattice_info_text:
+          contains: "H_expx     - Exponentially decaying spin exchange in x direction parameterized by lambda as exp(-lambda*r)"
+      - lattice_info_text:
+          contains: "H_expz     - Exponentially decaying spin exchange in z direction parameterized by lambda as exp(-lambda*r)"
 
   spinchain_su2_contract:
     use: spinchain_su2
