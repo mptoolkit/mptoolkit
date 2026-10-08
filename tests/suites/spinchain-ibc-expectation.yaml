@@ -1,0 +1,317 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+# Regression tests for mp-expectation on IBC wavefunctions, which only
+# contracts over the part of the window needed to reach a bond with a known
+# density matrix.
+#
+# The background state is the ground state of the transverse-field Ising
+# chain H = -sum Z(i)Z(i+1) + g sum X(i) in the paramagnetic phase (g = 2).
+# It is strongly gapped, so iDMRG converges to machine precision at small bond
+# dimension, and its Schmidt spectrum is non-degenerate, so placing a Lambda
+# matrix in the wrong basis gives a visibly wrong result.  (For AKLT,
+# Lambda is proportional to the identity, which hides such errors.)
+#
+# Exact free-fermion values at g = 2 (Pfeuty, Ann. Phys. 57, 79 (1970)):
+#   <X(i)>         = -0.934215457667694
+#   <Z(i)Z(i+1)>   =  0.258657904611342
+#   <Z(i)Z(i+2)>   =  0.098174021483979
+#
+# The IBC wavefunctions below do not change the background state, so every
+# expectation value must match the infinite-system value, regardless of where
+# the operator lies relative to the window.
+#
+# The lat2 and lat3 lattices have the same local Hilbert space as lat but unit
+# cells of 2 and 3 sites; lat2:Z(n)[k] acts on site 2n+k and lat3:Z(n)[k] on
+# site 3n+k.  These test operators whose unit cell differs from the
+# wavefunction unit cell.
+
+fixtures:
+  # Lattice files are large, so each wavefunction fixture only creates the
+  # ladder lattice it needs.
+  lat:
+    run: spinchain -o lat
+    outputs:
+      lattice: lat
+
+  tfi_uc2:
+    from: lat
+    steps:
+      - run: spinladder -l 3 -o lat3
+        outputs:
+          lattice3: lat3
+      - run: mp-idmrg-s3e -e -b -u 2 -w psi -H "lat:-H_ZZ + 2*H_X" -m 12x40 --maxtol 1e-14 --seed 1
+        outputs:
+          state: psi
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Unit cell size = 2"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:X(0)"
+          approx: -0.934215457667694
+          abs: 1e-9
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Z(1)*Z(2)"
+          approx: 0.258657904611342
+          abs: 1e-9
+
+  tfi_uc3:
+    from: lat
+    steps:
+      - run: spinladder -l 2 -o lat2
+        outputs:
+          lattice2: lat2
+      - run: mp-idmrg-s3e -e -b -u 3 -w psi -H "lat:-H_ZZ + 2*H_X" -m 12x40 --maxtol 1e-14 --seed 1
+        outputs:
+          state: psi
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Unit cell size = 3"
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:X(1)"
+          approx: -0.934215457667694
+          abs: 1e-9
+      - expectation_real:
+          state: "{state}"
+          operator: "lat:Z(2)*Z(4)"
+          approx: 0.098174021483979
+          abs: 1e-9
+
+  # Window of zero sites.
+  tfi_uc2_ibc_empty_window:
+    from: tfi_uc2
+    run: mp-ibc-create psi -o ibc --boundary-lambda
+    outputs:
+      state: ibc
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 0"
+
+  # One-site window at site 0, with no sites incorporated from the left unit
+  # cell.
+  tfi_uc2_ibc_window_i0:
+    from: tfi_uc2_ibc_empty_window
+    run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+    outputs:
+      state: ibc_w
+    certify:
+      - info_text:
+          state: "{state}"
+          contains: "Window size = 1"
+      - info_text:
+          state: "{state}"
+          contains: "Sites incorporated into the window from the left unit cell = 0"
+
+  # Evolving with the background Hamiltonian leaves the state unchanged, but
+  # forcing window expansion every timestep gives windows with various
+  # offsets and numbers of sites incorporated from the boundary unit cells.
+  tfi_uc3_ibc_expanded:
+    from: tfi_uc3
+    steps:
+      - run: mp-ibc-create psi -o ibc --boundary-lambda
+        outputs:
+          ibc: ibc
+      - run: mp-ibc-apply --window "lat:I(0)" ibc ibc_w
+        outputs:
+          ibc_w: ibc_w
+      - run: mp-ibc-tdvp -w ibc_w -H "lat:-H_ZZ + 2*H_X" -o out -t 0.1 -n 2 -s 1 -m 12 --n-expand 1
+        outputs:
+          window_left2: out.t0.1
+          window_left0: out.t0.2
+    certify:
+      - info_text:
+          state: "{window_left2}"
+          contains: "Window size = 5"
+      - info_text:
+          state: "{window_left2}"
+          contains: "Offset of first site of the window = -2"
+      - info_text:
+          state: "{window_left2}"
+          contains: "Sites incorporated into the window from the left unit cell = 2"
+      - info_text:
+          state: "{window_left0}"
+          contains: "Window size = 7"
+      - info_text:
+          state: "{window_left0}"
+          contains: "Offset of first site of the window = -3"
+      - info_text:
+          state: "{window_left0}"
+          contains: "Sites incorporated into the window from the left unit cell = 0"
+
+tests:
+  empty_window_matches_infinite_expectation_values:
+    use:
+      state: tfi_uc2_ibc_empty_window.state
+    expect:
+      - expectation_real:
+          operator: "lat:X(0)"
+          approx: -0.934215457667694
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:X(-1)"
+          approx: -0.934215457667694
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-1)*Z(0)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(0)*Z(1)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-3)*Z(-2)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(3)*Z(5)"
+          approx: 0.098174021483979
+          abs: 1e-9
+
+  operators_left_of_window_without_left_unit_cell_sites:
+    use:
+      state: tfi_uc2_ibc_window_i0.state
+    expect:
+      # These end at the left edge of the window, where the density matrix
+      # must be transformed into the basis of the left boundary.
+      - expectation_real:
+          operator: "lat:X(-1)"
+          approx: -0.934215457667694
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-2)*Z(-1)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-3)*Z(-1)"
+          approx: 0.098174021483979
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-6)*Z(-5)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-1)*Z(0)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(2)*Z(3)"
+          approx: 0.258657904611342
+          abs: 1e-9
+
+  operators_left_of_expanded_window_without_left_unit_cell_sites:
+    use:
+      state: tfi_uc3_ibc_expanded.window_left0
+    expect:
+      - expectation_real:
+          operator: "lat:Z(-5)*Z(-4)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-6)*Z(-4)"
+          approx: 0.098174021483979
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(-7)*Z(-6)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(0)*Z(1)"
+          approx: 0.258657904611342
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Z(5)*Z(7)"
+          approx: 0.098174021483979
+          abs: 1e-9
+
+  operator_unit_cell_3_on_wavefunction_unit_cell_2:
+    use:
+      state: tfi_uc2_ibc_window_i0.state
+    expect:
+      # sites -6, -5
+      - expectation_real:
+          operator: "lat3:Z(-2)[0]*Z(-2)[1]"
+          approx: 0.258657904611342
+          abs: 1e-9
+      # sites -1, 0
+      - expectation_real:
+          operator: "lat3:Z(-1)[2]*Z(0)[0]"
+          approx: 0.258657904611342
+          abs: 1e-9
+      # sites 2, 4
+      - expectation_real:
+          operator: "lat3:Z(0)[2]*Z(1)[1]"
+          approx: 0.098174021483979
+          abs: 1e-9
+      # site 7
+      - expectation_real:
+          operator: "lat3:X(2)[1]"
+          approx: -0.934215457667694
+          abs: 1e-9
+
+  operator_unit_cell_2_on_wavefunction_unit_cell_3:
+    use:
+      state: tfi_uc3_ibc_expanded.window_left2
+    expect:
+      # sites -6, -5
+      - expectation_real:
+          operator: "lat2:Z(-3)[0]*Z(-3)[1]"
+          approx: 0.258657904611342
+          abs: 1e-9
+      # sites -2, -1
+      - expectation_real:
+          operator: "lat2:Z(-1)[0]*Z(-1)[1]"
+          approx: 0.258657904611342
+          abs: 1e-9
+      # sites 1, 3
+      - expectation_real:
+          operator: "lat2:Z(0)[1]*Z(1)[1]"
+          approx: 0.098174021483979
+          abs: 1e-9
+      # sites 9, 10
+      - expectation_real:
+          operator: "lat2:Z(4)[1]*Z(5)[0]"
+          approx: 0.258657904611342
+          abs: 1e-9
+
+  identity_operator_gives_the_norm:
+    use:
+      state: tfi_uc2_ibc_window_i0.state
+    expect:
+      - expectation_real:
+          operator: "lat:I(-1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:I(0)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:I(5)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat3:I(-1)[2]"
+          approx: 1.0
+          abs: 1e-12
+
+  identity_operator_gives_the_norm_for_empty_window:
+    use:
+      state: tfi_uc2_ibc_empty_window.state
+    expect:
+      - expectation_real:
+          operator: "lat:I(-1)"
+          approx: 1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:I(0)"
+          approx: 1.0
+          abs: 1e-12

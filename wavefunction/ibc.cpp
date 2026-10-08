@@ -511,36 +511,73 @@ class ConstIBCIterator
 std::complex<double>
 expectation(IBCWavefunction const& Psi, UnitCellMPO Op, int Verbose)
 {
-   // We choose IndexLeft/IndexRight such that it is the first/last site in the
-   // operator unit cell, in order for Op.ExtendToCover to work correctly.
-   int IndexLeft = std::min(Psi.window_offset() - ((Psi.left().size() - Psi.window_left_sites()) % (Op.unit_cell_size() / Op.coarse_grain_factor())),
-                            Op.offset());
-   int IndexRight = std::max(Psi.window_size() + Psi.window_offset() + ((Psi.right().size() - Psi.window_right_sites() - 1) % (Op.unit_cell_size() / Op.coarse_grain_factor())),
-                             Op.size() + Op.offset() - 1);
+   // Find the non-trivial support of the operator, [OpLeft, OpRight).
+   int OpLeft, OpRight;
+   std::tie(OpLeft, OpRight) = FindNonTrivialSupport(Op.MPO());
+   OpLeft += Op.offset();
+   OpRight += Op.offset();
+
+   int WindowLeft = Psi.window_offset();
+   int WindowRight = Psi.window_offset() + Psi.window_size();
+
+   // We contract over the sites [IndexLeft, IndexRight).  Everything to the
+   // left of the first site of the right boundary (which contains lambda_r) is
+   // left-orthogonal, so the left fixed point is the identity at any bond
+   // IndexLeft <= WindowRight.  The right fixed point is only known at the bonds
+   // of the window, since we do not have accurate Lambda matrices for the
+   // semi-infinite boundaries near the window, so we need IndexRight >= WindowLeft.
+   // (If IndexRight > WindowRight, the right fixed point is the identity, as
+   // the right boundary is right-orthogonal.)
+   int IndexLeft = std::min(OpLeft, WindowRight);
+   int IndexRight = std::max(OpRight, WindowLeft);
+   if (OpLeft == OpRight) // The operator is the identity.
+      IndexLeft = IndexRight = std::min(std::max(OpLeft, WindowLeft), WindowRight);
 
    if (Verbose > 0)
-      std::cout << "Calculating IBC expectation value over sites " << IndexLeft << " to " << IndexRight
-                << " (" << IndexRight - IndexLeft + 1 << " sites total)" << std::endl;
+      std::cout << "Calculating IBC expectation value over sites " << IndexLeft << " to " << IndexRight-1
+                << " (" << IndexRight - IndexLeft << " sites total)" << std::endl;
 
-   Op.ExtendToCover(IndexRight - IndexLeft + 1, IndexLeft);
+   // Extend the operator to cover [IndexLeft, IndexRight).  ExtendToCover
+   // extends by whole operator unit cells, so we round the extension up to a
+   // multiple of the operator unit cell size relative to the existing operator.
+   int UnitCellSize = Op.unit_cell_size() / Op.coarse_grain_factor();
+   int ExtendLeft = std::max(Op.offset() - IndexLeft, 0);
+   int ExtendRight = std::max(IndexRight - (Op.offset() + Op.size()), 0);
+   ExtendLeft = ((ExtendLeft + UnitCellSize - 1) / UnitCellSize) * UnitCellSize;
+   ExtendRight = ((ExtendRight + UnitCellSize - 1) / UnitCellSize) * UnitCellSize;
+   Op.ExtendToCover(Op.size() + ExtendLeft + ExtendRight, Op.offset() - ExtendLeft);
+   CHECK(Op.offset() <= IndexLeft && IndexRight <= Op.offset() + Op.size())(Op.offset())(Op.size())(IndexLeft)(IndexRight);
 
-   BasicFiniteMPO M = Op.MPO();
+   BasicFiniteMPO const& M = Op.MPO();
+   auto W = M.begin() + (IndexLeft - Op.offset());
 
    ConstIBCIterator C = ConstIBCIterator(Psi, IndexLeft);
 
    MatrixOperator I = MatrixOperator::make_identity((*C).Basis1());
-   StateComponent E(M.Basis1(), I.Basis1(), I.Basis2());
+   // If the contraction is empty, W may be the end iterator.
+   StateComponent E(W == M.end() ? M.Basis2() : W->Basis1(), I.Basis1(), I.Basis2());
    E.front() = I;
 
-   auto W = M.begin();
-
-   for (int i = IndexLeft; i <= IndexRight; ++i)
+   for (int i = IndexLeft; i < IndexRight; ++i)
    {
       if (Verbose > 2)
          std::cout << "Site " << i << std::endl;
 
       E = contract_from_left(*W, herm(*C), E, *C);
       ++C, ++W;
+   }
+
+   CHECK_EQUAL(E.size(), 1);
+
+   // If we finish inside the window, then we need to include the right fixed point.
+   if (IndexRight <= WindowRight)
+   {
+      RealDiagonalOperator Lambda = Psi.window().lambda(IndexRight - WindowLeft);
+      MatrixOperator Rho = Lambda * Lambda;
+      // At the left edge of the window, we need to transform to the basis of the left boundary.
+      if (IndexRight == WindowLeft)
+         Rho = Psi.window().LeftU() * Rho * herm(Psi.window().LeftU());
+      return trace(E[0] * Rho);
    }
 
    return trace(E[0]);
