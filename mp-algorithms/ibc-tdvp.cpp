@@ -303,7 +303,7 @@ WindowHamiltonian::operator()(int Left, int Right, std::complex<double> t, std::
 IBC_TDVP::IBC_TDVP(IBCWavefunction const& Psi_, WindowHamiltonian const& Ham_, IBC_TDVPSettings const& Settings_)
    : TDVP(Ham_, Settings_),
    HamWindow(Ham_), GMRESTol(Settings_.GMRESTol), FidTol(Settings_.FidTol), NExpand(Settings_.NExpand),
-   Comoving(Settings_.Comoving), PsiLeft(Psi_.left()), PsiRight(Psi_.right())
+   Comoving(Settings_.Comoving), WindowExpansion(Settings_.WindowExpansion), PsiLeft(Psi_.left()), PsiRight(Psi_.right())
 {
    // This IBC TDVP algorithm assumes stationary semi-infinite backgrounds.
    // A time-dependent background would evolve those backgrounds too, which is
@@ -1032,7 +1032,7 @@ IBC_TDVP::Evolve(bool Expand)
          this->ExpandEvolutionWindowRight();
 
    this->UpdateWindowHamiltonian(Time, (*Alpha)*Timestep);
-   if (Comoving == 0)
+   if (Comoving == 0 && WindowExpansion)
       this->SweepLeftEW((*Alpha)*Timestep, Expand);
    else
       this->SweepLeft((*Alpha)*Timestep, Expand);
@@ -1046,12 +1046,15 @@ IBC_TDVP::Evolve(bool Expand)
    while (Alpha != Comp.Alpha.cend())
    {
       this->UpdateWindowHamiltonian(Time, (*Beta)*Timestep);
-      this->SweepRightEW((*Beta)*Timestep, Expand);
+      if (WindowExpansion)
+         this->SweepRightEW((*Beta)*Timestep, Expand);
+      else
+         this->SweepRight((*Beta)*Timestep, Expand);
       Time += (*Beta)*Timestep;
       ++Beta;
 
       this->UpdateWindowHamiltonian(Time, (*Alpha)*Timestep);
-      if (Comoving == 0)
+      if (Comoving == 0 && WindowExpansion)
          this->SweepLeftEW((*Alpha)*Timestep, Expand);
       else
          this->SweepLeft((*Alpha)*Timestep, Expand);
@@ -1061,9 +1064,19 @@ IBC_TDVP::Evolve(bool Expand)
 
    this->UpdateWindowHamiltonian(Time, (*Beta)*Timestep);
    if (Epsilon)
-      this->SweepRightFinalEW((*Beta)*Timestep, Expand);
+   {
+      if (WindowExpansion)
+         this->SweepRightFinalEW((*Beta)*Timestep, Expand);
+      else
+         this->SweepRightFinal((*Beta)*Timestep, Expand);
+   }
    else
-      this->SweepRightEW((*Beta)*Timestep, Expand);
+   {
+      if (WindowExpansion)
+         this->SweepRightEW((*Beta)*Timestep, Expand);
+      else
+         this->SweepRight((*Beta)*Timestep, Expand);
+   }
    Time += (*Beta)*Timestep;
 }
 

@@ -111,6 +111,7 @@ int main(int argc, char** argv)
          ("fidtol,f", prog_opt::value(&Settings.FidTol),
           FormatDefault("Tolerance in the boundary fidelity for expanding the window", Settings.FidTol).c_str())
          ("n-expand", prog_opt::value(&Settings.NExpand), "Expand the window manually every n timesteps")
+         ("fixed-window", "Do not automatically expand the window based on the boundary fidelity (--n-expand still applies)")
          ("comoving", prog_opt::value(&Settings.Comoving), "Use a comoving window of fixed width of the specified number of sites")
          ("ewleft", prog_opt::value(&EvolutionWindowLeft), "Leftmost site of the initial evolution window (wavefunction attribute \"EvolutionWindowLeft\")")
          ("ewright", prog_opt::value(&EvolutionWindowRight), "Rightmost site of the initial evolution window (wavefunction attribute \"EvolutionWindowRight\")")
@@ -162,6 +163,9 @@ int main(int argc, char** argv)
       std::cout << "Composition: " << CompositionStr << '\n';
 
       Settings.Verbose = Verbose;
+
+      if (vm.count("fixed-window"))
+         Settings.WindowExpansion = false;
 
       // Load the composition scheme.
       for (auto const& c : Compositions)

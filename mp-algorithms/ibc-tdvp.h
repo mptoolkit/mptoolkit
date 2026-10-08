@@ -64,6 +64,7 @@ struct IBC_TDVPSettings : TDVPSettings
    double FidTol = 1e-12;
    int NExpand = 0;
    int Comoving = 0;
+   bool WindowExpansion = true;
    int EvolutionWindowLeft;
    int EvolutionWindowRight;
 };
@@ -111,6 +112,7 @@ class IBC_TDVP : public TDVP
       double FidTol;
       int NExpand;
       int Comoving;
+      bool WindowExpansion; // If false, do not expand the window based on FidTol.
 
       WindowHamiltonian HamWindow;
       const InfiniteWavefunctionLeft PsiLeft;
