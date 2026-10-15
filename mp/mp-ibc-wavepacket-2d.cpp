@@ -366,8 +366,8 @@ int main(int argc, char** argv)
       if (InputDigits == -1)
       {
          InputDigits = std::max(formatting::digits(KList.get_start()), formatting::digits(KList.get_step()));
-         if (vm.count("kynum"))
-            InputDigits = std::max(InputDigits, formatting::digits(KYList.get_step()));
+         if (vm.count("ky"))
+            InputDigits = std::max({InputDigits, formatting::digits(KYList.get_start()), formatting::digits(KYList.get_step())});
       }
 
       if (Verbose > 1)
@@ -381,7 +381,7 @@ int main(int argc, char** argv)
       int LeftIndex, RightIndex, UCSize;
       {
          std::string InputFilename = InputPrefix;
-         if (vm.count("kynum") == 0)
+         if (vm.count("ky") == 0)
             InputFilename += ".k" + formatting::format_digits(KList.get_start(), InputDigits);
          else
             InputFilename += ".kx" + formatting::format_digits(KList.get_start(), InputDigits)
@@ -434,13 +434,16 @@ int main(int argc, char** argv)
       // of each B matrix for that unit cell position.
       std::vector<std::vector<StateComponent>> BVec(UCSize);
       std::vector<std::complex<double>> ExpIKVec;
+      // The x- and y-momenta for each wavefunction, in the same order as
+      // ExpIKVec.
+      std::vector<double> KVec, KYVec;
       for (double const k : KList)
       {
          for (double const ky : KYList)
          {
             // Load wavefunction.
             std::string InputFilename = InputPrefix;
-            if (vm.count("kynum") == 0)
+            if (vm.count("ky") == 0)
                InputFilename += ".k" + formatting::format_digits(k, InputDigits);
             else
                InputFilename += ".kx" + formatting::format_digits(k, InputDigits)
@@ -455,6 +458,8 @@ int main(int argc, char** argv)
             // TODO: Check each wavefunction has the same left/right boundaries.
 
             ExpIKVec.push_back(Psi.exp_ik());
+            KVec.push_back(k);
+            KYVec.push_back(ky);
 
             auto BCell = BVec.begin();
             // Here we use the left-gauge fixing condition.
@@ -534,7 +539,7 @@ int main(int argc, char** argv)
             LambdaMax = N/2;
 
          int NY;
-         if (vm.count("kynum"))
+         if (vm.count("ky"))
          {
             NY = std::round(2.0/KYList.get_step());
             if (std::abs(NY*KYList.get_step()/2.0 - 1.0) > 0.0)
@@ -571,7 +576,7 @@ int main(int argc, char** argv)
                if (Verbose > 0)
                {
                   std::cout << "Lambda=" << Lambda;
-                  if (vm.count("kynum"))
+                  if (vm.count("ky"))
                      std::cout << " LambdaY=" << LambdaY;
                   std::cout << " ExternalWeight=" << std::real(EValues[0])
                             << std::endl;
@@ -600,10 +605,10 @@ int main(int argc, char** argv)
             // Print the F vector before convolution.
             std::cout << "Printing F before convolution..." << std::endl;
             std::cout << "#kx ky F" << std::endl;
-            auto K = KList.begin();
-            auto KY = KYList.begin();
+            auto K = KVec.begin();
+            auto KY = KYVec.begin();
             auto F = FVec.begin();
-            while (K != KList.end())
+            while (K != KVec.end())
             {
                std::cout << *K << " ";
                if (vm.count("ky"))
@@ -618,9 +623,9 @@ int main(int argc, char** argv)
          {
             if (Verbose > 1)
                std::cout << "Convoluting with momentum space Gaussian..." << std::endl;
-            auto K = KList.begin();
+            auto K = KVec.begin();
             auto F = FVec.begin();
-            while (K != KList.end())
+            while (K != KVec.end())
             {
                // Since we have a periodic domain in momentum space, we cannot
                // just use a normal Gaussian, so we use the "wrapped Gaussian",
@@ -635,9 +640,9 @@ int main(int argc, char** argv)
          {
             if (Verbose > 1)
                std::cout << "Convoluting with y-momentum space Gaussian..." << std::endl;
-            auto KY = KYList.begin();
+            auto KY = KYVec.begin();
             auto F = FVec.begin();
-            while (KY != KYList.end())
+            while (KY != KYVec.end())
             {
                *F *= WrappedGaussian(math_const::pi*(*KY), math_const::pi*KYCenter, math_const::pi*SigmaY);
                ++KY, ++F;
@@ -649,10 +654,10 @@ int main(int argc, char** argv)
             // Print the F vector after convolution.
             std::cout << "Printing F after convolution..." << std::endl;
             std::cout << "#kx ky F" << std::endl;
-            auto K = KList.begin();
-            auto KY = KYList.begin();
+            auto K = KVec.begin();
+            auto KY = KYVec.begin();
             auto F = FVec.begin();
-            while (K != KList.end())
+            while (K != KVec.end())
             {
                std::cout << *K << " ";
                if (vm.count("ky"))
