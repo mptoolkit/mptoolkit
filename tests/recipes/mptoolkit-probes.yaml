@@ -27,6 +27,27 @@ recipes:
     probe: mp-info {state}
     extract: full_text
 
+  check_ortho_left_abs:
+    probe: mp-check-ortho --quiet {state}
+    extract:
+      line_pattern:
+        pattern: "max_left_orthogonality %(float:value) %(float:rel)"
+        capture: value
+
+  check_ortho_density_abs:
+    probe: mp-check-ortho --quiet {state}
+    extract:
+      line_pattern:
+        pattern: "max_stored_density_bond %(float:value) %(float:rel)"
+        capture: value
+
+  check_ortho_fixed_point_abs:
+    probe: mp-check-ortho --quiet {state}
+    extract:
+      line_pattern:
+        pattern: "right_density_fixed_point %(float:value) %(float:rel)"
+        capture: value
+
   info_log_amplitude:
     probe: mp-info {state}
     extract:
