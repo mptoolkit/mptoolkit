@@ -3,6 +3,15 @@ version: 0
 imports:
   - ../recipes/mptoolkit-probes.yaml
 
+recipes:
+  idmrg_one_sweep_bench:
+    action: mp-idmrg-3s -e -b -u 2 -q 0 -w psi -H lat:H_stag -m 4x1 --seed 1
+    env:
+      MP_BENCHFILE: steps.dat
+    outputs:
+      state: psi
+      bench: steps.dat
+
 fixtures:
   lat:
     run: spinchain-u1 -o lat
@@ -51,6 +60,51 @@ fixtures:
       - info_text:
           contains: "Unit cell size = 2"
 
+  infinite_spinchain_hstag_odd_schedule:
+    from: lat
+    build: idmrg_one_sweep_bench
+
+  infinite_spinchain_gapped_odd_schedule:
+    from: lat
+    run: mp-idmrg-3s -e -b -u 4 -q 0 -w psi -H lat:H_J1+2*H_stag -m 4x2,8x1 --seed 1
+    outputs:
+      state: psi
+    certify:
+      - info_text:
+          contains: "Unit cell size = 4"
+      - info_text:
+          compare:
+            kind: matches
+            value: 'Number of states = [2-8]\b'
+
+  infinite_spinchain_gapped_odd_restart:
+    from: infinite_spinchain_gapped_odd_schedule
+    run: mp-idmrg-3s -w psi -m 8x1 --seed 1
+
+  infinite_spinchain_gapped_odd_right:
+    from: infinite_spinchain_gapped_odd_restart
+    run: mp-right-canonicalize psi psi_right
+    outputs:
+      state: psi_right
+
+  infinite_spinchain_gapped_odd_roundtrip:
+    from: infinite_spinchain_gapped_odd_right
+    run: mp-left-canonicalize psi_right psi_left
+    outputs:
+      state: psi_left
+
+  infinite_spinchain_polarized_odd_schedule:
+    from: lat
+    run: mp-idmrg-3s -e -b -u 1 -q 1/2 -w psi -H 'lat:-sum_unit(Sz(0))' -m 4x3 --seed 1
+    outputs:
+      state: psi
+
+  infinite_spinchain_polarized_multisite_odd_schedule:
+    from: lat
+    run: mp-idmrg-3s -e -b -u 3 -q 3/2 -w psi -H 'lat:-sum_unit(Sz(0))' -m 4x3 --seed 1
+    outputs:
+      state: psi
+
 tests:
   idmrg_3s_finds_the_exact_staggered_field_ground_state:
     use: infinite_spinchain_hstag_ground
@@ -77,4 +131,64 @@ tests:
       - attr_float:
           attribute: LastEnergy
           approx: -1.0
+          abs: 1e-12
+
+  idmrg_3s_finishes_one_sweep_without_an_extra_optimization_sweep:
+    use:
+      state: infinite_spinchain_hstag_odd_schedule.state
+      bench: infinite_spinchain_hstag_odd_schedule.bench
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -1.0
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: -0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(1)"
+          approx: 0.5
+          abs: 1e-12
+      - file_text:
+          path: "{bench}"
+          compare:
+            kind: matches
+            value: '(?m)^[^\n]* Q 1 [^\n]*\n[^\n]* L 1 [^\n]*\n[^\n]* F 2 [^\n]*\n?\Z'
+
+  idmrg_3s_odd_restart_preserves_a_nontrivial_canonical_state:
+    use:
+      psi1: infinite_spinchain_gapped_odd_restart.state
+      psi2: infinite_spinchain_gapped_odd_roundtrip.state
+    expect:
+      - ioverlap_sector_mag:
+          approx: 1.0
+          abs: 1e-10
+
+  idmrg_3s_odd_single_site_preserves_nonzero_charge:
+    use: infinite_spinchain_polarized_odd_schedule
+    expect:
+      - info_text:
+          contains: "Unit cell size = 1"
+      - info_text:
+          contains: "Quantum number per unit cell = 0.5"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+
+  idmrg_3s_odd_multisite_preserves_nonzero_charge:
+    use: infinite_spinchain_polarized_multisite_odd_schedule
+    expect:
+      - info_text:
+          contains: "Unit cell size = 3"
+      - info_text:
+          contains: "Quantum number per unit cell = 1.5"
+      - expectation_real:
+          operator: "lat:Sz(0)"
+          approx: 0.5
+          abs: 1e-12
+      - expectation_real:
+          operator: "lat:Sz(2)"
+          approx: 0.5
           abs: 1e-12
