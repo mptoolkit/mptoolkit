@@ -88,7 +88,7 @@ SRCDIRS = common common/private quantumnumbers pstream pheap \
           benchmark misc misc/oogl junk mpo mps parser models models/contrib
 
 TESTDIRS = tensor/test siteoperator/test linearalgebra/test matrixproduct/test pheap/test \
-           common/test quantumnumbers/test mp-algorithms/test mpo/test
+           common/test quantumnumbers/test mp-algorithms/test mpo/test tests/helpers
 
 DIRS = $(SRCDIRS) $(TESTDIRS)
 
@@ -201,7 +201,7 @@ allobj = $(quantumnumbersobj) \
 	 $(commonobj)         \
          $(parserobj)
 
-tools = mp-idmrg-s3e mp-idmrg-3s mp-ioverlap \
+tools = mp-idmrg-s3e mp-idmrg-3s mp-ioverlap mp-check-ortho \
         mp-info mp-history mp-reflect mp-conj \
         mp-imoments mp-wigner-eckart mp-reorder-symmetry \
         mp-ispectrum mp-lattice-info mp-show-operator mp-aux-matrix mp-aux-algebra mp-iapply mp-attr \
@@ -307,6 +307,7 @@ clean :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
+	rm -f test-check-ortho-fixtures
 	rm -f $(tools)
 	rm -f $(all-models)
 
@@ -314,6 +315,7 @@ mrproper :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
+	rm -f test-check-ortho-fixtures
 	rm -f $(tools)
 	rm -f $(all-models)
 	rm -f -- $(patsubst %,%/*~, $(subst :, ,$(VPATH)))
@@ -327,13 +329,17 @@ test : $(alltests)
 test-integration : tools models
 	$(SRCDIR)/scripts/mptk-test --bin-dir "$(CURDIR)" $(SUITE)
 
+.PHONY: test-check-ortho
+test-check-ortho : test-check-ortho-fixtures mp-check-ortho
+	python3 $(SRCDIR)/tests/check_ortho.py --fixtures ./test-check-ortho-fixtures --checker ./mp-check-ortho
+
 test_tensor : $(tensor_tests)
 	$(SRCDIR)/generate-testreport.sh $(tensor_tests:%=./%)
 
 testla : $(linearalgebra_tests)
 	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
 
-$(tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+$(tools) test-check-ortho-fixtures : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
            $(dmrgobj) $(mpobj) $(exponentialobj) $(linearalgebraobj) $(parserobj)
 
 $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \

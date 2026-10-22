@@ -4,6 +4,20 @@ This directory contains the declarative MPToolkit integration test system.
 
 ## Quick Start
 
+The standalone canonical-form diagnostic regressions also exercise deliberately
+noncanonical states. Their fixture writer is test-only and is not installed:
+
+```bash
+make -C /path/to/autoconf-build test-check-ortho
+# Or, with CMake:
+cmake --build /path/to/cmake-build --target test-check-ortho
+```
+
+These tests check all three residuals, relative normalization, U(1) charge shifts,
+SU(2) degree factors, non-finite input, and that the checker never changes its
+input file. The `spinchain-canonicalization` suite additionally checks states
+produced by iDMRG and the canonicalization tools.
+
 Build MPToolkit first, then run the integration wrapper from the build
 directory. The wrapper uses the current directory as `--bin-dir`, so it can find
 programs such as `mp-construct`, `mp-itebd`, and `spinchain-u1`.

@@ -74,7 +74,7 @@ extern double const OrthoTol = getenv_or_default("MP_ORTHO_TOL", 1E-8);
 double const UnityEpsilon = 1E-14;
 
 // Magic numbers for left_orthogonalize and gauge_fix_left_orthogonal
-double const HermTol = 1E-14;
+double const HermTol = 2E-14;
 int const MaxTries = 100;
 int const ResetGuessInterval = 10;
 

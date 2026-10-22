@@ -513,6 +513,7 @@ set(MPTK_TOOLS
   mp-idmrg-s3e
   mp-idmrg-3s
   mp-ioverlap
+  mp-check-ortho
   mp-info
   mp-history
   mp-reflect
@@ -627,6 +628,21 @@ target_link_libraries(testexponential PRIVATE mptoolkit_core)
 mptk_set_runtime_output(testexponential tests)
 add_test(NAME linearalgebra.testexponential COMMAND testexponential)
 set_tests_properties(linearalgebra.testexponential PROPERTIES TIMEOUT 30)
+
+mptk_add_executable(test-check-ortho-fixtures tests/helpers/test-check-ortho-fixtures.cpp tests)
+add_test(NAME wavefunction.check-ortho
+  COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ortho.py"
+          --fixtures "$<TARGET_FILE:test-check-ortho-fixtures>"
+          --checker "$<TARGET_FILE:mp-check-ortho>"
+)
+set_tests_properties(wavefunction.check-ortho PROPERTIES TIMEOUT 60)
+add_custom_target(test-check-ortho
+  COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure --no-tests=error
+          -C "$<CONFIG>" -R "^wavefunction[.]check-ortho$"
+  DEPENDS test-check-ortho-fixtures mp-check-ortho
+  USES_TERMINAL
+  VERBATIM
+)
 
 add_custom_target(test-integration
   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/mptk-test"
