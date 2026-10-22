@@ -495,7 +495,10 @@ class iDMRG
       void SweepRight(StatesInfo const& SInfo, double HMix = 0);
       void SweepLeft(StatesInfo const& SInfo, double HMix = 0, bool NoUpdate = false);
 
-      // call after a SweepRight() to make Psi an infinite wavefunction
+      // after a SweepLeft(), transport the center without another optimization sweep
+      void MoveCenterRightForFinish();
+
+      // call with the center at the right edge to make Psi an infinite wavefunction
       void Finish(StatesInfo const& SInfo);
 
       // returns the wavefunction, which is in center-regular form
@@ -877,6 +880,28 @@ iDMRG::SweepLeft(StatesInfo const& States, double HMix, bool NoUpdate)
    }
 
    SweepNumber++;
+}
+
+void
+iDMRG::MoveCenterRightForFinish()
+{
+   CHECK(C == FirstSite);
+
+   // Match the saved periodic left boundary before transporting the center.
+   this->UpdateLeftBlock();
+   while (C != LastSite)
+   {
+      // Thin QR preserves the state without expansion, truncation, or a local solve.
+      MatrixOperator Lambda = OrthogonalizeBasis2_QR(*C);
+      LeftHamiltonian.push_back(contract_from_left(*H, herm(*C), LeftHamiltonian.back(), *C));
+      RightHamiltonian.pop_front();
+
+      ++H;
+      ++C;
+      *C = prod(Lambda, *C);
+      *C *= 1.0 / norm_frob(*C);
+      this->CheckConsistency();
+   }
 }
 
 void
@@ -1391,6 +1416,8 @@ int main(int argc, char** argv)
                idmrg.SweepRight(SInfo, HMix);
             }
          }
+         if (MyStates.size() % 2 != 0)
+            idmrg.MoveCenterRightForFinish();
          idmrg.Finish(SInfo);
 
       }
