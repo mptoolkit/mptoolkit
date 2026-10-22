@@ -33,6 +33,7 @@
 #include "common/formatting.h"
 #include "common/prog_opt_accum.h"
 #include "interface/inittemp.h"
+#include <algorithm>
 #include <fstream>
 
 namespace prog_opt = boost::program_options;
@@ -127,20 +128,39 @@ class FiniteDMRG2Site : public FiniteDMRG
    private:
       void ShiftLeftTwoSite(MatrixOperator const& Lambda, StateComponent const& Left)
       {
+         auto L = C;
+         --L;
          MatrixOperator P = scalar_prod(SweepC, herm(*C));
          CHECK_EQUAL(Left.Basis2(), P.Basis1());
-         SweepC = prod(Left, P);
+         StateComponent SweepLeft = prod(Left, P);
+         // Move the sweep-start state through the new two-site canonical basis
+         // as a bond-center matrix, then rebuild the next active center.
+         MatrixOperator SweepLambda = scalar_prod(herm(*L), SweepLeft);
+         SweepC = prod(*L, SweepLambda);
          this->DMRG::ShiftLeft(Lambda);
       }
 
       void ShiftRightTwoSite(MatrixOperator const& Lambda, StateComponent const& Right)
       {
+         auto R = C;
+         ++R;
          MatrixOperator P = scalar_prod(herm(*C), SweepC);
          CHECK_EQUAL(P.Basis2(), Right.Basis1());
-         SweepC = prod(P, Right);
+         StateComponent SweepRight = prod(P, Right);
+         // Move the sweep-start state through the new two-site canonical basis
+         // as a bond-center matrix, then rebuild the next active center.
+         MatrixOperator SweepLambda = scalar_prod(SweepRight, herm(*R));
+         SweepC = prod(SweepLambda, *R);
          this->DMRG::ShiftRight(Lambda);
       }
 };
+
+double FinishSweep(FiniteDMRG2Site& dmrg)
+{
+   dmrg.EndSweep();
+   dmrg.LastSweepFidelity = std::min(dmrg.LastSweepFidelity, 1.0);
+   return 1.0 - dmrg.LastSweepFidelity;
+}
 
 } // namespace
 
@@ -167,11 +187,11 @@ void SweepRight(FiniteDMRG2Site& dmrg, StatesInfo const& States)
          PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()-1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
-   dmrg.EndSweep();
+   double const SweepFidelityLoss = FinishSweep(dmrg);
    if (PerStep)
       PerStepFile.flush();
    std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
-   std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
+   std::cout << "Sweep fidelity loss: " << SweepFidelityLoss << '\n';
 }
 
 void SweepLeft(FiniteDMRG2Site& dmrg, StatesInfo const& States)
@@ -198,11 +218,11 @@ void SweepLeft(FiniteDMRG2Site& dmrg, StatesInfo const& States)
          PerStepFile << ProcControl::GetElapsedTime() << ' ' << dmrg.TotalNumSweeps << ' ' << (dmrg.Site()+1) << ' ' << Info.KeptStates() << ' ' << formatting::format_complex(dmrg.Solver().LastEnergy()) << ' ' << Info.TruncationError() << ' ' << dmrg.Solver().LastFidelityLoss() << ' ' << dmrg.Solver().LastIter() << ' ' << dmrg.Solver().LastTol() << '\n';
       dmrg.EndIteration();
    }
-   dmrg.EndSweep();
+   double const SweepFidelityLoss = FinishSweep(dmrg);
    if (PerStep)
       PerStepFile.flush();
    std::cout << "Cumulative truncation error for sweep: " << dmrg.SweepTotalTruncation << '\n';
-   std::cout << "Sweep fidelity loss: " << (1.0 - dmrg.LastSweepFidelity) << '\n';
+   std::cout << "Sweep fidelity loss: " << SweepFidelityLoss << '\n';
 }
 
 int main(int argc, char** argv)
