@@ -194,7 +194,7 @@ int main(int argc, char** argv)
       PreExpand.ExpandPerSector = 0;
 
       PostExpand.IncrementFactor = 1.0;
-      PostExpand.ExpandFactor = 0.05;
+      PostExpand.ExpandFactor = 0.1;
       PostExpand.ExpandPerSector = 0;
 
       std::cout.precision(14);
@@ -322,22 +322,22 @@ int main(int argc, char** argv)
       {
          if (dmrg.PreExpansionAlgo == PreExpansionAlgorithm::SVD || dmrg.PreExpansionAlgo == PreExpansionAlgorithm::RSVD)
          {
-            PreExpand.ExpandPerSector = 0;
+            PreExpand.ExpandPerSector = 1;
          }
          else if (dmrg.PreExpansionAlgo == PreExpansionAlgorithm::RangeFinding || dmrg.PreExpansionAlgo == PreExpansionAlgorithm::Random)
          {
-            PreExpand.ExpandPerSector = 1;
+            PreExpand.ExpandPerSector = 0;
          }
       }
       if (!vm.count("post-sector"))
       {
          if (dmrg.PostExpansionAlgo == PostExpansionAlgorithm::SVD || dmrg.PostExpansionAlgo == PostExpansionAlgorithm::RSVD)
          {
-            PostExpand.ExpandPerSector = 0;
+            PostExpand.ExpandPerSector = 1;
          }
          else if (dmrg.PostExpansionAlgo == PostExpansionAlgorithm::RangeFinding || dmrg.PostExpansionAlgo == PostExpansionAlgorithm::Random)
          {
-            PostExpand.ExpandPerSector = 1;
+            PostExpand.ExpandPerSector = 0;
          }
       }
 

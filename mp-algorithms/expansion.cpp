@@ -370,6 +370,8 @@ TruncateExpandBasis1(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // null space explicitly.
       CMatSVD DM(CMat);
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      // If fewer states were retained, use the shortfall for expansion.
+      ExtraStates += std::max(States.MaxStates - Info.KeptStates(), 0);
       MatrixOperator VKeep = DM.ConstructRightVectors(DM.begin(), DMPivot);
       R = ReshapeFromBasis2(VKeep, C.LocalBasis(), C.Basis2());
 
@@ -562,6 +564,8 @@ TruncateExpandBasis2(StateComponent& C, StateComponent const& LeftHam, OperatorC
       // null space explicitly.
       CMatSVD DM(CMat);
       auto DMPivot = TruncateFixTruncationErrorRelative(DM.begin(), DM.end(), States, Info);
+      // If fewer states were retained, use the shortfall for expansion.
+      ExtraStates += std::max(States.MaxStates - Info.KeptStates(), 0);
       MatrixOperator UKeep = DM.ConstructLeftVectors(DM.begin(), DMPivot);
       L = ReshapeFromBasis1(UKeep, C.LocalBasis(), C.Basis1());
 

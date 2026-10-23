@@ -29,7 +29,10 @@ jobs:
           -DMPTK_WITH_OPENMP=ON \
           -DMPTK_FORTRAN_COMPLEX_RETURN=auto
     - name: Build CTest targets
-      run: cmake --build build --target testexponential test-check-ortho-fixtures mp-check-ortho --parallel 2
+      run: |
+        cmake --build build --parallel 2 --target \
+          testexponential test-check-ortho-fixtures mp-check-ortho \
+          test-expansion mp-dmrg mp-construct spinchain-u1
     - name: Run CTest
       working-directory: build
       run: ctest --output-on-failure
