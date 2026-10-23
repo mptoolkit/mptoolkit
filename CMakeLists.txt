@@ -629,6 +629,21 @@ mptk_set_runtime_output(testexponential tests)
 add_test(NAME linearalgebra.testexponential COMMAND testexponential)
 set_tests_properties(linearalgebra.testexponential PROPERTIES TIMEOUT 30)
 
+mptk_add_executable(test-expansion tests/test-expansion.cpp tests)
+add_test(NAME algorithms.expansion-oversampling COMMAND test-expansion oversampling)
+add_test(NAME algorithms.expansion-growth COMMAND test-expansion growth)
+add_test(NAME algorithms.dmrg-expansion-defaults
+  COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/tests/dmrg_expansion_defaults.py"
+          --dmrg "$<TARGET_FILE:mp-dmrg>"
+          --construct "$<TARGET_FILE:mp-construct>"
+          --model "$<TARGET_FILE:spinchain-u1>"
+)
+set_tests_properties(algorithms.expansion-oversampling algorithms.expansion-growth
+                     algorithms.dmrg-expansion-defaults PROPERTIES
+  TIMEOUT 60
+  ENVIRONMENT "OPENBLAS_NUM_THREADS=1;OMP_NUM_THREADS=1;MKL_NUM_THREADS=1"
+)
+
 mptk_add_executable(test-check-ortho-fixtures tests/helpers/test-check-ortho-fixtures.cpp tests)
 add_test(NAME wavefunction.check-ortho
   COMMAND python3 "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_ortho.py"

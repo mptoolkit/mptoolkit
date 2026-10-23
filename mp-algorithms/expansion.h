@@ -48,7 +48,7 @@ using PostExpansionAlgorithm = NamedEnumeration<PostExpansionTraits>;
 
 // structure to represent the 'oversampling' of the random range finding algorithm for the randomized SVD.
 // In each quantum number sector, if the desired number of states is n,
-// then over-sample to min(n+Add, n*Scale)
+// then over-sample to max(n+Add, n*Scale)
 // Recommended value of Add is 10
 // Scale should work OK from 1.0 and up.
 // ExtraPerSector is an additional 'ExtraStatesPerSector' that applies at the oversampling phase
@@ -59,7 +59,7 @@ struct OversamplingInfo
    OversamplingInfo(int Add_, double Scale_, int Extra_) : Add(Add_), Scale(Scale_), ExtraPerSector(Extra_) {}
 
    // return the actual number of vectors to use, if we want to get k accurate vectors
-   int operator()(int k) const { return std::min(k+Add, int(k*Scale+0.5)); }  // round up
+   int operator()(int k) const { return std::max(k+Add, int(k*Scale+0.5)); }  // round to nearest
 
    int Add;
    double Scale;
