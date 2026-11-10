@@ -307,7 +307,7 @@ clean :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
-	rm -f test-check-ortho-fixtures
+	rm -f test-check-ortho-fixtures test-kondo
 	rm -f $(tools)
 	rm -f $(all-models)
 
@@ -315,7 +315,7 @@ mrproper :
 	rm -f *.o
 	rm -f *.d
 	rm -f $(alltests)
-	rm -f test-check-ortho-fixtures
+	rm -f test-check-ortho-fixtures test-kondo
 	rm -f $(tools)
 	rm -f $(all-models)
 	rm -f -- $(patsubst %,%/*~, $(subst :, ,$(VPATH)))
@@ -333,13 +333,17 @@ test-integration : tools models
 test-check-ortho : test-check-ortho-fixtures mp-check-ortho
 	python3 $(SRCDIR)/tests/check_ortho.py --fixtures ./test-check-ortho-fixtures --checker ./mp-check-ortho
 
+.PHONY: test-kondo-model
+test-kondo-model : test-kondo
+	./test-kondo
+
 test_tensor : $(tensor_tests)
 	$(SRCDIR)/generate-testreport.sh $(tensor_tests:%=./%)
 
 testla : $(linearalgebra_tests)
 	$(SRCDIR)/generate-testreport.sh $(linearalgebra_tests:%=./%)
 
-$(tools) test-check-ortho-fixtures : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
+$(tools) test-check-ortho-fixtures test-kondo : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \
            $(dmrgobj) $(mpobj) $(exponentialobj) $(linearalgebraobj) $(parserobj)
 
 $(experimental-tools) : $(commonobj) $(quantumnumbersobj) $(pstreamobj) $(pheapobj) \

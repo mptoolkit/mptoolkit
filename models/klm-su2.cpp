@@ -1,0 +1,122 @@
+// -*- C++ -*-
+//----------------------------------------------------------------------------
+// Matrix Product Toolkit http://mptoolkit.qusim.net/
+//
+// models/klm-su2.cpp
+//
+// Copyright (C) 2026 Ian McCulloch <ian@qusim.net>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Research publications making use of this software should include
+// appropriate citations and acknowledgements as described in
+// the file CITATIONS in the main source directory.
+//----------------------------------------------------------------------------
+// ENDHEADER
+
+#include "pheap/pheap.h"
+#include "lattice/infinitelattice.h"
+#include "lattice/unitcelloperator.h"
+#include "mp/copyright.h"
+#include "models/kondo-su2.h"
+#include "common/terminal.h"
+#include <boost/program_options.hpp>
+
+namespace prog_opt = boost::program_options;
+
+int main(int argc, char** argv)
+{
+   try
+   {
+      // Parameters of the lattice (with defaults, if applicable)
+      std::string FileName;
+      half_int Spin = 0.5;
+
+      // Options
+      prog_opt::options_description desc("Allowed options", terminal::columns());
+      desc.add_options()
+         ("help", "show this help message")
+         ("Spin,S", prog_opt::value(&Spin), "local moment spin (default 0.5)")
+         ("out,o", prog_opt::value(&FileName), "output filename [required]")
+         ;
+
+      prog_opt::variables_map vm;
+      prog_opt::store(prog_opt::command_line_parser(argc, argv).
+                      options(desc).style(prog_opt::command_line_style::default_style ^
+                                          prog_opt::command_line_style::allow_guessing).
+                      run(), vm);
+      prog_opt::notify(vm);
+
+      // Descriptions of each operator
+      OperatorDescriptions OpDescriptions;
+      OpDescriptions.set_description("SU(2) Kondo lattice model with onsite singlet pairing");
+      OpDescriptions.author("IP McCulloch", "ianmcc@physics.uq.edu.au");
+      OpDescriptions.add_operators()
+         ("H_t"   , "nearest neighbor hopping")
+         ("H_t2"  , "next-nearest neighbor hopping")
+         ("H_U"   , "on-site Coulomb interaction")
+         ("H_K"   , "Kondo coupling")
+         ("H_Delta", "onsite singlet pairing PairH + Pair (real Delta)")
+         ("H_DeltaI", "onsite singlet pairing i*(PairH - Pair) (imaginary Delta)")
+         ("H_J"   , "nearest neighbor local-moment exchange")
+         ("H_N"   , "total electron number (use -mu*H_N for chemical potential)")
+         ;
+
+      if (vm.count("help") || !vm.count("out"))
+      {
+         print_copyright(std::cerr);
+         std::cerr << "usage: " << basename(argv[0]) << " [options]\n";
+         std::cerr << desc << '\n';
+         std::cerr << OpDescriptions << '\n';
+         return 1;
+      }
+
+      LatticeSite Site = KondoSU2(Spin);
+
+      // The UnitCell consists of a single site
+      UnitCell Cell(Site);
+
+      // Make an infinite lattice of our unit cell
+      InfiniteLattice Lattice(&Cell);
+
+      // A short-cut to refer to an operator defined within our unit cell
+      UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), ScSf(Cell, "ScSf"), Pdouble(Cell, "Pdouble");
+      UnitCellOperator Sf(Cell, "Sf"), N(Cell, "N");
+      UnitCellOperator Pair(Cell, "Pair"), PairH(Cell, "PairH");
+
+      // Define operators that have support over the infinite lattice
+      Lattice["H_t"]  = -sum_unit(dot(CH(0), C(1)) + dot(C(0), CH(1)));
+      Lattice["H_t2"] = -sum_unit(dot(CH(0), C(2)) + dot(C(0), CH(2)));
+      Lattice["H_K"]  =  sum_unit(ScSf(0));
+      Lattice["H_U"] =  sum_unit(Pdouble(0));
+      Lattice["H_J"] = sum_unit(inner(Sf(0), Sf(1)));
+      Lattice["H_N"] = sum_unit(N(0));
+      Lattice["H_Delta"] = sum_unit(PairH(0) + Pair(0));
+      Lattice["H_DeltaI"] = std::complex<double>(0,1)*sum_unit(PairH(0) - Pair(0));
+
+      // Information about the lattice
+      Lattice.set_command_line(argc, argv);
+      Lattice.set_operator_descriptions(OpDescriptions);
+
+      // save the lattice to disk
+      pheap::ExportObject(FileName, Lattice);
+   }
+   catch (prog_opt::error& e)
+   {
+      std::cerr << "Exception while processing command line options: " << e.what() << '\n';
+      return 1;
+   }
+   catch (std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << '\n';
+      return 1;
+   }
+   catch (...)
+   {
+      std::cerr << "Unknown exception!\n";
+      return 1;
+   }
+}

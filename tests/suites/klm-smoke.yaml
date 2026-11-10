@@ -4,6 +4,21 @@ imports:
   - ../recipes/mptoolkit-probes.yaml
 
 fixtures:
+  klm_su2_spin1_lat:
+    run: klm-su2 --Spin 1 -o lat
+    outputs:
+      lattice: lat
+
+  klm_u1su2_spin1_lat:
+    run: klm-u1su2 --Spin 1 -o lat
+    outputs:
+      lattice: lat
+
+  klm_cylinder_spin1_lat:
+    run: klm-cylinder-u1su2 --Spin 1 -o lat
+    outputs:
+      lattice: lat
+
   klm_u1su2_lat:
     run: klm-u1su2 -o lat
     outputs:
@@ -20,6 +35,32 @@ fixtures:
       lattice: lat
 
 tests:
+  klm_su2_spin1_reports_pairing_and_exchange:
+    use: klm_su2_spin1_lat
+    expect:
+      - lattice_info_text:
+          contains: "SymmetryList: S:SU(2)"
+      - lattice_info_text:
+          contains: "H_Delta"
+      - lattice_info_text:
+          contains: "nearest neighbor local-moment exchange"
+
+  klm_u1su2_spin1_reports_exchange_and_number:
+    use: klm_u1su2_spin1_lat
+    expect:
+      - lattice_info_text:
+          contains: "SymmetryList: N:U(1),S:SU(2)"
+      - lattice_info_text:
+          contains: "nearest neighbor local-moment exchange"
+      - lattice_info_text:
+          contains: "total electron number"
+
+  klm_cylinder_accepts_spin1:
+    use: klm_cylinder_spin1_lat
+    expect:
+      - lattice_info_text:
+          contains: "Unit cell size: 4"
+
   klm_u1su2_reports_supported_symmetry_and_operators:
     use: klm_u1su2_lat
     expect:

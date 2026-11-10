@@ -4,7 +4,7 @@
 //
 // models/fermion-u1su2.h
 //
-// Copyright (C) 2012-2016 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2012-2026 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,9 @@
 // the file CITATIONS in the main source directory.
 //----------------------------------------------------------------------------
 // ENDHEADER
+
+#ifndef MPTOOLKIT_MODELS_FERMION_U1SU2_H
+#define MPTOOLKIT_MODELS_FERMION_U1SU2_H
 
 #include "lattice/latticesite.h"
 #include "quantumnumbers/u1.h"
@@ -39,10 +42,10 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
       ("I"       , "identity")
       ("R"       , "reflection")
       ("P"       , "fermion parity")
-      ("S"       , "spin vector operator")
+      (Sym2      , "spin vector operator")
       ("C"       , "annihilation operator")
       ("CH"      , "creation operator")
-      ("N"       , "number operator")
+      (Sym1      , "number operator")
       ("N_S"     , "number of spins")
       ("N_H"     , "number of holons")
       ("Qp"      , "eta raising operator (create double-occupied site)")
@@ -141,3 +144,5 @@ LatticeSite FermionU1SU2(std::string const& Sym1 = "N", std::string const& Sym2 
 
    return Site;
 }
+
+#endif
