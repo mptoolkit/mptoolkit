@@ -4,6 +4,21 @@ This directory contains the declarative MPToolkit integration test system.
 
 ## Quick Start
 
+Kondo-site numerical regressions compare the reduced operators against explicit
+electron-times-spin matrices, including the legacy spin-1/2 conventions and
+complex onsite pairing:
+
+```bash
+make -C /path/to/autoconf-build test-kondo-model
+# Or, with CMake:
+cmake --build /path/to/cmake-build --target test-kondo
+ctest --test-dir /path/to/cmake-build -R '^models[.]kondo$' --output-on-failure
+```
+
+The `klm-smoke` and `klm-dmrg` integration suites exercise the lattice generators
+and two-site spin-1 calculations with hopping, exchange, chemical potential,
+and real/complex pairing. See [the Kondo model notes](../docs/models/klm.md).
+
 The standalone canonical-form diagnostic regressions also exercise deliberately
 noncanonical states. Their fixture writer is test-only and is not installed:
 

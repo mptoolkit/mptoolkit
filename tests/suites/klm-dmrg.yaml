@@ -1,0 +1,130 @@
+version: 0
+
+imports:
+  - ../recipes/mptoolkit-probes.yaml
+
+fixtures:
+  charge_lat:
+    run: klm-u1su2 --Spin 1 -o lat
+    outputs:
+      lattice: lat
+
+  charge_lower_singlet:
+    from: charge_lat
+    run: mp-construct -l lat -o psi --finite "(2,0)lower(1,0.5)lower(0,0)"
+    outputs:
+      state: psi
+
+  charge_ground:
+    from: charge_lower_singlet
+    run: mp-dmrg -w psi -H lat:H_K -m 20x4 --flush
+
+  paired_lat:
+    run: klm-su2 --Spin 1 -o lat
+    outputs:
+      lattice: lat
+
+  paired_empty_singlet:
+    from: paired_lat
+    run: mp-construct -l lat -o psi --finite "(0)empty(1)empty(0)"
+    outputs:
+      state: psi
+
+  real_pair_ground:
+    from: paired_empty_singlet
+    run: mp-dmrg -w psi -H "lat:0.8*H_t+0.3*H_J+0.6*H_Delta" -m 40x8 --flush
+
+  complex_pair_ground:
+    from: paired_empty_singlet
+    run: mp-dmrg -w psi -H "lat:0.8*H_t+0.3*H_J+0.36*H_Delta+0.48*H_DeltaI" -m 40x8 --flush
+
+  chemical_potential_ground:
+    from: paired_empty_singlet
+    run: mp-dmrg -w psi -H "lat:0.2*H_J-0.3*H_N+0.4*H_Delta" -m 40x8 --flush
+
+  interacting_pair_ground:
+    from: paired_empty_singlet
+    run: mp-dmrg -w psi -H "lat:0.8*H_t+0.7*H_K+0.3*H_J+0.23*H_U-0.31*H_N+0.36*H_Delta+0.48*H_DeltaI" -m 40x12 --flush
+
+tests:
+  spin1_interacting_superconductor_matches_exact_diagonalization:
+    use: interacting_pair_ground
+    # Independent 144-dimensional electron Fock x spin-1 x spin-1 matrix,
+    # with explicit Jordan-Wigner signs and all seven couplings nonzero.
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -3.31500644826852
+          abs: 1e-9
+
+  spin1_kondo_lower_multiplet_and_local_moment_casimir:
+    use: charge_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2
+          abs: 1e-10
+      - expectation_real:
+          operator: "lat:inner(Sf(0),Sf(0))"
+          approx: 2
+          abs: 1e-10
+      - expectation_real:
+          operator: "lat:ScSf(0)"
+          approx: -1
+          abs: 1e-10
+      - expectation_real:
+          operator: "lat:N(0)+N(1)"
+          approx: 2
+          abs: 1e-10
+
+  spin1_real_pairing_with_hopping_and_heisenberg_exchange:
+    use: real_pair_ground
+    # Decoupled spin-1 singlet (-2J) and a two-site BCS chain
+    # (-2*sqrt(t^2+|Delta|^2)), at mu=JK=U=0.
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.6
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:inner(Sf(0),Sf(1))"
+          approx: -2
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Pair(0)"
+          approx: -0.3
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:N(0)+N(1)"
+          approx: 2
+          abs: 1e-9
+
+  spin1_complex_pairing_has_correct_phase_and_normalization:
+    use: complex_pair_ground
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2.6
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:Pair(0)"
+          approx: -0.18
+          abs: 1e-9
+      - expectation_imag:
+          operator: "lat:Pair(0)"
+          approx: -0.24
+          abs: 1e-9
+
+  spin1_chemical_potential_sign_and_pairing:
+    use: chemical_potential_ground
+    # Each electron site has energy -mu-sqrt(mu^2+Delta^2)=-0.8;
+    # the spin singlet contributes -2J=-0.4.
+    expect:
+      - attr_float:
+          attribute: LastEnergy
+          approx: -2
+          abs: 1e-9
+      - expectation_real:
+          operator: "lat:N(0)"
+          approx: 1.6
+          abs: 1e-9

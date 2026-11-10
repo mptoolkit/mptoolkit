@@ -4,7 +4,7 @@
 //
 // models/klm-u1su2.cpp
 //
-// Copyright (C) 2004-2017 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2004-2026 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,11 +33,13 @@ int main(int argc, char** argv)
    {
       // Parameters of the lattice (with defaults, if applicable)
       std::string FileName;
+      double Spin = 0.5;
 
       // Options
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("Spin,S", prog_opt::value(&Spin), "local moment spin (default 0.5)")
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
          ;
 
@@ -57,6 +59,8 @@ int main(int argc, char** argv)
          ("H_t2"  , "next-nearest neighbor hopping")
          ("H_U"   , "on-site Coulomb interaction")
          ("H_K"   , "Kondo coupling")
+         ("H_J"   , "nearest neighbor local-moment exchange")
+         ("H_N"   , "total electron number (use -mu*H_N for chemical potential)")
          ;
 
       if (vm.count("help") || !vm.count("out"))
@@ -68,7 +72,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = KondoU1SU2();
+      LatticeSite Site = KondoU1SU2(KondoSpin(Spin));
 
       // The UnitCell consists of a single site
       UnitCell Cell(Site);
@@ -78,12 +82,15 @@ int main(int argc, char** argv)
 
       // A short-cut to refer to an operator defined within our unit cell
       UnitCellOperator CH(Cell, "CH"), C(Cell, "C"), ScSf(Cell, "ScSf"), Pdouble(Cell, "Pdouble");
+      UnitCellOperator Sf(Cell, "Sf"), N(Cell, "N");
 
       // Define operators that have support over the infinite lattice
       Lattice["H_t"]  = -sum_unit(dot(CH(0), C(1)) + dot(C(0), CH(1)));
       Lattice["H_t2"] = -sum_unit(dot(CH(0), C(2)) + dot(C(0), CH(2)));
       Lattice["H_K"]  =  sum_unit(ScSf(0));
       Lattice["H_U"] =  sum_unit(Pdouble(0));
+      Lattice["H_J"] = sum_unit(inner(Sf(0), Sf(1)));
+      Lattice["H_N"] = sum_unit(N(0));
 
       // Information about the lattice
       Lattice.set_command_line(argc, argv);

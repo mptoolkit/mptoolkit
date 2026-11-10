@@ -4,7 +4,7 @@
 //
 // models/klm-u1u1.cpp
 //
-// Copyright (C) 2004-2017 Ian McCulloch <ian@qusim.net>
+// Copyright (C) 2004-2026 Ian McCulloch <ian@qusim.net>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,11 +35,13 @@ int main(int argc, char** argv)
       int x = 0;
       int y = 4;
       std::string FileName;
+      double Spin = 0.5;
 
       // Options
       prog_opt::options_description desc("Allowed options", terminal::columns());
       desc.add_options()
          ("help", "show this help message")
+         ("Spin,S", prog_opt::value(&Spin), "local moment spin (default 0.5)")
          (",x", prog_opt::value(&x), FormatDefault("x wrapping vector", x).c_str())
          (",y", prog_opt::value(&y), FormatDefault("y wrapping vector", y).c_str())
          ("out,o", prog_opt::value(&FileName), "output filename [required]")
@@ -87,7 +89,7 @@ int main(int argc, char** argv)
       int CellSize = x == 0 ? y : x;
 
       // The lattice contains only a single type of site
-      LatticeSite Site = KondoU1SU2();
+      LatticeSite Site = KondoU1SU2(KondoSpin(Spin));
 
       // The UnitCell
       UnitCell Cell(repeat(Site, CellSize));

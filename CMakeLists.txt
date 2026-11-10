@@ -617,6 +617,10 @@ add_custom_target(mptoolkit DEPENDS tools models)
 
 enable_testing()
 
+mptk_add_executable(test-kondo tests/helpers/test-kondo.cpp tests)
+add_test(NAME models.kondo COMMAND test-kondo)
+set_tests_properties(models.kondo PROPERTIES TIMEOUT 30)
+
 add_test(
   NAME cmake.numerical-backend-selection
   COMMAND "${CMAKE_COMMAND}" -P
