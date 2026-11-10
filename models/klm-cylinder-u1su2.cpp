@@ -35,7 +35,7 @@ int main(int argc, char** argv)
       int x = 0;
       int y = 4;
       std::string FileName;
-      double Spin = 0.5;
+      half_int Spin = 0.5;
 
       // Options
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
       int CellSize = x == 0 ? y : x;
 
       // The lattice contains only a single type of site
-      LatticeSite Site = KondoU1SU2(KondoSpin(Spin));
+      LatticeSite Site = KondoU1SU2(Spin);
 
       // The UnitCell
       UnitCell Cell(repeat(Site, CellSize));

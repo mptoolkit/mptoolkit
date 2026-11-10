@@ -33,7 +33,7 @@ int main(int argc, char** argv)
    {
       // Parameters of the lattice (with defaults, if applicable)
       std::string FileName;
-      double Spin = 0.5;
+      half_int Spin = 0.5;
 
       // Options
       prog_opt::options_description desc("Allowed options", terminal::columns());
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
          return 1;
       }
 
-      LatticeSite Site = KondoSU2(KondoSpin(Spin));
+      LatticeSite Site = KondoSU2(Spin);
 
       // The UnitCell consists of a single site
       UnitCell Cell(Site);

@@ -24,18 +24,7 @@
 #include "quantumnumbers/su2.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <stdexcept>
-
-// half_int's stream extraction rounds, so validate the command-line value
-// before converting it.  In particular, --Spin 0.7 must not silently mean 1/2.
-inline half_int KondoSpin(double Spin)
-{
-   if (!std::isfinite(Spin) || Spin < 0 ||
-       Spin > (std::numeric_limits<int>::max()-2)/2 || std::floor(2*Spin) != 2*Spin)
-      throw std::invalid_argument("Spin must be a nonnegative integer or half-integer");
-   return half_int(Spin);
-}
 
 namespace KondoDetail
 {

@@ -15,9 +15,12 @@ make klm-u1su2 klm-su2
 
 CMake discovers both generators automatically. `--Spin` (or `-S`) accepts
 nonnegative integers and half-integers written as decimals, e.g. `0.5`, `1`,
-`1.5`. The default remains `0.5`. Negative, non-half-integral, and non-finite
-values are rejected. `klm-cylinder-u1su2` also accepts this option. The separate
-`klm-u1u1` generator is unchanged.
+`1.5`. The default remains `0.5`. Like the other spin generators, these use the
+existing `half_int` stream conversion, which rounds other decimal inputs to
+the nearest half-integer (for example, `0.7` becomes `0.5`). The site constructor
+rejects negative spins. There is no Kondo-specific conversion tolerance or spin
+cap. `klm-cylinder-u1su2` also accepts this option. The separate `klm-u1u1`
+generator is unchanged.
 
 ## Local basis and compatibility
 

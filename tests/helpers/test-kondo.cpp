@@ -228,13 +228,16 @@ int main()
       CheckLegacy();
       for (double s : {0.0, 0.5, 1.0, 1.5, 2.0, 3.5})
          CheckSpin(s);
-      for (double s : {-0.5, 0.7, std::numeric_limits<double>::infinity(),
-                       std::numeric_limits<double>::quiet_NaN(), 1E30})
+      for (half_int s : {half_int(-0.5), half_int(-1)})
       {
          bool Rejected = false;
-         try { KondoSpin(s); }
+         try { KondoU1SU2(s); }
          catch (std::invalid_argument const&) { Rejected = true; }
-         Require(Rejected, "invalid spin accepted");
+         Require(Rejected, "negative spin accepted by KondoU1SU2");
+         Rejected = false;
+         try { KondoSU2(s); }
+         catch (std::invalid_argument const&) { Rejected = true; }
+         Require(Rejected, "negative spin accepted by KondoSU2");
       }
       std::cout << "Kondo site matrices, legacy conventions, parity and paired spectra passed\n";
    }
