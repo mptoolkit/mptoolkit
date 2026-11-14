@@ -45,6 +45,11 @@ the projector onto single electron occupancy, not the number or magnitude of
 localized spins. `N_H = I - N_S`. Empty and doubly occupied sites still carry
 the localized spin.
 
+The conduction spin uses the normalization `Sc = (1/2) c^dagger sigma c`,
+where `sigma` denotes the Pauli matrices. If another Hamiltonian instead
+defines its conduction spin as `c^dagger sigma c`, its Kondo coupling must
+be multiplied by two when used as the coefficient of `H_K` or `ScSf` here.
+
 The electron spinors `C`/`CH` and the spin vectors are recoupled using the
 tensor-product machinery. `ScSf` has eigenvalues `-(S+1)/2` in the lower
 multiplet, `S/2` in the upper multiplet, and zero at empty/double occupancy.
@@ -100,6 +105,89 @@ Consequently the normalized real pairing term is `(Ep-Em)/2`, not `Ep+Em`.
 The new `Pair` and `PairH` names avoid this normalization/sign trap. They are
 also available in the U(1)xSU(2) site as charged operators for correlations,
 but a Hamiltonian with a nonzero pairing source requires the SU(2)-only model.
+
+### Signs of the couplings
+
+For the convention above, positive `t` multiplies `H_t`: the minus sign in
+`-t sum(c_i^dagger c_{i+1} + h.c.)` is already included in `H_t`. Positive
+`JK` and `J` are antiferromagnetic. For example, at local spin 1, positive
+`JK*ScSf` lowers the onsite total-spin-1/2 multiplet (eigenvalue `-JK`)
+relative to the total-spin-3/2 multiplet (eigenvalue `JK/2`). The two-site
+local-moment singlet has `H_J = -2`.
+
+`H_Delta` has no built-in minus sign. A term
+`+Delta*(c_up^dagger*c_down^dagger + c_down*c_up)` therefore requires
+`+Delta*H_Delta`; `-Delta*H_Delta` describes the opposite pairing phase.
+Reversing the order of either pair of fermion operators also reverses its
+sign. For a single uniform pairing source, changing its overall sign is a
+global gauge transformation (`c -> i*c`): energies are unchanged, but
+anomalous expectations such as `Pair` change sign. Relative pairing phases
+must still be kept consistent when comparing different regions or sources.
+
+### Different Kondo couplings at the ends of a finite chain
+
+The `mp-dmrg -H` interface takes an infinite triangular MPO and contracts it
+with the finite wavefunction's open boundaries. To use bulk coupling `JK`
+and end couplings `JL` and `JR` on sites `0,...,N-1`, add the differences
+from the bulk coupling:
+
+```text
+Hbulk + sum_unit(sites=N, (JL-JK)*ScSf(0) + (JR-JK)*ScSf(N-1))
+```
+
+Here `Hbulk` includes `JK*H_K`. These names are placeholders: substitute
+numerical values or expand shell variables before passing the expression
+to MPToolkit. The subtraction is essential because `H_K` already includes
+the Kondo interaction at both ends.
+
+`sum_unit(sites=N, op)` repeats `op` every **N sites** on the infinite
+lattice. Restricting this construction to the finite chain `[0,N)` leaves
+the two intended end terms. It does not impose periodic boundary conditions
+on the finite wavefunction. Match `N` to the chain length; using the same
+operator on a longer chain repeats the modifications in its interior.
+
+Both chain generators have a one-site lattice unit cell, so `ScSf(11)`
+means site 11, the right end of a 12-site chain. More generally,
+`Op(cell)[site]` selects a site within a lattice unit cell; the cell index
+still refers to the generator's unit cell, even inside `sum_unit(sites=N,...)`.
+The `sites=` argument must precede the operator expression.
+`sum_unit(ScSf(0),12)` is not the supported syntax. A bare `ScSf(0)` is a
+finite-support operator, so it cannot be added directly to `H_K` in `-H`.
+
+For example, start with a 12-site total-spin singlet and use `t=0.1`, `J=1`,
+`JK=0.325`, `Delta=+0.2`, and `mu=U=0`, using the `Sc` normalization above.
+For equal end couplings `Jedge=0.315`:
+
+```sh
+./klm-su2 --Spin 1 -o klm-paired.lat
+./mp-construct -l klm-paired.lat -o psi_s0 --finite -r 6 '(0)empty(1)empty(0)'
+Jedge=0.315
+H12="0.1*H_t+H_J+0.325*H_K+0.2*H_Delta+sum_unit(sites=12,(${Jedge}-0.325)*(ScSf(0)+ScSf(11)))"
+./mp-dmrg -w psi_s0 -H "klm-paired.lat:${H12}" -m 100x20
+```
+
+Choose the state count and sweep schedule by convergence checks. Changing
+`Jedge` from `0.310` to `0.325` changes the correction from `-0.015` to zero.
+Reassign `H12` after changing `Jedge` so the shell expands the new value.
+For unequal end couplings, use the two separate differences in the general
+expression above. If the desired pairing term is negative, replace
+`+0.2*H_Delta` with `-0.2*H_Delta` explicitly.
+
+For measurements, `mp-expectation` takes a finite-support operator. Use
+`fsup` to restrict the same infinite Hamiltonian, or give local operators
+directly:
+
+```sh
+./mp-expectation psi_s0 "klm-paired.lat:fsup(0,12,${H12})"
+./mp-expectation psi_s0 'klm-paired.lat:ScSf(0)'
+./mp-expectation psi_s0 'klm-paired.lat:ScSf(11)'
+```
+
+`fsup(a,b,operator)` uses a half-open interval of **lattice unit cells**:
+the first is included and the second excluded. For these one-site cells,
+`fsup(0,12,...)` keeps the terms contained in sites 0 through 11, with no
+bond joining site 11 to site 0. It returns a finite-support MPO; use it for
+measurement, not as the outer expression passed to `mp-dmrg -H`.
 
 ## Why no separate Z2 label?
 
